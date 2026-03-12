@@ -195,7 +195,18 @@ template: {
 
 const value = message.entry?.[0]?.changes?.[0]?.value;
 
-const phone = value?.messages?.[0]?.from;
+const value = message.entry?.[0]?.changes?.[0]?.value;
+
+if (!value || !value.messages) {
+  console.log("No hay mensajes de usuario");
+  return res.sendStatus(200);
+}
+
+const phone = value.messages[0].from;
+const text = value.messages[0].text?.body;
+
+console.log("PHONE:", phone);
+console.log("MENSAJE:", text);
     console.log("PHONE:", phone);
 
 if (phone) {
