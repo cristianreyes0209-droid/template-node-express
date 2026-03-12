@@ -124,6 +124,18 @@ export const initApp = async (
             res.json({ msg: `hi ${req.body.name}` });
         }
     );
+    app.post('/whatsapp', async (req: Request, res: Response) => {
+
+  const message = req.body;
+
+  console.log("Mensaje recibido de WhatsApp:", message);
+
+  res.json({
+    reply: "Hola 👋 Bienvenido a Las Crepes de París. ¿Qué crepe deseas hoy?"
+  });
+
+});
+    
 
     app.post(
         LARGE_JSON_PATH,
