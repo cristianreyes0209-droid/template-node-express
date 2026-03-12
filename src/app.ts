@@ -193,6 +193,7 @@ template: {
 
 
 const phone = message.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
+    console.log("PHONE:", phone);
 
 if (phone) {
 
