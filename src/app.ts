@@ -178,10 +178,13 @@ if (phone) {
    body: JSON.stringify({
     messaging_product: "whatsapp",
     to: phone,
-    type: "text",
-    text: {
-     body: "Hola 👋 Bienvenido a Las Crepes de París ¿Qué crepe deseas hoy?"
-    }
+type: "template",
+template: {
+  name: "hello_world",
+  language: {
+    code: "en_US"
+  }
+}
    })
   }
  );
