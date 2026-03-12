@@ -191,27 +191,32 @@ template: {
 
 }
 
-res.sendStatus(200);
-    const phone = message.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
+
+const phone = message.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
 
 if (phone) {
 
-await fetch(
-"https://graph.facebook.com/v18.0/1066064689915977/messages",
-{
-method: "POST",
-headers: {
-"Authorization": "Bearer EAAKig65Oi0EBQ8PkguLfCZBwze4DcZBXe01dN01PwnXv4M3nIgtdhuUOVJQWv1M7e1F8qofLOLgbZBZBW7ytGm89XuJI36hBZAzKHiqdVOv7T7cFxjnIKuxaUEN1bC696Xpc3Tp78R6z1fl3R0MYqPC2ZC212ZAkWbZCwwDuQ0tuGPtL6S90TO07qZC9fmNJh144mkeyZAXwiQKcp3uT3esi30uPXrn1hrJyF0z0yV4qo2sDlmEWQWURmaURix6Ac1R0YHlCKhshOedq0BHdZCv5ygDmTwZD",
-"Content-Type": "application/json"
-},
-body: JSON.stringify({
-messaging_product: "whatsapp",
-to: phone,
-type: "text",
-text: { body: "Hola 👋 Bienvenido a Las Crepes de París" }
-})
-}
-);
+ await fetch(
+  "https://graph.facebook.com/v18.0/106606468991597/messages",
+  {
+   method: "POST",
+   headers: {
+    "Authorization": "Bearer EAAKig65Oi0EBQyZA2CAELm32ItrBEFxuHBmIa5A3CDITOQN54Q51LnMKto33hHjiV9UQbKZCuY9WmeLSNcoZChhgs3TtcjVfZAZCnz4u6YzvXl8igqTIk2716yyrJxVhjwGyVEi1nXZCYN9SZCFAt3ZCs0tOfm1NPHVrOLRHoUTvFhhPtruVGStAsfFzFtqTw4YB75zpqOdPnJBoWTtdwzlYDTUexMhGh73SyjzPbIbYSL2ptb4Ll1934MnRhtgqftd80Hn7e5SLu9Q5h5oEGQJ2JAZDZD",
+    "Content-Type": "application/json"
+   },
+   body: JSON.stringify({
+    messaging_product: "whatsapp",
+    to: phone,
+    type: "template",
+    template: {
+     name: "hello_world",
+     language: {
+      code: "en_US"
+     }
+    }
+   })
+  }
+ );
 
 }
 
