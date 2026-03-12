@@ -133,6 +133,38 @@ export const initApp = async (
             res.end();
         }
     );
+    app.get('/whatsapp', (req, res) => {
+
+  const VERIFY_TOKEN = "crepes_token";
+
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode && token) {
+
+    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+      console.log("WEBHOOK_VERIFICADO");
+      res.status(200).send(challenge);
+    } else {
+      res.sendStatus(403);
+    }
+
+  }
+
+});
+
+app.post('/whatsapp', async (req, res) => {
+
+  const message = req.body;
+
+  console.log("Mensaje recibido de WhatsApp:", message);
+
+  res.json({
+    reply: "Hola 👋 Bienvenido a Las Crepes de París. ¿Qué crepe deseas hoy?"
+  });
+
+});
 
     app.get('/abort-signal-propagation', async (req, res) => {
         for (let i = 0; i < 10; i++) {
