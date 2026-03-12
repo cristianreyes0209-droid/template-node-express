@@ -159,11 +159,36 @@ app.post('/whatsapp', async (req, res) => {
 
   console.log("Mensaje recibido de WhatsApp:", message);
 
-  res.json({
-    reply: "Hola 👋 Bienvenido a Las Crepes de París. ¿Qué crepe deseas hoy?"
-  });
+ const message = req.body;
 
-});
+console.log("Mensaje recibido de WhatsApp:", message);
+
+const phone = message.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
+
+if (phone) {
+
+ await fetch(
+  "https://graph.facebook.com/v18.0/106606468991597/messages",
+  {
+   method: "POST",
+   headers: {
+    "Authorization": "Bearer TU_TOKEN",
+    "Content-Type": "application/json"
+   },
+   body: JSON.stringify({
+    messaging_product: "whatsapp",
+    to: phone,
+    type: "text",
+    text: {
+     body: "Hola 👋 Bienvenido a Las Crepes de París ¿Qué crepe deseas hoy?"
+    }
+   })
+  }
+ );
+
+}
+
+res.sendStatus(200);
     const phone = message.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
 
 if (phone) {
