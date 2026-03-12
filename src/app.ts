@@ -158,6 +158,7 @@ app.post('/whatsapp', async (req, res) => {
   const message = req.body;
 
   console.log("Mensaje recibido de WhatsApp:", message);
+    console.log(JSON.stringify(message, null, 2));
 
  const message = req.body;
 
