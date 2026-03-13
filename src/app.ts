@@ -164,16 +164,25 @@ console.log("=====================================");
 console.log("Mensaje recibido de WhatsApp:", message);
 console.log(JSON.stringify(message, null, 2));
 
-const entry = message.entry?.[0];
-const change = entry?.changes?.[0];
-const value = change?.value;
+const messageData = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+
+if (!messageData) {
+  console.log("No hay mensaje de usuario");
+  return res.sendStatus(200);
+}
+
+const phone = messageData.from;
+const text = messageData.text?.body || "mensaje";
+
+console.log("PHONE:", phone);
+console.log("TEXT:", text);
     const phone = value?.messages?.[0]?.from;
 const text = value?.messages?.[0]?.text?.body || "mensaje";
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
-    if (!phone || !text) {
-  console.log("Evento sin mensaje");
+if (!phone) {
+  console.log("Evento sin telefono");
   return res.sendStatus(200);
 }
 
