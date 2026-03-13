@@ -164,7 +164,19 @@ app.post('/whatsapp', async (req, res) => {
 
 console.log("Mensaje recibido de WhatsApp:", message);
 
-const phone = message.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
+const change = message.entry?.[0]?.changes?.[0];
+const value = change?.value;
+
+if (!value || !value.messages) {
+  console.log("Evento sin mensaje");
+  return res.sendStatus(200);
+}
+
+const phone = value.messages[0].from;
+const text = value.messages[0].text?.body;
+
+console.log("PHONE:", phone);
+console.log("MENSAJE:", text);
 
 if (phone) {
 
