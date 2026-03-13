@@ -164,6 +164,11 @@ console.log(JSON.stringify(message, null, 2));
 
 const change = message.entry?.[0]?.changes?.[0];
 const value = change?.value;
+    const phone = value?.messages?.[0]?.from;
+const text = value?.messages?.[0]?.text?.body;
+
+console.log("PHONE:", phone);
+console.log("TEXT:", text);
 
 if (!value || !value.messages) {
   console.log("Evento sin mensaje");
