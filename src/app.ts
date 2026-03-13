@@ -184,6 +184,7 @@ if (!phone) {
 
 
 if (phone) {
+    console.log("ENVIANDO MENSAJE A:", phone);
 
  await fetch(
   "https://graph.facebook.com/v18.0/106606468991597/messages",
