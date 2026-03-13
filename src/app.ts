@@ -162,13 +162,19 @@ console.log("PAYLOAD COMPLETO:", JSON.stringify(message, null, 2));
 console.log("Mensaje recibido de WhatsApp:", message);
 console.log(JSON.stringify(message, null, 2));
 
-const change = message.entry?.[0]?.changes?.[0];
+const entry = message.entry?.[0];
+const change = entry?.changes?.[0];
 const value = change?.value;
     const phone = value?.messages?.[0]?.from;
 const text = value?.messages?.[0]?.text?.body;
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
+    if (!phone || !text) {
+  console.log("Evento sin mensaje");
+  return res.sendStatus(200);
+}
+    
 
 if (!value || !value.messages) {
   console.log("Evento sin mensaje");
