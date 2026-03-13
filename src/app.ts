@@ -174,18 +174,7 @@ console.log("TEXT:", text);
   console.log("Evento sin mensaje");
   return res.sendStatus(200);
 }
-    
 
-if (!value || !value.messages) {
-  console.log("Evento sin mensaje");
-  return res.sendStatus(200);
-}
-
-const phone = value.messages[0].from;
-const text = value.messages[0].text?.body;
-
-console.log("PHONE:", phone);
-console.log("MENSAJE:", text);
 
 if (phone) {
 
@@ -194,63 +183,24 @@ if (phone) {
   {
    method: "POST",
    headers: {
-    "Authorization": "Bearer TU_TOKEN",
+    "Authorization": "Bearer  EAAKig65Oi0EBQ4FvtZCLlQ0O1oE7aZCCtsNNXUvJ6kZBgQrBKdAvkRqADBa4DfP6CGTaZBZBmepKodICwZCHon2PmUdvjUcDdasz22hlOAV7jpIpSQtYwBbMOtNpNnP52sa5sydUH5nTF0O9N8tdZCgnwvE30pMnZBffjy1xF9ecR4vMCSGClEqAnv7obj8VhFOA7RKEhIzwwEyaoRqFA36e5XAJxds2yrKw07ESeuPxDKCShXYLd9hPnZCZC4gj30qse2lPIiBA5zx8YTxgBXzsrjTAZDZD",
     "Content-Type": "application/json"
    },
    body: JSON.stringify({
     messaging_product: "whatsapp",
     to: phone,
-type: "template",
-template: {
-  name: "hello_world",
-  language: {
-    code: "en_US"
-  }
+type: "text",
+text: {
+  body: "Hola 👋 Bienvenido a Las Crepes de París 🥞"
 }
    })
   }
  );
+    return res.sendStatus(200);
 
 }
 
 
-const value = message.entry?.[0]?.changes?.[0]?.value;
-
-const value = message.entry?.[0]?.changes?.[0]?.value;
-
-if (!value || !value.messages) {
-  console.log("No hay mensajes de usuario");
-  return res.sendStatus(200);
-}
-
-const phone = value.messages[0].from;
-const text = value.messages[0].text?.body;
-
-console.log("PHONE:", phone);
-console.log("MENSAJE:", text);
-    console.log("PHONE:", phone);
-
-if (phone) {
-
- await fetch(
-  "https://graph.facebook.com/v18.0/106606468991597/messages",
-  {
-   method: "POST",
-   headers: {
-    "Authorization": "Bearer EAAKig65Oi0EBQyZA2CAELm32ItrBEFxuHBmIa5A3CDITOQN54Q51LnMKto33hHjiV9UQbKZCuY9WmeLSNcoZChhgs3TtcjVfZAZCnz4u6YzvXl8igqTIk2716yyrJxVhjwGyVEi1nXZCYN9SZCFAt3ZCs0tOfm1NPHVrOLRHoUTvFhhPtruVGStAsfFzFtqTw4YB75zpqOdPnJBoWTtdwzlYDTUexMhGh73SyjzPbIbYSL2ptb4Ll1934MnRhtgqftd80Hn7e5SLu9Q5h5oEGQJ2JAZDZD",
-    "Content-Type": "application/json"
-   },
-   body: JSON.stringify({
-    messaging_product: "whatsapp",
-    to: phone,
-    type: "template",
-    template: {
-     name: "hello_world",
-     language: {
-      code: "en_US"
-     }
-    }
-   })
   }
  );
 
