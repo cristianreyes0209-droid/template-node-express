@@ -176,11 +176,7 @@ const text = messageData.text?.body || "mensaje";
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
-    const phone = value?.messages?.[0]?.from;
-const text = value?.messages?.[0]?.text?.body || "mensaje";
 
-console.log("PHONE:", phone);
-console.log("TEXT:", text);
 if (!phone) {
   console.log("Evento sin telefono");
   return res.sendStatus(200);
