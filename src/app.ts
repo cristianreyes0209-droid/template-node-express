@@ -166,7 +166,7 @@ const entry = message.entry?.[0];
 const change = entry?.changes?.[0];
 const value = change?.value;
     const phone = value?.messages?.[0]?.from;
-const text = value?.messages?.[0]?.text?.body;
+const text = value?.messages?.[0]?.text?.body || "mensaje";
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
