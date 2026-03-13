@@ -155,15 +155,12 @@ export const initApp = async (
 });
 app.post('/whatsapp', async (req, res) => {
 
-  const message = req.body;
-    console.log("PAYLOAD COMPLETO:", JSON.stringify(message, null, 2));
+const message = req.body;
 
-  console.log("Mensaje recibido de WhatsApp:", message);
-    console.log(JSON.stringify(message, null, 2));
-
- const message = req.body;
+console.log("PAYLOAD COMPLETO:", JSON.stringify(message, null, 2));
 
 console.log("Mensaje recibido de WhatsApp:", message);
+console.log(JSON.stringify(message, null, 2));
 
 const change = message.entry?.[0]?.changes?.[0];
 const value = change?.value;
