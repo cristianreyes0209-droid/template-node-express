@@ -201,17 +201,12 @@ text: {
   body: "Hola 👋 Bienvenido a Las Crepes de París 🥞"
 }
    })
-  }
- );
+  } );
     return res.sendStatus(200);
-
 }
+ } );
 
 
-  }
- );
-
-}
 
     app.get('/abort-signal-propagation', async (req, res) => {
         for (let i = 0; i < 10; i++) {
