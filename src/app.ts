@@ -199,7 +199,7 @@ const lower = text.toLowerCase();
   await fetch("https://graph.facebook.com/v18.0/1066064689915977/messages", {
     method: "POST",
     headers: {
-      "Authorization": "Bearer TU_TOKEN_COMPLETO",
+      "Authorization": "EAAKig65Oi0EBQwzWgyG6e6J3ti872x2flj0fVAXJJxl6k1Tj5euepZAtAZAapfHOR8HC2xfAvte0z6fJMscDY5BsNmlveXpBQak40V4KI97bYIXWXZCqRoRo0VZBLWqPwQNoqaA3JSvPSkxX6cpi1q3E8LRbP63ETEIdHxAOuvk3zcdLVCJ49dXDATarc4X3Yfmp3ajetKZB4ANbZBZCzx1hc8ZClbZBrEqZCsJwAliVGQPsnB91IcBOT8vJkncrZAitnBdoZBZCdAwCRQpgV6FIl0Vh28AZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
