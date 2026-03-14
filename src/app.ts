@@ -183,7 +183,7 @@ let replyMessage = "";
 const parsedItems = parseOrder(text);
 const lower = text.toLowerCase();
 
-if (lower === "ya" || lower === "listo") {
+if (lower.trim().startsWith("ya") || lower.trim().startsWith("listo")) {
   replyMessage = "Perfecto 👍 ¿Cómo es tu nombre?";
 }
 
