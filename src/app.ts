@@ -211,7 +211,7 @@ body: "Hola 👋 Bienvenido a Las Crepes de París 🥞"
 const data = await response.json();
 console.log("RESPUESTA META:", data);
 
-
+});
     app.get('/abort-signal-propagation', async (req, res) => {
         for (let i = 0; i < 10; i++) {
             // simulate some work
