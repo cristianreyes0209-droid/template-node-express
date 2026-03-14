@@ -213,6 +213,7 @@ const lower = text.toLowerCase();
 }
 
 if (lower.startsWith("ya") || lower.startsWith("listo")) {
+    updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto 👍 ¿Cómo es tu nombre?";
     updateOrderStep(phone, "esperando_nombre");
 
