@@ -189,25 +189,27 @@ res.sendStatus(200);
 // 3) Enviar el mensaje
 console.log("ENVIANDO MENSAJE A:", phone);
 
-await fetch(
-  "https://graph.facebook.com/v18.0/106606468991597/messages",
-  {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer  EAAKig65Oi0EBQ4FvtZCLlQ0O1oE7aZCCtsNNXUvJ6kZBgQrBKdAvkRqADBa4DfP6CGTaZBZBmepKodICwZCHon2PmUdvjUcDdasz22hlOAV7jpIpSQtYwBbMOtNpNnP52sa5sydUH5nTF0O9N8tdZCgnwvE30pMnZBffjy1xF9ecR4vMCSGClEqAnv7obj8VhFOA7RKEhIzwwEyaoRqFA36e5XAJxds2yrKw07ESeuPxDKCShXYLd9hPnZCZC4gj30qse2lPIiBA5zx8YTxgBXzsrjTAZDZD
-",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "text",
-      text: {
-        body: "Hola 👋 Bienvenido a Las Crepes de París 🥞"
-      }
-    })
-  }
+const response = await fetch(
+"https://graph.facebook.com/v18.0/106606468991597/messages",
+{
+method: "POST",
+headers: {
+"Authorization": "Bearer EAAKig65Oi0EBQyXEp4UUtqB7wPvrqwJL3Vwq59vAHq3j7BmQFeZBzMyUPL8s09qJZA7LKCZA1uih0UPI3RF1Rw3ZCEEPUQhoyt65j6fFsuPQ2wcYGy8WbCwWa7imisJj6NS7hO8ZBK68pGbKiHrU2azwmCPQ0H82Ng4G6dsMJe4ZAy6DXZBqk5O1klTRGuJZCxFzB539xab1N8ka6OoZC3lVI2ZAqz0DDNssQr9PQCQ71LbEop0TZBZBbAzKwZBcvZBWQHdI8QR00SDWer8a99Nn2RBYxZCUBEZD",
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+messaging_product: "whatsapp",
+to: phone,
+type: "text",
+text: {
+body: "Hola 👋 Bienvenido a Las Crepes de París 🥞"
+}
+})
+}
 );
+
+const data = await response.json();
+console.log("RESPUESTA META:", data);
 
 
     app.get('/abort-signal-propagation', async (req, res) => {
