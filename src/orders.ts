@@ -3,6 +3,14 @@ type OrderItem = {
   cantidad: number;
 };
 
+type OrderStep =
+  | "armando_pedido"
+  | "esperando_nombre"
+  | "esperando_tipo_entrega"
+  | "esperando_direccion"
+  | "esperando_pago"
+  | "confirmado";
+
 type CustomerOrder = {
   telefono: string;
   nombre?: string;
@@ -10,7 +18,7 @@ type CustomerOrder = {
   direccion?: string;
   formaPago?: string;
   items: OrderItem[];
-  step: "inicio" | "nombre" | "tipo_entrega" | "direccion" | "pago" | "confirmado";
+  step: OrderStep;
 };
 
 const orders: Record<string, CustomerOrder> = {};
@@ -24,7 +32,7 @@ export function createOrUpdateOrder(phone: string, items: OrderItem[]) {
     orders[phone] = {
       telefono: phone,
       items: [],
-      step: "nombre"
+      step: "armando_pedido"
     };
   }
 
@@ -32,7 +40,7 @@ export function createOrUpdateOrder(phone: string, items: OrderItem[]) {
   return orders[phone];
 }
 
-export function updateOrderStep(phone: string, step: CustomerOrder["step"]) {
+export function updateOrderStep(phone: string, step: OrderStep) {
   if (orders[phone]) {
     orders[phone].step = step;
   }
