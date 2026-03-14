@@ -186,10 +186,10 @@ const lower = text.toLowerCase();
 if (lower.startsWith("ya") || lower.startsWith("listo")) {
   replyMessage = "Perfecto 👍 ¿Cómo es tu nombre?";
 
-  await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+  await fetch(`https://graph.facebook.com/v18.0/${1066064689915977}/messages`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+      Authorization: `Bearer ${EAAKig65Oi0EBQ6ADTcNQ32SnV39CbA9l3ddn2ku66o0cPPCoBRae4BJRVzoLGEaVIU3ZB3Mdic5p3NW7ZB6d1yLVJsXKZA0cj1unQtZBKZB5zqURFRN9qGMWMOooOZCW0bgEUA61qnzrTkFoOJAofaKGQY5egVTMqRIZAvHiPJylZBukaQFZBZAGtCZAWxIB47tTdPoIdQQpvouN23yGeD0ZABnrg4lm3Nsmra3NUuoFHZAfDffZAtKLlAhqRzZBm9s6mQU9ohzi7AoYACX5soK3EGfXrEAVwZDZD}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
