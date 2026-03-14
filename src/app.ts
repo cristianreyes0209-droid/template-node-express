@@ -14,6 +14,8 @@ import compression from 'compression';
 import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
+import { menu } from './menu';
+import { parseOrder } from './parser';
 
 export type App = {
     requestListener: RequestListener;
@@ -176,6 +178,53 @@ const text = messageData.text?.body || "mensaje";
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
+    const parsedItems = parseOrder(text);
+
+let replyMessage = "";
+
+if (text.toLowerCase().includes("hola")) {
+  replyMessage = `Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞
+
+Por aquí puedes pedir para:
+🚚 Domicilio
+🛍️ Recoger
+
+Nuestras crepes favoritas hoy son:
+
+🔥 París
+🌽 Desgranada mixta
+🌶 Mexicana
+🍍 Hawaiana
+
+También tenemos dulces deliciosas:
+🍫 Nutella
+🥭 Tropinutella
+🍍 Tropical
+
+Puedes escribir tu pedido así:
+"Quiero una mexicana y una nutella"`;
+} else if (parsedItems.length > 0) {
+  const resumen = parsedItems
+    .map((item: any) => `• ${item.cantidad} ${item.producto}`)
+    .join("\n");
+
+  replyMessage = `Perfecto 👌
+
+Estoy registrando:
+
+${resumen}
+
+¿Deseas agregar otra crepe, bebida o topping?`;
+} else {
+  replyMessage = `Con gusto te ayudo 😊
+
+Puedes pedirme una crepe así:
+• 1 París
+• 2 Hawaianas
+• 1 Nutella y 1 Tropical
+
+También puedo ayudarte con domicilio o recoger.`;
+}
 
 // 1) Si no hay teléfono, terminar aquí
 if (!phone) {
@@ -203,7 +252,7 @@ messaging_product: "whatsapp",
 to: phone,
 type: "text",
 text: {
-body: "Hola 👋 Bienvenido a Las Crepes de París 🥞"
+  body: replyMessage
 }
 })
 }
