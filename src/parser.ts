@@ -1,59 +1,47 @@
-export const menu = {
-  productos: [
-    {
-      id: "paris",
-      nombre: "París",
-      aliases: ["paris", "parís", "crepe paris"]
-    },
-    {
-      id: "desgranada_mixta",
-      nombre: "Desgranada mixta",
-      aliases: ["desgranada mixta", "mixta", "desgranada"]
-    },
-    {
-      id: "mexicana",
-      nombre: "Mexicana",
-      aliases: ["mexicana"]
-    },
-    {
-      id: "hawaiana",
-      nombre: "Hawaiana",
-      aliases: ["hawaiana"]
-    },
-    {
-      id: "pollo",
-      nombre: "Pollo",
-      aliases: ["pollo", "crepe de pollo"]
-    },
-    {
-      id: "pollo_pina",
-      nombre: "Pollo y piña",
-      aliases: ["pollo y piña", "pollo pina", "pollo piña"]
-    },
-    {
-      id: "pollo_champinones",
-      nombre: "Pollo champiñones",
-      aliases: ["pollo champiñones", "pollo champinones"]
-    },
-    {
-      id: "carne",
-      nombre: "Carne",
-      aliases: ["carne", "crepe de carne"]
-    },
-    {
-      id: "nutella",
-      nombre: "Nutella",
-      aliases: ["nutella"]
-    },
-    {
-      id: "tropinutella",
-      nombre: "Tropinutella",
-      aliases: ["tropinutella"]
-    },
-    {
-      id: "tropical",
-      nombre: "Tropical",
-      aliases: ["tropical"]
+import { menu } from "./menu";
+
+export function parseOrder(text: string) {
+
+  const lower = text.toLowerCase();
+
+  const numbers: any = {
+    "1":1,"2":2,"3":3,"4":4,"5":5,
+    "un":1,"una":1,"uno":1,
+    "dos":2,
+    "tres":3,
+    "cuatro":4,
+    "cinco":5
+  };
+
+  const items:any = [];
+
+  for (const product of menu.productos) {
+
+    for (const alias of product.aliases) {
+
+      if (lower.includes(alias)) {
+
+        let qty = 1;
+
+        for (const key in numbers) {
+
+          if (lower.includes(key + " " + alias)) {
+            qty = numbers[key];
+          }
+
+        }
+
+        items.push({
+          producto: product.nombre,
+          cantidad: qty
+        });
+
+      }
+
     }
-  ]
-};
+
+  }
+
+  return items;
+
+}
