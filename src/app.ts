@@ -219,7 +219,7 @@ if (lower.startsWith("ya") || lower.startsWith("listo")) {
   await fetch(`https://graph.facebook.com/v18.0/1066064689915977/messages`, {
     method: "POST",
     headers: {
-      Authorization: "Bearer EAAKig65Oi0EBQ6ADTcNQ32SnV39CbA9l3ddn2ku66o0cPPCoBRae4BJRVzoLGEaVIU3ZB3Mdic5p3NW7ZB6d1yLVJsXKZA0cj1unQtZBKZB5zqURFRN9qGMWMOooOZCW0bgEUA61qnzrTkFoOJAofaKGQY5egVTMqRIZAvHiPJylZBukaQFZBZAGtCZAWxIB47tTdPoIdQQpvouN23yGeD0ZABnrg4lm3Nsmra3NUuoFHZAfDffZAtKLlAhqRzZBm9s6mQU9ohzi7AoYACX5soK3EGfXrEAVwZDZD",
+      Authorization: "BearerEAAKig65Oi0EBQwzWgyG6e6J3ti872x2flj0fVAXJJxl6k1Tj5euepZAtAZAapfHOR8HC2xfAvte0z6fJMscDY5BsNmlveXpBQak40V4KI97bYIXWXZCqRoRo0VZBLWqPwQNoqaA3JSvPSkxX6cpi1q3E8LRbP63ETEIdHxAOuvk3zcdLVCJ49dXDATarc4X3Yfmp3ajetKZB4ANbZBZCzx1hc8ZClbZBrEqZCsJwAliVGQPsnB91IcBOT8vJkncrZAitnBdoZBZCdAwCRQpgV6FIl0Vh28AZDZD ",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -312,7 +312,7 @@ const response = await fetch(
 {
 method: "POST",
 headers: {
-  "Authorization": "Bearer EAAKig65Oi0EBQ6ADTcNQ32SnV39CbA9l3ddn2ku66o0cPPCoBRae4BJRVzoLGEaVIU3ZB3Mdic5p3NW7ZB6d1yLVJsXKZA0cj1unQtZBKZB5zqURFRN9qGMWMOooOZCW0bgEUA61qnzrTkFoOJAofaKGQY5egVTMqRIZAvHiPJylZBukaQFZBZAGtCZAWxIB47tTdPoIdQQpvouN23yGeD0ZABnrg4lm3Nsmra3NUuoFHZAfDffZAtKLlAhqRzZBm9s6mQU9ohzi7AoYACX5soK3EGfXrEAVwZDZD",
+  "Authorization": "Bearer EAAKig65Oi0EBQwzWgyG6e6J3ti872x2flj0fVAXJJxl6k1Tj5euepZAtAZAapfHOR8HC2xfAvte0z6fJMscDY5BsNmlveXpBQak40V4KI97bYIXWXZCqRoRo0VZBLWqPwQNoqaA3JSvPSkxX6cpi1q3E8LRbP63ETEIdHxAOuvk3zcdLVCJ49dXDATarc4X3Yfmp3ajetKZB4ANbZBZCzx1hc8ZClbZBrEqZCsJwAliVGQPsnB91IcBOT8vJkncrZAitnBdoZBZCdAwCRQpgV6FIl0Vh28AZDZD",
   "Content-Type": "application/json"
 },
 body: JSON.stringify({
