@@ -16,7 +16,12 @@ import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
 import { parseOrder } from './parser';
-import { createOrUpdateOrder, getOrder } from "./orders";
+import {
+  createOrUpdateOrder,
+  getOrder,
+  updateOrderName,
+  updateOrderStep
+} from "./orders";
 
 export type App = {
     requestListener: RequestListener;
@@ -176,15 +181,40 @@ if (!messageData) {
 
 const phone = messageData.from;
 const text = messageData.text?.body || "mensaje";
+    const currentOrder = getOrder(phone);
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
 let replyMessage = "";
 const parsedItems = parseOrder(text);
 const lower = text.toLowerCase();
+    if (currentOrder?.step === "esperando_nombre") {
+  updateOrderName(phone, text);
+  updateOrderStep(phone, "esperando_tipo_entrega");
+
+  replyMessage = `Mucho gusto ${text} 😊
+
+¿Tu pedido es para domicilio 🚚 o recoger 🛍?`;
+
+  await fetch("https://graph.facebook.com/v18.0/1066064689915977/messages", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer TU_TOKEN_COMPLETO",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: phone,
+      text: { body: replyMessage }
+    })
+  });
+
+  return res.sendStatus(200);
+}
 
 if (lower.startsWith("ya") || lower.startsWith("listo")) {
   replyMessage = "Perfecto 👍 ¿Cómo es tu nombre?";
+    updateOrderStep(phone, "esperando_nombre");
 
   await fetch(`https://graph.facebook.com/v18.0/1066064689915977/messages`, {
     method: "POST",
