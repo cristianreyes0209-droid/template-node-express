@@ -181,10 +181,13 @@ console.log("PHONE:", phone);
 console.log("TEXT:", text);
     let replyMessage = "";
     const parsedItems = parseOrder(text);
-    const lower = text.toLowerCase();
+const lower = text.toLowerCase();
 
 if (lower.includes("ya") || lower.includes("listo")) {
   replyMessage = "Perfecto 👍 ¿Cómo es tu nombre?";
+  
+  await sendWhatsAppMessage(phone, replyMessage);
+  return res.sendStatus(200);
 }
     if (parsedItems.length > 0) {
 
