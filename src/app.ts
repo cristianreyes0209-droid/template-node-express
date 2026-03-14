@@ -183,8 +183,23 @@ let replyMessage = "";
 const parsedItems = parseOrder(text);
 const lower = text.toLowerCase();
 
-if (lower.trim().startsWith("ya") || lower.trim().startsWith("listo")) {
+if (lower.startsWith("ya") || lower.startsWith("listo")) {
   replyMessage = "Perfecto 👍 ¿Cómo es tu nombre?";
+
+  await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: phone,
+      text: { body: replyMessage }
+    })
+  });
+
+  return res.sendStatus(200);
 }
 
 if (!replyMessage && parsedItems.length > 0) {
