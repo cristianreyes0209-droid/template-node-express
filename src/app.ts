@@ -181,6 +181,11 @@ console.log("PHONE:", phone);
 console.log("TEXT:", text);
     let replyMessage = "";
     const parsedItems = parseOrder(text);
+    const lower = text.toLowerCase();
+
+if (lower.includes("ya") || lower.includes("listo")) {
+  replyMessage = "Perfecto 👍 ¿Cómo es tu nombre?";
+}
     if (parsedItems.length > 0) {
 
   const order = createOrUpdateOrder(phone, parsedItems);
