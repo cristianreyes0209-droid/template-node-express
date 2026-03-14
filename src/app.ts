@@ -16,6 +16,7 @@ import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
 import { parseOrder } from './parser';
+import { createOrUpdateOrder, getOrder } from "./orders";
 
 export type App = {
     requestListener: RequestListener;
@@ -178,9 +179,27 @@ const text = messageData.text?.body || "mensaje";
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
+    let replyMessage = "";
     const parsedItems = parseOrder(text);
+    if (parsedItems.length > 0) {
 
-let replyMessage = "";
+  const order = createOrUpdateOrder(phone, parsedItems);
+
+  const resumen = order.items
+    .map((item: any) => `• ${item.cantidad} ${item.producto}`)
+    .join("\n");
+
+replyMessage = `Perfecto 👌
+
+Estoy registrando:
+
+${resumen}
+
+¿Cómo es tu nombre?`;
+
+}
+
+
 
 if (text.toLowerCase().includes("hola")) {
   replyMessage = `Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞
