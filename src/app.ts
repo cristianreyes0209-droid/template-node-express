@@ -183,10 +183,10 @@ console.log("TEXT:", text);
     const parsedItems = parseOrder(text);
 const lower = text.toLowerCase();
 
-if (lower.includes("ya") || lower.includes("listo")) {
-  replyMessage = "Perfecto 👍 ¿Cómo es tu nombre?";
-  
-  await sendWhatsAppMessage(phone, replyMessage);
+if (lower === "ya" || lower === "listo") {
+  const message = "Perfecto 👍 ¿Cómo es tu nombre?";
+
+  await sendWhatsAppMessage(phone, message);
   return res.sendStatus(200);
 }
     if (parsedItems.length > 0) {
