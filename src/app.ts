@@ -179,32 +179,28 @@ const text = messageData.text?.body || "mensaje";
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
-    let replyMessage = "";
-    const parsedItems = parseOrder(text);
+let replyMessage = "";
+const parsedItems = parseOrder(text);
 const lower = text.toLowerCase();
 
 if (lower === "ya" || lower === "listo") {
-  const message = "Perfecto 👍 ¿Cómo es tu nombre?";
-
-  await sendWhatsAppMessage(phone, message);
-  return res.sendStatus(200);
+  replyMessage = "Perfecto 👍 ¿Cómo es tu nombre?";
 }
-    if (parsedItems.length > 0) {
 
+if (!replyMessage && parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
 
   const resumen = order.items
     .map((item: any) => `• ${item.cantidad} ${item.producto}`)
     .join("\n");
 
-replyMessage = `Perfecto 👌
+  replyMessage = `Perfecto 👌
 
 Estoy registrando:
 
 ${resumen}
 
-¿Cómo es tu nombre?`;
-
+¿Deseas agregar otra crepe, bebida o topping?`;
 }
 
 
