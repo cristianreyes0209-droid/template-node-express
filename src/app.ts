@@ -194,8 +194,8 @@ const response = await fetch(
 {
 method: "POST",
 headers: {
-"Authorization": "Bearer EAAKig65Oi0EBQyXEp4UUtqB7wPvrqwJL3Vwq59vAHq3j7BmQFeZBzMyUPL8s09qJZA7LKCZA1uih0UPI3RF1Rw3ZCEEPUQhoyt65j6fFsuPQ2wcYGy8WbCwWa7imisJj6NS7hO8ZBK68pGbKiHrU2azwmCPQ0H82Ng4G6dsMJe4ZAy6DXZBqk5O1klTRGuJZCxFzB539xab1N8ka6OoZC3lVI2ZAqz0DDNssQr9PQCQ71LbEop0TZBZBbAzKwZBcvZBWQHdI8QR00SDWer8a99Nn2RBYxZCUBEZD",
-"Content-Type": "application/json"
+  "Authorization": "Bearer EAAKig65Oi0EBQyXEp4UUtqB7wPvrqwJL3Vwq59vAHq3j7BmQFeZBzMyUPL8s09qJZA7LKCZA1uih0UPI3RF1Rw3ZCEEPUQhoyt65j6fFsuPQ2wcYGy8WbCwWa7imisJj6NS7hO8ZBK68pGbKiHrU2azwmCPQ0H82Ng4G6dsMJe4ZAy6DXZBqk5O1klTRGuJZCxFzB539xab1N8ka6OoZC3lVI2ZAqz0DDNssQr9PQCQ71LbEop0TZBZBbAzKwZBcvZBWQHdI8QR00SDWer8a99Nn2RBYxZCUBEZD",
+  "Content-Type": "application/json"
 },
 body: JSON.stringify({
 messaging_product: "whatsapp",
