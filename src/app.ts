@@ -189,6 +189,7 @@ res.sendStatus(200);
 // 3) Enviar el mensaje
 console.log("ENVIANDO MENSAJE A:", phone);
 
+try {
 const response = await fetch(
 "https://graph.facebook.com/v18.0/106606468991597/messages",
 {
@@ -209,7 +210,11 @@ body: "Hola 👋 Bienvenido a Las Crepes de París 🥞"
 );
 
 const data = await response.json();
+
 console.log("RESPUESTA META:", data);
+    } catch (error) {
+  console.log("ERROR EN FETCH:", error);
+}
 
 });
     app.get('/abort-signal-propagation', async (req, res) => {
