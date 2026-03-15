@@ -229,7 +229,7 @@ if (currentOrder?.step === "esperando_tipo_entrega") {
 
   return res.sendStatus(200);
 }
-
+}
 if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto. ¿Cómo es tu nombre?";
