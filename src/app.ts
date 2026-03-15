@@ -193,7 +193,7 @@ const lower = text.toLowerCase();
   updateOrderName(phone, text);
   updateOrderStep(phone, "esperando_tipo_entrega");
 
-replyMessage = "Mucho gusto " + text + " 😊\n\n¿Tu pedido es para domicilio 🚚 o recoger 🛍?";
+replyMessage = "Mucho gusto " + text + ".\n\n¿Tu pedido es para domicilio o recoger?";
 }
 
 if (currentOrder?.step === "esperando_tipo_entrega") {
@@ -202,13 +202,13 @@ if (currentOrder?.step === "esperando_tipo_entrega") {
 
     updateOrderStep(phone, "esperando_direccion");
 
-    replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+   replyMessage = "Perfecto.\n\n¿Me compartes tu dirección por favor?";
 
   }  else if (lower.includes("recoger") || lower.includes("llevar")) {
 
     updateOrderStep(phone, "pedido_confirmado");
 
-    replyMessage = "Perfecto 👍\n\nTu pedido estará listo para recoger. Te avisaremos cuando esté listo 😊";
+    replyMessage = "Perfecto.\n\nTu pedido estará listo para recoger. Te avisaremos cuando esté listo.";
 
   }
 
