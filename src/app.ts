@@ -191,7 +191,6 @@ console.log("TEXT:", text);
   updateOrderStep(phone, "esperando_tipo_entrega");
 
 replyMessage = `Mucho gusto ${text} 😊
-
 ¿Tu pedido es para domicilio 🚚 o recoger 🛍?`;
 
   await fetch("https://graph.facebook.com/v18.0/1066064689915977/messages", {
