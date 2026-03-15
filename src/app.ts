@@ -217,7 +217,7 @@ if (currentOrder?.step === "esperando_tipo_entrega") {
   await fetch("https://graph.facebook.com/v18.0/1066064689915977/messages", {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBQwzWgyG6e6J3ti872x2flj0fVAXJJxl6k1Tj5euepZAtAZAapfHOR8HC2xfAvte0z6fJMscDY5BsNmlveXpBQak40V4KI97bYIXWXZCqRoRo0VZBLWqPwQNoqaA3JSvPSkxX6cpi1q3E8LRbP63ETEIdHxAOuvk3zcdLVCJ49dXDATarc4X3Yfmp3ajetKZB4ANbZBZCzx1hc8ZClbZBrEqZCsJwAliVGQPsnB91IcBOT8vJkncrZAitnBdoZBZCdAwCRQpgV6FIl0Vh28AZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBQ7HKBZAHZBZCJoQVZCKoK1z5fcC9V73nfVZBs7J4W2W4ZBkxeIvUc4eTRiZA7EqxioKGD4df5fRZBp1SIz97AU1G5WfmLflHZCypE5yoSsZAgZCTl52SUweH1DWuAIkYVDZBLt7vZBOXoqrvJ2z0dyoHOnzvkMvt1b74eTUtaIUv6Ov2GqyZCFR5AuKT8lynEVSHMCjoJy6NX2O69Cq8orBQ6twc2CNejk5eAZBjUdCCEP6WnZBZCn0WfQDglR6H9ZARXpMtc5lG8JVg4ZCFqU0RQZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -231,14 +231,13 @@ if (currentOrder?.step === "esperando_tipo_entrega") {
 }
 
 if (lower.startsWith("ya") || lower.startsWith("listo")) {
-    updateOrderStep(phone, "esperando_nombre");
-  replyMessage = "Perfecto 👍 ¿Cómo es tu nombre?";
-    updateOrderStep(phone, "esperando_nombre");
+  updateOrderStep(phone, "esperando_nombre");
+  replyMessage = "Perfecto. ¿Cómo es tu nombre?";
 
-  await fetch(`https://graph.facebook.com/v18.0/1066064689915977/messages`, {
+  await fetch("https://graph.facebook.com/v18.0/1066064689915977/messages", {
     method: "POST",
     headers: {
-      Authorization: "Bearer EAAKig65Oi0EBQwzWgyG6e6J3ti872x2flj0fVAXJJxl6k1Tj5euepZAtAZAapfHOR8HC2xfAvte0z6fJMscDY5BsNmlveXpBQak40V4KI97bYIXWXZCqRoRo0VZBLWqPwQNoqaA3JSvPSkxX6cpi1q3E8LRbP63ETEIdHxAOuvk3zcdLVCJ49dXDATarc4X3Yfmp3ajetKZB4ANbZBZCzx1hc8ZClbZBrEqZCsJwAliVGQPsnB91IcBOT8vJkncrZAitnBdoZBZCdAwCRQpgV6FIl0Vh28AZDZD ",
+      "Authorization": "Bearer TU_TOKEN_COMPLETO",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -331,7 +330,7 @@ const response = await fetch(
 {
 method: "POST",
 headers: {
-  "Authorization": "Bearer EAAKig65Oi0EBQwzWgyG6e6J3ti872x2flj0fVAXJJxl6k1Tj5euepZAtAZAapfHOR8HC2xfAvte0z6fJMscDY5BsNmlveXpBQak40V4KI97bYIXWXZCqRoRo0VZBLWqPwQNoqaA3JSvPSkxX6cpi1q3E8LRbP63ETEIdHxAOuvk3zcdLVCJ49dXDATarc4X3Yfmp3ajetKZB4ANbZBZCzx1hc8ZClbZBrEqZCsJwAliVGQPsnB91IcBOT8vJkncrZAitnBdoZBZCdAwCRQpgV6FIl0Vh28AZDZD",
+  "Authorization": "Bearer EAAKig65Oi0EBQ7HKBZAHZBZCJoQVZCKoK1z5fcC9V73nfVZBs7J4W2W4ZBkxeIvUc4eTRiZA7EqxioKGD4df5fRZBp1SIz97AU1G5WfmLflHZCypE5yoSsZAgZCTl52SUweH1DWuAIkYVDZBLt7vZBOXoqrvJ2z0dyoHOnzvkMvt1b74eTUtaIUv6Ov2GqyZCFR5AuKT8lynEVSHMCjoJy6NX2O69Cq8orBQ6twc2CNejk5eAZBjUdCCEP6WnZBZCn0WfQDglR6H9ZARXpMtc5lG8JVg4ZCFqU0RQZDZD",
   "Content-Type": "application/json"
 },
 body: JSON.stringify({
