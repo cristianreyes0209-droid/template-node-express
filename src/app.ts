@@ -229,7 +229,7 @@ if (currentOrder?.step === "esperando_tipo_entrega") {
 
   return res.sendStatus(200);
 }
-}
+
 if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto. ¿Cómo es tu nombre?";
@@ -324,7 +324,6 @@ res.sendStatus(200);
 // 3) Enviar el mensaje
 console.log("ENVIANDO MENSAJE A:", phone);
 
-try {
 const response = await fetch(
 "https://graph.facebook.com/v18.0/1066064689915977/messages",
 {
@@ -347,9 +346,7 @@ text: {
 const data = await response.json();
 
 console.log("RESPUESTA META:", data);
-    } catch (error) {
-  console.log("ERROR EN FETCH:", error);
-}
+
 
 });
     app.get('/abort-signal-propagation', async (req, res) => {
