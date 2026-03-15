@@ -185,6 +185,9 @@ const text = messageData.text?.body || "mensaje";
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
+    let replyMessage = "";
+const parsedItems = parseOrder(text);
+const lower = text.toLowerCase();
      if (currentOrder?.step === "esperando_nombre") {
    
   updateOrderName(phone, text);
