@@ -185,21 +185,19 @@ const text = messageData.text?.body || "mensaje";
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
-let replyMessage = "";
-const parsedItems = parseOrder(text);
-const lower = text.toLowerCase();
-    if (currentOrder?.step === "esperando_nombre") {
+     if (currentOrder?.step === "esperando_nombre") {
+   
   updateOrderName(phone, text);
   updateOrderStep(phone, "esperando_tipo_entrega");
 
-  replyMessage = `Mucho gusto ${text} 😊
+replyMessage = `Mucho gusto ${text} 😊
 
 ¿Tu pedido es para domicilio 🚚 o recoger 🛍?`;
 
   await fetch("https://graph.facebook.com/v18.0/1066064689915977/messages", {
     method: "POST",
     headers: {
-      "Authorization": "EAAKig65Oi0EBQwzWgyG6e6J3ti872x2flj0fVAXJJxl6k1Tj5euepZAtAZAapfHOR8HC2xfAvte0z6fJMscDY5BsNmlveXpBQak40V4KI97bYIXWXZCqRoRo0VZBLWqPwQNoqaA3JSvPSkxX6cpi1q3E8LRbP63ETEIdHxAOuvk3zcdLVCJ49dXDATarc4X3Yfmp3ajetKZB4ANbZBZCzx1hc8ZClbZBrEqZCsJwAliVGQPsnB91IcBOT8vJkncrZAitnBdoZBZCdAwCRQpgV6FIl0Vh28AZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBQwzWgyG6e6J3ti872x2flj0fVAXJJxl6k1Tj5euepZAtAZAapfHOR8HC2xfAvte0z6fJMscDY5BsNmlveXpBQak40V4KI97bYIXWXZCqRoRo0VZBLWqPwQNoqaA3JSvPSkxX6cpi1q3E8LRbP63ETEIdHxAOuvk3zcdLVCJ49dXDATarc4X3Yfmp3ajetKZB4ANbZBZCzx1hc8ZClbZBrEqZCsJwAliVGQPsnB91IcBOT8vJkncrZAitnBdoZBZCdAwCRQpgV6FIl0Vh28AZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -220,7 +218,7 @@ if (lower.startsWith("ya") || lower.startsWith("listo")) {
   await fetch(`https://graph.facebook.com/v18.0/1066064689915977/messages`, {
     method: "POST",
     headers: {
-      Authorization: "BearerEAAKig65Oi0EBQwzWgyG6e6J3ti872x2flj0fVAXJJxl6k1Tj5euepZAtAZAapfHOR8HC2xfAvte0z6fJMscDY5BsNmlveXpBQak40V4KI97bYIXWXZCqRoRo0VZBLWqPwQNoqaA3JSvPSkxX6cpi1q3E8LRbP63ETEIdHxAOuvk3zcdLVCJ49dXDATarc4X3Yfmp3ajetKZB4ANbZBZCzx1hc8ZClbZBrEqZCsJwAliVGQPsnB91IcBOT8vJkncrZAitnBdoZBZCdAwCRQpgV6FIl0Vh28AZDZD ",
+      Authorization: "Bearer EAAKig65Oi0EBQwzWgyG6e6J3ti872x2flj0fVAXJJxl6k1Tj5euepZAtAZAapfHOR8HC2xfAvte0z6fJMscDY5BsNmlveXpBQak40V4KI97bYIXWXZCqRoRo0VZBLWqPwQNoqaA3JSvPSkxX6cpi1q3E8LRbP63ETEIdHxAOuvk3zcdLVCJ49dXDATarc4X3Yfmp3ajetKZB4ANbZBZCzx1hc8ZClbZBrEqZCsJwAliVGQPsnB91IcBOT8vJkncrZAitnBdoZBZCdAwCRQpgV6FIl0Vh28AZDZD ",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
