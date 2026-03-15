@@ -189,12 +189,33 @@ console.log("TEXT:", text);
 const parsedItems = parseOrder(text);
 const lower = text.toLowerCase();
      if (currentOrder?.step === "esperando_nombre") {
+    
    
   updateOrderName(phone, text);
   updateOrderStep(phone, "esperando_tipo_entrega");
 
 replyMessage = `Mucho gusto ${text} 😊
 ¿Tu pedido es para domicilio 🚚 o recoger 🛍?`;
+}
+
+if (currentOrder?.step === "esperando_tipo_entrega") {
+
+  if (lower.includes("domicilio")) {
+
+    updateOrderStep(phone, "esperando_direccion");
+
+    replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+
+  } 
+  else if (lower.includes("recoger") || lower.includes("llevar")) {
+
+    updateOrderStep(phone, "pedido_confirmado");
+
+    replyMessage = "Perfecto 👍\n\nTu pedido estará listo para recoger. Te avisaremos cuando esté listo 😊";
+
+  }
+
+}
 
   await fetch("https://graph.facebook.com/v18.0/1066064689915977/messages", {
     method: "POST",
