@@ -268,44 +268,44 @@ const response = await fetch(
       text: {
         body: replyMessage
       }
-    })
-  }
-);
+ if (lower.includes("hola")) {
+  replyMessage =
+    "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
+    "Por aquí puedes pedir para:\n" +
+    "🚚 Domicilio\n" +
+    "🛍️ Recoger\n\n" +
+    "Nuestras crepes favoritas hoy son:\n" +
+    "🔥 París\n" +
+    "🌽 Desgranada mixta\n" +
+    "🌶️ Mexicana\n" +
+    "🍍 Hawaiana\n\n" +
+    "También tenemos dulces deliciosas:\n" +
+    "🍫 Nutella\n" +
+    "🥭 Tropinutella\n" +
+    "🍍 Tropical\n\n" +
+    "Puedes escribir tu pedido así:\n" +
+    "\"Quiero una mexicana y una nutella\"";
+} else if (parsedItems.length > 0) {
+  const order = createOrUpdateOrder(phone, parsedItems);
 
-const data = await response.json();
-console.log("RESPUESTA META:", data);
+  const resumen = order.items
+    .map((item: any) => `• ${item.cantidad} ${item.producto}`)
+    .join("\n");
 
-return res.sendStatus(200);
+  replyMessage =
+    "Perfecto 👌\n\n" +
+    "Estoy registrando:\n\n" +
+    resumen +
+    "\n\n¿Deseas agregar otra crepe, bebida o topping?";
+} else {
+  replyMessage =
+    "Con gusto te ayudo 😊\n\n" +
+    "Puedes pedirme una crepe así:\n" +
+    "• 1 París\n" +
+    "• 2 Hawaianas\n" +
+    "• 1 Nutella y 1 Tropical\n\n" +
+    "También puedo ayudarte con domicilio o recoger.";
 }
-})
-}
-);
-
-const data = await response.json();
-
-console.log("RESPUESTA META:", data);
-
-
-}
-    app.get('/abort-signal-propagation', async (req, res) => {
-        for (let i = 0; i < 10; i++) {
-            // simulate some work
-            await new Promise((r) => setTimeout(r, 25));
-
-            if (req.abortSignal.aborted) throw new Error('aborted');
-        }
-
-        const usersRes = await fetch(
-            'https://jsonplaceholder.typicode.com/users',
-            {
-                signal: req.abortSignal,
-            }
-        );
-        if (usersRes.status !== 200) {
-            throw new Error(
-                `unexpected non-200 status code ${usersRes.status}`
-            );
-        }
         const users = await usersRes.json();
         res.json(users);
     });
