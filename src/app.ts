@@ -217,7 +217,7 @@ if (currentOrder?.step === "esperando_tipo_entrega") {
   await fetch("https://graph.facebook.com/v18.0/1066064689915977/messages", {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBQ7HKBZAHZBZCJoQVZCKoK1z5fcC9V73nfVZBs7J4W2W4ZBkxeIvUc4eTRiZA7EqxioKGD4df5fRZBp1SIz97AU1G5WfmLflHZCypE5yoSsZAgZCTl52SUweH1DWuAIkYVDZBLt7vZBOXoqrvJ2z0dyoHOnzvkMvt1b74eTUtaIUv6Ov2GqyZCFR5AuKT8lynEVSHMCjoJy6NX2O69Cq8orBQ6twc2CNejk5eAZBjUdCCEP6WnZBZCn0WfQDglR6H9ZARXpMtc5lG8JVg4ZCFqU0RQZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBQzKfdzGm20MmioXSEM2RNJf3AcszMfFUKpwn67NDuDVtGMnwMFsfewEZCpGH4KxL31JkmmZBswg0Dkq2JOB4HKOZBAsHiX9sZBRZCPjAzhYG0F9JpW5w8Dpj3lN6ZCdaxfeE64VntD1zCZAzZBsjPyN7W80Nshtm2AezzZBtOhgNWdkOZB8mi2fdZB9CLZApFZCvh2FUIz1uPMIOA1mmIzvKHsjYhkZB2ZC9TuPNlFJ3AGV9M4ZA4sk2fauXZAbU6e5eWYkOSZAJOouPudtqUOcgZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -237,7 +237,7 @@ if (lower.startsWith("ya") || lower.startsWith("listo")) {
   await fetch("https://graph.facebook.com/v18.0/1066064689915977/messages", {
     method: "POST",
     headers: {
-      "Authorization": "Bearer TU_TOKEN_COMPLETO",
+      "Authorization": "Bearer EAAKig65Oi0EBQzKfdzGm20MmioXSEM2RNJf3AcszMfFUKpwn67NDuDVtGMnwMFsfewEZCpGH4KxL31JkmmZBswg0Dkq2JOB4HKOZBAsHiX9sZBRZCPjAzhYG0F9JpW5w8Dpj3lN6ZCdaxfeE64VntD1zCZAzZBsjPyN7W80Nshtm2AezzZBtOhgNWdkOZB8mi2fdZB9CLZApFZCvh2FUIz1uPMIOA1mmIzvKHsjYhkZB2ZC9TuPNlFJ3AGV9M4ZA4sk2fauXZAbU6e5eWYkOSZAJOouPudtqUOcgZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -269,37 +269,33 @@ ${resumen}
 
 
 if (text.toLowerCase().includes("hola")) {
-  replyMessage = `Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞
-
-Por aquí puedes pedir para:
-🚚 Domicilio
-🛍️ Recoger
-
-Nuestras crepes favoritas hoy son:
-
-🔥 París
-🌽 Desgranada mixta
-🌶 Mexicana
-🍍 Hawaiana
-
-También tenemos dulces deliciosas:
-🍫 Nutella
-🥭 Tropinutella
-🍍 Tropical
-
-Puedes escribir tu pedido así:
-"Quiero una mexicana y una nutella"`;
+  replyMessage =
+    "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
+    "Por aquí puedes pedir para:\n" +
+    "🚚 Domicilio\n" +
+    "🛍️ Recoger\n\n" +
+    "Nuestras crepes favoritas hoy son:\n\n" +
+    "🔥 París\n" +
+    "🌽 Desgranada mixta\n" +
+    "🌶️ Mexicana\n" +
+    "🍍 Hawaiana\n\n" +
+    "También tenemos dulces deliciosas:\n" +
+    "🍫 Nutella\n" +
+    "🥭 Tropinutella\n" +
+    "🍍 Tropical\n\n" +
+    "Puedes escribir tu pedido así:\n" +
+    "\"Quiero una mexicana y una nutella\"";
 } else if (parsedItems.length > 0) {
   const resumen = parsedItems
     .map((item: any) => `• ${item.cantidad} ${item.producto}`)
     .join("\n");
 
-  replyMessage = `Perfecto 👌
-
-Estoy registrando:
-
-${resumen}
-
+  replyMessage =
+    "Perfecto 👌\n\n" +
+    "Estoy registrando:\n\n" +
+    resumen +
+    "\n\n¿Deseas agregar otra crepe, bebida o topping?";
+}
 ¿Deseas agregar otra crepe, bebida o topping?`;
 } else {
   replyMessage = `Con gusto te ayudo 😊
@@ -329,7 +325,7 @@ const response = await fetch(
 {
 method: "POST",
 headers: {
-  "Authorization": "Bearer EAAKig65Oi0EBQ7HKBZAHZBZCJoQVZCKoK1z5fcC9V73nfVZBs7J4W2W4ZBkxeIvUc4eTRiZA7EqxioKGD4df5fRZBp1SIz97AU1G5WfmLflHZCypE5yoSsZAgZCTl52SUweH1DWuAIkYVDZBLt7vZBOXoqrvJ2z0dyoHOnzvkMvt1b74eTUtaIUv6Ov2GqyZCFR5AuKT8lynEVSHMCjoJy6NX2O69Cq8orBQ6twc2CNejk5eAZBjUdCCEP6WnZBZCn0WfQDglR6H9ZARXpMtc5lG8JVg4ZCFqU0RQZDZD",
+  "Authorization": "Bearer EAAKig65Oi0EBQzKfdzGm20MmioXSEM2RNJf3AcszMfFUKpwn67NDuDVtGMnwMFsfewEZCpGH4KxL31JkmmZBswg0Dkq2JOB4HKOZBAsHiX9sZBRZCPjAzhYG0F9JpW5w8Dpj3lN6ZCdaxfeE64VntD1zCZAzZBsjPyN7W80Nshtm2AezzZBtOhgNWdkOZB8mi2fdZB9CLZApFZCvh2FUIz1uPMIOA1mmIzvKHsjYhkZB2ZC9TuPNlFJ3AGV9M4ZA4sk2fauXZAbU6e5eWYkOSZAJOouPudtqUOcgZDZD",
   "Content-Type": "application/json"
 },
 body: JSON.stringify({
