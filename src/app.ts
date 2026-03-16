@@ -181,100 +181,44 @@ if (!messageData) {
 
 const phone = messageData.from;
 const text = messageData.text?.body || "mensaje";
-    const currentOrder = getOrder(phone);
+const currentOrder = getOrder(phone);
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
-    let replyMessage = "";
+
+if (!phone) {
+  console.log("Evento sin telefono");
+  return res.sendStatus(200);
+}
+
+let replyMessage = "";
 const parsedItems = parseOrder(text);
 const lower = text.toLowerCase();
-     if (currentOrder?.step === "esperando_nombre") {
-       
+
+if (currentOrder?.step === "esperando_nombre") {
   updateOrderName(phone, text);
   updateOrderStep(phone, "esperando_tipo_entrega");
-
-replyMessage = "Mucho gusto " + text + ".\n\n¿Tu pedido es para domicilio o recoger?";
-}
-
-if (currentOrder?.step === "esperando_tipo_entrega") {
-
+  replyMessage = "Mucho gusto " + text + ".\n\n¿Tu pedido es para domicilio o recoger?";
+} else if (currentOrder?.step === "esperando_tipo_entrega") {
   if (lower.includes("domicilio")) {
-
     updateOrderStep(phone, "esperando_direccion");
-
-   replyMessage = "Perfecto.\n\n¿Me compartes tu dirección por favor?";
-
-  }  else if (lower.includes("recoger") || lower.includes("llevar")) {
-
+    replyMessage = "Perfecto.\n\n¿Me compartes tu dirección por favor?";
+  } else if (lower.includes("recoger") || lower.includes("llevar")) {
     updateOrderStep(phone, "pedido_confirmado");
-
     replyMessage = "Perfecto.\n\nTu pedido estará listo para recoger. Te avisaremos cuando esté listo.";
-
+  } else {
+    replyMessage = "Por favor dime si tu pedido es para domicilio o para recoger.";
   }
-
-}
-
-  await fetch("https://graph.facebook.com/v18.0/1066064689915977/messages", {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBQzKfdzGm20MmioXSEM2RNJf3AcszMfFUKpwn67NDuDVtGMnwMFsfewEZCpGH4KxL31JkmmZBswg0Dkq2JOB4HKOZBAsHiX9sZBRZCPjAzhYG0F9JpW5w8Dpj3lN6ZCdaxfeE64VntD1zCZAzZBsjPyN7W80Nshtm2AezzZBtOhgNWdkOZB8mi2fdZB9CLZApFZCvh2FUIz1uPMIOA1mmIzvKHsjYhkZB2ZC9TuPNlFJ3AGV9M4ZA4sk2fauXZAbU6e5eWYkOSZAJOouPudtqUOcgZDZD",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: phone,
-      text: { body: replyMessage }
-    })
-  });
-
-  return res.sendStatus(200);
-}
-
-if (lower.startsWith("ya") || lower.startsWith("listo")) {
+} else if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto. ¿Cómo es tu nombre?";
-}
-  await fetch("https://graph.facebook.com/v18.0/1066064689915977/messages", {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBQzKfdzGm20MmioXSEM2RNJf3AcszMfFUKpwn67NDuDVtGMnwMFsfewEZCpGH4KxL31JkmmZBswg0Dkq2JOB4HKOZBAsHiX9sZBRZCPjAzhYG0F9JpW5w8Dpj3lN6ZCdaxfeE64VntD1zCZAzZBsjPyN7W80Nshtm2AezzZBtOhgNWdkOZB8mi2fdZB9CLZApFZCvh2FUIz1uPMIOA1mmIzvKHsjYhkZB2ZC9TuPNlFJ3AGV9M4ZA4sk2fauXZAbU6e5eWYkOSZAJOouPudtqUOcgZDZD",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: phone,
-      text: { body: replyMessage }
-    })
-  });
-
-  return res.sendStatus(200);
-}
-
-if (!replyMessage && parsedItems.length > 0) {
-  const order = createOrUpdateOrder(phone, parsedItems);
-
-  const resumen = order.items
-    .map((item: any) => `• ${item.cantidad} ${item.producto}`)
-    .join("\n");
-
-  replyMessage = `Perfecto 👌
-
-Estoy registrando:
-
-${resumen}
-
-¿Deseas agregar otra crepe, bebida o topping?`;
-}
-
-
-
-if (text.toLowerCase().includes("hola")) {
+} else if (lower.includes("hola")) {
   replyMessage =
     "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
     "Por aquí puedes pedir para:\n" +
     "🚚 Domicilio\n" +
     "🛍️ Recoger\n\n" +
-    "Nuestras crepes favoritas hoy son:\n\n" +
+    "Nuestras crepes favoritas hoy son:\n" +
     "🔥 París\n" +
     "🌽 Desgranada mixta\n" +
     "🌶️ Mexicana\n" +
@@ -286,7 +230,9 @@ if (text.toLowerCase().includes("hola")) {
     "Puedes escribir tu pedido así:\n" +
     "\"Quiero una mexicana y una nutella\"";
 } else if (parsedItems.length > 0) {
-  const resumen = parsedItems
+  const order = createOrUpdateOrder(phone, parsedItems);
+
+  const resumen = order.items
     .map((item: any) => `• ${item.cantidad} ${item.producto}`)
     .join("\n");
 
@@ -295,45 +241,41 @@ if (text.toLowerCase().includes("hola")) {
     "Estoy registrando:\n\n" +
     resumen +
     "\n\n¿Deseas agregar otra crepe, bebida o topping?";
-}
-¿Deseas agregar otra crepe, bebida o topping?`;
 } else {
-  replyMessage = `Con gusto te ayudo 😊
-
-Puedes pedirme una crepe así:
-• 1 París
-• 2 Hawaianas
-• 1 Nutella y 1 Tropical
-
-También puedo ayudarte con domicilio o recoger.`;
+  replyMessage =
+    "Con gusto te ayudo 😊\n\n" +
+    "Puedes pedirme una crepe así:\n" +
+    "• 1 París\n" +
+    "• 2 Hawaianas\n" +
+    "• 1 Nutella y 1 Tropical\n\n" +
+    "También puedo ayudarte con domicilio o recoger.";
 }
 
-// 1) Si no hay teléfono, terminar aquí
-if (!phone) {
-  console.log("Evento sin telefono");
-  return res.sendStatus(200);
-}
-
-// 2) Responder rápido al webhook
-res.sendStatus(200);
-
-// 3) Enviar el mensaje
 console.log("ENVIANDO MENSAJE A:", phone);
 
 const response = await fetch(
-"https://graph.facebook.com/v18.0/1066064689915977/messages",
-{
-method: "POST",
-headers: {
-  "Authorization": "Bearer EAAKig65Oi0EBQzKfdzGm20MmioXSEM2RNJf3AcszMfFUKpwn67NDuDVtGMnwMFsfewEZCpGH4KxL31JkmmZBswg0Dkq2JOB4HKOZBAsHiX9sZBRZCPjAzhYG0F9JpW5w8Dpj3lN6ZCdaxfeE64VntD1zCZAzZBsjPyN7W80Nshtm2AezzZBtOhgNWdkOZB8mi2fdZB9CLZApFZCvh2FUIz1uPMIOA1mmIzvKHsjYhkZB2ZC9TuPNlFJ3AGV9M4ZA4sk2fauXZAbU6e5eWYkOSZAJOouPudtqUOcgZDZD",
-  "Content-Type": "application/json"
-},
-body: JSON.stringify({
-messaging_product: "whatsapp",
-to: phone,
-type: "text",
-text: {
-  body: replyMessage
+  "https://graph.facebook.com/v18.0/1066064689915977/messages",
+  {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer EAAKig65Oi0EBQ9WXeswuk9EfFJLfGgZCGZAILYH738mQsY22g69VM5dduEkr3rCINmuq3klvOR6WTXzxZBGEC7VhTi0DSDH1se1uaMZCOhU6fDUx5JXCKZCJr3POv4wEDZCrvDEILSsf21WSpePpeDixQ4ln8h7WUalLnOqkWZCThjWbnOvf5SRUOqyFi3BazK20Iyhx5mM8VwZBGs7e3Sdctn73lZAVL1ciqstf4snowp3TyelV68ZAIr2ZBhR0MuTnMftrffkXM5ZATZAz9yuS4iWuQfwZDZD",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "text",
+      text: {
+        body: replyMessage
+      }
+    })
+  }
+);
+
+const data = await response.json();
+console.log("RESPUESTA META:", data);
+
+return res.sendStatus(200);
 }
 })
 }
