@@ -246,7 +246,7 @@ if (currentOrder?.step === "esperando_nombre") {
     "Tu pedido es:\n" +
     resumen +
     "\n\nSubtotal: $" + totals.subtotal +
-    "\nDomicilio: por confirmar" +
+    "\n📍 Dirección: " + order.direccion +
     "\nTotal: $" + totals.total +
     "\n\n¿Confirmas tu pedido? (SI / NO)";
 
