@@ -17,11 +17,7 @@ import { Config } from './config';
 import { menu } from './menu';
 import { parseOrder } from './parser';
 import {
-  createOrUpdateOrder,
-  getOrder,
-  updateOrderName,
-  updateOrderStep
-} from "./orders";
+import { createOrUpdateOrder, getOrder, updateOrderName, updateOrderStep, calculateTotal } from "./orders";
 
 export type App = {
     requestListener: RequestListener;
@@ -200,9 +196,25 @@ if (currentOrder?.step === "esperando_nombre") {
   updateOrderStep(phone, "esperando_tipo_entrega");
   replyMessage = "Mucho gusto " + text + ".\n\n¿Tu pedido es para domicilio o recoger?";
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
-  if (lower.includes("domicilio")) {
-    updateOrderStep(phone, "esperando_direccion");
-    replyMessage = "Perfecto.\n\n¿Me compartes tu dirección por favor?";
+203 if (lower.includes("domicilio")) {
+204   updateOrderStep(phone, "esperando_direccion");
+205
+206   const order = getOrder(phone);
+207   const { subtotal, domicilio, total } = calculateTotal(order);
+208
+209   const resumen = order.items
+210     .map((item: any) => `• ${item.cantidad} ${item.producto}`)
+211     .join("\n");
+212
+213   replyMessage =
+214     "Perfecto 👌\n\n" +
+215     "Tu pedido es:\n" +
+216     resumen +
+217     "\n\nSubtotal: $" + subtotal +
+218     "\nDomicilio: $" + domicilio +
+219     "\nTotal: $" + total +
+220     "\n\n¿Me compartes tu dirección por favor?";
+221 }
   } else if (lower.includes("recoger") || lower.includes("llevar")) {
     updateOrderStep(phone, "confirmado");
     replyMessage = "Perfecto.\n\nTu pedido estará listo para recoger. Te avisaremos cuando esté listo.";
