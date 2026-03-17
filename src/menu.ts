@@ -11,9 +11,10 @@ export const menu = {
       aliases: ["desgranada mixta", "mixta", "desgranada"]
     },
     {
-      id: "mexicana",
-      nombre: "Mexicana",
-      aliases: ["mexicana"]
+  id: "mexicana",
+  nombre: "Mexicana",
+  precio: 27900,
+  aliases: ["mexicana"]
     },
     {
       id: "hawaiana",
