@@ -1,3 +1,27 @@
+export const PRICES: Record<string, number> = {
+  Mexicana: 12000,
+  Paris: 13000,
+  Hawaiana: 12500,
+  "Desgranada mixta": 14000,
+  Nutella: 10000,
+  Tropinutella: 11000,
+  Tropical: 10500
+};
+
+export const DOMICILIO = 3000;
+export function calculateTotal(order: CustomerOrder) {
+  let subtotal = 0;
+
+  for (const item of order.items) {
+    const price = PRICES[item.producto] || 0;
+    subtotal += price * item.cantidad;
+  }
+
+  const domicilio = order.tipoEntrega === "domicilio" ? DOMICILIO : 0;
+  const total = subtotal + domicilio;
+
+  return { subtotal, domicilio, total };
+}
 type OrderItem = {
   producto: string;
   cantidad: number;
