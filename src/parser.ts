@@ -1,51 +1,52 @@
 import { menu } from "./menu";
 
 export function parseOrder(text: string) {
-
   const lower = text.toLowerCase();
 
   const numbers: any = {
-    "1":1,"2":2,"3":3,"4":4,"5":5,
-    "un":1,"una":1,"uno":1,
-    "dos":2,
-    "tres":3,
-    "cuatro":4,
-    "cinco":5
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "un": 1,
+    "una": 1,
+    "uno": 1,
+    "dos": 2,
+    "tres": 3,
+    "cuatro": 4,
+    "cinco": 5
   };
 
-  const items:any = [];
+  const items: any[] = [];
 
   for (const product of menu.productos) {
-
     for (const alias of product.aliases) {
-
       if (lower.includes(alias)) {
-
         let qty = 1;
 
         for (const key in numbers) {
-
-        if (lower.includes(key) && lower.includes(alias)) {
-  qty = numbers[key];
-}
+          if (lower.includes(key) && lower.includes(alias)) {
+            qty = numbers[key];
+          }
         }
 
-const existing = items.find(i => i.producto === product.nombre);
+        const existing = items.find(i => i.producto === product.nombre);
 
-if (existing) {
-  existing.cantidad += qty;
-} else {
-  items.push({
-    producto: product.nombre,
-    cantidad: qty,
-    precio: product.precio
-  });
-}
+        if (existing) {
+          existing.cantidad += qty;
+        } else {
+          items.push({
+            producto: product.nombre,
+            cantidad: qty,
+            precio: product.precio
+          });
+        }
 
+        break;
+      }
     }
-
   }
 
   return items;
-
 }
