@@ -275,6 +275,7 @@ const response = await fetch(
 const data = await response.json();
 console.log("RESPUESTA META:", data);
 return res.sendStatus(200);
+    }
     app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
         asl.getStore()?.logger.error(err);
 
