@@ -16,13 +16,13 @@ export const menu = {
   id: "mexicana",
   nombre: "Mexicana",
   precio: 27900,
-  aliases: ["mexicana"]
+  aliases: ["mexicana", "mexicanas"]
     },
     {
-      id: "hawaiana",
-      nombre: "Hawaiana",
-       precio: 14900,
-      aliases: ["hawaiana"]
+  id: "hawaiana",
+  nombre: "Hawaiana",
+  precio: 14000,
+  aliases: ["hawaiana", "hawaianas"]
     },
     {
       id: "pollo",
@@ -40,7 +40,7 @@ export const menu = {
       id: "pollo_champinones",
       nombre: "Pollo champiñones",
        precio: 16500,
-      aliases: ["pollo champiñones", "pollo champinones"]
+      aliases: ["pollo champiñones", "pollo y champinones"]
     },
     {
       id: "carne",
@@ -52,19 +52,19 @@ export const menu = {
       id: "nutella",
       nombre: "Nutella",
        precio: 11500,
-      aliases: ["nutella"]
+      aliases: ["nutella", "nutellas"]
     },
     {
       id: "tropinutella",
       nombre: "Tropinutella",
        precio: 19900,
-      aliases: ["tropinutella"]
+      aliases: ["tropinutella", "tropinutellas"]
     },
     {
       id: "tropical",
       nombre: "Tropical",
        precio: 16900,
-      aliases: ["tropical"]
+      aliases: ["tropical", "tropicales"]
     }
   ]
 };
