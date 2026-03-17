@@ -265,23 +265,20 @@ if (currentOrder?.step === "esperando_nombre") {
 } else if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto. ¿Cómo es tu nombre?";
-} else if (lower.includes("hola")) {
+} else if (
+  lower.includes("hola") ||
+  lower.includes("buenas") ||
+  lower.includes("buenos dias") ||
+  lower.includes("buen día") ||
+  lower.includes("buen dia") ||
+  lower.includes("buenas tardes") ||
+  lower.includes("buenas noches")
+) {
   replyMessage =
     "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
-    "Por aquí puedes pedir para:\n" +
-    "🚚 Domicilio\n" +
-    "🛍️ Recoger\n\n" +
-    "Nuestras crepes favoritas hoy son:\n" +
-    "🔥 París\n" +
-    "🌽 Desgranada mixta\n" +
-    "🌶️ Mexicana\n" +
-    "🍍 Hawaiana\n\n" +
-    "También tenemos dulces deliciosas:\n" +
-    "🍫 Nutella\n" +
-    "🥭 Tropinutella\n" +
-    "🍍 Tropical\n\n" +
-    "Puedes escribir tu pedido así:\n" +
-    "\"Quiero una mexicana y una nutella\"";
+    "Puedes hacer tu pedido aquí:\n" +
+    "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
+    "O si prefieres, escríbeme qué deseas pedir y yo te ayudo por aquí 😊";
 } else if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
 
@@ -311,7 +308,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBQ4GrrRreiaJCpaZBbf8divBnII0qTx78ZAAaR9hQvKbF8rR77E6YFxJQeCf3qvBa6dhpytJlmf4FvsZCnU2eRGk1XomxxNQR1yjyd0rmsNJsDCkmgqvH3cDhKZB6SMTKEADfogFGR5urBBt4uxYXmZCCcWxZBckR2bAK6zAhZAntZBLc0UUKbcuPelCZBqoTWRA7BvkO8JSvHlGueZCMuuZA2JdhiijKBLLZAFGddX0Y73ZCZCS09e9jkgyhmdHZBPxEs7o8OzTnnZB9NuEoMQZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBQyccltqNWYmAC6ZCNt1o9ZAytQ327dAzTbc8aGmGvTfos4VtVmZCmp1GLfZCd2aFZBlzqpp8NMOZBixUTW8qmUeZA5qr2QOpgSDGJ270lvEjWAWkGpoil1ih8o7R5wuPv9vbzxVUwZAACkVjqVsttcqyHwzfj72WAROzjrNnswOY4p39bHBnuWqJFf8ZCFbkX3Q5MYVjqM5SKIhlNxyK3BvPdmHZCgra6ekJBnsW02gcyVACEPeXIHw5OPEOYofe4NkqglOsXvZCoiVyi8ZD ",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
