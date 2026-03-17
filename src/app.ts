@@ -22,6 +22,7 @@ import {
   getOrder,
   updateOrderName,
   updateOrderStep,
+  updateOrderAddress,
   calculateTotal,
 } from "./orders";
 
