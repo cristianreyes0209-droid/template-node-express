@@ -25,10 +25,9 @@ export function parseOrder(text: string) {
 
         for (const key in numbers) {
 
-          if (lower.includes(key + " " + alias)) {
-            qty = numbers[key];
-          }
-
+        if (lower.includes(key) && lower.includes(alias)) {
+  qty = numbers[key];
+}
         }
 
      items.push({
