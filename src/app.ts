@@ -205,7 +205,7 @@ if (currentOrder?.step === "esperando_nombre") {
   if (lower.includes("domicilio")) {
     updateOrderStep(phone, "esperando_direccion");
 
-   const order = getOrder(phone)!;
+    const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
     const resumen = order.items
@@ -222,11 +222,46 @@ if (currentOrder?.step === "esperando_nombre") {
       "\n\n¿Me compartes tu dirección por favor?";
   } else if (lower.includes("recoger") || lower.includes("llevar")) {
     updateOrderStep(phone, "confirmado");
+
     replyMessage =
       "Perfecto 👌\n\nTu pedido estará listo para recoger. Te avisaremos cuando esté listo.";
   } else {
     replyMessage = "Por favor dime si tu pedido es para domicilio o para recoger.";
   }
+
+} else if (currentOrder?.step === "esperando_direccion") {
+  const order = getOrder(phone)!;
+  const totals = calculateTotal(order);
+
+  const resumen = order.items
+    .map((item: any) => "• " + item.cantidad + " " + item.producto)
+    .join("\n");
+
+  updateOrderStep(phone, "esperando_confirmacion");
+
+  replyMessage =
+    "Perfecto 👌\n\n" +
+    "Tu pedido es:\n" +
+    resumen +
+    "\n\nSubtotal: $" + totals.subtotal +
+    "\nDomicilio: $" + totals.domicilio +
+    "\nTotal: $" + totals.total +
+    "\n\n¿Confirmas tu pedido? (SI / NO)";
+
+} else if (currentOrder?.step === "esperando_confirmacion") {
+  if (lower.includes("si")) {
+    updateOrderStep(phone, "confirmado");
+
+    replyMessage =
+      "🔥 Pedido confirmado\n\nTiempo estimado: 20-30 min 🚚";
+  } else if (lower.includes("no")) {
+    updateOrderStep(phone, "armando_pedido");
+
+    replyMessage = "Perfecto 👍 ¿Qué deseas cambiar?";
+  } else {
+    replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
+  }
+
 } else if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto. ¿Cómo es tu nombre?";
