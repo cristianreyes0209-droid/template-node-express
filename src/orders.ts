@@ -8,7 +8,7 @@ export const PRICES: Record<string, number> = {
   Tropical: 10500
 };
 
-export const DOMICILIO = 3000;
+export const DOMICILIO = 5000;
 export function calculateTotal(order: CustomerOrder) {
   let subtotal = 0;
 
@@ -17,7 +17,7 @@ export function calculateTotal(order: CustomerOrder) {
     subtotal += price * item.cantidad;
   }
 
-  const domicilio = order.tipoEntrega === "domicilio" ? DOMICILIO : 0;
+const domicilio = order.tipoEntrega === "domicilio" ? 5000 : 0;
   const total = subtotal + domicilio;
 
   return { subtotal, domicilio, total };
