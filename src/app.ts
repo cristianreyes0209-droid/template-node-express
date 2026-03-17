@@ -231,6 +231,7 @@ if (currentOrder?.step === "esperando_nombre") {
   }
 
 } else if (currentOrder?.step === "esperando_direccion") {
+    updateOrderAddress(phone, text);
   const order = getOrder(phone)!;
   const totals = calculateTotal(order);
 
