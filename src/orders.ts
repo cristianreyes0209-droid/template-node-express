@@ -70,6 +70,12 @@ export function updateOrderStep(phone: string, step: OrderStep) {
     orders[phone].step = step;
   }
 }
+export function updateOrderAddress(phone: string, direccion: string) {
+  const order = getOrder(phone);
+  if (!order) return;
+
+  order.direccion = direccion;
+}
 
 export function updateOrderName(phone: string, nombre: string) {
   if (orders[phone]) {
