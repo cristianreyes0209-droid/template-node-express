@@ -217,7 +217,7 @@ if (currentOrder?.step === "esperando_nombre") {
       "Tu pedido es:\n" +
       resumen +
       "\n\nSubtotal: $" + totals.subtotal +
-      "\nDomicilio: $" + totals.domicilio +
+      "\nDomicilio: por confirmar" +
       "\nTotal: $" + totals.total +
       "\n\n¿Me compartes tu dirección por favor?";
   } else if (lower.includes("recoger") || lower.includes("llevar")) {
@@ -244,7 +244,7 @@ if (currentOrder?.step === "esperando_nombre") {
     "Tu pedido es:\n" +
     resumen +
     "\n\nSubtotal: $" + totals.subtotal +
-    "\nDomicilio: $" + totals.domicilio +
+    "\nDomicilio: por confirmar" +
     "\nTotal: $" + totals.total +
     "\n\n¿Confirmas tu pedido? (SI / NO)";
 
