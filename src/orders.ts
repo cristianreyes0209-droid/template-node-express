@@ -32,6 +32,7 @@ type OrderStep =
   | "esperando_nombre"
   | "esperando_tipo_entrega"
   | "esperando_direccion"
+  | "esperando_confirmacion"
   | "esperando_pago"
   | "confirmado";
 
