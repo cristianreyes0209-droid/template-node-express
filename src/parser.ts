@@ -31,10 +31,11 @@ export function parseOrder(text: string) {
 
         }
 
-        items.push({
-          producto: product.nombre,
-          cantidad: qty
-        });
+     items.push({
+  producto: product.nombre,
+  cantidad: qty,
+  precio: product.precio
+});
 
       }
 
