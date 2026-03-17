@@ -89,11 +89,7 @@ export function updateOrderDeliveryType(phone: string, tipoEntrega: string) {
   }
 }
 
-export function updateOrderAddress(phone: string, direccion: string) {
-  if (orders[phone]) {
-    orders[phone].direccion = direccion;
-  }
-}
+
 
 export function updateOrderPayment(phone: string, formaPago: string) {
   if (orders[phone]) {
