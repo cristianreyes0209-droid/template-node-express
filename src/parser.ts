@@ -30,13 +30,17 @@ export function parseOrder(text: string) {
 }
         }
 
-     items.push({
-  producto: product.nombre,
-  cantidad: qty,
-  precio: product.precio
-});
+const existing = items.find(i => i.producto === product.nombre);
 
-      }
+if (existing) {
+  existing.cantidad += qty;
+} else {
+  items.push({
+    producto: product.nombre,
+    cantidad: qty,
+    precio: product.precio
+  });
+}
 
     }
 
