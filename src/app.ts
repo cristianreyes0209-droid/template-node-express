@@ -205,7 +205,7 @@ if (currentOrder?.step === "esperando_nombre") {
   if (lower.includes("domicilio")) {
     updateOrderStep(phone, "esperando_direccion");
 
-    const order = getOrder(phone);
+   const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
     const resumen = order.items
