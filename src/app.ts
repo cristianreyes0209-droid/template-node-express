@@ -16,8 +16,14 @@ import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
 import { parseOrder } from './parser';
+
 import {
-import { createOrUpdateOrder, getOrder, updateOrderName, updateOrderStep, calculateTotal } from "./orders";
+  createOrUpdateOrder,
+  getOrder,
+  updateOrderName,
+  updateOrderStep,
+  calculateTotal,
+} from "./orders";
 
 export type App = {
     requestListener: RequestListener;
