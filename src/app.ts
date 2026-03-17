@@ -204,7 +204,7 @@ if (currentOrder?.step === "esperando_nombre") {
     updateOrderStep(phone, "esperando_direccion");
     replyMessage = "Perfecto.\n\n¿Me compartes tu dirección por favor?";
   } else if (lower.includes("recoger") || lower.includes("llevar")) {
-    updateOrderStep(phone, "pedido_confirmado");
+    updateOrderStep(phone, "confirmado");
     replyMessage = "Perfecto.\n\nTu pedido estará listo para recoger. Te avisaremos cuando esté listo.";
   } else {
     replyMessage = "Por favor dime si tu pedido es para domicilio o para recoger.";
