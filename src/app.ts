@@ -232,7 +232,7 @@ if (currentOrder?.step === "esperando_nombre") {
     replyMessage = "Por favor dime si tu pedido es para domicilio o para recoger.";
   }
 
-} else if (currentOrder?.step === "esperando_direccion") {
+ else if (currentOrder?.step === "esperando_direccion") {
     updateOrderAddress(phone, text);
   const order = getOrder(phone)!;
   const totals = calculateTotal(order);
@@ -270,7 +270,7 @@ replyMessage =
   } else {
     replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
   
-}else if (currentOrder?.step === "esperando_pago") {
+} else if (currentOrder?.step === "esperando_pago") {
 
   if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
@@ -324,7 +324,7 @@ replyMessage =
       "• Daviplata\n" +
       "• Bancolombia";
   }
-}
+
 } else if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto. ¿Cómo es tu nombre?";
