@@ -23,7 +23,8 @@ import {
   updateOrderName,
   updateOrderStep,
   updateOrderAddress,
-  calculateTotal,
+  updateOrderDeliveryType,
+  calculateTotal
 } from "./orders";
 
 export type App = {
