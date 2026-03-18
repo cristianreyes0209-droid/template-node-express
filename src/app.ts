@@ -230,8 +230,6 @@ if (currentOrder?.step === "esperando_nombre") {
       "Perfecto 👌\n\nTu pedido estará listo para recoger. Te avisaremos cuando esté listo.";
   } else {
     replyMessage = "Por favor dime si tu pedido es para domicilio o para recoger.";
-  }
-
 } else if (currentOrder?.step === "esperando_direccion") {
     updateOrderAddress(phone, text);
   const order = getOrder(phone)!;
@@ -372,7 +370,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBQ1iAeZCYMz4UuEMW6QmRIPUnwtEBe69TvZCYahq0ZCCn7NrOhk8LBSZC0EaRxXOmd6AZBcnl5KAt1ZAYZCEJZAzXF4n8pWyVG7WiZB9XDSPIO5lZAp0fANxj5xQfucWNoLT2plVn49UeYVlkB3GAvhJxnAFu5SwGbAd4ZCMbJ7aVRerGHWiwDMluDqV3s1WYGkD0vwI0U8nZAxKCb9DotMaeChwNpVoPHSnvxArJIZB8z3NmZCtU1pz6LzH8ZBG8MSqsZCXyTref549RBZB2tHJcZD",
+      "Authorization": "Bearer EAAKig65Oi0EBQzyZCFtsIlhqmHYFsnZB6gRZAL6qcSdluJlllmqwrQCZBr6GM22MvvOBvIpJgGZALFgH5190UT9QBheekZCqEW46g2r7LG1EPpqe7yrTaZBqRzzIKk019cGmviB4MWFp9x37hSMSYZA7lAZBVF2Mrj8UIZBDpiOmtMBtCVEcjxkCLn38symFpaRg8u50d2LuZCOd6ntZAevwMAWB0obN3xVFQMXvQtEcDXCsBcQBnBwAJuhsa8NlmMPhkMHj6HxcshzuAqz9VKa8RtpPugZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
