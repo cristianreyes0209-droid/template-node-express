@@ -270,7 +270,61 @@ replyMessage =
   } else {
     replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
   }
+else if (currentOrder?.step === "esperando_pago") {
 
+  if (lower.includes("efectivo")) {
+    updateOrderPayment(phone, "efectivo");
+    updateOrderStep(phone, "confirmado");
+
+    replyMessage =
+      "🔥 Pedido confirmado\n\n" +
+      "Pago: Efectivo\n" +
+      "Tiempo estimado: 20-30 min 🚚";
+  }
+
+  else if (lower.includes("nequi")) {
+    updateOrderPayment(phone, "nequi");
+    updateOrderStep(phone, "esperando_comprobante");
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "Pago por Nequi:\n" +
+      "📱 3207218267\n\n" +
+      "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
+  }
+
+  else if (lower.includes("daviplata")) {
+    updateOrderPayment(phone, "daviplata");
+    updateOrderStep(phone, "esperando_comprobante");
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "Pago por Daviplata:\n" +
+      "📱 3207218267\n\n" +
+      "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
+  }
+
+  else if (lower.includes("bancolombia") || lower.includes("transferencia")) {
+    updateOrderPayment(phone, "bancolombia");
+    updateOrderStep(phone, "esperando_comprobante");
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "Transferencia Bancolombia:\n" +
+      "🏦 Cuenta de ahorros\n" +
+      "💳 27033825108\n\n" +
+      "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
+  }
+
+  else {
+    replyMessage =
+      "¿Cómo deseas pagar?\n" +
+      "• Efectivo\n" +
+      "• Nequi\n" +
+      "• Daviplata\n" +
+      "• Bancolombia";
+  }
+}
 } else if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto. ¿Cómo es tu nombre?";
