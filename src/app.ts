@@ -233,7 +233,6 @@ if (currentOrder?.step === "esperando_nombre") {
   } else {
     replyMessage = "Por favor dime si tu pedido es para domicilio o para recoger.";
   }
-
 } else if (currentOrder?.step === "esperando_direccion") {
   updateOrderAddress(phone, text);
 
@@ -255,8 +254,7 @@ if (currentOrder?.step === "esperando_nombre") {
     "\nTotal: $" + totals.total +
     "\n📍 Dirección: " + order.direccion +
     "\n\n¿Confirmas tu pedido? (SI / NO)";
-
-else if (currentOrder?.step === "esperando_confirmacion") {
+} else if (currentOrder?.step === "esperando_confirmacion") {
   if (lower.includes("si")) {
     updateOrderStep(phone, "esperando_pago");
 
@@ -273,7 +271,6 @@ else if (currentOrder?.step === "esperando_confirmacion") {
   } else {
     replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
   }
-
 } else if (currentOrder?.step === "esperando_pago") {
   if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
@@ -319,7 +316,6 @@ else if (currentOrder?.step === "esperando_confirmacion") {
       "• Daviplata\n" +
       "• Bancolombia";
   }
-
 } else if (currentOrder?.step === "esperando_comprobante") {
   if (lower.includes("listo") || lower.includes("ya")) {
     updateOrderStep(phone, "confirmado");
@@ -335,7 +331,6 @@ else if (currentOrder?.step === "esperando_confirmacion") {
 } else if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto. ¿Cómo es tu nombre?";
-
 } else if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
 
@@ -348,7 +343,7 @@ else if (currentOrder?.step === "esperando_confirmacion") {
     "Estoy registrando:\n\n" +
     resumen +
     "\n\n¿Deseas agregar otra crepe, bebida o topping?";
-    } else if (
+} else if (
   lower.includes("hola") ||
   lower.includes("buenas") ||
   lower.includes("buenos dias") ||
