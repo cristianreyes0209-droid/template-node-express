@@ -241,14 +241,15 @@ if (currentOrder?.step === "esperando_nombre") {
 
   updateOrderStep(phone, "esperando_confirmacion");
 
-  replyMessage =
-    "Perfecto 👌\n\n" +
-    "Tu pedido es:\n" +
-    resumen +
-    "\n\nSubtotal: $" + totals.subtotal +
-    "\n📍 Dirección: " + order.direccion +
-    "\nTotal: $" + totals.total +
-    "\n\n¿Confirmas tu pedido? (SI / NO)";
+replyMessage =
+  "Perfecto 👌\n\n" +
+  "Tu pedido es:\n" +
+  resumen +
+  "\n\nSubtotal: $" + totals.subtotal +
+  "\nDomicilio: $" + totals.domicilio +
+  "\n📍 Dirección: " + order.direccion +
+  "\nTotal: $" + totals.total +
+  "\n\n¿Confirmas tu pedido? (SI / NO)";
 
 } else if (currentOrder?.step === "esperando_confirmacion") {
   if (lower.includes("si")) {
