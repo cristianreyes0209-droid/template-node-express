@@ -38,6 +38,7 @@ type CustomerOrder = {
   formaPago?: string;
   items: OrderItem[];
   step: OrderStep;
+  lastActivity: number; // 👈 NUEVO
 };
 
 const orders: Record<string, CustomerOrder> = {};
