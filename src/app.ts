@@ -204,7 +204,7 @@ if (currentOrder?.step === "esperando_nombre") {
   replyMessage = "Mucho gusto " + text + ".\n\n¿Tu pedido es para domicilio o recoger?";
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
   if (lower.includes("domicilio")) {
-  updateOrderDeliveryType(phone, "domicilio");  // 👈 ESTA LÍNEA FALTABA
+  updateOrderDeliveryType(phone, "domicilio");  
   updateOrderStep(phone, "esperando_direccion");
 
     const order = getOrder(phone)!;
