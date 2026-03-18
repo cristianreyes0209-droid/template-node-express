@@ -269,8 +269,8 @@ replyMessage =
     replyMessage = "Perfecto 👍 ¿Qué deseas cambiar?";
   } else {
     replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
-  }
-else if (currentOrder?.step === "esperando_pago") {
+  
+}else if (currentOrder?.step === "esperando_pago") {
 
   if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
