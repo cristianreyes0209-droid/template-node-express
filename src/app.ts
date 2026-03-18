@@ -267,7 +267,20 @@ if (currentOrder?.step === "esperando_nombre") {
 } else if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto. ¿Cómo es tu nombre?";
-} else if (
+
+} else if (parsedItems.length > 0) {
+  const order = createOrUpdateOrder(phone, parsedItems);
+
+  const resumen = order.items
+    .map((item: any) => `• ${item.cantidad} ${item.producto}`)
+    .join("\n");
+
+  replyMessage =
+    "Perfecto 👌\n\n" +
+    "Estoy registrando:\n\n" +
+    resumen +
+    "\n\n¿Deseas agregar otra crepe, bebida o topping?";
+    } else if (
   lower.includes("hola") ||
   lower.includes("buenas") ||
   lower.includes("buenos dias") ||
@@ -281,18 +294,6 @@ if (currentOrder?.step === "esperando_nombre") {
     "Puedes hacer tu pedido aquí:\n" +
     "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
     "O si prefieres, escríbeme qué deseas pedir y yo te ayudo por aquí 😊";
-} else if (parsedItems.length > 0) {
-  const order = createOrUpdateOrder(phone, parsedItems);
-
-  const resumen = order.items
-    .map((item: any) => `• ${item.cantidad} ${item.producto}`)
-    .join("\n");
-
-  replyMessage =
-    "Perfecto 👌\n\n" +
-    "Estoy registrando:\n\n" +
-    resumen +
-    "\n\n¿Deseas agregar otra crepe, bebida o topping?";
 } else {
   replyMessage =
     "Con gusto te ayudo 😊\n\n" +
