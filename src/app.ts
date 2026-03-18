@@ -187,6 +187,26 @@ if (!messageData) {
 const phone = messageData.from;
 const text = messageData.text?.body || "mensaje";
 const currentOrder = getOrder(phone);
+    if (currentOrder) {
+  const now = Date.now();
+  const diff = now - (currentOrder.lastInteraction || 0);
+
+  const THIRTY_MIN = 30 * 60 * 1000;
+
+  if (
+    diff > THIRTY_MIN &&
+    currentOrder.step === "confirmado"
+  ) {
+    // Reinicio controlado
+    updateOrderStep(phone, "esperando_nombre");
+
+    replyMessage =
+      "¡Hola de nuevo! 😊\n\n" +
+      "¿Quieres hacer un nuevo pedido? ¿Cómo es tu nombre?";
+
+    return;
+  }
+}
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
