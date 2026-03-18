@@ -24,6 +24,7 @@ import {
   updateOrderStep,
   updateOrderAddress,
   updateOrderDeliveryType,
+    updateOrderPayment,
   calculateTotal
 } from "./orders";
 
@@ -205,8 +206,8 @@ if (currentOrder?.step === "esperando_nombre") {
   replyMessage = "Mucho gusto " + text + ".\n\n¿Tu pedido es para domicilio o recoger?";
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
   if (lower.includes("domicilio")) {
-  updateOrderDeliveryType(phone, "domicilio");  
-  updateOrderStep(phone, "esperando_direccion");
+    updateOrderDeliveryType(phone, "domicilio");
+    updateOrderStep(phone, "esperando_direccion");
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
@@ -224,14 +225,18 @@ if (currentOrder?.step === "esperando_nombre") {
       "\nTotal: $" + totals.total +
       "\n\n¿Me compartes tu dirección por favor?";
   } else if (lower.includes("recoger") || lower.includes("llevar")) {
+    updateOrderDeliveryType(phone, "recoger");
     updateOrderStep(phone, "confirmado");
 
     replyMessage =
       "Perfecto 👌\n\nTu pedido estará listo para recoger. Te avisaremos cuando esté listo.";
   } else {
     replyMessage = "Por favor dime si tu pedido es para domicilio o para recoger.";
+  }
+
 } else if (currentOrder?.step === "esperando_direccion") {
-    updateOrderAddress(phone, text);
+  updateOrderAddress(phone, text);
+
   const order = getOrder(phone)!;
   const totals = calculateTotal(order);
 
@@ -241,35 +246,35 @@ if (currentOrder?.step === "esperando_nombre") {
 
   updateOrderStep(phone, "esperando_confirmacion");
 
-replyMessage =
-  "Perfecto 👌\n\n" +
-  "Tu pedido es:\n" +
-  resumen +
-  "\n\nSubtotal: $" + totals.subtotal +
-  "\nDomicilio: $" + totals.domicilio +
-  "\nTotal: $" + totals.total +
-  "\n📍 Dirección: " + order.direccion +
-  "\n\n¿Confirmas tu pedido? (SI / NO)";
-
-} else if (currentOrder?.step === "esperando_confirmacion") {
-  if (lower.includes("si")) {
-  updateOrderStep(phone, "esperando_pago");
-
   replyMessage =
-    "Perfecto 👌\n\n¿Cómo deseas pagar?\n" +
-    "• Efectivo\n" +
-    "• Nequi\n" +
-    "• Daviplata\n" +
-    "• Bancolombia";
+    "Perfecto 👌\n\n" +
+    "Tu pedido es:\n" +
+    resumen +
+    "\n\nSubtotal: $" + totals.subtotal +
+    "\nDomicilio: $" + totals.domicilio +
+    "\nTotal: $" + totals.total +
+    "\n📍 Dirección: " + order.direccion +
+    "\n\n¿Confirmas tu pedido? (SI / NO)";
+
+else if (currentOrder?.step === "esperando_confirmacion") {
+  if (lower.includes("si")) {
+    updateOrderStep(phone, "esperando_pago");
+
+    replyMessage =
+      "Perfecto 👌\n\n¿Cómo deseas pagar?\n" +
+      "• Efectivo\n" +
+      "• Nequi\n" +
+      "• Daviplata\n" +
+      "• Bancolombia";
   } else if (lower.includes("no")) {
     updateOrderStep(phone, "armando_pedido");
 
     replyMessage = "Perfecto 👍 ¿Qué deseas cambiar?";
   } else {
     replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
-  
-} else if (currentOrder?.step === "esperando_pago") {
+  }
 
+} else if (currentOrder?.step === "esperando_pago") {
   if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
     updateOrderStep(phone, "confirmado");
@@ -278,8 +283,6 @@ replyMessage =
       "🔥 Pedido confirmado\n\n" +
       "Pago: Efectivo\n" +
       "Tiempo estimado: 20-30 min 🚚";
-  
-
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
     updateOrderStep(phone, "esperando_comprobante");
@@ -289,8 +292,6 @@ replyMessage =
       "Pago por Nequi:\n" +
       "📱 3207218267\n\n" +
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
-  
-
   } else if (lower.includes("daviplata")) {
     updateOrderPayment(phone, "daviplata");
     updateOrderStep(phone, "esperando_comprobante");
@@ -300,9 +301,7 @@ replyMessage =
       "Pago por Daviplata:\n" +
       "📱 3207218267\n\n" +
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
-  
-
-   }else if (lower.includes("bancolombia") || lower.includes("transferencia")) {
+  } else if (lower.includes("bancolombia") || lower.includes("transferencia")) {
     updateOrderPayment(phone, "bancolombia");
     updateOrderStep(phone, "esperando_comprobante");
 
@@ -312,9 +311,7 @@ replyMessage =
       "🏦 Cuenta de ahorros\n" +
       "💳 27033825108\n\n" +
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
-  
-
-   }else {
+  } else {
     replyMessage =
       "¿Cómo deseas pagar?\n" +
       "• Efectivo\n" +
@@ -323,6 +320,18 @@ replyMessage =
       "• Bancolombia";
   }
 
+} else if (currentOrder?.step === "esperando_comprobante") {
+  if (lower.includes("listo") || lower.includes("ya")) {
+    updateOrderStep(phone, "confirmado");
+
+    replyMessage =
+      "🔥 Pago recibido\n\n" +
+      "Pedido confirmado\n" +
+      "Tiempo estimado: 20-30 min 🚚";
+  } else {
+    replyMessage =
+      "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
+  }
 } else if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto. ¿Cómo es tu nombre?";
