@@ -323,10 +323,37 @@ if (currentOrder?.step === "esperando_nombre") {
     replyMessage =
       "🔥 Pago recibido\n\n" +
       "Pedido confirmado\n" +
-      "Tiempo estimado: 20-30 min 🚚";
+      "Tiempo estimado: 40-50 min 🚚";
   } else {
     replyMessage =
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
+  }
+    } else if (currentOrder?.step === "confirmado") {
+  if (
+    lower.includes("como va") ||
+    lower.includes("cómo va") ||
+    lower.includes("cuanto falta") ||
+    lower.includes("cuánto falta") ||
+    lower.includes("demora") ||
+    lower.includes("ya salio") ||
+    lower.includes("ya salió") ||
+    lower.includes("estado")
+  ) {
+    replyMessage =
+      "Tu pedido sigue en preparación 👨‍🍳🚚\n\n" +
+      "Tiempo estimado: 40-50 min. Te avisaremos si hay alguna novedad.";
+  } else if (
+    lower.includes("gracias") ||
+    lower.includes("ok") ||
+    lower.includes("vale") ||
+    lower.includes("bueno")
+  ) {
+    replyMessage =
+      "Con gusto 😊 Tu pedido ya está en proceso. Te avisaremos cualquier novedad.";
+  } else {
+    replyMessage =
+      "Tu pedido ya fue confirmado ✅\n\n" +
+      "Si deseas, puedes preguntarme cómo va tu pedido.";
   }
 } else if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
