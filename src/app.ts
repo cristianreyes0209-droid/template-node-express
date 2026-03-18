@@ -232,7 +232,7 @@ if (currentOrder?.step === "esperando_nombre") {
     replyMessage = "Por favor dime si tu pedido es para domicilio o para recoger.";
   }
 
- else if (currentOrder?.step === "esperando_direccion") {
+} else if (currentOrder?.step === "esperando_direccion") {
     updateOrderAddress(phone, text);
   const order = getOrder(phone)!;
   const totals = calculateTotal(order);
