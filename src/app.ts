@@ -255,10 +255,14 @@ replyMessage =
 
 } else if (currentOrder?.step === "esperando_confirmacion") {
   if (lower.includes("si")) {
-    updateOrderStep(phone, "confirmado");
+  updateOrderStep(phone, "esperando_pago");
 
-    replyMessage =
-      "🔥 Pedido confirmado\n\nTiempo estimado: 20-30 min 🚚";
+  replyMessage =
+    "Perfecto 👌\n\n¿Cómo deseas pagar?\n" +
+    "• Efectivo\n" +
+    "• Nequi\n" +
+    "• Daviplata\n" +
+    "• Bancolombia";
   } else if (lower.includes("no")) {
     updateOrderStep(phone, "armando_pedido");
 
