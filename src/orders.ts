@@ -27,6 +27,7 @@ type OrderStep =
   | "esperando_direccion"
   | "esperando_confirmacion"
   | "esperando_pago"
+  | "esperando_comprobante"
   | "confirmado";
 
 type CustomerOrder = {
