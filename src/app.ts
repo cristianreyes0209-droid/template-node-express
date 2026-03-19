@@ -199,6 +199,47 @@ if (!phone) {
 let replyMessage = "";
 const parsedItems = parseOrder(text);
 const lower = text.toLowerCase();
+    if (currentOrder) {
+  const now = Date.now();
+  const diff = now - (currentOrder.lastInteraction || 0);
+  const THIRTY_MIN = 30 * 60 * 1000;
+
+  if (diff > THIRTY_MIN && currentOrder.step !== "confirmado") {
+    currentOrder.items = [];
+    currentOrder.nombre = undefined;
+    currentOrder.tipoEntrega = undefined;
+    currentOrder.direccion = undefined;
+    currentOrder.formaPago = undefined;
+    currentOrder.step = "esperando_nombre";
+    currentOrder.lastInteraction = now;
+
+    replyMessage =
+      "¡Hola de nuevo! 😊\n\n" +
+      "Parece que pasó un tiempo. Vamos a empezar de nuevo.\n\n" +
+      "¿Cómo es tu nombre?";
+
+    await fetch(
+      "https://graph.facebook.com/v18.0/106606468991597/messages",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + process.env.WHATSAPP_TOKEN,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: phone,
+          type: "text",
+          text: { body: replyMessage }
+        })
+      }
+    );
+
+    return res.sendStatus(200);
+  }
+
+  currentOrder.lastInteraction = now;
+}
 
 if (currentOrder?.step === "esperando_nombre") {
   updateOrderName(phone, text);
@@ -210,28 +251,7 @@ if (currentOrder?.step === "esperando_nombre") {
     updateOrderStep(phone, "esperando_direccion");
 
     const order = getOrder(phone)!;
-if (currentOrder) {
-  const now = Date.now();
-  const diff = now - (currentOrder.lastInteraction || 0);
 
-  const THIRTY_MIN = 30 * 60 * 1000;
-
-  if (
-    diff > THIRTY_MIN &&
-    currentOrder.step !== "confirmado"
-  ) {
-    updateOrderStep(phone, "esperando_nombre");
-
-    replyMessage =
-      "¡Hola de nuevo! 😊\n\n" +
-      "¿Quieres hacer un nuevo pedido? ¿Cómo es tu nombre?";
-
-    return res.send(replyMessage);
-  }
-
-  // actualizar actividad
-  currentOrder.lastInteraction = now;
-}
     const totals = calculateTotal(order);
 
     const resumen = order.items
