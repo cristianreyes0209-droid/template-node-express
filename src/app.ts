@@ -210,6 +210,30 @@ if (currentOrder?.step === "esperando_nombre") {
     updateOrderStep(phone, "esperando_direccion");
 
     const order = getOrder(phone)!;
+      const order = getOrder(phone)!;
+
+if (currentOrder) {
+  const now = Date.now();
+  const diff = now - (currentOrder.lastInteraction || 0);
+
+  const THIRTY_MIN = 30 * 60 * 1000;
+
+  if (
+    diff > THIRTY_MIN &&
+    currentOrder.step !== "confirmado"
+  ) {
+    updateOrderStep(phone, "esperando_nombre");
+
+    replyMessage =
+      "¡Hola de nuevo! 😊\n\n" +
+      "¿Quieres hacer un nuevo pedido? ¿Cómo es tu nombre?";
+
+    return res.send(replyMessage);
+  }
+
+  // actualizar actividad
+  currentOrder.lastInteraction = now;
+}
     const totals = calculateTotal(order);
 
     const resumen = order.items
@@ -401,7 +425,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBQ3sq31GlVQgNw4aS5LMD16s8Ay9r6pVjsmgghAPIKO7zIs1NZA4OrLdvIWuRsSyaqDHN7FAyk21kLZCxUxYb5BmL5lZCEFfPJcZBZCZC9AZAdlrm9HA9jo6nNxfimjouy2TXDmGzA2Gnn2zM0fz05ggrT2IccnBiZCssNdZAbd7UaHS325WoZBjgpjaAWxHEhCVN20WKMdYOo5bL6dy2A4GNtgkKY8GktZBVOAWRxoS71psnOCAkMS9wtIfzDrFlhTqoTSnZCyPMXJYCBuQR",
+      "Authorization": "Bearer EAAKig65Oi0EBQ3HdP0qZC7qJBzSZBSiTWlHVVLbT2bjwu9URwDedvDzRdwyHsRBUiuBF75mTAsrwOmZAoVC4ZCzRUsliNHsVmgj8VkJwtSk2yyrJlvIgOdmhtonm0eZBGbpk4K0ETpkv2CO0uq1f0AX8TlotHquJLPRkOcJ7v4yyFahRe9OGwTxjE7AFmQkXrdZAITnxroMobSQsjzQwJ0hLr7XbUJPZCrBO1VFMUDjJbfLnWtZCN4vbxLZBPZADdJRxkdZBMFkg5KjimTaZAtSfihfZAsQZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
