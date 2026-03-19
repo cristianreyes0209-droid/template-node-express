@@ -38,9 +38,8 @@ type CustomerOrder = {
   formaPago?: string;
   items: OrderItem[];
   step: OrderStep;
-  lastActivity: number; // 👈 NUEVO
+  lastInteraction: number;
 };
-
 const orders: Record<string, CustomerOrder> = {};
 
 export function getOrder(phone: string): CustomerOrder | undefined {
@@ -49,11 +48,12 @@ export function getOrder(phone: string): CustomerOrder | undefined {
 
 export function createOrUpdateOrder(phone: string, items: OrderItem[]) {
   if (!orders[phone]) {
-    orders[phone] = {
-      telefono: phone,
-      items: [],
-      step: "armando_pedido"
-    };
+  orders[phone] = {
+  telefono: phone,
+  items: [],
+  step: "armando_pedido",
+  lastInteraction: Date.now()
+};
   }
 
   orders[phone].items = [...orders[phone].items, ...items];
