@@ -210,8 +210,6 @@ if (currentOrder?.step === "esperando_nombre") {
     updateOrderStep(phone, "esperando_direccion");
 
     const order = getOrder(phone)!;
-      const order = getOrder(phone)!;
-
 if (currentOrder) {
   const now = Date.now();
   const diff = now - (currentOrder.lastInteraction || 0);
