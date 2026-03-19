@@ -202,7 +202,7 @@ const lower = text.toLowerCase();
     if (currentOrder) {
   const now = Date.now();
   const diff = now - (currentOrder.lastInteraction || 0);
-  const THIRTY_MIN = 30 * 60 * 1000;
+  const THIRTY_MIN = 10 * 1000;
 
   if (diff > THIRTY_MIN && currentOrder.step !== "confirmado") {
     currentOrder.items = [];
@@ -321,7 +321,7 @@ if (currentOrder?.step === "esperando_nombre") {
     replyMessage =
       "🔥 Pedido confirmado\n\n" +
       "Pago: Efectivo\n" +
-      "Tiempo estimado: 20-30 min 🚚";
+      "Tiempo estimado: 40-50 min 🚚";
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
     updateOrderStep(phone, "esperando_comprobante");
