@@ -397,9 +397,7 @@ if (currentOrder?.step === "esperando_nombre") {
       "Tu pedido ya fue confirmado ✅\n\n" +
       "Si deseas, puedes preguntarme cómo va tu pedido.";
   }
-} else if (lower.startsWith("ya") || lower.startsWith("listo")) {
-  updateOrderStep(phone, "esperando_nombre");
-  replyMessage = "Perfecto. ¿Cómo es tu nombre?";
+
 
 } else if (currentOrder?.step === "armando_pedido") {
   if (
@@ -407,7 +405,9 @@ if (currentOrder?.step === "esperando_nombre") {
     lower.includes("sí") ||
     lower.includes("ya") ||
     lower.includes("ok") ||
-    lower.includes("vale")
+    lower.includes("vale") ||
+    lower.includes("dale") ||
+    lower.includes("de una")
   ) {
     replyMessage =
       "Perfecto 👌 ¿Qué más deseas agregar?\n\n" +
@@ -415,7 +415,9 @@ if (currentOrder?.step === "esperando_nombre") {
   } else if (
     lower.includes("no") ||
     lower.includes("nada") ||
-    lower.includes("listo")
+    lower.includes("listo") ||
+    lower.includes("no mas") ||
+    lower.includes("no más")
   ) {
     updateOrderStep(phone, "esperando_nombre");
     replyMessage =
