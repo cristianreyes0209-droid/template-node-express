@@ -400,7 +400,19 @@ if (currentOrder?.step === "esperando_nombre") {
 
 
 } else if (currentOrder?.step === "armando_pedido") {
-  if (
+  if (parsedItems.length > 0) {
+    const order = createOrUpdateOrder(phone, parsedItems);
+
+    const resumen = order.items
+      .map((item: any) => `• ${item.cantidad} ${item.producto}`)
+      .join("\n");
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "Estoy registrando:\n\n" +
+      resumen +
+      "\n\n¿Deseas agregar otra crepe, bebida o topping?";
+  } else if (
     lower.includes("si") ||
     lower.includes("sí") ||
     lower.includes("ya") ||
@@ -417,7 +429,8 @@ if (currentOrder?.step === "esperando_nombre") {
     lower.includes("nada") ||
     lower.includes("listo") ||
     lower.includes("no mas") ||
-    lower.includes("no más")
+    lower.includes("no más") ||
+    lower.includes("eso es todo")
   ) {
     updateOrderStep(phone, "esperando_nombre");
     replyMessage =
@@ -426,7 +439,7 @@ if (currentOrder?.step === "esperando_nombre") {
   } else {
     replyMessage =
       "¿Deseas agregar algo más? 😊\n\n" +
-      "Responde SI o NO.";
+      "Puedes escribir otra crepe, bebida o topping, o responder SI o NO.";
   }
 
 } else if (parsedItems.length > 0) {
@@ -473,7 +486,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBQ1U9Qu3FQeMdZCu66DvcR1IMnhJ0vbZA109KihFFjhF4Gv4h9eZCT3M2jUZAfwVg7XNR2VAIScnFeJExl9yZC8Kgobh37dKPCQEXZBUz9BZCk7MY0dkxFhx838KyUkEGIXu7DWEZBoZB8iGJFPaDYMI9OxYd8ZBVTDduUqRpqXqFr1bu68UTSTl7NpomE1I5GuhXIICFV53tkGYDav2lxnYR2eAXfZBVZAZBiDc0hJUFIBgkCjV7XFzXeJiJFZA0WagqCP0PUY516nFGHMXQZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBQ4xvb3xcArgZAWrla78U5Pga9xge5NhagUenRZCdBaHe4OWTfZBQv9gMebVfQSxkdsn8OZAl9jG88bM4kZApX0YsWv9GlMatSEK7krnZAgC5KFy3xy9F3XZAWP4W1Usxt1FnCu2xTvCIx2tdZCvToPMxQUSGDfUvWdSY23kYansxeoj11N2siJSVVIYiMEGLRMLIcckSiZA9ibtmW6FLZADdQyvbYZAMGJfILAQQeQzGmut6QWxVZAtKO8kcBfZBHmRqPMJ8XCEsDzv1SP4gZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
