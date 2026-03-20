@@ -400,7 +400,8 @@ if (currentOrder?.step === "esperando_nombre") {
 } else if (lower.startsWith("ya") || lower.startsWith("listo")) {
   updateOrderStep(phone, "esperando_nombre");
   replyMessage = "Perfecto. ¿Cómo es tu nombre?";
-    else if (currentOrder?.step === "armando_pedido") {
+
+} else if (currentOrder?.step === "armando_pedido") {
   if (
     lower.includes("si") ||
     lower.includes("sí") ||
@@ -417,7 +418,6 @@ if (currentOrder?.step === "esperando_nombre") {
     lower.includes("listo")
   ) {
     updateOrderStep(phone, "esperando_nombre");
-
     replyMessage =
       "Perfecto 👍\n\n" +
       "Antes de continuar, ¿cómo es tu nombre?";
@@ -426,10 +426,10 @@ if (currentOrder?.step === "esperando_nombre") {
       "¿Deseas agregar algo más? 😊\n\n" +
       "Responde SI o NO.";
   }
-}
+
 } else if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
-    updateOrderStep(phone, "armando_pedido");
+  updateOrderStep(phone, "armando_pedido");
 
   const resumen = order.items
     .map((item: any) => `• ${item.cantidad} ${item.producto}`)
