@@ -448,7 +448,7 @@ const resumen = order.items
       "Con gusto 😊 Tu pedido ya está en proceso. Te avisaremos cualquier novedad.";
   } else {
     replyMessage =
-      "Tu pedido ya fue confirmado ✅\n\n" +
+      "Tu pedido fue confirmado ✅\n\n" +
       "Si deseas, puedes preguntarme cómo va tu pedido.";
   }
 
