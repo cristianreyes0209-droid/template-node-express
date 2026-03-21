@@ -104,6 +104,76 @@ export const menu = {
       nombre: "Italiana",
       precio: 23500,
       aliases: ["italiana", "italianas"]
-    }
+    },
+  
+
+{
+  id: "nutella",
+  nombre: "Nutella",
+  precio: 11500,
+  aliases: [
+    "nutella", "nutellas",
+    "crepe nutella", "crepes nutella",
+    "crepe de nutella", "crepes de nutella"
   ]
-};
+},
+{
+  id: "chocolate",
+  nombre: "Chocolate",
+  precio: 10500,
+  aliases: [
+    "chocolate", "chocolates",
+    "crepe chocolate", "crepes chocolate",
+    "crepe de chocolate", "crepes de chocolate"
+  ]
+},
+{
+  id: "arequipe",
+  nombre: "Arequipe",
+  precio: 10500,
+  aliases: [
+    "arequipe", "arequipes",
+    "crepe arequipe", "crepes arequipe",
+    "crepe de arequipe", "crepes de arequipe"
+  ]
+},
+{
+  id: "oblea",
+  nombre: "Crepe oblea",
+  precio: 11900,
+  aliases: [
+    "oblea", "obleas",
+    "crepe oblea", "crepes oblea",
+    "crepe de oblea", "crepes de oblea"
+  ]
+},
+{
+  id: "tropinutella",
+  nombre: "Tropinutella",
+  precio: 19900,
+  aliases: [
+    "tropinutella", "tropinutellas",
+    "tropi nutella", "tropi nutellas",
+    "crepe tropinutella", "crepes tropinutella"
+  ]
+},
+{
+  id: "tropical",
+  nombre: "Tropical",
+  precio: 16900,
+  aliases: [
+    "tropical", "tropicales",
+    "crepe tropical", "crepes tropical",
+    "crepe de tropical", "crepes de tropical"
+  ]
+},
+{
+  id: "crepostre",
+  nombre: "Crepostre",
+  precio: 9500,
+  aliases: [
+    "crepostre", "crepostres",
+    "postre", "postres",
+    "crepe postre", "crepes postre"
+  ]
+}
