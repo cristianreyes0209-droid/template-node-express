@@ -194,7 +194,7 @@ if (!messageData) {
 
 const phone = messageData.from;
 const text = messageData.text?.body || "mensaje";
-const currentOrder = getOrder(phone);
+let currentOrder = getOrder(phone);
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
@@ -207,9 +207,10 @@ if (!phone) {
 let replyMessage = "";
 const parsedItems = parseOrder(text);
 const lower = text.toLowerCase();
-    if (!currentOrder) {
+  if (!currentOrder) {
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
+  currentOrder = getOrder(phone)!;
 
   replyMessage =
     "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
@@ -221,11 +222,10 @@ const lower = text.toLowerCase();
     "E. PQR 📝\n" +
     "F. Otros 💬";
 
-// Timeout por inactividad
-} else if (currentOrder) {
+} else {
   const now = Date.now();
   const diff = now - (currentOrder.lastInteraction || 0);
-  const THIRTY_MIN = 30 * 60 * 1000; // prueba; luego subes a 30 * 60 * 1000
+  const THIRTY_MIN = 30 * 60 * 1000;
 
   if (diff > THIRTY_MIN && currentOrder.step !== "confirmado") {
     currentOrder.items = [];
@@ -233,13 +233,20 @@ const lower = text.toLowerCase();
     currentOrder.tipoEntrega = undefined;
     currentOrder.direccion = undefined;
     currentOrder.formaPago = undefined;
-    currentOrder.step = "esperando_nombre";
+    currentOrder.canal = undefined;
+    currentOrder.sucursal = undefined;
+    currentOrder.step = "esperando_menu_principal";
     currentOrder.lastInteraction = now;
-}
+
     replyMessage =
-      "¡Hola de nuevo! 😊\n\n" +
-      "Parece que pasó un tiempo. Vamos a empezar de nuevo.\n\n" +
-      "¿Cómo es tu nombre?";
+      "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
+      "Cuéntame, ¿qué deseas hacer hoy?\n\n" +
+      "A. Recoger en tienda 🏪\n" +
+      "B. Domicilio 🚚\n" +
+      "C. Agendar pedido 📅\n" +
+      "D. Hacer reserva 🍽️\n" +
+      "E. PQR 📝\n" +
+      "F. Otros 💬";
 
     await fetch(
       "https://graph.facebook.com/v18.0/1066064689915977/messages",
@@ -263,7 +270,10 @@ const lower = text.toLowerCase();
 
   currentOrder.lastInteraction = now;
 }
-    } else if (currentOrder?.step === "esperando_menu_principal") {
+
+
+ 
+     if (currentOrder?.step === "esperando_menu_principal") {
   if (
     lower === "a" ||
     lower.includes("recoger") ||
@@ -381,15 +391,14 @@ const lower = text.toLowerCase();
       "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
       "O si prefieres, escríbeme lo que deseas pedir y yo te ayudo por aquí 😊";
 
-  } else {
+ } else {
     replyMessage =
       "Por favor elige la sucursal:\n\n" +
       "A. La Villa\n" +
       "B. Av. Circunvalar";
   }
 
-// PRIORIDAD 1: si el mensaje trae productos, se procesan primero
- } else if (parsedItems.length > 0) {
+} else if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
   updateOrderStep(phone, "armando_pedido");
 
@@ -422,45 +431,60 @@ const resumen = order.items
     replyMessage = "Por favor dime tu nombre para continuar 😊";
   } else {
     updateOrderName(phone, text);
-    updateOrderStep(phone, "esperando_tipo_entrega");
-    replyMessage = "Mucho gusto " + text + ".\n\n¿Tu pedido es para domicilio o recoger?";
+
+    if (currentOrder?.tipoEntrega === "domicilio") {
+      updateOrderStep(phone, "esperando_direccion");
+      replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+    } else {
+      updateOrderStep(phone, "esperando_confirmacion");
+
+      const order = getOrder(phone)!;
+      const totals = calculateTotal(order);
+
+      const resumen = order.items
+        .map((item: any) =>
+          item.observaciones
+            ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
+            : `• ${item.cantidad} ${item.producto}`
+        )
+        .join("\n");
+
+      replyMessage =
+        "Perfecto 👌\n\n" +
+        "Tu pedido es:\n" +
+        resumen +
+        "\n\nSubtotal: $" + totals.subtotal +
+        "\nTotal: $" + totals.total +
+        "\n\n¿Confirmas tu pedido? (SI / NO)";
+    }
   }
 
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
-  if (lower.includes("domicilio")) {
-    updateOrderDeliveryType(phone, "domicilio");
+  if (currentOrder?.tipoEntrega === "domicilio") {
     updateOrderStep(phone, "esperando_direccion");
+    replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+  } else {
+    updateOrderStep(phone, "esperando_confirmacion");
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
-const resumen = order.items
-  .map((item: any) =>
-    item.observaciones
-      ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
-      : `• ${item.cantidad} ${item.producto}`
-  )
-  .join("\n");
+    const resumen = order.items
+      .map((item: any) =>
+        item.observaciones
+          ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
+          : `• ${item.cantidad} ${item.producto}`
+      )
+      .join("\n");
 
     replyMessage =
       "Perfecto 👌\n\n" +
       "Tu pedido es:\n" +
       resumen +
       "\n\nSubtotal: $" + totals.subtotal +
-      "\nDomicilio: por confirmar" +
       "\nTotal: $" + totals.total +
-      "\n\n¿Me compartes tu dirección por favor?";
-  } else if (lower.includes("recoger") || lower.includes("llevar")) {
-    updateOrderDeliveryType(phone, "recoger");
-    updateOrderStep(phone, "confirmado");
-
-    replyMessage =
-      "Perfecto 👌\n\nTu pedido estará listo para recoger. Te avisaremos cuando esté listo.";
-  } else {
-    replyMessage = "Por favor dime si tu pedido es para domicilio o para recoger.";
+      "\n\n¿Confirmas tu pedido? (SI / NO)";
   }
-
-} else if (currentOrder?.step === "esperando_direccion") {
   updateOrderAddress(phone, text);
 
   const order = getOrder(phone)!;
@@ -652,7 +676,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBRHeThse0lCRRe2v1quj7UgMsK1goEsVPIsQED16vbkBzDKDa2kBdlqJcK0N1Ke8RNHSpjNEhOZADH28Xm45e3ChH3OSKbdyZBAQLYkQbpQEG49fbf3az0eK8iZA1Htud4V3FEbPqZApBogKJPCH3usXFYZBugNfT3pjiBoaSHQKQXi6cYbvwWczc3J4bD3dbKWQ9gVrlduC6JGp4cOlzf2GKONxZCE4E49W5chqeghXOe2HjqJqxydvZCudOCPKLk0e2yyNZAt7ZCZBwZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBRMi7AWvwZCYdWAW4S4Sr7AjAYNP0mqaST2fZAXZAyxUNwldkI6B7T0x3DpKXF5Tq887bJJ3M6HIJSvQfv0wLj6PEzS4vrbupAZBEIlCx4ePSofXFaqrtOQDGoRlRjAVGZAU1v7uwEKZBbHazMWNuqDtxx3ChNZCk52yx5YK2E39fXfiZC7MxeisVpJlCeiyRqFpjq7IBwGm6W56qxBGS9WkoP2jDCRS381zwPkAgoLBqAeXxrtpKUWDKlTULgrbabyBhEeX2reDxBQZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
