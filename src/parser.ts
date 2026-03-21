@@ -1,9 +1,9 @@
 import { menu } from "./menu";
 
 export function parseOrder(text: string) {
-  const lower = text.toLowerCase();
+  const lower = text.toLowerCase().trim();
 
-  const numbers: any = {
+  const numbers: Record<string, number> = {
     "1": 1,
     "2": 2,
     "3": 3,
@@ -25,9 +25,15 @@ export function parseOrder(text: string) {
       if (lower.includes(alias)) {
         let qty = 1;
 
+        // Buscar cantidad más específica cerca del alias
         for (const key in numbers) {
-          if (lower.includes(key) && lower.includes(alias)) {
+          if (
+            lower.includes(key + " " + alias) ||
+            lower.includes(key + " de " + alias) ||
+            lower.includes(alias + " " + key)
+          ) {
             qty = numbers[key];
+            break;
           }
         }
 
