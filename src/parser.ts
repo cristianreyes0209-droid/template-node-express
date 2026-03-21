@@ -84,11 +84,10 @@ function extractObservaciones(fragment: string) {
 
 function splitIntoFragments(text: string) {
   return text
-    .split(/\s+y\s+|,/i)
+    .split(/,/i)
     .map((part) => part.trim())
     .filter(Boolean);
 }
-
 export function parseOrder(text: string): ParsedItem[] {
   const lower = normalizeText(text);
   const fragments = splitIntoFragments(lower);
