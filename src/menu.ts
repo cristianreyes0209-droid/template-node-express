@@ -108,13 +108,13 @@ export const menu = {
   
 
 {
-  id: "nutella",
-  nombre: "Nutella",
-  precio: 11500,
+ id: "tropinutella",
+  nombre: "Tropinutella",
+  precio: 19900,
   aliases: [
-    "nutella", "nutellas",
-    "crepe nutella", "crepes nutella",
-    "crepe de nutella", "crepes de nutella"
+    "tropinutella", "tropinutellas",
+    "tropi nutella", "tropi nutellas",
+    "crepe tropinutella", "crepes tropinutella"
   ]
 },
 {
@@ -148,13 +148,13 @@ export const menu = {
   ]
 },
 {
-  id: "tropinutella",
-  nombre: "Tropinutella",
-  precio: 19900,
+  id: "nutella",
+  nombre: "Nutella",
+  precio: 11500,
   aliases: [
-    "tropinutella", "tropinutellas",
-    "tropi nutella", "tropi nutellas",
-    "crepe tropinutella", "crepes tropinutella"
+    "nutella", "nutellas",
+    "crepe nutella", "crepes nutella",
+    "crepe de nutella", "crepes de nutella"
   ]
 },
 {
