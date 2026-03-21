@@ -21,6 +21,8 @@ type OrderItem = {
   observaciones?: string;
 };
 type OrderStep =
+  | "esperando_menu_principal"
+  | "esperando_sucursal"
   | "armando_pedido"
   | "esperando_nombre"
   | "esperando_tipo_entrega"
