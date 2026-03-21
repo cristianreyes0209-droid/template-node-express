@@ -204,7 +204,7 @@ const lower = text.toLowerCase();
 if (currentOrder) {
   const now = Date.now();
   const diff = now - (currentOrder.lastInteraction || 0);
-  const THIRTY_MIN = 10 * 1000; // prueba; luego subes a 30 * 60 * 1000
+  const THIRTY_MIN = 30 * 60 * 1000; // prueba; luego subes a 30 * 60 * 1000
 
   if (diff > THIRTY_MIN && currentOrder.step !== "confirmado") {
     currentOrder.items = [];
@@ -258,10 +258,25 @@ if (parsedItems.length > 0) {
     resumen +
     "\n\n¿Deseas agregar otra crepe, bebida o topping?";
 
-} else if (currentOrder?.step === "esperando_nombre") {
-  updateOrderName(phone, text);
-  updateOrderStep(phone, "esperando_tipo_entrega");
-  replyMessage = "Mucho gusto " + text + ".\n\n¿Tu pedido es para domicilio o recoger?";
+if (currentOrder?.step === "esperando_nombre") {
+  if (
+    lower === "si" ||
+    lower === "sí" ||
+    lower === "no" ||
+    lower === "ok" ||
+    lower === "ya" ||
+    lower === "vale" ||
+    lower === "listo" ||
+    lower === "domicilio" ||
+    lower === "recoger"
+  ) {
+    replyMessage = "Por favor dime tu nombre para continuar 😊";
+  } else {
+    updateOrderName(phone, text);
+    updateOrderStep(phone, "esperando_tipo_entrega");
+    replyMessage = "Mucho gusto " + text + ".\n\n¿Tu pedido es para domicilio o recoger?";
+  }
+}
 
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
   if (lower.includes("domicilio")) {
