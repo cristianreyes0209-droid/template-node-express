@@ -207,9 +207,22 @@ if (!phone) {
 let replyMessage = "";
 const parsedItems = parseOrder(text);
 const lower = text.toLowerCase();
+    if (!currentOrder) {
+  createOrUpdateOrder(phone, []);
+  updateOrderStep(phone, "esperando_menu_principal");
+
+  replyMessage =
+    "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
+    "Cuéntame, ¿qué deseas hacer hoy?\n\n" +
+    "A. Recoger en tienda 🏪\n" +
+    "B. Domicilio 🚚\n" +
+    "C. Agendar pedido 📅\n" +
+    "D. Hacer reserva 🍽️\n" +
+    "E. PQR 📝\n" +
+    "F. Otros 💬";
 
 // Timeout por inactividad
-if (currentOrder) {
+} else if (currentOrder) {
   const now = Date.now();
   const diff = now - (currentOrder.lastInteraction || 0);
   const THIRTY_MIN = 30 * 60 * 1000; // prueba; luego subes a 30 * 60 * 1000
@@ -250,9 +263,133 @@ if (currentOrder) {
 
   currentOrder.lastInteraction = now;
 }
+    } else if (currentOrder?.step === "esperando_menu_principal") {
+  if (
+    lower === "a" ||
+    lower.includes("recoger") ||
+    lower.includes("tienda")
+  ) {
+    currentOrder.canal = "recoger";
+    updateOrderDeliveryType(phone, "recoger");
+    updateOrderStep(phone, "esperando_sucursal");
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "¿Para cuál sucursal es tu pedido?\n\n" +
+      "A. La Villa\n" +
+      "B. Av. Circunvalar";
+
+  } else if (
+    lower === "b" ||
+    lower.includes("domicilio") ||
+    lower.includes("enviar") ||
+    lower.includes("envio") ||
+    lower.includes("envío")
+  ) {
+    currentOrder.canal = "domicilio";
+    updateOrderDeliveryType(phone, "domicilio");
+    updateOrderStep(phone, "esperando_sucursal");
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "¿Para cuál sucursal es tu pedido?\n\n" +
+      "A. La Villa\n" +
+      "B. Av. Circunvalar";
+
+  } else if (
+    lower === "c" ||
+    lower.includes("agendar") ||
+    lower.includes("programar") ||
+    lower.includes("pedido programado")
+  ) {
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "Muy pronto podrás agendar pedidos por este medio.\n\n" +
+      "Por ahora puedo ayudarte con pedidos inmediatos para recoger o domicilio.";
+
+  } else if (
+    lower === "d" ||
+    lower.includes("reserva") ||
+    lower.includes("reservar") ||
+    lower.includes("mesa")
+  ) {
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "Muy pronto podrás hacer reservas por este medio.\n\n" +
+      "Por ahora, si deseas, puedo ayudarte con un pedido para recoger o domicilio.";
+
+  } else if (
+    lower === "e" ||
+    lower.includes("pqr") ||
+    lower.includes("queja") ||
+    lower.includes("reclamo") ||
+    lower.includes("peticion") ||
+    lower.includes("petición") ||
+    lower.includes("sugerencia")
+  ) {
+    replyMessage =
+      "Claro 😊\n\n" +
+      "Por favor escríbeme tu solicitud, queja, reclamo o sugerencia, y te ayudaremos a gestionarla.";
+
+  } else if (
+    lower === "f" ||
+    lower.includes("otros") ||
+    lower.includes("otra cosa") ||
+    lower.includes("ayuda")
+  ) {
+    replyMessage =
+      "Con gusto 😊\n\n" +
+      "Cuéntame en qué puedo ayudarte.";
+
+  } else {
+    replyMessage =
+      "Por favor elige una opción:\n\n" +
+      "A. Recoger en tienda 🏪\n" +
+      "B. Domicilio 🚚\n" +
+      "C. Agendar pedido 📅\n" +
+      "D. Hacer reserva 🍽️\n" +
+      "E. PQR 📝\n" +
+      "F. Otros 💬";
+  }
+    } else if (currentOrder?.step === "esperando_sucursal") {
+  if (
+    lower === "a" ||
+    lower.includes("villa") ||
+    lower.includes("la villa")
+  ) {
+    currentOrder.sucursal = "la_villa";
+    updateOrderStep(phone, "armando_pedido");
+
+    replyMessage =
+      "Perfecto 👍\n\n" +
+      "Puedes hacer tu pedido aquí:\n" +
+      "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
+      "O si prefieres, escríbeme lo que deseas pedir y yo te ayudo por aquí 😊";
+
+  } else if (
+    lower === "b" ||
+    lower.includes("circunvalar") ||
+    lower.includes("avenida circunvalar") ||
+    lower.includes("av circunvalar")
+  ) {
+    currentOrder.sucursal = "circunvalar";
+    updateOrderStep(phone, "armando_pedido");
+
+    replyMessage =
+      "Perfecto 👍\n\n" +
+      "Puedes hacer tu pedido aquí:\n" +
+      "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
+      "O si prefieres, escríbeme lo que deseas pedir y yo te ayudo por aquí 😊";
+
+  } else {
+    replyMessage =
+      "Por favor elige la sucursal:\n\n" +
+      "A. La Villa\n" +
+      "B. Av. Circunvalar";
+  }
 
 // PRIORIDAD 1: si el mensaje trae productos, se procesan primero
-if (parsedItems.length > 0) {
+ } else if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
   updateOrderStep(phone, "armando_pedido");
 
