@@ -249,7 +249,11 @@ if (parsedItems.length > 0) {
   updateOrderStep(phone, "armando_pedido");
 
   const resumen = order.items
-    .map((item: any) => `• ${item.cantidad} ${item.producto}`)
+    .map((item: any) =>
+  item.observaciones
+    ? `• ${item.cantidad} ${item.producto} (${item.observaciones})`
+    : `• ${item.cantidad} ${item.producto}`
+)
     .join("\n");
 
   replyMessage =
@@ -286,7 +290,11 @@ if (parsedItems.length > 0) {
     const totals = calculateTotal(order);
 
     const resumen = order.items
-      .map((item: any) => "• " + item.cantidad + " " + item.producto)
+      .map((item: any) =>
+  item.observaciones
+    ? `• ${item.cantidad} ${item.producto} (${item.observaciones})`
+    : `• ${item.cantidad} ${item.producto}`
+)
       .join("\n");
 
     replyMessage =
@@ -314,7 +322,11 @@ if (parsedItems.length > 0) {
   const totals = calculateTotal(order);
 
   const resumen = order.items
-    .map((item: any) => "• " + item.cantidad + " " + item.producto)
+    .map((item: any) =>
+  item.observaciones
+    ? `• ${item.cantidad} ${item.producto} (${item.observaciones})`
+    : `• ${item.cantidad} ${item.producto}`
+)
     .join("\n");
 
   updateOrderStep(phone, "esperando_confirmacion");
