@@ -48,15 +48,26 @@ export function getOrder(phone: string): CustomerOrder | undefined {
 
 export function createOrUpdateOrder(phone: string, items: OrderItem[]) {
   if (!orders[phone]) {
-  orders[phone] = {
-  telefono: phone,
-  items: [],
-  step: "armando_pedido",
-  lastInteraction: Date.now()
-};
+    orders[phone] = {
+      telefono: phone,
+      items: [],
+      step: "armando_pedido",
+      lastInteraction: Date.now()
+    };
   }
 
-  orders[phone].items = [...orders[phone].items, ...items];
+  for (const item of items) {
+    const existing = orders[phone].items.find(
+      (i) => i.producto === item.producto
+    );
+
+    if (existing) {
+      existing.cantidad += item.cantidad;
+    } else {
+      orders[phone].items.push(item);
+    }
+  }
+
   return orders[phone];
 }
 
