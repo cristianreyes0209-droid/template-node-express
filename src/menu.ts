@@ -176,4 +176,4 @@ export const menu = {
     "postre", "postres",
     "crepe postre", "crepes postre"
   ]
-}
+};
