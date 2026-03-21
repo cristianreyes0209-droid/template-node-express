@@ -213,8 +213,8 @@ const lower = text.toLowerCase();
   currentOrder = getOrder(phone)!;
 
   replyMessage =
-    "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
-    "Cuéntame, ¿qué deseas hacer hoy?\n\n" +
+"Hola 👋 Bienvenido a Las Crepes de París ✨\n\n" +
+"Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
     "A. Recoger en tienda 🏪\n" +
     "B. Domicilio 🚚\n" +
     "C. Agendar pedido 📅\n" +
@@ -239,8 +239,8 @@ const lower = text.toLowerCase();
     currentOrder.lastInteraction = now;
 
     replyMessage =
-      "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
-      "Cuéntame, ¿qué deseas hacer hoy?\n\n" +
+"Hola 👋 Bienvenido a Las Crepes de París ✨\n\n" +
+"Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
       "A. Recoger en tienda 🏪\n" +
       "B. Domicilio 🚚\n" +
       "C. Agendar pedido 📅\n" +
@@ -353,7 +353,8 @@ const lower = text.toLowerCase();
 
   } else {
     replyMessage =
-      "Por favor elige una opción:\n\n" +
+      "Con gusto te ayudo 😊\n\n" +
+"Elige una de estas opciones para continuar:\n\n" +
       "A. Recoger en tienda 🏪\n" +
       "B. Domicilio 🚚\n" +
       "C. Agendar pedido 📅\n" +
