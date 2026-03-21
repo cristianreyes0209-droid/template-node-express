@@ -299,6 +299,7 @@ const lower = text.toLowerCase();
     currentOrder.canal = "domicilio";
     updateOrderDeliveryType(phone, "domicilio");
     updateOrderStep(phone, "esperando_sucursal");
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
