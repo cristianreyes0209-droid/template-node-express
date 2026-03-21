@@ -199,10 +199,12 @@ if (!phone) {
 let replyMessage = "";
 const parsedItems = parseOrder(text);
 const lower = text.toLowerCase();
-    if (currentOrder) {
+
+// Timeout por inactividad
+if (currentOrder) {
   const now = Date.now();
   const diff = now - (currentOrder.lastInteraction || 0);
-  const THIRTY_MIN = 10 * 1000;
+  const THIRTY_MIN = 10 * 1000; // prueba; luego subes a 30 * 60 * 1000
 
   if (diff > THIRTY_MIN && currentOrder.step !== "confirmado") {
     currentOrder.items = [];
@@ -219,7 +221,7 @@ const lower = text.toLowerCase();
       "¿Cómo es tu nombre?";
 
     await fetch(
-      "https://graph.facebook.com/v18.0/106606468991597/messages",
+      "https://graph.facebook.com/v18.0/1066064689915977/messages",
       {
         method: "POST",
         headers: {
@@ -241,17 +243,32 @@ const lower = text.toLowerCase();
   currentOrder.lastInteraction = now;
 }
 
-if (currentOrder?.step === "esperando_nombre") {
+// PRIORIDAD 1: si el mensaje trae productos, se procesan primero
+if (parsedItems.length > 0) {
+  const order = createOrUpdateOrder(phone, parsedItems);
+  updateOrderStep(phone, "armando_pedido");
+
+  const resumen = order.items
+    .map((item: any) => `• ${item.cantidad} ${item.producto}`)
+    .join("\n");
+
+  replyMessage =
+    "Perfecto 👌\n\n" +
+    "Estoy registrando:\n\n" +
+    resumen +
+    "\n\n¿Deseas agregar otra crepe, bebida o topping?";
+
+} else if (currentOrder?.step === "esperando_nombre") {
   updateOrderName(phone, text);
   updateOrderStep(phone, "esperando_tipo_entrega");
   replyMessage = "Mucho gusto " + text + ".\n\n¿Tu pedido es para domicilio o recoger?";
+
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
   if (lower.includes("domicilio")) {
     updateOrderDeliveryType(phone, "domicilio");
     updateOrderStep(phone, "esperando_direccion");
 
     const order = getOrder(phone)!;
-
     const totals = calculateTotal(order);
 
     const resumen = order.items
@@ -275,6 +292,7 @@ if (currentOrder?.step === "esperando_nombre") {
   } else {
     replyMessage = "Por favor dime si tu pedido es para domicilio o para recoger.";
   }
+
 } else if (currentOrder?.step === "esperando_direccion") {
   updateOrderAddress(phone, text);
 
@@ -296,6 +314,7 @@ if (currentOrder?.step === "esperando_nombre") {
     "\nTotal: $" + totals.total +
     "\n📍 Dirección: " + order.direccion +
     "\n\n¿Confirmas tu pedido? (SI / NO)";
+
 } else if (currentOrder?.step === "esperando_confirmacion") {
   if (lower.includes("si")) {
     updateOrderStep(phone, "esperando_pago");
@@ -308,11 +327,11 @@ if (currentOrder?.step === "esperando_nombre") {
       "• Bancolombia";
   } else if (lower.includes("no")) {
     updateOrderStep(phone, "armando_pedido");
-
     replyMessage = "Perfecto 👍 ¿Qué deseas cambiar?";
   } else {
     replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
   }
+
 } else if (currentOrder?.step === "esperando_pago") {
   if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
@@ -358,6 +377,7 @@ if (currentOrder?.step === "esperando_nombre") {
       "• Daviplata\n" +
       "• Bancolombia";
   }
+
 } else if (currentOrder?.step === "esperando_comprobante") {
   if (lower.includes("listo") || lower.includes("ya")) {
     updateOrderStep(phone, "confirmado");
@@ -370,7 +390,8 @@ if (currentOrder?.step === "esperando_nombre") {
     replyMessage =
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
   }
-    } else if (currentOrder?.step === "confirmado") {
+
+} else if (currentOrder?.step === "confirmado") {
   if (
     lower.includes("como va") ||
     lower.includes("cómo va") ||
@@ -398,21 +419,8 @@ if (currentOrder?.step === "esperando_nombre") {
       "Si deseas, puedes preguntarme cómo va tu pedido.";
   }
 
-
 } else if (currentOrder?.step === "armando_pedido") {
-  if (parsedItems.length > 0) {
-    const order = createOrUpdateOrder(phone, parsedItems);
-
-    const resumen = order.items
-      .map((item: any) => `• ${item.cantidad} ${item.producto}`)
-      .join("\n");
-
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Estoy registrando:\n\n" +
-      resumen +
-      "\n\n¿Deseas agregar otra crepe, bebida o topping?";
-  } else if (
+  if (
     lower.includes("si") ||
     lower.includes("sí") ||
     lower.includes("ya") ||
@@ -442,19 +450,6 @@ if (currentOrder?.step === "esperando_nombre") {
       "Puedes escribir otra crepe, bebida o topping, o responder SI o NO.";
   }
 
-} else if (parsedItems.length > 0) {
-  const order = createOrUpdateOrder(phone, parsedItems);
-  updateOrderStep(phone, "armando_pedido");
-
-  const resumen = order.items
-    .map((item: any) => `• ${item.cantidad} ${item.producto}`)
-    .join("\n");
-
-  replyMessage =
-    "Perfecto 👌\n\n" +
-    "Estoy registrando:\n\n" +
-    resumen +
-    "\n\n¿Deseas agregar otra crepe, bebida o topping?";
 } else if (
   lower.includes("hola") ||
   lower.includes("buenas") ||
@@ -469,6 +464,7 @@ if (currentOrder?.step === "esperando_nombre") {
     "Puedes hacer tu pedido aquí:\n" +
     "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
     "O si prefieres, escríbeme qué deseas pedir y yo te ayudo por aquí 😊";
+
 } else {
   replyMessage =
     "Con gusto te ayudo 😊\n\n" +
