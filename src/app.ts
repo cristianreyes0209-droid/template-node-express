@@ -235,7 +235,7 @@ const lower = text.toLowerCase();
     currentOrder.formaPago = undefined;
     currentOrder.step = "esperando_nombre";
     currentOrder.lastInteraction = now;
-
+}
     replyMessage =
       "¡Hola de nuevo! 😊\n\n" +
       "Parece que pasó un tiempo. Vamos a empezar de nuevo.\n\n" +
