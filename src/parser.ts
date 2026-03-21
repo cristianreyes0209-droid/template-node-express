@@ -20,7 +20,6 @@ export function parseOrder(text: string) {
 
   const items: any[] = [];
 
-  // Aplanar productos + aliases y ordenar por alias más largo primero
   const aliasList = menu.productos
     .flatMap((product) =>
       product.aliases.map((alias) => ({
@@ -37,15 +36,22 @@ export function parseOrder(text: string) {
 
     if (usedProducts.has(product.id)) continue;
 
-    if (lower.includes(alias)) {
+    const cleanAlias = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
+
+    if (aliasRegex.test(lower)) {
       let qty = 1;
 
       for (const key in numbers) {
-        if (
-          lower.includes(key + " " + alias) ||
-          lower.includes(key + " de " + alias) ||
-          lower.includes(alias + " " + key)
-        ) {
+        const cleanKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+        const qtyPatterns = [
+          new RegExp(`\\b${cleanKey}\\s+${cleanAlias}\\b`, "i"),
+          new RegExp(`\\b${cleanKey}\\s+de\\s+${cleanAlias}\\b`, "i"),
+          new RegExp(`\\b${cleanAlias}\\s+${cleanKey}\\b`, "i")
+        ];
+
+        if (qtyPatterns.some((pattern) => pattern.test(lower))) {
           qty = numbers[key];
           break;
         }
