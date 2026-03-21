@@ -282,6 +282,7 @@ const lower = text.toLowerCase();
     currentOrder.canal = "recoger";
     updateOrderDeliveryType(phone, "recoger");
     updateOrderStep(phone, "esperando_sucursal");
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -371,6 +372,7 @@ const lower = text.toLowerCase();
   ) {
     currentOrder.sucursal = "la_villa";
     updateOrderStep(phone, "armando_pedido");
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👍\n\n" +
@@ -386,6 +388,7 @@ const lower = text.toLowerCase();
   ) {
     currentOrder.sucursal = "circunvalar";
     updateOrderStep(phone, "armando_pedido");
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👍\n\n" +
@@ -403,6 +406,7 @@ const lower = text.toLowerCase();
 } else if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
   updateOrderStep(phone, "armando_pedido");
+         currentOrder = getOrder(phone)!;
 
 const resumen = order.items
   .map((item: any) =>
@@ -436,9 +440,11 @@ const resumen = order.items
 
     if (currentOrder?.tipoEntrega === "domicilio") {
       updateOrderStep(phone, "esperando_direccion");
+        currentOrder = getOrder(phone)!;
       replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
     } else {
       updateOrderStep(phone, "esperando_confirmacion");
+        currentOrder = getOrder(phone)!;
 
       const order = getOrder(phone)!;
       const totals = calculateTotal(order);
@@ -464,9 +470,11 @@ const resumen = order.items
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
   if (currentOrder?.tipoEntrega === "domicilio") {
     updateOrderStep(phone, "esperando_direccion");
+      currentOrder = getOrder(phone)!;
     replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
   } else {
     updateOrderStep(phone, "esperando_confirmacion");
+      currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
@@ -500,6 +508,7 @@ const resumen = order.items
   )
   .join("\n");
   updateOrderStep(phone, "esperando_confirmacion");
+         currentOrder = getOrder(phone)!;
 
   replyMessage =
     "Perfecto 👌\n\n" +
@@ -514,6 +523,7 @@ const resumen = order.items
 } else if (currentOrder?.step === "esperando_confirmacion") {
   if (lower.includes("si")) {
     updateOrderStep(phone, "esperando_pago");
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n¿Cómo deseas pagar?\n" +
@@ -523,6 +533,7 @@ const resumen = order.items
       "• Bancolombia";
   } else if (lower.includes("no")) {
     updateOrderStep(phone, "armando_pedido");
+      currentOrder = getOrder(phone)!;
     replyMessage = "Perfecto 👍 ¿Qué deseas cambiar?";
   } else {
     replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
@@ -531,7 +542,9 @@ const resumen = order.items
 } else if (currentOrder?.step === "esperando_pago") {
   if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
+      
     updateOrderStep(phone, "confirmado");
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "🔥 Pedido confirmado\n\n" +
@@ -540,6 +553,7 @@ const resumen = order.items
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
     updateOrderStep(phone, "esperando_comprobante");
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -549,6 +563,7 @@ const resumen = order.items
   } else if (lower.includes("daviplata")) {
     updateOrderPayment(phone, "daviplata");
     updateOrderStep(phone, "esperando_comprobante");
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -558,6 +573,7 @@ const resumen = order.items
   } else if (lower.includes("bancolombia") || lower.includes("transferencia")) {
     updateOrderPayment(phone, "bancolombia");
     updateOrderStep(phone, "esperando_comprobante");
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -577,6 +593,7 @@ const resumen = order.items
 } else if (currentOrder?.step === "esperando_comprobante") {
   if (lower.includes("listo") || lower.includes("ya")) {
     updateOrderStep(phone, "confirmado");
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "🔥 Pago recibido\n\n" +
@@ -637,6 +654,7 @@ const resumen = order.items
     lower.includes("eso es todo")
   ) {
     updateOrderStep(phone, "esperando_nombre");
+      currentOrder = getOrder(phone)!;
     replyMessage =
       "Perfecto 👍\n\n" +
       "Antes de continuar, ¿cómo es tu nombre?";
