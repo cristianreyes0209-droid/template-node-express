@@ -166,6 +166,14 @@ export const initApp = async (
   }
 
 });
+    function formatObservaciones(obs?: string) {
+  if (!obs) return "";
+
+  return obs
+    .split(",")
+    .map(o => o.trim())
+    .join(" • ");
+}
 app.post('/whatsapp', async (req, res) => {
 
 const message = req.body;
@@ -248,13 +256,13 @@ if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
   updateOrderStep(phone, "armando_pedido");
 
-  const resumen = order.items
-    .map((item: any) =>
-  item.observaciones
-    ? `• ${item.cantidad} ${item.producto} (${item.observaciones})`
-    : `• ${item.cantidad} ${item.producto}`
-)
-    .join("\n");
+const resumen = order.items
+  .map((item: any) =>
+    item.observaciones
+      ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
+      : `• ${item.cantidad} ${item.producto}`
+  )
+  .join("\n");
 
   replyMessage =
     "Perfecto 👌\n\n" +
@@ -289,13 +297,13 @@ if (parsedItems.length > 0) {
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
-    const resumen = order.items
-      .map((item: any) =>
-  item.observaciones
-    ? `• ${item.cantidad} ${item.producto} (${item.observaciones})`
-    : `• ${item.cantidad} ${item.producto}`
-)
-      .join("\n");
+const resumen = order.items
+  .map((item: any) =>
+    item.observaciones
+      ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
+      : `• ${item.cantidad} ${item.producto}`
+  )
+  .join("\n");
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -321,14 +329,13 @@ if (parsedItems.length > 0) {
   const order = getOrder(phone)!;
   const totals = calculateTotal(order);
 
-  const resumen = order.items
-    .map((item: any) =>
-  item.observaciones
-    ? `• ${item.cantidad} ${item.producto} (${item.observaciones})`
-    : `• ${item.cantidad} ${item.producto}`
-)
-    .join("\n");
-
+const resumen = order.items
+  .map((item: any) =>
+    item.observaciones
+      ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
+      : `• ${item.cantidad} ${item.producto}`
+  )
+  .join("\n");
   updateOrderStep(phone, "esperando_confirmacion");
 
   replyMessage =
@@ -508,7 +515,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBREr1JMPBXOOcFFL4ZBdGk11XurSZBHdyjhcUmcSrkhZBXsBmtNcbGWHNaSk7CuEIMZBuhnzy3IGdIIFHgfCkL0RMaFJSZBb4OFW8fJtC9xHQnN2jk1ZCBTQ8yZBxbK1Odjfvo254PRuh7oQ4j79fy9uyMatPQ0jAf5dvyGTRTRYUEpV3hzfZA64vHKjwZAZAQA1SwuqYjxXr9jAPHcPDtJ8eFvolvbG0I3coPd2LD1BTItld0YZALQQ7qD7G6Vh9nKXV1J0KZCrGptjV4AoN",
+      "Authorization": "Bearer EAAKig65Oi0EBRHeThse0lCRRe2v1quj7UgMsK1goEsVPIsQED16vbkBzDKDa2kBdlqJcK0N1Ke8RNHSpjNEhOZADH28Xm45e3ChH3OSKbdyZBAQLYkQbpQEG49fbf3az0eK8iZA1Htud4V3FEbPqZApBogKJPCH3usXFYZBugNfT3pjiBoaSHQKQXi6cYbvwWczc3J4bD3dbKWQ9gVrlduC6JGp4cOlzf2GKONxZCE4E49W5chqeghXOe2HjqJqxydvZCudOCPKLk0e2yyNZAt7ZCZBwZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
