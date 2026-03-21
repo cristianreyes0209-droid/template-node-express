@@ -18,8 +18,8 @@ type OrderItem = {
   producto: string;
   cantidad: number;
   precio: number;
+  observaciones?: string;
 };
-
 type OrderStep =
   | "armando_pedido"
   | "esperando_nombre"
