@@ -20,37 +20,44 @@ export function parseOrder(text: string) {
 
   const items: any[] = [];
 
-  for (const product of menu.productos) {
-    for (const alias of product.aliases) {
-      if (lower.includes(alias)) {
-        let qty = 1;
+  // Aplanar productos + aliases y ordenar por alias más largo primero
+  const aliasList = menu.productos
+    .flatMap((product) =>
+      product.aliases.map((alias) => ({
+        product,
+        alias
+      }))
+    )
+    .sort((a, b) => b.alias.length - a.alias.length);
 
-        // Buscar cantidad más específica cerca del alias
-        for (const key in numbers) {
-          if (
-            lower.includes(key + " " + alias) ||
-            lower.includes(key + " de " + alias) ||
-            lower.includes(alias + " " + key)
-          ) {
-            qty = numbers[key];
-            break;
-          }
+  const usedProducts = new Set<string>();
+
+  for (const entry of aliasList) {
+    const { product, alias } = entry;
+
+    if (usedProducts.has(product.id)) continue;
+
+    if (lower.includes(alias)) {
+      let qty = 1;
+
+      for (const key in numbers) {
+        if (
+          lower.includes(key + " " + alias) ||
+          lower.includes(key + " de " + alias) ||
+          lower.includes(alias + " " + key)
+        ) {
+          qty = numbers[key];
+          break;
         }
-
-        const existing = items.find(i => i.producto === product.nombre);
-
-        if (existing) {
-          existing.cantidad += qty;
-        } else {
-          items.push({
-            producto: product.nombre,
-            cantidad: qty,
-            precio: product.precio
-          });
-        }
-
-        break;
       }
+
+      items.push({
+        producto: product.nombre,
+        cantidad: qty,
+        precio: product.precio
+      });
+
+      usedProducts.add(product.id);
     }
   }
 
