@@ -36,6 +36,8 @@ type CustomerOrder = {
   tipoEntrega?: string;
   direccion?: string;
   formaPago?: string;
+  canal?: string;
+  sucursal?: string;
   items: OrderItem[];
   step: OrderStep;
   lastInteraction: number;
@@ -51,7 +53,7 @@ export function createOrUpdateOrder(phone: string, items: OrderItem[]) {
     orders[phone] = {
       telefono: phone,
       items: [],
-      step: "armando_pedido",
+      step: "esperando_menu_principal",
       lastInteraction: Date.now()
     };
   }
