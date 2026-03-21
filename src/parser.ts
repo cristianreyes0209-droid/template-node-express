@@ -83,10 +83,38 @@ function extractObservaciones(fragment: string) {
 }
 
 function splitIntoFragments(text: string) {
-  return text
+  const commaParts = text
     .split(/,/i)
     .map((part) => part.trim())
     .filter(Boolean);
+
+  const result: string[] = [];
+
+  for (const part of commaParts) {
+    // Si el fragmento tiene " sin ... y sin ... ", NO lo partimos
+    if (/sin\s+\w+.*\s+y\s+sin\s+\w+/i.test(part)) {
+      result.push(part);
+      continue;
+    }
+
+    // Partir por " y " solo si parece que separa productos
+    const yParts = part
+      .split(/\s+y\s+/i)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    if (yParts.length === 1) {
+      result.push(part);
+      continue;
+    }
+
+    // Reconstruimos detectando si cada parte parece un producto independiente
+    for (const yPart of yParts) {
+      result.push(yPart);
+    }
+  }
+
+  return result;
 }
 export function parseOrder(text: string): ParsedItem[] {
   const lower = normalizeText(text);
