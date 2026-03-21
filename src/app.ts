@@ -258,7 +258,7 @@ if (parsedItems.length > 0) {
     resumen +
     "\n\n¿Deseas agregar otra crepe, bebida o topping?";
 
-if (currentOrder?.step === "esperando_nombre") {
+} else if (currentOrder?.step === "esperando_nombre") {
   if (
     lower === "si" ||
     lower === "sí" ||
@@ -276,7 +276,6 @@ if (currentOrder?.step === "esperando_nombre") {
     updateOrderStep(phone, "esperando_tipo_entrega");
     replyMessage = "Mucho gusto " + text + ".\n\n¿Tu pedido es para domicilio o recoger?";
   }
-}
 
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
   if (lower.includes("domicilio")) {
