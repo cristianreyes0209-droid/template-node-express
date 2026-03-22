@@ -570,71 +570,73 @@ const resumen = order.items
   }
 
 } else if (currentOrder?.step === "esperando_pago") {
-if (lower.includes("efectivo")) {
-  updateOrderPayment(phone, "efectivo");
-  updateOrderStep(phone, "confirmado");
-  currentOrder = getOrder(phone)!;
+  if (lower.includes("efectivo")) {
+    updateOrderPayment(phone, "efectivo");
+    updateOrderStep(phone, "confirmado");
+    currentOrder = getOrder(phone)!;
 
-  const order = getOrder(phone)!;
-  const orderJSON = buildOrderJSON(order);
-  const totals = calculateTotal(order);
+    const order = getOrder(phone)!;
+    const orderJSON = buildOrderJSON(order);
+    const totals = calculateTotal(order);
 
-  const resumen = order.items
-    .map((item: any) =>
-      item.observaciones
-        ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
-        : `• ${item.cantidad} ${item.producto}`
-    )
-    .join("\n");
+    const resumen = order.items
+      .map((item: any) =>
+        item.observaciones
+          ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
+          : `• ${item.cantidad} ${item.producto}`
+      )
+      .join("\n");
 
-  const tiempoTexto =
-    order.tipoEntrega === "domicilio"
-      ? "50 min 🚚"
-      : "15 min 🏪";
+    const tiempoTexto =
+      order.tipoEntrega === "domicilio"
+        ? "50 min 🚚"
+        : "15 min 🏪";
 
-  const resumenCliente =
-    "🔥 Pedido confirmado\n\n" +
-    "👤 Nombre: " + order.nombre + "\n" +
-    "📞 Tel: " + order.telefono + "\n\n" +
-    "🧾 Tu pedido:\n" +
-    resumen + "\n\n" +
-    "💰 Subtotal: $" + totals.subtotal + "\n" +
-    "🚚 Domicilio: $" + totals.domicilio + "\n" +
-    "💵 Total: $" + totals.total + "\n\n" +
-    "📍 Dirección:\n" + (order.direccion || "No aplica") + "\n\n" +
-    "💳 Pago: Efectivo\n" +
-    "⏱ Tiempo estimado: " + tiempoTexto + "\n\n" +
-    "🙏 Gracias por tu pedido en LAS CREPES 🥞";
+    const resumenCliente =
+      "🔥 Pedido confirmado\n\n" +
+      "👤 Nombre: " + order.nombre + "\n" +
+      "📞 Tel: " + order.telefono + "\n\n" +
+      "🧾 Tu pedido:\n" +
+      resumen + "\n\n" +
+      "💰 Subtotal: $" + totals.subtotal + "\n" +
+      "🚚 Domicilio: $" + totals.domicilio + "\n" +
+      "💵 Total: $" + totals.total + "\n\n" +
+      "📍 Dirección:\n" + (order.direccion || "No aplica") + "\n\n" +
+      "💳 Pago: Efectivo\n" +
+      "⏱ Tiempo estimado: " + tiempoTexto + "\n\n" +
+      "🙏 Gracias por tu pedido en LAS CREPES 🥞";
 
-  console.log("========== ORDEN FINAL JSON ==========");
-  console.log(JSON.stringify(orderJSON, null, 2));
+    console.log("========== ORDEN FINAL JSON ==========");
+    console.log(JSON.stringify(orderJSON, null, 2));
 
-  replyMessage = resumenCliente;
-}
+    replyMessage = resumenCliente;
+
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
     updateOrderStep(phone, "esperando_comprobante");
-      currentOrder = getOrder(phone)!;
+    currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
       "Pago por Nequi:\n" +
       "📱 3207218267\n\n" +
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
+
   } else if (lower.includes("daviplata")) {
     updateOrderPayment(phone, "daviplata");
     updateOrderStep(phone, "esperando_comprobante");
-      currentOrder = getOrder(phone)!;
+    currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
       "Pago por Daviplata:\n" +
       "📱 3207218267\n\n" +
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
+
   } else if (lower.includes("bancolombia") || lower.includes("transferencia")) {
     updateOrderPayment(phone, "bancolombia");
     updateOrderStep(phone, "esperando_comprobante");
-      currentOrder = getOrder(phone)!;
+    currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -642,6 +644,7 @@ if (lower.includes("efectivo")) {
       "🏦 Cuenta de ahorros\n" +
       "💳 27033825108\n\n" +
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
+
   } else {
     replyMessage =
       "¿Cómo deseas pagar?\n" +
@@ -658,39 +661,39 @@ if (lower.includes("efectivo")) {
 
     const order = getOrder(phone)!;
     const orderJSON = buildOrderJSON(order);
+    const totals = calculateTotal(order);
+
+    const resumen = order.items
+      .map((item: any) =>
+        item.observaciones
+          ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
+          : `• ${item.cantidad} ${item.producto}`
+      )
+      .join("\n");
+
+    const tiempoTexto =
+      order.tipoEntrega === "domicilio"
+        ? "50 min 🚚"
+        : "15 min 🏪";
+
+    const resumenCliente =
+      "🔥 Pedido confirmado\n\n" +
+      "👤 Nombre: " + order.nombre + "\n" +
+      "📞 Tel: " + order.telefono + "\n\n" +
+      "🧾 Tu pedido:\n" +
+      resumen + "\n\n" +
+      "💰 Subtotal: $" + totals.subtotal + "\n" +
+      "🚚 Domicilio: $" + totals.domicilio + "\n" +
+      "💵 Total: $" + totals.total + "\n\n" +
+      "📍 Dirección:\n" + (order.direccion || "No aplica") + "\n\n" +
+      "💳 Pago: " + (order.formaPago || "No definido") + "\n" +
+      "⏱ Tiempo estimado: " + tiempoTexto + "\n\n" +
+      "🙏 Gracias por tu pedido en LAS CREPES 🥞";
 
     console.log("========== ORDEN FINAL JSON ==========");
     console.log(JSON.stringify(orderJSON, null, 2));
-     
-const totals = calculateTotal(order);
 
-const resumen = order.items
-  .map((item: any) =>
-    item.observaciones
-      ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
-      : `• ${item.cantidad} ${item.producto}`
-  )
-  .join("\n");
-
-const tiempoTexto =
-  order.tipoEntrega === "domicilio"
-    ? "50 min 🚚"
-    : "15 min 🏪";
-
-const resumenCliente =
-  "🔥 Pedido confirmado\n\n" +
-  "👤 Nombre: " + order.nombre + "\n" +
-  "📞 Tel: " + order.telefono + "\n\n" +
-  "🧾 Tu pedido:\n" +
-  resumen + "\n\n" +
-  "💰 Subtotal: $" + totals.subtotal + "\n" +
-  "🚚 Domicilio: $" + totals.domicilio + "\n" +
-  "💵 Total: $" + totals.total + "\n\n" +
-  "📍 Dirección:\n" + order.direccion + "\n\n" +
-  "⏱ Tiempo estimado: " + tiempoTexto + "\n\n" +
-  "🙏 Gracias por tu pedido en LAS CREPES";
-
-   replyMessage = resumenCliente;
+    replyMessage = resumenCliente;
 
   } else {
     replyMessage =
@@ -788,7 +791,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBRLcUb0ZAFasGZAXke06WEbDomrwP1PXAgybwGFbirIKZCs5UTZBVLfQYLYdBMStCpxIyjAvjwSfX6S1p7OEc1QGPEfs70yL2m4IvyoBrM40ZCT5lkYdJ2wTVqIB1yHNbFR1DkjU8E0gzlVi0TPiLaLnepgtLoRWEeLarKS5tn4HpHgX1ZBi2o6KNw36dwtYZA4PZBwCugABuxYT4pJHjJxkn9HemOSXKDuD5Dx7KMLSaTRbSaBfPTZAiNICqGw5HcxY9x7XX8qbSFdwZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBRNnaPggQB5Cnm3UK6jcmxZBAxHK2Hxlq9dukOzLiNPpZA7GQYk4ZAES1kAFerqJkicgCZAasZAwriE8aOiMYb88enzHFMGwjmxXVfIlAkEPFzUZC2PVMw0zwhvAZCvTzI5KeyLCmkzuyYCUFLTVzGZC11ZAgvZASxrZAuEHaPzygP4cNON8tISguxQsbKoGbgGkZAzDRZAJxdslLGAhRzDzug18ZBzLlYaUEvHbfvx2XNprCjGy1ZBy24Her0tkVPZBU62Of4RJkm1O0XUZBzqwZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
