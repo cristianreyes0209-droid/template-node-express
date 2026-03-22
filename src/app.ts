@@ -195,6 +195,8 @@ if (!messageData) {
 const phone = messageData.from;
 const text = messageData.text?.body || "mensaje";
 let currentOrder = getOrder(phone);
+    console.log("STEP ACTUAL:", currentOrder?.step);
+console.log("TIPO ENTREGA ACTUAL:", currentOrder?.tipoEntrega);
 
 console.log("PHONE:", phone);
 console.log("TEXT:", text);
@@ -437,14 +439,18 @@ const resumen = order.items
     replyMessage = "Por favor dime tu nombre para continuar 😊";
   } else {
     updateOrderName(phone, text);
+    currentOrder = getOrder(phone)!;
 
-    if (currentOrder?.tipoEntrega === "domicilio") {
+    if (currentOrder.tipoEntrega === "domicilio") {
       updateOrderStep(phone, "esperando_direccion");
-        currentOrder = getOrder(phone)!;
+      currentOrder = getOrder(phone)!;
+
+      console.log("NUEVO STEP DESPUÉS DEL NOMBRE:", currentOrder.step);
+
       replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
     } else {
       updateOrderStep(phone, "esperando_confirmacion");
-        currentOrder = getOrder(phone)!;
+      currentOrder = getOrder(phone)!;
 
       const order = getOrder(phone)!;
       const totals = calculateTotal(order);
@@ -466,15 +472,14 @@ const resumen = order.items
         "\n\n¿Confirmas tu pedido? (SI / NO)";
     }
   }
-
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
   if (currentOrder?.tipoEntrega === "domicilio") {
     updateOrderStep(phone, "esperando_direccion");
-      currentOrder = getOrder(phone)!;
+    currentOrder = getOrder(phone)!;
     replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
   } else {
     updateOrderStep(phone, "esperando_confirmacion");
-      currentOrder = getOrder(phone)!;
+    currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
@@ -495,20 +500,25 @@ const resumen = order.items
       "\nTotal: $" + totals.total +
       "\n\n¿Confirmas tu pedido? (SI / NO)";
   }
+
+} else if (currentOrder?.step === "esperando_direccion") {
+  console.log("ENTRÓ A ESPERANDO_DIRECCION");
+
   updateOrderAddress(phone, text);
 
   const order = getOrder(phone)!;
   const totals = calculateTotal(order);
 
-const resumen = order.items
-  .map((item: any) =>
-    item.observaciones
-      ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
-      : `• ${item.cantidad} ${item.producto}`
-  )
-  .join("\n");
+  const resumen = order.items
+    .map((item: any) =>
+      item.observaciones
+        ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
+        : `• ${item.cantidad} ${item.producto}`
+    )
+    .join("\n");
+
   updateOrderStep(phone, "esperando_confirmacion");
-         currentOrder = getOrder(phone)!;
+  currentOrder = getOrder(phone)!;
 
   replyMessage =
     "Perfecto 👌\n\n" +
@@ -519,8 +529,6 @@ const resumen = order.items
     "\nTotal: $" + totals.total +
     "\n📍 Dirección: " + order.direccion +
     "\n\n¿Confirmas tu pedido? (SI / NO)";
-
-} else if (currentOrder?.step === "esperando_confirmacion") {
   if (lower.includes("si")) {
     updateOrderStep(phone, "esperando_pago");
       currentOrder = getOrder(phone)!;
