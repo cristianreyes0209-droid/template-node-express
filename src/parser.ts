@@ -67,35 +67,35 @@ function extractCantidad(fragment: string) {
 function extractObservaciones(fragment: string) {
   const observaciones: string[] = [];
 
-  const reglas = [
-    "sin queso",
-    "sin crema",
-    "sin cebolla",
-    "sin tomate",
-    "sin lechuga",
-    "sin champiñones",
-    "sin champinones",
-    "sin champiñon",
-    "sin champinon",
-    "sin maiz",
-    "sin maíz",
-    "sin piña",
-    "sin pina",
-    "sin salsa"
-    "sin frijol",
-"sin frijoles",
-"sin chile",
-"sin chile con carne",
-"sin pico de gallo",
-"sin jalapeños",
-"sin jalapenos",
-"sin nachos",
-"sin huevo",
-"sin huevos",
-"sin tocineta",
-"sin jamon",
-"sin jamón"
-  ];
+ const reglas = [
+  "sin queso",
+  "sin crema",
+  "sin cebolla",
+  "sin tomate",
+  "sin lechuga",
+  "sin champiñones",
+  "sin champinones",
+  "sin champiñon",
+  "sin champinon",
+  "sin maiz",
+  "sin maíz",
+  "sin piña",
+  "sin pina",
+  "sin salsa",
+  "sin frijol",
+  "sin frijoles",
+  "sin chile",
+  "sin chile con carne",
+  "sin pico de gallo",
+  "sin jalapeños",
+  "sin jalapenos",
+  "sin nachos",
+  "sin huevo",
+  "sin huevos",
+  "sin tocineta",
+  "sin jamon",
+  "sin jamón"
+];
 
   for (const regla of reglas) {
     if (fragment.includes(regla)) {
