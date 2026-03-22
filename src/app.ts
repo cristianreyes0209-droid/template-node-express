@@ -16,6 +16,7 @@ import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
 import { parseOrder } from './parser';
+import { buildOrderJSON } from "./orders";
 
 import {
   createOrUpdateOrder,
@@ -620,6 +621,11 @@ const resumen = order.items
 
 } else if (currentOrder?.step === "esperando_comprobante") {
   if (lower.includes("listo") || lower.includes("ya")) {
+      const order = getOrder(phone)!;
+const orderJSON = buildOrderJSON(order);
+
+console.log("ORDEN FINAL JSON:");
+console.log(JSON.stringify(orderJSON, null, 2));
     updateOrderStep(phone, "confirmado");
       currentOrder = getOrder(phone)!;
 
@@ -724,7 +730,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBRJwN41oZBWM1LPF1KiZCvVwE3POf5Rbmd2DfE9Mmfe1Eg1bU9SDzm2jxSfi41M4ZAZCecNyRoQr2OdUGYYTyR6tFmCCWhMZAZCZAa4ZBemmAZCmeJknVTq724MZAZC8LiK5m2e79OfpXqcnEjAyisv7KLcZCZCIiwN1r9mGkN9CeofgACrMOrapcBsnqBjelHpcH2SC02oPsZBZBiee4ZBLaPK0Hu2GqxgsdPZBAYZBouTZAoJx9791mmZCgdeZAO7XurMtZBXxwd8aoUiyzxp9JJIkTDs",
+      "Authorization": "Bearer EAAKig65Oi0EBREKMIIZC7uX3L8shomW2ttXbGMyZA384a07fKLZCJmxMLzk2q9RvTQvvaGJeYj7vw8JeonOcTtHozIh1KeClisZAyJNa4a1BIDVuh431vDcwyZA0a8pqjIyCvTKWqkznxmUDLZC8ZCoZCuIcbcJQluqlsXCRCN6h9oSGT0noHD5D9n0PSKZBoYj6U0n89BoGRZBkg2YisI8kjOaWG3yqhGt27DSk1BlDn2QfZCu9ouM9iDR8WZBTGXObHPYnN7KRrZB5s9JPuQsUZAbZAyv5QZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
