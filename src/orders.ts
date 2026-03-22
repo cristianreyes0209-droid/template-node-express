@@ -98,7 +98,35 @@ export function updateOrderDeliveryType(phone: string, tipoEntrega: string) {
     orders[phone].tipoEntrega = tipoEntrega;
   }
 }
+export function buildOrderJSON(order: CustomerOrder) {
+  const now = new Date();
 
+  const horaRecepcion = now.toISOString();
+
+  // estimación simple: +40 minutos
+  const estimated = new Date(now.getTime() + 40 * 60000);
+
+  const totals = calculateTotal(order);
+
+  return {
+    cliente: {
+      nombre: order.nombre,
+      telefono: order.telefono
+    },
+    pedido: {
+      items: order.items,
+      tipoEntrega: order.tipoEntrega,
+      direccion: order.direccion,
+      subtotal: totals.subtotal,
+      domicilio: totals.domicilio,
+      total: totals.total
+    },
+    tiempos: {
+      horaRecepcion,
+      horaEstimadaEntrega: estimated.toISOString()
+    }
+  };
+}
 
 
 export function updateOrderPayment(phone: string, formaPago: string) {
