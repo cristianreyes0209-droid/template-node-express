@@ -262,7 +262,7 @@ export const menu = {
             "extra_queso",
             "extra_ranchera",
             "extra_maiz",
-              "extra_peperoni",
+              "extra_pepperoni",
             "extra_salami",
             "tocineta",
             "extra_champinones",
@@ -309,14 +309,14 @@ export const menu = {
           extrasDisponibles: [
             "extra_pina",
             "pico_de_gallo",
-              "extra_peperoni",
+              "extra_pepperoni",
             "extra_salami",
             "jalapenos",
             "extra_queso",
             "extra_queso_cuajada"
           ]
         },
-        {
+       {
           id: "mexicana",
           nombre: "Mexicana",
           precio: 27900,
@@ -346,7 +346,7 @@ export const menu = {
           ],
           extrasDisponibles: [
             "extra_maiz",
-            "extra_peperoni",
+            "extra_pepperoni",
             "extra_salami",
             "extra_pollo",
             "extra_carne",
@@ -355,7 +355,177 @@ export const menu = {
           ]
         }
       ]
-    }
+    },
+  id: "fast_food",
+  nombre: "Fast Food",
+  productos: [
+    {
+      id: "costillas_bbq",
+      nombre: "Costillas BBQ",
+      precio: 28500,
+      ingredientes: [
+        "Costillas de cerdo",
+        "Salsa BBQ artesanal",
+        "Maíz",
+        "Lechuga",
+        "Aguacate",
+        "Tomate",
+        "Queso doble crema"
+      ],
+      aliases: [
+        "costillas bbq",
+        "costillas",
+        "crepe costillas bbq",
+        "costilla bbq"
+      ],
+      modificadoresComunes: [
+        "sin maiz",
+        "sin maíz",
+        "sin lechuga",
+        "sin aguacate",
+        "sin tomate",
+        "sin queso",
+        "sin queso doble crema",
+        "sin salsa bbq",
+        "sin bbq",
+        "con mas carne",
+        "con más carne"
+      ],
+      extrasDisponibles: [
+        "extra_queso",
+        "extra_maiz",
+        "tocineta",
+        "extra_champinones",
+        "extra_jamon",
+        "extra_pina",
+        "jalapenos"
+      ]
+    },
+    {
+      id: "americana",
+      nombre: "Americana",
+      precio: 19900,
+      ingredientes: [
+        "Salchicha perro",
+        "Queso cuajada",
+        "Huevos de codorniz",
+        "Trocitos de piña calada",
+        "Fosforitos",
+        "Queso doble crema"
+      ],
+      aliases: [
+        "americana",
+        "crepe americana"
+      ],
+      modificadoresComunes: [
+        "sin salchicha",
+        "sin queso",
+        "sin queso cuajada",
+        "sin queso doble crema",
+        "sin huevos de codorniz",
+        "sin huevos",
+        "sin pina",
+        "sin piña",
+        "sin fosforitos",
+        "con mas queso",
+        "con más queso"
+      ],
+      extrasDisponibles: [
+        "extra_queso",
+        "extra_ranchera",
+        "extra_maiz",
+        "extra_champinones",
+        "extra_jamon",
+        "extra_pina",
+        "jalapenos",
+        "tocineta"
+      ]
+    },
+    {
+      id: "crepe_burguesa",
+      nombre: "Crepe Burguesa",
+      precio: 24500,
+      ingredientes: [
+        "180 grs. de lomo de res madurado",
+        "Queso americano",
+        "Queso doble crema",
+        "Tocineta",
+        "Cebolla salteada",
+        "Tomate",
+        "Lechuga"
+      ],
+      aliases: [
+        "burguesa",
+        "crepe burguesa",
+        "hamburguesa crepe"
+      ],
+      modificadoresComunes: [
+        "sin queso",
+        "sin queso americano",
+        "sin queso doble crema",
+        "sin tocineta",
+        "sin cebolla",
+        "sin cebolla salteada",
+        "sin tomate",
+        "sin lechuga",
+        "sin vegetales",
+        "con mas carne",
+        "con más carne"
+      ],
+      extrasDisponibles: [
+        "extra_queso",
+        "tocineta",
+        "extra_champinones",
+        "extra_jamon",
+        "extra_pina",
+        "jalapenos",
+        "extra_pepperoni",
+        "extra_salami"
+      ]
+    },
+    {
+      id: "italiana",
+      nombre: "Italiana",
+      precio: 23500,
+      ingredientes: [
+        "Pepperoni",
+        "Salami",
+        "Tomate",
+        "Queso parmesano",
+        "Salsa italiana"
+      ],
+      aliases: [
+        "italiana",
+        "crepe italiana"
+      ],
+      modificadoresComunes: [
+        "sin pepperoni",
+        "sin salami",
+        "sin tomate",
+        "sin queso",
+        "sin queso parmesano",
+        "sin parmesano",
+        "sin salsa italiana",
+        "sin salsa",
+        "con mas pepperoni",
+        "con más pepperoni",
+        "con mas salami",
+        "con más salami"
+      ],
+      extrasDisponibles: [
+        "extra_pepperoni",
+        "extra_salami",
+        "extra_parmesano",
+        "tocineta",
+        "extra_champinones",
+        "extra_jamon",
+        "extra_pina",
+        "jalapenos"
+   
+          ]
+        }
+      ]
+  }
   ]
 };
   
