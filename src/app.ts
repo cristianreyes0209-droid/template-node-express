@@ -570,27 +570,47 @@ const resumen = order.items
   }
 
 } else if (currentOrder?.step === "esperando_pago") {
-  if (lower.includes("efectivo")) {
-    updateOrderPayment(phone, "efectivo");
-    updateOrderStep(phone, "confirmado");
-    currentOrder = getOrder(phone)!;
+if (lower.includes("efectivo")) {
+  updateOrderPayment(phone, "efectivo");
+  updateOrderStep(phone, "confirmado");
+  currentOrder = getOrder(phone)!;
 
-    const order = getOrder(phone)!;
-    const orderJSON = buildOrderJSON(order);
+  const order = getOrder(phone)!;
+  const orderJSON = buildOrderJSON(order);
+  const totals = calculateTotal(order);
 
-    console.log("========== ORDEN FINAL JSON ==========");
-    console.log(JSON.stringify(orderJSON, null, 2));
+  const resumen = order.items
+    .map((item: any) =>
+      item.observaciones
+        ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
+        : `• ${item.cantidad} ${item.producto}`
+    )
+    .join("\n");
 
+  const tiempoTexto =
+    order.tipoEntrega === "domicilio"
+      ? "50 min 🚚"
+      : "15 min 🏪";
 
-    const tiempoTexto =
-      currentOrder?.tipoEntrega === "domicilio"
-        ? "50 min 🚚"
-        : "15 min 🏪";
+  const resumenCliente =
+    "🔥 Pedido confirmado\n\n" +
+    "👤 Nombre: " + order.nombre + "\n" +
+    "📞 Tel: " + order.telefono + "\n\n" +
+    "🧾 Tu pedido:\n" +
+    resumen + "\n\n" +
+    "💰 Subtotal: $" + totals.subtotal + "\n" +
+    "🚚 Domicilio: $" + totals.domicilio + "\n" +
+    "💵 Total: $" + totals.total + "\n\n" +
+    "📍 Dirección:\n" + (order.direccion || "No aplica") + "\n\n" +
+    "💳 Pago: Efectivo\n" +
+    "⏱ Tiempo estimado: " + tiempoTexto + "\n\n" +
+    "🙏 Gracias por tu pedido en LAS CREPES 🥞";
 
-    replyMessage =
-      "🔥 Pedido confirmado\n\n" +
-      "Pago: Efectivo\n" +
-      "Tiempo estimado: " + tiempoTexto;
+  console.log("========== ORDEN FINAL JSON ==========");
+  console.log(JSON.stringify(orderJSON, null, 2));
+
+  replyMessage = resumenCliente;
+}
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
     updateOrderStep(phone, "esperando_comprobante");
