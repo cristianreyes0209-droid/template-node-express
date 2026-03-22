@@ -33,6 +33,7 @@ function normalizeText(text: string) {
   return text
     .toLowerCase()
     .trim()
+    .replace(/\s+ni\s+/g, " y sin ")
     .replace(/\s+/g, " ")
     .replace(/,/g, " , ")
     .replace(/\./g, " ")
