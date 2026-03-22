@@ -25,8 +25,9 @@ import {
   updateOrderStep,
   updateOrderAddress,
   updateOrderDeliveryType,
-    updateOrderPayment,
-  calculateTotal
+  updateOrderPayment,
+  calculateTotal,
+  buildOrderJSON
 } from "./orders";
 
 export type App = {
@@ -569,21 +570,26 @@ const resumen = order.items
   }
 
 } else if (currentOrder?.step === "esperando_pago") {
- if (lower.includes("efectivo")) {
-  updateOrderPayment(phone, "efectivo");
-  updateOrderStep(phone, "confirmado");
-  currentOrder = getOrder(phone)!;
+  if (lower.includes("efectivo")) {
+    updateOrderPayment(phone, "efectivo");
+    updateOrderStep(phone, "confirmado");
+    currentOrder = getOrder(phone)!;
 
-  const order = getOrder(phone)!;
-  const orderJSON = buildOrderJSON(order);
+    const order = getOrder(phone)!;
+    const orderJSON = buildOrderJSON(order);
 
-  console.log("ORDEN FINAL JSON:");
-  console.log(JSON.stringify(orderJSON, null, 2));
+    console.log("========== ORDEN FINAL JSON ==========");
+    console.log(JSON.stringify(orderJSON, null, 2));
 
-  replyMessage =
-    "🔥 Pedido confirmado\n\n" +
-    "Pago: Efectivo\n" +
-    "Tiempo estimado: 40-50 min 🚚";
+    const tiempoTexto =
+      currentOrder?.tipoEntrega === "domicilio"
+        ? "50 min 🚚"
+        : "15 min 🏪";
+
+    replyMessage =
+      "🔥 Pedido confirmado\n\n" +
+      "Pago: Efectivo\n" +
+      "Tiempo estimado: " + tiempoTexto;
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
     updateOrderStep(phone, "esperando_comprobante");
@@ -632,13 +638,18 @@ const resumen = order.items
     const order = getOrder(phone)!;
     const orderJSON = buildOrderJSON(order);
 
-    console.log("ORDEN FINAL JSON:");
+    console.log("========== ORDEN FINAL JSON ==========");
     console.log(JSON.stringify(orderJSON, null, 2));
+
+    const tiempoTexto =
+      currentOrder?.tipoEntrega === "domicilio"
+        ? "50 min 🚚"
+        : "15 min 🏪";
 
     replyMessage =
       "🔥 Pago recibido\n\n" +
       "Pedido confirmado\n" +
-      "Tiempo estimado: 40-50 min 🚚";
+      "Tiempo estimado: " + tiempoTexto;
   } else {
     replyMessage =
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
