@@ -636,12 +636,26 @@ const resumen = order.items
     const totals = calculateTotal(order);
 
     const resumen = order.items
-      .map((item: any) =>
-        item.observaciones
-          ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
-          : `• ${item.cantidad} ${item.producto}`
-      )
-      .join("\n");
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
+
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
+        : "";
+
+    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
     const tiempoTexto =
       order.tipoEntrega === "domicilio"
