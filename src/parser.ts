@@ -67,35 +67,35 @@ function extractCantidad(fragment: string) {
 function extractObservaciones(fragment: string) {
   const observaciones: string[] = [];
 
- const reglas = [
-  "sin queso",
-  "sin crema",
-  "sin cebolla",
-  "sin tomate",
-  "sin lechuga",
-  "sin champiñones",
-  "sin champinones",
-  "sin champiñon",
-  "sin champinon",
-  "sin maiz",
-  "sin maíz",
-  "sin piña",
-  "sin pina",
-  "sin salsa",
-  "sin frijol",
-  "sin frijoles",
-  "sin chile",
-  "sin chile con carne",
-  "sin pico de gallo",
-  "sin jalapeños",
-  "sin jalapenos",
-  "sin nachos",
-  "sin huevo",
-  "sin huevos",
-  "sin tocineta",
-  "sin jamon",
-  "sin jamón"
-];
+  const reglas = [
+    "sin queso",
+    "sin crema",
+    "sin cebolla",
+    "sin tomate",
+    "sin lechuga",
+    "sin champiñones",
+    "sin champinones",
+    "sin champiñon",
+    "sin champinon",
+    "sin maiz",
+    "sin maíz",
+    "sin piña",
+    "sin pina",
+    "sin salsa",
+    "sin frijol",
+    "sin frijoles",
+    "sin chile",
+    "sin chile con carne",
+    "sin pico de gallo",
+    "sin jalapeños",
+    "sin jalapenos",
+    "sin nachos",
+    "sin huevo",
+    "sin huevos",
+    "sin tocineta",
+    "sin jamon",
+    "sin jamón"
+  ];
 
   for (const regla of reglas) {
     if (fragment.includes(regla)) {
@@ -172,7 +172,6 @@ function extractExtrasFromFragment(fragment: string, extrasAliasList: any[]) {
     const cleanAlias = escapeRegex(alias);
     const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
 
-    // 🔥 NUEVA LÓGICA MÁS FLEXIBLE
     const hasTrigger =
       fragment.includes("extra") ||
       fragment.includes("mas") ||
@@ -242,10 +241,12 @@ export function parseOrder(text: string): ParsedItem[] {
         });
       }
     } else if (parsedExtras.length > 0) {
-      // Permite extras solos si el cliente los escribe aparte
       for (const extra of parsedExtras) {
         const existingExtra = items.find(
-          (i) => i.producto === extra.nombre && !i.observaciones && !i.extras
+          (i) =>
+            i.producto === extra.nombre &&
+            !i.observaciones &&
+            !i.extras
         );
 
         if (existingExtra) {
