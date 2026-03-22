@@ -1,53 +1,10 @@
 
-
 export const DOMICILIO = 5000;
-export function calculateTotal(order: CustomerOrder) {
-  let subtotal = 0;
 
-  for (const item of order.items) {
-    const price = item.precio || 0;
-    subtotal += price * item.cantidad;
-  }
-
-const domicilio = order.tipoEntrega === "domicilio" ? 5000 : 0;
-  const total = subtotal + domicilio;
-
-  return { subtotal, domicilio, total };
-}
-type OrderItem = {
-  producto: string;
-  cantidad: number;
-  precio: number;
-  observaciones?: string;
-};
-type OrderStep =
-  | "esperando_menu_principal"
-  | "esperando_sucursal"
-  | "armando_pedido"
-  | "esperando_nombre"
-  | "esperando_tipo_entrega"
-  | "esperando_direccion"
-  | "esperando_confirmacion"
-  | "esperando_pago"
-  | "esperando_comprobante"
-  | "confirmado";
-
-type CustomerOrder = {
-  telefono: string;
-  nombre?: string;
-  tipoEntrega?: string;
-  direccion?: string;
-  formaPago?: string;
-  canal?: string;
-  sucursal?: string;
-  items: OrderItem[];
-  step: OrderStep;
-  lastInteraction: number;
-};
-const orders: Record<string, CustomerOrder> = {};
 export type OrderItem = {
   producto: string;
   cantidad: number;
+  precio: number;
   observaciones?: string;
 };
 
@@ -63,19 +20,34 @@ export type OrderStep =
   | "esperando_comprobante"
   | "confirmado";
 
-export type Order = {
+export type CustomerOrder = {
   telefono: string;
-  items: OrderItem[];
-  step: OrderStep;
-  lastInteraction: number;
-
   nombre?: string;
   tipoEntrega?: string;
   direccion?: string;
   formaPago?: string;
   canal?: string;
   sucursal?: string;
+  items: OrderItem[];
+  step: OrderStep;
+  lastInteraction: number;
 };
+
+const orders: Record<string, CustomerOrder> = {};
+
+export function calculateTotal(order: CustomerOrder) {
+  let subtotal = 0;
+
+  for (const item of order.items) {
+    const price = item.precio || 0;
+    subtotal += price * item.cantidad;
+  }
+
+  const domicilio = order.tipoEntrega === "domicilio" ? DOMICILIO : 0;
+  const total = subtotal + domicilio;
+
+  return { subtotal, domicilio, total };
+}
 
 export function getOrder(phone: string): CustomerOrder | undefined {
   return orders[phone];
@@ -93,7 +65,9 @@ export function createOrUpdateOrder(phone: string, items: OrderItem[]) {
 
   for (const item of items) {
     const existing = orders[phone].items.find(
-      (i) => i.producto === item.producto
+      (i) =>
+        i.producto === item.producto &&
+        (i.observaciones || "") === (item.observaciones || "")
     );
 
     if (existing) {
@@ -111,6 +85,7 @@ export function updateOrderStep(phone: string, step: OrderStep) {
     orders[phone].step = step;
   }
 }
+
 export function updateOrderAddress(phone: string, direccion: string) {
   const order = getOrder(phone);
   if (!order) return;
@@ -129,16 +104,21 @@ export function updateOrderDeliveryType(phone: string, tipoEntrega: string) {
     orders[phone].tipoEntrega = tipoEntrega;
   }
 }
-export function updateOrderPayment(phone: string, formaPago: string) {
-  if (!orders[phone]) return;
 
-  orders[phone].formaPago = formaPago;
+export function updateOrderPayment(phone: string, formaPago: string) {
+  if (orders[phone]) {
+    orders[phone].formaPago = formaPago;
+  }
 }
+
 export function buildOrderJSON(order: CustomerOrder) {
   const now = new Date();
   const horaRecepcion = now.toISOString();
 
-  const estimated = new Date(now.getTime() + 40 * 60000);
+  const minutosEstimados =
+    order.tipoEntrega === "domicilio" ? 50 : 15;
+
+  const estimated = new Date(now.getTime() + minutosEstimados * 60000);
   const totals = calculateTotal(order);
 
   return {
@@ -160,4 +140,8 @@ export function buildOrderJSON(order: CustomerOrder) {
       horaEstimadaEntrega: estimated.toISOString()
     }
   };
+}
+
+export function clearOrder(phone: string) {
+  delete orders[phone];
 }
