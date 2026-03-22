@@ -641,6 +641,34 @@ const resumen = order.items
 
     console.log("========== ORDEN FINAL JSON ==========");
     console.log(JSON.stringify(orderJSON, null, 2));
+      const order = getOrder(phone)!;
+const totals = calculateTotal(order);
+
+const resumen = order.items
+  .map((item: any) =>
+    item.observaciones
+      ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
+      : `• ${item.cantidad} ${item.producto}`
+  )
+  .join("\n");
+
+const tiempoTexto =
+  order.tipoEntrega === "domicilio"
+    ? "50 min 🚚"
+    : "15 min 🏪";
+
+const resumenCliente =
+  "🔥 Pedido confirmado\n\n" +
+  "👤 Nombre: " + order.nombre + "\n" +
+  "📞 Tel: " + order.telefono + "\n\n" +
+  "🧾 Tu pedido:\n" +
+  resumen + "\n\n" +
+  "💰 Subtotal: $" + totals.subtotal + "\n" +
+  "🚚 Domicilio: $" + totals.domicilio + "\n" +
+  "💵 Total: $" + totals.total + "\n\n" +
+  "📍 Dirección:\n" + order.direccion + "\n\n" +
+  "⏱ Tiempo estimado: " + tiempoTexto + "\n\n" +
+  "🙏 Gracias por tu pedido en LAS CREPES";
 
    replyMessage = resumenCliente;
 
