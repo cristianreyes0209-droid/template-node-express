@@ -45,17 +45,17 @@ const orders: Record<string, CustomerOrder> = {};
 export function calculateTotal(order: CustomerOrder) {
   let subtotal = 0;
 
-  for (const item of order.items) {
-    const basePrice = item.precio || 0;
-    subtotal += basePrice * item.cantidad;
+for (const item of order.items) {
+  let itemTotal = item.precio;
 
-    if (item.extras && item.extras.length > 0) {
-      for (const extra of item.extras) {
-        subtotal += extra.precio * extra.cantidad;
-      }
+  if (item.extras && item.extras.length > 0) {
+    for (const extra of item.extras) {
+      itemTotal += extra.precio;
     }
   }
 
+  subtotal += itemTotal * item.cantidad;
+}
   const domicilio = order.tipoEntrega === "domicilio" ? DOMICILIO : 0;
   const total = subtotal + domicilio;
 
