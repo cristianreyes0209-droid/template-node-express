@@ -580,9 +580,7 @@ const resumen = order.items
 
     console.log("========== ORDEN FINAL JSON ==========");
     console.log(JSON.stringify(orderJSON, null, 2));
-      replyMessage =
-  "🔥 DEBUG JSON\n\n" +
-  JSON.stringify(orderJSON, null, 2);
+
 
     const tiempoTexto =
       currentOrder?.tipoEntrega === "domicilio"
@@ -644,20 +642,14 @@ const resumen = order.items
     console.log("========== ORDEN FINAL JSON ==========");
     console.log(JSON.stringify(orderJSON, null, 2));
 
-    const tiempoTexto =
-      currentOrder?.tipoEntrega === "domicilio"
-        ? "50 min 🚚"
-        : "15 min 🏪";
-
     replyMessage =
-      "🔥 Pago recibido\n\n" +
-      "Pedido confirmado\n" +
-      "Tiempo estimado: " + tiempoTexto;
+      "🔥 DEBUG JSON\n\n" +
+      JSON.stringify(orderJSON, null, 2);
+
   } else {
     replyMessage =
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
   }
-
 } else if (currentOrder?.step === "confirmado") {
   if (
     lower.includes("como va") ||
