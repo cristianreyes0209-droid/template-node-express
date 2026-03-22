@@ -45,6 +45,37 @@ type CustomerOrder = {
   lastInteraction: number;
 };
 const orders: Record<string, CustomerOrder> = {};
+export type OrderItem = {
+  producto: string;
+  cantidad: number;
+  observaciones?: string;
+};
+
+export type OrderStep =
+  | "esperando_menu_principal"
+  | "esperando_sucursal"
+  | "armando_pedido"
+  | "esperando_nombre"
+  | "esperando_tipo_entrega"
+  | "esperando_direccion"
+  | "esperando_confirmacion"
+  | "esperando_pago"
+  | "esperando_comprobante"
+  | "confirmado";
+
+export type Order = {
+  telefono: string;
+  items: OrderItem[];
+  step: OrderStep;
+  lastInteraction: number;
+
+  nombre?: string;
+  tipoEntrega?: string;
+  direccion?: string;
+  formaPago?: string;
+  canal?: string;
+  sucursal?: string;
+};
 
 export function getOrder(phone: string): CustomerOrder | undefined {
   return orders[phone];
@@ -97,6 +128,11 @@ export function updateOrderDeliveryType(phone: string, tipoEntrega: string) {
   if (orders[phone]) {
     orders[phone].tipoEntrega = tipoEntrega;
   }
+}
+export function updateOrderPayment(phone: string, formaPago: string) {
+  if (!orders[phone]) return;
+
+  orders[phone].formaPago = formaPago;
 }
 export function buildOrderJSON(order: CustomerOrder) {
   const now = new Date();
