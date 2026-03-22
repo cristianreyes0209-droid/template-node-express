@@ -82,6 +82,19 @@ function extractObservaciones(fragment: string) {
     "sin piña",
     "sin pina",
     "sin salsa"
+    "sin frijol",
+"sin frijoles",
+"sin chile",
+"sin chile con carne",
+"sin pico de gallo",
+"sin jalapeños",
+"sin jalapenos",
+"sin nachos",
+"sin huevo",
+"sin huevos",
+"sin tocineta",
+"sin jamon",
+"sin jamón",
   ];
 
   for (const regla of reglas) {
