@@ -641,7 +641,7 @@ const resumen = order.items
 
     console.log("========== ORDEN FINAL JSON ==========");
     console.log(JSON.stringify(orderJSON, null, 2));
-      const order = getOrder(phone)!;
+     
 const totals = calculateTotal(order);
 
 const resumen = order.items
