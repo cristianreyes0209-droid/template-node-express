@@ -91,13 +91,11 @@ function splitIntoFragments(text: string) {
   const result: string[] = [];
 
   for (const part of commaParts) {
-    // Si el fragmento tiene " sin ... y sin ... ", NO lo partimos
     if (/sin\s+\w+.*\s+y\s+sin\s+\w+/i.test(part)) {
       result.push(part);
       continue;
     }
 
-    // Partir por " y " solo si parece que separa productos
     const yParts = part
       .split(/\s+y\s+/i)
       .map((p) => p.trim())
@@ -108,7 +106,6 @@ function splitIntoFragments(text: string) {
       continue;
     }
 
-    // Reconstruimos detectando si cada parte parece un producto independiente
     for (const yPart of yParts) {
       result.push(yPart);
     }
@@ -116,13 +113,16 @@ function splitIntoFragments(text: string) {
 
   return result;
 }
+
 export function parseOrder(text: string): ParsedItem[] {
   const lower = normalizeText(text);
   const fragments = splitIntoFragments(lower);
 
   const items: ParsedItem[] = [];
 
-  const aliasList = menu.productos
+  const allProducts = menu.categorias.flatMap((categoria) => categoria.productos);
+
+  const aliasList = allProducts
     .flatMap((product) =>
       product.aliases.map((alias) => ({
         product,
