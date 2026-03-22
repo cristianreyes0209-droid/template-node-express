@@ -1,3 +1,15 @@
+export type MenuProduct = {
+  id: string;
+  nombre: string;
+  precio: number;
+  aliases: string[];
+
+  // opcionales
+  tipo?: string;
+  ingredientes?: string[];
+  modificadoresComunes?: string[];
+  extrasDisponibles?: string[];
+};
 export const menu = {
   categorias: [
     {
