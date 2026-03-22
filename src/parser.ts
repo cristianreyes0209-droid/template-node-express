@@ -155,15 +155,16 @@ function extractExtrasFromFragment(fragment: string, extrasAliasList: any[]) {
 
   for (const entry of extrasAliasList) {
     const { product, alias } = entry;
+
     const cleanAlias = escapeRegex(alias);
     const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
 
+    // 🔥 NUEVA LÓGICA MÁS FLEXIBLE
     const hasTrigger =
-      fragment.includes("extra " + alias) ||
-      fragment.includes("con extra " + alias) ||
-      fragment.includes("mas " + alias) ||
-      fragment.includes("más " + alias) ||
-      fragment.includes("con " + alias);
+      fragment.includes("extra") ||
+      fragment.includes("mas") ||
+      fragment.includes("más") ||
+      fragment.includes("con");
 
     if (aliasRegex.test(fragment) && hasTrigger) {
       const alreadyAdded = extrasFound.find((e) => e.id === product.id);
