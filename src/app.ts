@@ -415,11 +415,25 @@ const lower = text.toLowerCase();
          currentOrder = getOrder(phone)!;
 
 const resumen = order.items
-  .map((item: any) =>
-    item.observaciones
-      ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
-      : `• ${item.cantidad} ${item.producto}`
-  )
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
+
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
+        : "";
+
+    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+  })
   .join("\n");
 
   replyMessage =
@@ -459,13 +473,27 @@ const resumen = order.items
       const order = getOrder(phone)!;
       const totals = calculateTotal(order);
 
-      const resumen = order.items
-        .map((item: any) =>
-          item.observaciones
-            ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
-            : `• ${item.cantidad} ${item.producto}`
-        )
-        .join("\n");
+    const resumen = order.items
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
+
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
+        : "";
+
+    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
       replyMessage =
         "Perfecto 👌\n\n" +
@@ -488,13 +516,27 @@ const resumen = order.items
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
-    const resumen = order.items
-      .map((item: any) =>
-        item.observaciones
-          ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
-          : `• ${item.cantidad} ${item.producto}`
-      )
-      .join("\n");
+const resumen = order.items
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
+
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
+        : "";
+
+    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -513,13 +555,27 @@ const resumen = order.items
   const order = getOrder(phone)!;
   const totals = calculateTotal(order);
 
-  const resumen = order.items
-    .map((item: any) =>
-      item.observaciones
-        ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
-        : `• ${item.cantidad} ${item.producto}`
-    )
-    .join("\n");
+const resumen = order.items
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
+
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
+        : "";
+
+    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
   updateOrderStep(phone, "esperando_confirmacion");
   currentOrder = getOrder(phone)!;
@@ -663,13 +719,27 @@ const resumen = order.items
     const orderJSON = buildOrderJSON(order);
     const totals = calculateTotal(order);
 
-    const resumen = order.items
-      .map((item: any) =>
-        item.observaciones
-          ? `• ${item.cantidad} ${item.producto} (${formatObservaciones(item.observaciones)})`
-          : `• ${item.cantidad} ${item.producto}`
-      )
-      .join("\n");
+   const resumen = order.items
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
+
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
+        : "";
+
+    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
     const tiempoTexto =
       order.tipoEntrega === "domicilio"
