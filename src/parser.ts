@@ -120,11 +120,11 @@ export function parseOrder(text: string): ParsedItem[] {
 
   const items: ParsedItem[] = [];
 
-  const allProducts = menu.categorias.flatMap((categoria) => categoria.productos);
+  const allProducts = menu.categorias.flatMap((categoria) => categoria.productos as any[]);
 
   const aliasList = allProducts
     .flatMap((product) =>
-      product.aliases.map((alias) => ({
+     product.aliases.map((alias: string) => ({
         product,
         alias: normalizeText(alias)
       }))
