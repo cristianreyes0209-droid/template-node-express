@@ -642,9 +642,7 @@ const resumen = order.items
     console.log("========== ORDEN FINAL JSON ==========");
     console.log(JSON.stringify(orderJSON, null, 2));
 
-    replyMessage =
-      "🔥 DEBUG JSON\n\n" +
-      JSON.stringify(orderJSON, null, 2);
+   replyMessage = resumenCliente;
 
   } else {
     replyMessage =
