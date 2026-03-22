@@ -40,9 +40,13 @@ function normalizeText(text: string) {
     .replace("pina", "piña");
 }
 
+function escapeRegex(text: string) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function extractCantidad(fragment: string) {
   for (const key of Object.keys(numbers)) {
-    const cleanKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const cleanKey = escapeRegex(key);
     const regex = new RegExp(`\\b${cleanKey}\\b`, "i");
 
     if (regex.test(fragment)) {
@@ -114,60 +118,117 @@ function splitIntoFragments(text: string) {
   return result;
 }
 
+function buildAliasList(products: any[]) {
+  return products
+    .flatMap((product) =>
+      product.aliases.map((alias: string) => ({
+        product,
+        alias: normalizeText(alias)
+      }))
+    )
+    .sort((a, b) => b.alias.length - a.alias.length);
+}
+
+function findProductInFragment(fragment: string, aliasList: any[]) {
+  for (const entry of aliasList) {
+    const { product, alias } = entry;
+    const cleanAlias = escapeRegex(alias);
+    const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
+
+    if (aliasRegex.test(fragment)) {
+      return product;
+    }
+  }
+
+  return null;
+}
+
+function extractExtrasFromFragment(fragment: string, extrasAliasList: any[]) {
+  const extrasFound: any[] = [];
+
+  for (const entry of extrasAliasList) {
+    const { product, alias } = entry;
+    const cleanAlias = escapeRegex(alias);
+    const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
+
+    const hasTrigger =
+      fragment.includes("extra " + alias) ||
+      fragment.includes("con extra " + alias) ||
+      fragment.includes("mas " + alias) ||
+      fragment.includes("más " + alias) ||
+      fragment.includes("con " + alias);
+
+    if (aliasRegex.test(fragment) && hasTrigger) {
+      const alreadyAdded = extrasFound.find((e) => e.id === product.id);
+      if (!alreadyAdded) {
+        extrasFound.push(product);
+      }
+    }
+  }
+
+  return extrasFound;
+}
+
 export function parseOrder(text: string): ParsedItem[] {
   const lower = normalizeText(text);
   const fragments = splitIntoFragments(lower);
 
   const items: ParsedItem[] = [];
 
-  const allProducts = menu.categorias.flatMap((categoria) => categoria.productos as any[]);
+  const extrasCategory = menu.categorias.find((c) => c.id === "extras");
+  const normalCategories = menu.categorias.filter((c) => c.id !== "extras");
 
-  const aliasList = allProducts
-    .flatMap((product) =>
-     product.aliases.map((alias: string) => ({
-        product,
-        alias: normalizeText(alias)
-      }))
-    )
-    .sort((a, b) => b.alias.length - a.alias.length);
+  const mainProducts = normalCategories.flatMap((categoria) => categoria.productos as any[]);
+  const extraProducts = extrasCategory ? (extrasCategory.productos as any[]) : [];
+
+  const mainAliasList = buildAliasList(mainProducts);
+  const extrasAliasList = buildAliasList(extraProducts);
 
   for (const fragment of fragments) {
-    let found = false;
+    const cantidad = extractCantidad(fragment);
+    const observaciones = extractObservaciones(fragment);
 
-    for (const entry of aliasList) {
-      const { product, alias } = entry;
+    const mainProduct = findProductInFragment(fragment, mainAliasList);
+    const extras = extractExtrasFromFragment(fragment, extrasAliasList);
 
-      const cleanAlias = alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
+    if (mainProduct) {
+      const existing = items.find(
+        (i) =>
+          i.producto === mainProduct.nombre &&
+          (i.observaciones || "") === (observaciones || "")
+      );
 
-      if (aliasRegex.test(fragment)) {
-        const cantidad = extractCantidad(fragment);
-        const observaciones = extractObservaciones(fragment);
-
-        const existing = items.find(
-          (i) =>
-            i.producto === product.nombre &&
-            (i.observaciones || "") === (observaciones || "")
-        );
-
-        if (existing) {
-          existing.cantidad += cantidad;
-        } else {
-          items.push({
-            producto: product.nombre,
-            cantidad,
-            precio: product.precio,
-            observaciones
-          });
-        }
-
-        found = true;
-        break;
+      if (existing) {
+        existing.cantidad += cantidad;
+      } else {
+        items.push({
+          producto: mainProduct.nombre,
+          cantidad,
+          precio: mainProduct.precio,
+          observaciones
+        });
       }
     }
 
-    if (!found) {
-      // Fragmento no reconocido; por ahora se ignora
+    for (const extra of extras) {
+      const existingExtra = items.find(
+        (i) => i.producto === extra.nombre && !i.observaciones
+      );
+
+      if (existingExtra) {
+        existingExtra.cantidad += cantidad;
+      } else {
+        items.push({
+          producto: extra.nombre,
+          cantidad,
+          precio: extra.precio
+        });
+      }
+    }
+
+    // Si no encontró producto principal, aún permite agregar extras solos
+    if (!mainProduct && extras.length === 0) {
+      // fragmento ignorado por ahora
     }
   }
 
