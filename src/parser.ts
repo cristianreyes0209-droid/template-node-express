@@ -1,10 +1,17 @@
 import { menu } from "./menu";
 
+type ParsedExtra = {
+  nombre: string;
+  precio: number;
+  cantidad: number;
+};
+
 type ParsedItem = {
   producto: string;
   cantidad: number;
   precio: number;
   observaciones?: string;
+  extras?: ParsedExtra[];
 };
 
 const numbers: Record<string, number> = {
@@ -169,6 +176,10 @@ function extractExtrasFromFragment(fragment: string, extrasAliasList: any[]) {
   return extrasFound;
 }
 
+function sameExtras(a?: ParsedExtra[], b?: ParsedExtra[]) {
+  return JSON.stringify(a || []) === JSON.stringify(b || []);
+}
+
 export function parseOrder(text: string): ParsedItem[] {
   const lower = normalizeText(text);
   const fragments = splitIntoFragments(lower);
@@ -191,11 +202,18 @@ export function parseOrder(text: string): ParsedItem[] {
     const mainProduct = findProductInFragment(fragment, mainAliasList);
     const extras = extractExtrasFromFragment(fragment, extrasAliasList);
 
+    const parsedExtras: ParsedExtra[] = extras.map((extra) => ({
+      nombre: extra.nombre,
+      precio: extra.precio,
+      cantidad: 1
+    }));
+
     if (mainProduct) {
       const existing = items.find(
         (i) =>
           i.producto === mainProduct.nombre &&
-          (i.observaciones || "") === (observaciones || "")
+          (i.observaciones || "") === (observaciones || "") &&
+          sameExtras(i.extras, parsedExtras)
       );
 
       if (existing) {
@@ -205,30 +223,27 @@ export function parseOrder(text: string): ParsedItem[] {
           producto: mainProduct.nombre,
           cantidad,
           precio: mainProduct.precio,
-          observaciones
+          observaciones,
+          extras: parsedExtras.length > 0 ? parsedExtras : undefined
         });
       }
-    }
+    } else if (parsedExtras.length > 0) {
+      // Permite extras solos si el cliente los escribe aparte
+      for (const extra of parsedExtras) {
+        const existingExtra = items.find(
+          (i) => i.producto === extra.nombre && !i.observaciones && !i.extras
+        );
 
-    for (const extra of extras) {
-      const existingExtra = items.find(
-        (i) => i.producto === extra.nombre && !i.observaciones
-      );
-
-      if (existingExtra) {
-        existingExtra.cantidad += cantidad;
-      } else {
-        items.push({
-          producto: extra.nombre,
-          cantidad,
-          precio: extra.precio
-        });
+        if (existingExtra) {
+          existingExtra.cantidad += extra.cantidad;
+        } else {
+          items.push({
+            producto: extra.nombre,
+            cantidad: extra.cantidad,
+            precio: extra.precio
+          });
+        }
       }
-    }
-
-    // Si no encontró producto principal, aún permite agregar extras solos
-    if (!mainProduct && extras.length === 0) {
-      // fragmento ignorado por ahora
     }
   }
 
