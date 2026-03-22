@@ -1,11 +1,18 @@
 
 export const DOMICILIO = 5000;
 
+export type OrderExtra = {
+  nombre: string;
+  precio: number;
+  cantidad: number;
+};
+
 export type OrderItem = {
   producto: string;
   cantidad: number;
   precio: number;
   observaciones?: string;
+  extras?: OrderExtra[];
 };
 
 export type OrderStep =
@@ -39,8 +46,14 @@ export function calculateTotal(order: CustomerOrder) {
   let subtotal = 0;
 
   for (const item of order.items) {
-    const price = item.precio || 0;
-    subtotal += price * item.cantidad;
+    const basePrice = item.precio || 0;
+    subtotal += basePrice * item.cantidad;
+
+    if (item.extras && item.extras.length > 0) {
+      for (const extra of item.extras) {
+        subtotal += extra.precio * extra.cantidad;
+      }
+    }
   }
 
   const domicilio = order.tipoEntrega === "domicilio" ? DOMICILIO : 0;
@@ -67,7 +80,8 @@ export function createOrUpdateOrder(phone: string, items: OrderItem[]) {
     const existing = orders[phone].items.find(
       (i) =>
         i.producto === item.producto &&
-        (i.observaciones || "") === (item.observaciones || "")
+        (i.observaciones || "") === (item.observaciones || "") &&
+        JSON.stringify(i.extras || []) === JSON.stringify(item.extras || [])
     );
 
     if (existing) {
