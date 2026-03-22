@@ -94,7 +94,7 @@ function extractObservaciones(fragment: string) {
 "sin huevos",
 "sin tocineta",
 "sin jamon",
-"sin jamón",
+"sin jamón"
   ];
 
   for (const regla of reglas) {
