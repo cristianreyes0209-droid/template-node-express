@@ -569,16 +569,21 @@ const resumen = order.items
   }
 
 } else if (currentOrder?.step === "esperando_pago") {
-  if (lower.includes("efectivo")) {
-    updateOrderPayment(phone, "efectivo");
-      
-    updateOrderStep(phone, "confirmado");
-      currentOrder = getOrder(phone)!;
+ if (lower.includes("efectivo")) {
+  updateOrderPayment(phone, "efectivo");
+  updateOrderStep(phone, "confirmado");
+  currentOrder = getOrder(phone)!;
 
-    replyMessage =
-      "🔥 Pedido confirmado\n\n" +
-      "Pago: Efectivo\n" +
-      "Tiempo estimado: 40-50 min 🚚";
+  const order = getOrder(phone)!;
+  const orderJSON = buildOrderJSON(order);
+
+  console.log("ORDEN FINAL JSON:");
+  console.log(JSON.stringify(orderJSON, null, 2));
+
+  replyMessage =
+    "🔥 Pedido confirmado\n\n" +
+    "Pago: Efectivo\n" +
+    "Tiempo estimado: 40-50 min 🚚";
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
     updateOrderStep(phone, "esperando_comprobante");
@@ -621,13 +626,14 @@ const resumen = order.items
 
 } else if (currentOrder?.step === "esperando_comprobante") {
   if (lower.includes("listo") || lower.includes("ya")) {
-      const order = getOrder(phone)!;
-const orderJSON = buildOrderJSON(order);
-
-console.log("ORDEN FINAL JSON:");
-console.log(JSON.stringify(orderJSON, null, 2));
     updateOrderStep(phone, "confirmado");
-      currentOrder = getOrder(phone)!;
+    currentOrder = getOrder(phone)!;
+
+    const order = getOrder(phone)!;
+    const orderJSON = buildOrderJSON(order);
+
+    console.log("ORDEN FINAL JSON:");
+    console.log(JSON.stringify(orderJSON, null, 2));
 
     replyMessage =
       "🔥 Pago recibido\n\n" +
