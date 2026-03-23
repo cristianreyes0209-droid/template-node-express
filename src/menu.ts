@@ -512,7 +512,7 @@ export const menu = {
         "con más pepperoni",
         "con mas salami",
         "con más salami"
-      ],
+    ],
       extrasDisponibles: [
         "extra_pepperoni",
         "extra_salami",
@@ -522,11 +522,8 @@ export const menu = {
         "extra_jamon",
         "extra_pina",
         "jalapenos"
-   
-        }
       ]
-  }
+    }
   ]
 };
-  
 
