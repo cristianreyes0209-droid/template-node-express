@@ -172,10 +172,11 @@ function detectAmbiguousProduct(fragment: string, products: any[]) {
   const mentionsMediterranea =
     text.includes("mediterranea") || text.includes("mediterránea");
 
-  const mentionsMarinera =
-    text.includes("marinera");
+  const mentionsMarinera = text.includes("marinera");
+  const mentionsGourmet = text.includes("gourmet");
 
-  if (mentionsMediterranea || mentionsMarinera) {
+  // Si ya especificó cuál, NO hay ambigüedad
+  if (mentionsMediterranea || mentionsMarinera || mentionsGourmet) {
     return null;
   }
 
