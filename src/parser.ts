@@ -8,6 +8,7 @@ type ParsedExtra = {
 
 type ParsedItem = {
   producto: string;
+  variante?: string;
   cantidad: number;
   precio: number;
   observaciones?: string;
@@ -163,6 +164,24 @@ function findProductInFragment(fragment: string, aliasList: any[]) {
 
   return null;
 }
+function findVariantInFragment(fragment: string, product: any) {
+  if (!product.variantes || product.variantes.length === 0) {
+    return null;
+  }
+
+  for (const variante of product.variantes) {
+    for (const alias of variante.aliases) {
+      const cleanAlias = escapeRegex(normalizeText(alias));
+      const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
+
+      if (aliasRegex.test(fragment)) {
+        return variante;
+      }
+    }
+  }
+
+  return null;
+}
 
 function extractExtrasFromFragment(fragment: string, extrasAliasList: any[]) {
   const extrasFound: any[] = [];
@@ -213,8 +232,9 @@ export function parseOrder(text: string): ParsedItem[] {
     const cantidad = extractCantidad(fragment);
     const observaciones = extractObservaciones(fragment);
 
-    const mainProduct = findProductInFragment(fragment, mainAliasList);
-    const extras = extractExtrasFromFragment(fragment, extrasAliasList);
+   const mainProduct = findProductInFragment(fragment, mainAliasList);
+const extras = extractExtrasFromFragment(fragment, extrasAliasList);
+const variante = mainProduct ? findVariantInFragment(fragment, mainProduct) : null;
 
     const parsedExtras: ParsedExtra[] = extras.map((extra) => ({
       nombre: extra.nombre,
@@ -223,23 +243,25 @@ export function parseOrder(text: string): ParsedItem[] {
     }));
 
     if (mainProduct) {
-      const existing = items.find(
-        (i) =>
-          i.producto === mainProduct.nombre &&
-          (i.observaciones || "") === (observaciones || "") &&
-          sameExtras(i.extras, parsedExtras)
-      );
+     const existing = items.find(
+  (i) =>
+    i.producto === mainProduct.nombre &&
+    (i.variante || "") === (variante ? variante.nombre : "") &&
+    (i.observaciones || "") === (observaciones || "") &&
+    sameExtras(i.extras, parsedExtras)
+);
 
       if (existing) {
         existing.cantidad += cantidad;
       } else {
-        items.push({
-          producto: mainProduct.nombre,
-          cantidad,
-          precio: mainProduct.precio,
-          observaciones,
-          extras: parsedExtras.length > 0 ? parsedExtras : undefined
-        });
+       items.push({
+  producto: mainProduct.nombre,
+  variante: variante ? variante.nombre : undefined,
+  cantidad,
+  precio: variante ? variante.precio : mainProduct.precio,
+  observaciones,
+  extras: parsedExtras.length > 0 ? parsedExtras : undefined
+});
       }
     } else if (parsedExtras.length > 0) {
       for (const extra of parsedExtras) {
