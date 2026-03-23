@@ -984,10 +984,11 @@ export const menu = {
         "extra_jamon",
         "extra_pina",
         "jalapenos"
+         ]
+        }
       ]
-    }
-  ]
- 
+    },
+   
 {
   id: "del_mar",
   nombre: "Crepes del mar",
