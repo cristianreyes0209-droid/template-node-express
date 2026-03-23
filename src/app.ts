@@ -209,7 +209,8 @@ if (!phone) {
 }
 
 let replyMessage = "";
-const parsedItems = parseOrder(text);
+const parseResult = parseOrder(text);
+const parsedItems = parseResult.items;
 const lower = text.toLowerCase();
   if (!currentOrder) {
   createOrUpdateOrder(phone, []);
