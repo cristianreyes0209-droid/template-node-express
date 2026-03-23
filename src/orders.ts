@@ -9,6 +9,7 @@ export type OrderExtra = {
 
 export type OrderItem = {
   producto: string;
+  variante?: string;
   cantidad: number;
   precio: number;
   observaciones?: string;
@@ -77,13 +78,13 @@ export function createOrUpdateOrder(phone: string, items: OrderItem[]) {
   }
 
   for (const item of items) {
-    const existing = orders[phone].items.find(
-      (i) =>
-        i.producto === item.producto &&
-        (i.observaciones || "") === (item.observaciones || "") &&
-        JSON.stringify(i.extras || []) === JSON.stringify(item.extras || [])
-    );
-
+  const existing = orders[phone].items.find(
+  (i) =>
+    i.producto === item.producto &&
+    (i.variante || "") === (item.variante || "") &&
+    (i.observaciones || "") === (item.observaciones || "") &&
+    JSON.stringify(i.extras || []) === JSON.stringify(item.extras || [])
+);
     if (existing) {
       existing.cantidad += item.cantidad;
     } else {
