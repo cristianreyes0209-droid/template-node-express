@@ -484,7 +484,7 @@ export const menu = {
         "extra_salami"
       ]
     },
-    {
+ {
       id: "italiana",
       nombre: "Italiana",
       precio: 23500,
@@ -512,8 +512,8 @@ export const menu = {
         "con más pepperoni",
         "con mas salami",
         "con más salami"
-    ],
-      extrasDisponibles: [
+      ],
+    extrasDisponibles: [
         "extra_pepperoni",
         "extra_salami",
         "extra_parmesano",
@@ -525,5 +525,6 @@ export const menu = {
       ]
     }
   ]
+    }
+  ]
 };
-
