@@ -5,6 +5,15 @@ type ParsedExtra = {
   precio: number;
   cantidad: number;
 };
+type ParseResult = {
+  items: ParsedItem[];
+  ambiguousChoice?: {
+    opciones: {
+      nombre: string;
+      productoId: string;
+    }[];
+  };
+};
 
 type ParsedItem = {
   producto: string;
@@ -150,6 +159,50 @@ function buildAliasList(products: any[]) {
     )
     .sort((a, b) => b.alias.length - a.alias.length);
 }
+function detectAmbiguousProduct(fragment: string, products: any[]) {
+  const text = normalizeText(fragment);
+
+  const mentionsCamarones =
+    /\bcamarones\b|\bcamaron\b|\bcamarón\b/.test(text);
+
+  if (!mentionsCamarones) {
+    return null;
+  }
+
+  const mentionsMediterranea =
+    text.includes("mediterranea") || text.includes("al ajillo");
+
+  const mentionsMarinera =
+    text.includes("marinera") || text.includes("salsa marinera");
+
+  if (mentionsMediterranea || mentionsMarinera) {
+    return null;
+  }
+
+  const mediterranea = products.find(
+    (p: any) => p.id === "mediterranea_camarones"
+  );
+  const gourmet = products.find(
+    (p: any) => p.id === "camarones_gourmet" || p.id === "camarones"
+  );
+
+  if (!mediterranea || !gourmet) {
+    return null;
+  }
+
+  return {
+    opciones: [
+      {
+        nombre: mediterranea.nombre,
+        productoId: mediterranea.id
+      },
+      {
+        nombre: gourmet.nombre,
+        productoId: gourmet.id
+      }
+    ]
+  };
+}
 
 function findProductInFragment(fragment: string, aliasList: any[]) {
   for (const entry of aliasList) {
@@ -226,7 +279,7 @@ function sameExtras(a?: ParsedExtra[], b?: ParsedExtra[]) {
   return JSON.stringify(a || []) === JSON.stringify(b || []);
 }
 
-export function parseOrder(text: string): ParsedItem[] {
+export function parseOrder(text: string): ParseResult {
   const lower = normalizeText(text);
   const fragments = splitIntoFragments(lower);
 
@@ -237,6 +290,14 @@ export function parseOrder(text: string): ParsedItem[] {
 
   const mainProducts = normalCategories.flatMap((categoria) => categoria.productos as any[]);
   const extraProducts = extrasCategory ? (extrasCategory.productos as any[]) : [];
+  const ambiguity = detectAmbiguousProduct(lower, mainProducts);
+
+if (ambiguity) {
+  return {
+    items: [],
+    ambiguousChoice: ambiguity
+  };
+}
 
   const mainAliasList = buildAliasList(mainProducts);
   const extrasAliasList = buildAliasList(extraProducts);
@@ -298,5 +359,5 @@ const variante = mainProduct ? findVariantInFragment(fragment, mainProduct) : nu
     }
   }
 
-  return items;
+  return { items };
 }
