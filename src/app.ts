@@ -212,6 +212,36 @@ let replyMessage = "";
 const parseResult = parseOrder(text);
 const parsedItems = parseResult.items;
 const lower = text.toLowerCase();
+    if (parseResult.ambiguousChoice && currentOrder) {
+  setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
+  updateOrderStep(phone, "esperando_aclaracion_producto");
+
+  replyMessage =
+    "¿Te refieres a:\n\n" +
+    "1. " + parseResult.ambiguousChoice.opciones[0].nombre + " 🧄\n" +
+    "2. " + parseResult.ambiguousChoice.opciones[1].nombre + " 🍤\n\n" +
+    "Respóndeme 1 o 2 😊";
+
+  const response = await fetch(
+    `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "text",
+        text: { body: replyMessage }
+      })
+    }
+  );
+
+  await response.json();
+  return res.sendStatus(200);
+}
   if (!currentOrder) {
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
@@ -409,6 +439,66 @@ const lower = text.toLowerCase();
       "A. La Villa\n" +
       "B. Av. Circunvalar";
   }
+         if (currentOrder?.step === "esperando_aclaracion_producto") {
+  const opciones = currentOrder.aclaracionPendiente?.opciones || [];
+
+  if ((lower === "1" || lower === "2") && opciones.length === 2) {
+    const seleccion = lower === "1" ? opciones[0] : opciones[1];
+
+    const allProducts = menu.categorias.flatMap((c: any) => c.productos);
+    const product = allProducts.find((p: any) => p.id === seleccion.productoId);
+
+    if (product) {
+      createOrUpdateOrder(phone, [
+        {
+          producto: product.nombre,
+          cantidad: 1,
+          precio: product.precio
+        }
+      ]);
+
+      clearPendingClarification(phone);
+      updateOrderStep(phone, "armando_pedido");
+
+      const order = getOrder(phone)!;
+
+      const resumen = order.items
+        .map((item: any) => {
+          const observacionesTexto = item.observaciones
+            ? ` (${formatObservaciones(item.observaciones)})`
+            : "";
+
+          const extrasTexto =
+            item.extras && item.extras.length > 0
+              ? " (+" +
+                item.extras
+                  .map((extra: any) =>
+                    extra.cantidad > 1
+                      ? `${extra.cantidad} ${extra.nombre}`
+                      : extra.nombre
+                  )
+                  .join(", +") +
+                ")"
+              : "";
+
+          return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+        })
+        .join("\n");
+
+      replyMessage =
+        "Perfecto 👌\n\n" +
+        "Estoy registrando:\n\n" +
+        resumen +
+        "\n\n¿Deseas agregar otra crepe, bebida o topping?";
+    } else {
+      replyMessage = "No pude encontrar esa opción. Inténtalo de nuevo 😊";
+    }
+  } else {
+    replyMessage =
+      "Por favor respóndeme:\n\n" +
+      "1 o 2 😊";
+  }
+}
 
 } else if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
