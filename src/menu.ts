@@ -814,9 +814,10 @@ export const menu = {
         "extra_maiz",
         "extra_queso",
         "extra_cheddar"
-    }
-  ]
-},
+     ]
+        }
+      ]
+    },
     {
       id: "fast_food",
       nombre: "Fast Food",
@@ -983,10 +984,11 @@ export const menu = {
         "extra_jamon",
         "extra_pina",
         "jalapenos"
-         ]
+     ]
         }
-      ], 
-{
+      ]
+    },
+    {   
   id: "del_mar",
   nombre: "Crepes del mar",
   productos: [
@@ -1059,7 +1061,7 @@ export const menu = {
         "jalapenos"
       ]
     },
-    {
+  {
       id: "atun",
       nombre: "Atún",
       precio: 23500,
@@ -1089,4 +1091,6 @@ export const menu = {
       ]
     }
   ]
-}
+    }
+  ]
+};
