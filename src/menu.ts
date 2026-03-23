@@ -988,256 +988,256 @@ export const menu = {
         }
       ]
     },
-    {
-  id: "gourmet",
-  nombre: "Crepes Gourmet",
-  productos: [
-    {
-      id: "strogonoff_pollo",
-      nombre: "Strogonoff de pollo",
-      precio: 29900,
-      ingredientes: [
-        "Pechuga de pollo",
-        "Champiñones",
-        "Salsa strogonoff",
-        "Vino blanco",
-        "Queso doble crema"
-      ],
-      aliases: [
-        "strogonoff de pollo",
-        "strogonoff pollo",
-        "pollo strogonoff",
-        "estrogonof de pollo",
-        "estrogonoff de pollo"
-      ],
-      modificadoresComunes: [
-        "sin pollo",
-        "sin champiñones",
-        "sin queso",
-        "sin salsa"
-      ],
-      extrasDisponibles: [
-        "extra_pollo",
-        "extra_champinones",
-        "extra_queso"
-      ]
-    },
-    {
-      id: "strogonoff_carne",
-      nombre: "Strogonoff de carne",
-      precio: 34500,
-      ingredientes: [
-        "Lomo de res",
-        "Champiñones",
-        "Salsa strogonoff",
-        "Vino blanco",
-        "Queso doble crema"
-      ],
-      aliases: [
-        "strogonoff de carne",
-        "strogonoff carne",
-        "carne strogonoff",
-        "estrogonof de carne",
-        "estrogonoff de carne"
-      ],
-      modificadoresComunes: [
-        "sin carne",
-        "sin champiñones",
-        "sin queso",
-        "sin salsa"
-      ],
-      extrasDisponibles: [
-        "extra_carne",
-        "extra_champinones",
-        "extra_queso"
-      ]
-    },
-    {
-      id: "crepe_mignon",
-      nombre: "Crepe Mignon",
-      precio: 36500,
-      ingredientes: [
-        "Lomo de res",
-        "Tocineta",
-        "Champiñones",
-        "Salsa con vino tinto",
-        "Queso doble crema"
-      ],
-      aliases: [
-        "mignon",
-        "crepe mignon"
-      ],
-      modificadoresComunes: [
-        "sin carne",
-        "sin tocineta",
-        "sin champiñones",
-        "sin queso",
-        "sin salsa"
-      ],
-      extrasDisponibles: [
-        "extra_carne",
-        "tocineta",
-        "extra_champinones",
-        "extra_queso"
-      ]
-    },
-    {
-      id: "marinera",
-      nombre: "Marinera",
-      precio: 37500,
-      ingredientes: [
-        "Mariscos",
-        "Salsa marinera",
-        "Queso doble crema"
-      ],
-      aliases: [
-        "marinera",
-        "crepe marinera",
-        "de marinera",
-        "mariscos marinera"
-      ],
-      modificadoresComunes: [
-        "sin queso",
-        "sin salsa"
-      ],
-      extrasDisponibles: [
-        "extra_queso",
-        "extra_parmesano",
-        "extra_champinones",
-        "jalapenos"
-      ]
-    },
-    {
-      id: "camarones_gourmet",
-      nombre: "Camarones",
-      precio: 35500,
-      ingredientes: [
-        "Camarones",
-        "Salsa marinera",
-        "Queso doble crema"
-      ],
-      aliases: [
-        "camarones marinera",
-        "crepe camarones marinera",
-        "camarones gourmet",
-        "de camarones marinera"
-      ],
-      modificadoresComunes: [
-        "sin queso",
-        "sin salsa"
-      ],
-      extrasDisponibles: [
-        "extra_queso",
-        "extra_parmesano",
-        "extra_champinones",
-        "jalapenos"
-      ]
-    }
-  ]
-}
-    {   
-  id: "del_mar",
-  nombre: "Crepes del mar",
-  productos: [
-    {
-      id: "mediterranea_camarones",
-      nombre: "Mediterránea de camarones",
-      precio: 33500,
-      ingredientes: [
-        "Camarones tigre",
-        "Ajo",
-        "Pimentón",
-        "Finas hierbas",
-        "Queso doble crema",
-        "Queso parmesano"
-      ],
-      aliases: [
-        "camarones",
-        "mediterranea camarones",
-        "crepe camarones",
-        "camaron",
-        "camarón"
-      ],
-      modificadoresComunes: [
-        "sin queso",
-        "sin parmesano",
-        "sin pimenton",
-        "sin pimentón"
-      ],
-      extrasDisponibles: [
-        "extra_queso",
-        "extra_parmesano",
-        "extra_champinones",
-        "extra_jamon",
-        "extra_pina",
-        "jalapenos"
-      ]
-    },
-    {
-      id: "mediterranea_mariscos",
-      nombre: "Mediterránea de mariscos",
-      precio: 35500,
-      ingredientes: [
-        "Camarones",
-        "Pulpo",
-        "Calamar",
-        "Pescado",
-        "Ajo",
-        "Pimentón",
-        "Finas hierbas",
-        "Queso doble crema",
-        "Queso parmesano"
-      ],
-      aliases: [
-        "mariscos",
-        "mediterranea mariscos",
-        "crepe mariscos"
-      ],
-      modificadoresComunes: [
-        "sin queso",
-        "sin parmesano",
-        "sin pimenton",
-        "sin pimentón"
-      ],
-      extrasDisponibles: [
-        "extra_queso",
-        "extra_parmesano",
-        "extra_champinones",
-        "extra_jamon",
-        "extra_pina",
-        "jalapenos"
-      ]
-    },
   {
-      id: "atun",
-      nombre: "Atún",
-      precio: 23500,
-      ingredientes: [
-        "Atún",
-        "Mayo ajo",
-        "Pico de gallo",
-        "Lechuga",
-        "Queso doble crema"
-      ],
-      aliases: [
-        "atun",
-        "atún",
-        "crepe atun"
-      ],
-      modificadoresComunes: [
-        "sin queso",
-        "sin lechuga",
-        "sin pico de gallo",
-        "sin salsa"
-      ],
-      extrasDisponibles: [
-        "extra_queso",
-        "extra_maiz",
-        "extra_champinones",
-        "jalapenos"
+      id: "gourmet",
+      nombre: "Crepes Gourmet",
+      productos: [
+        {
+          id: "strogonoff_pollo",
+          nombre: "Strogonoff de pollo",
+          precio: 29900,
+          ingredientes: [
+            "Pechuga de pollo",
+            "Champiñones",
+            "Salsa strogonoff",
+            "Vino blanco",
+            "Queso doble crema"
+          ],
+          aliases: [
+            "strogonoff de pollo",
+            "strogonoff pollo",
+            "pollo strogonoff",
+            "estrogonof de pollo",
+            "estrogonoff de pollo"
+          ],
+          modificadoresComunes: [
+            "sin pollo",
+            "sin champiñones",
+            "sin queso",
+            "sin salsa"
+          ],
+          extrasDisponibles: [
+            "extra_pollo",
+            "extra_champinones",
+            "extra_queso"
+          ]
+        },
+        {
+          id: "strogonoff_carne",
+          nombre: "Strogonoff de carne",
+          precio: 34500,
+          ingredientes: [
+            "Lomo de res",
+            "Champiñones",
+            "Salsa strogonoff",
+            "Vino blanco",
+            "Queso doble crema"
+          ],
+          aliases: [
+            "strogonoff de carne",
+            "strogonoff carne",
+            "carne strogonoff",
+            "estrogonof de carne",
+            "estrogonoff de carne"
+          ],
+          modificadoresComunes: [
+            "sin carne",
+            "sin champiñones",
+            "sin queso",
+            "sin salsa"
+          ],
+          extrasDisponibles: [
+            "extra_carne",
+            "extra_champinones",
+            "extra_queso"
+          ]
+        },
+        {
+          id: "crepe_mignon",
+          nombre: "Crepe Mignon",
+          precio: 36500,
+          ingredientes: [
+            "Lomo de res",
+            "Tocineta",
+            "Champiñones",
+            "Salsa con vino tinto",
+            "Queso doble crema"
+          ],
+          aliases: [
+            "mignon",
+            "crepe mignon"
+          ],
+          modificadoresComunes: [
+            "sin carne",
+            "sin tocineta",
+            "sin champiñones",
+            "sin queso",
+            "sin salsa"
+          ],
+          extrasDisponibles: [
+            "extra_carne",
+            "tocineta",
+            "extra_champinones",
+            "extra_queso"
+          ]
+        },
+        {
+          id: "marinera",
+          nombre: "Marinera",
+          precio: 37500,
+          ingredientes: [
+            "Mariscos",
+            "Salsa marinera",
+            "Queso doble crema"
+          ],
+          aliases: [
+            "marinera",
+            "crepe marinera",
+            "de marinera",
+            "mariscos marinera"
+          ],
+          modificadoresComunes: [
+            "sin queso",
+            "sin salsa"
+          ],
+          extrasDisponibles: [
+            "extra_queso",
+            "extra_parmesano",
+            "extra_champinones",
+            "jalapenos"
+          ]
+        },
+        {
+          id: "camarones_gourmet",
+          nombre: "Camarones",
+          precio: 35500,
+          ingredientes: [
+            "Camarones",
+            "Salsa marinera",
+            "Queso doble crema"
+          ],
+          aliases: [
+            "camarones marinera",
+            "crepe camarones marinera",
+            "camarones gourmet",
+            "de camarones marinera"
+          ],
+          modificadoresComunes: [
+            "sin queso",
+            "sin salsa"
+          ],
+          extrasDisponibles: [
+            "extra_queso",
+            "extra_parmesano",
+            "extra_champinones",
+            "jalapenos"
+          ]
+        }
       ]
-    }
-  ]
+    },
+    {
+      id: "del_mar",
+      nombre: "Crepes del mar",
+      productos: [
+        {
+          id: "mediterranea_camarones",
+          nombre: "Mediterránea de camarones",
+          precio: 33500,
+          ingredientes: [
+            "Camarones tigre",
+            "Ajo",
+            "Pimentón",
+            "Finas hierbas",
+            "Queso doble crema",
+            "Queso parmesano"
+          ],
+          aliases: [
+            "camarones",
+            "mediterranea camarones",
+            "crepe camarones",
+            "camaron",
+            "camarón"
+          ],
+          modificadoresComunes: [
+            "sin queso",
+            "sin parmesano",
+            "sin pimenton",
+            "sin pimentón"
+          ],
+          extrasDisponibles: [
+            "extra_queso",
+            "extra_parmesano",
+            "extra_champinones",
+            "extra_jamon",
+            "extra_pina",
+            "jalapenos"
+          ]
+        },
+        {
+          id: "mediterranea_mariscos",
+          nombre: "Mediterránea de mariscos",
+          precio: 35500,
+          ingredientes: [
+            "Camarones",
+            "Pulpo",
+            "Calamar",
+            "Pescado",
+            "Ajo",
+            "Pimentón",
+            "Finas hierbas",
+            "Queso doble crema",
+            "Queso parmesano"
+          ],
+          aliases: [
+            "mariscos",
+            "mediterranea mariscos",
+            "crepe mariscos"
+          ],
+          modificadoresComunes: [
+            "sin queso",
+            "sin parmesano",
+            "sin pimenton",
+            "sin pimentón"
+          ],
+          extrasDisponibles: [
+            "extra_queso",
+            "extra_parmesano",
+            "extra_champinones",
+            "extra_jamon",
+            "extra_pina",
+            "jalapenos"
+          ]
+        },
+        {
+          id: "atun",
+          nombre: "Atún",
+          precio: 23500,
+          ingredientes: [
+            "Atún",
+            "Mayo ajo",
+            "Pico de gallo",
+            "Lechuga",
+            "Queso doble crema"
+          ],
+          aliases: [
+            "atun",
+            "atún",
+            "crepe atun"
+          ],
+          modificadoresComunes: [
+            "sin queso",
+            "sin lechuga",
+            "sin pico de gallo",
+            "sin salsa"
+          ],
+          extrasDisponibles: [
+            "extra_queso",
+            "extra_maiz",
+            "extra_champinones",
+            "jalapenos"
+          ]
+        }
+      ]
     }
   ]
 };
