@@ -16,6 +16,11 @@ import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
 import { parseOrder } from './parser';
+import {
+  setPendingClarification,
+  getPendingClarification,
+  clearPendingClarification
+} from "./orders";
 
 
 import {
