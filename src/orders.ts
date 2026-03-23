@@ -26,6 +26,7 @@ export type OrderStep =
   | "esperando_confirmacion"
   | "esperando_pago"
   | "esperando_comprobante"
+  | "esperando_aclaracion_producto"
   | "confirmado";
 
 export type CustomerOrder = {
@@ -39,6 +40,12 @@ export type CustomerOrder = {
   items: OrderItem[];
   step: OrderStep;
   lastInteraction: number;
+  aclaracionPendiente?: {
+    opciones: {
+      nombre: string;
+      productoId: string;
+    }[];
+  };
 };
 
 const orders: Record<string, CustomerOrder> = {};
@@ -61,6 +68,20 @@ for (const item of order.items) {
   const total = subtotal + domicilio;
 
   return { subtotal, domicilio, total };
+}
+export function setPendingClarification(
+  phone: string,
+  opciones: { nombre: string; productoId: string }[]
+) {
+  if (orders[phone]) {
+    orders[phone].aclaracionPendiente = { opciones };
+  }
+}
+
+export function clearPendingClarification(phone: string) {
+  if (orders[phone]) {
+    delete orders[phone].aclaracionPendiente;
+  }
 }
 
 export function getOrder(phone: string): CustomerOrder | undefined {
