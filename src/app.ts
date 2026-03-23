@@ -217,7 +217,13 @@ let replyMessage = "";
 const parseResult = parseOrder(text);
 const parsedItems = parseResult.items;
 const lower = text.toLowerCase();
-    if (parseResult.ambiguousChoice && currentOrder) {
+if (parseResult.ambiguousChoice) {
+  if (!currentOrder) {
+    createOrUpdateOrder(phone, []);
+    currentOrder = getOrder(phone)!;
+    updateOrderStep(phone, "armando_pedido");
+  }
+
   setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
   updateOrderStep(phone, "esperando_aclaracion_producto");
 
