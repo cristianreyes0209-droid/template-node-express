@@ -146,6 +146,17 @@ export function updateOrderPayment(phone: string, formaPago: string) {
     orders[phone].formaPago = formaPago;
   }
 }
+export function setPendingClarification(phone: string, opciones: any[]) {
+  pendingClarifications.set(phone, opciones);
+}
+
+export function getPendingClarification(phone: string) {
+  return pendingClarifications.get(phone);
+}
+
+export function clearPendingClarification(phone: string) {
+  pendingClarifications.delete(phone);
+}
 
 export function buildOrderJSON(order: CustomerOrder) {
   const now = new Date();
