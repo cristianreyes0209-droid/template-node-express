@@ -432,7 +432,7 @@ const resumen = order.items
             .join(", +")
         : "";
 
-    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
   })
   .join("\n");
 
@@ -491,7 +491,7 @@ const resumen = order.items
             .join(", +")
         : "";
 
-    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
   })
   .join("\n");
 
@@ -534,7 +534,7 @@ const resumen = order.items
             .join(", +")
         : "";
 
-    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
   })
   .join("\n");
 
@@ -573,7 +573,7 @@ const resumen = order.items
             .join(", +")
         : "";
 
-    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
   })
   .join("\n");
 
@@ -653,7 +653,7 @@ const resumen = order.items
             .join(", +")
         : "";
 
-    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
   })
   .join("\n");
 
@@ -751,7 +751,7 @@ const resumen = order.items
             .join(", +")
         : "";
 
-    return `• ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
   })
   .join("\n");
 
