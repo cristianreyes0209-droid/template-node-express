@@ -316,7 +316,7 @@ export const menu = {
             "extra_queso_cuajada"
           ]
         },
-       {
+   {
           id: "mexicana",
           nombre: "Mexicana",
           precio: 27900,
@@ -352,13 +352,14 @@ export const menu = {
             "extra_carne",
             "extra_chile_con_carne",
             "extra_queso"
-          ]
+      ]
         }
       ]
     },
-  id: "fast_food",
-  nombre: "Fast Food",
-  productos: [
+    {
+      id: "fast_food",
+      nombre: "Fast Food",
+      productos: [
     {
       id: "costillas_bbq",
       nombre: "Costillas BBQ",
@@ -522,7 +523,6 @@ export const menu = {
         "extra_pina",
         "jalapenos"
    
-          ]
         }
       ]
   }
