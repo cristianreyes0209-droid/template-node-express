@@ -814,7 +814,6 @@ export const menu = {
         "extra_maiz",
         "extra_queso",
         "extra_cheddar"
-      ]
     }
   ]
 },
