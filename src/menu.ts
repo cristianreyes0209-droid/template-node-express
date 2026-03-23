@@ -556,6 +556,112 @@ export const menu = {
       ]
     },
     {
+  id: "vegetales_mixta",
+  nombre: "Vegetales Mixta",
+  precio: 24500,
+  aliases: [
+    "vegetales",
+    "vegetales mixta",
+    "crepe vegetales",
+    "mixta vegetales"
+  ],
+  ingredientes: [
+    "Carne desmechada y/o pollo desmechado",
+    "Champiñones",
+    "Pico de gallo",
+    "Maíz",
+    "Salsa paris (bechamel)"
+  ],
+  variantes: [
+    {
+      id: "mixta",
+      nombre: "Mixta",
+      precio: 24500,
+      aliases: ["mixta", "pollo y carne", "carne y pollo"]
+    },
+    {
+      id: "solo_pollo",
+      nombre: "Solo pollo",
+      precio: 21000,
+      aliases: ["solo pollo", "con pollo", "de pollo"]
+    },
+    {
+      id: "solo_carne",
+      nombre: "Solo carne",
+      precio: 24500,
+      aliases: ["solo carne", "con carne", "de carne"]
+    }
+  ],
+  modificadoresComunes: [
+    "sin champiñones",
+    "sin pico de gallo",
+    "sin maiz",
+    "sin maíz",
+    "sin salsa"
+  ],
+  extrasDisponibles: [
+    "extra_pollo",
+    "extra_carne",
+    "extra_queso",
+    "extra_champinones",
+    "extra_maiz",
+    "jalapenos"
+    ]
+    },
+    {
+  id: "ranchera_mixta",
+  nombre: "Ranchera Mixta",
+  precio: 24500,
+  aliases: [
+    "ranchera mixta",
+    "ranchera",
+    "crepe ranchera mixta"
+  ],
+  ingredientes: [
+    "Carne desmechada y/o pollo desmechado",
+    "Maíz",
+    "Jamón premium",
+    "Salsa paris (bechamel)",
+    "Queso doble crema"
+  ],
+  variantes: [
+    {
+      id: "mixta",
+      nombre: "Mixta",
+      precio: 24500,
+      aliases: ["mixta", "pollo y carne", "carne y pollo"]
+    },
+    {
+      id: "solo_pollo",
+      nombre: "Solo pollo",
+      precio: 21000,
+      aliases: ["solo pollo", "con pollo", "de pollo"]
+    },
+    {
+      id: "solo_carne",
+      nombre: "Solo carne",
+      precio: 24500,
+      aliases: ["solo carne", "con carne", "de carne"]
+    }
+  ],
+  modificadoresComunes: [
+    "sin maiz",
+    "sin maíz",
+    "sin jamon",
+    "sin jamón",
+    "sin queso",
+    "sin salsa"
+  ],
+  extrasDisponibles: [
+    "extra_pollo",
+    "extra_carne",
+    "extra_queso",
+    "extra_maiz",
+    "extra_jamon",
+    "jalapenos"
+  ]
+    },
+    {
       id: "pollo_y_pina",
       nombre: "Pollo y Piña",
       precio: 15500,
