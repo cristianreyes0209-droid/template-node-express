@@ -1117,10 +1117,12 @@ export const menu = {
             "Queso doble crema"
           ],
           aliases: [
-            "camarones",
-            "crepe camarones",
-            "camarones gourmet",
-            "de camarones "
+  "camarones gourmet",
+  "camarones marinera",
+  "crepe camarones marinera",
+  "de camarones marinera",
+  "de camarones gourmet"
+
           ],
           modificadoresComunes: [
             "sin queso",
