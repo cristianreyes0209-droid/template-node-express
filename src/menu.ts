@@ -986,9 +986,7 @@ export const menu = {
         "jalapenos"
          ]
         }
-      ]
-    },
-   
+      ], 
 {
   id: "del_mar",
   nombre: "Crepes del mar",
