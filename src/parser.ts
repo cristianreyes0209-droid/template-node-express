@@ -170,10 +170,10 @@ function detectAmbiguousProduct(fragment: string, products: any[]) {
   }
 
   const mentionsMediterranea =
-    text.includes("mediterranea") || text.includes("al ajillo");
+    text.includes("mediterranea") || text.includes("mediterránea");
 
   const mentionsMarinera =
-    text.includes("marinera") || text.includes("salsa marinera");
+    text.includes("marinera");
 
   if (mentionsMediterranea || mentionsMarinera) {
     return null;
@@ -183,7 +183,7 @@ function detectAmbiguousProduct(fragment: string, products: any[]) {
     (p: any) => p.id === "mediterranea_camarones"
   );
   const gourmet = products.find(
-    (p: any) => p.id === "camarones_gourmet" || p.id === "camarones"
+    (p: any) => p.id === "camarones_gourmet"
   );
 
   if (!mediterranea || !gourmet) {
