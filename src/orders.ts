@@ -53,22 +53,24 @@ const orders: Record<string, CustomerOrder> = {};
 export function calculateTotal(order: CustomerOrder) {
   let subtotal = 0;
 
-for (const item of order.items) {
-  let itemTotal = item.precio;
+  for (const item of order.items) {
+    let itemTotal = item.precio || 0;
 
-  if (item.extras && item.extras.length > 0) {
-    for (const extra of item.extras) {
-      itemTotal += extra.precio;
+    if (item.extras && item.extras.length > 0) {
+      for (const extra of item.extras) {
+        itemTotal += extra.precio;
+      }
     }
+
+    subtotal += itemTotal * item.cantidad;
   }
 
-  subtotal += itemTotal * item.cantidad;
-}
   const domicilio = order.tipoEntrega === "domicilio" ? DOMICILIO : 0;
   const total = subtotal + domicilio;
 
   return { subtotal, domicilio, total };
 }
+
 export function setPendingClarification(
   phone: string,
   opciones: { nombre: string; productoId: string }[]
@@ -76,6 +78,10 @@ export function setPendingClarification(
   if (orders[phone]) {
     orders[phone].aclaracionPendiente = { opciones };
   }
+}
+
+export function getPendingClarification(phone: string) {
+  return orders[phone]?.aclaracionPendiente?.opciones;
 }
 
 export function clearPendingClarification(phone: string) {
@@ -99,13 +105,14 @@ export function createOrUpdateOrder(phone: string, items: OrderItem[]) {
   }
 
   for (const item of items) {
-  const existing = orders[phone].items.find(
-  (i) =>
-    i.producto === item.producto &&
-    (i.variante || "") === (item.variante || "") &&
-    (i.observaciones || "") === (item.observaciones || "") &&
-    JSON.stringify(i.extras || []) === JSON.stringify(item.extras || [])
-);
+    const existing = orders[phone].items.find(
+      (i) =>
+        i.producto === item.producto &&
+        (i.variante || "") === (item.variante || "") &&
+        (i.observaciones || "") === (item.observaciones || "") &&
+        JSON.stringify(i.extras || []) === JSON.stringify(item.extras || [])
+    );
+
     if (existing) {
       existing.cantidad += item.cantidad;
     } else {
@@ -146,24 +153,12 @@ export function updateOrderPayment(phone: string, formaPago: string) {
     orders[phone].formaPago = formaPago;
   }
 }
-export function setPendingClarification(phone: string, opciones: any[]) {
-  pendingClarifications.set(phone, opciones);
-}
-
-export function getPendingClarification(phone: string) {
-  return pendingClarifications.get(phone);
-}
-
-export function clearPendingClarification(phone: string) {
-  pendingClarifications.delete(phone);
-}
 
 export function buildOrderJSON(order: CustomerOrder) {
   const now = new Date();
   const horaRecepcion = now.toISOString();
 
-  const minutosEstimados =
-    order.tipoEntrega === "domicilio" ? 50 : 15;
+  const minutosEstimados = order.tipoEntrega === "domicilio" ? 50 : 15;
 
   const estimated = new Date(now.getTime() + minutosEstimados * 60000);
   const totals = calculateTotal(order);
