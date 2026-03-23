@@ -987,6 +987,108 @@ export const menu = {
       ]
     }
   ]
+ 
+{
+  id: "del_mar",
+  nombre: "Crepes del mar",
+  productos: [
+    {
+      id: "mediterranea_camarones",
+      nombre: "Mediterránea de camarones",
+      precio: 33500,
+      ingredientes: [
+        "Camarones tigre",
+        "Ajo",
+        "Pimentón",
+        "Finas hierbas",
+        "Queso doble crema",
+        "Queso parmesano"
+      ],
+      aliases: [
+        "camarones",
+        "mediterranea camarones",
+        "crepe camarones",
+        "camaron",
+        "camarón"
+      ],
+      modificadoresComunes: [
+        "sin queso",
+        "sin parmesano",
+        "sin pimenton",
+        "sin pimentón"
+      ],
+      extrasDisponibles: [
+        "extra_queso",
+        "extra_parmesano",
+        "extra_champinones",
+        "extra_jamon",
+        "extra_pina",
+        "jalapenos"
+      ]
+    },
+    {
+      id: "mediterranea_mariscos",
+      nombre: "Mediterránea de mariscos",
+      precio: 35500,
+      ingredientes: [
+        "Camarones",
+        "Pulpo",
+        "Calamar",
+        "Pescado",
+        "Ajo",
+        "Pimentón",
+        "Finas hierbas",
+        "Queso doble crema",
+        "Queso parmesano"
+      ],
+      aliases: [
+        "mariscos",
+        "mediterranea mariscos",
+        "crepe mariscos"
+      ],
+      modificadoresComunes: [
+        "sin queso",
+        "sin parmesano",
+        "sin pimenton",
+        "sin pimentón"
+      ],
+      extrasDisponibles: [
+        "extra_queso",
+        "extra_parmesano",
+        "extra_champinones",
+        "extra_jamon",
+        "extra_pina",
+        "jalapenos"
+      ]
+    },
+    {
+      id: "atun",
+      nombre: "Atún",
+      precio: 23500,
+      ingredientes: [
+        "Atún",
+        "Mayo ajo",
+        "Pico de gallo",
+        "Lechuga",
+        "Queso doble crema"
+      ],
+      aliases: [
+        "atun",
+        "atún",
+        "crepe atun"
+      ],
+      modificadoresComunes: [
+        "sin queso",
+        "sin lechuga",
+        "sin pico de gallo",
+        "sin salsa"
+      ],
+      extrasDisponibles: [
+        "extra_queso",
+        "extra_maiz",
+        "extra_champinones",
+        "jalapenos"
+      ]
     }
   ]
-};
+}
