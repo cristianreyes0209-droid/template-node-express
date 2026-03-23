@@ -361,6 +361,358 @@ export const menu = {
       ]
     },
     {
+  id: "clasicas",
+  nombre: "Crepes Clásicas",
+  productos: [
+    {
+      id: "especial",
+      nombre: "Especial",
+      precio: 26500,
+      ingredientes: [
+        "Pollo desmechado",
+        "Carne desmechada",
+        "Champiñones",
+        "Jamón premium",
+        "Queso doble crema",
+        "Salsa paris (bechamel)"
+      ],
+      aliases: [
+        "especial",
+        "crepe especial"
+      ],
+      modificadoresComunes: [
+        "sin pollo",
+        "sin carne",
+        "sin champiñones",
+        "sin jamon",
+        "sin jamón",
+        "sin queso",
+        "sin salsa"
+      ],
+      extrasDisponibles: [
+        "extra_pollo",
+        "extra_carne",
+        "extra_champinones",
+        "extra_jamon",
+        "extra_queso",
+        "jalapenos"
+      ]
+    },
+    {
+      id: "vegetales_mixta",
+      nombre: "Vegetales Mixta",
+      precio: 24500,
+      aliases: [
+        "vegetales",
+        "vegetales mixta",
+        "crepe vegetales",
+        "mixta vegetales"
+      ],
+      ingredientes: [
+        "Carne desmechada y/o pollo desmechado",
+        "Champiñones",
+        "Pico de gallo",
+        "Maíz",
+        "Salsa paris (bechamel)"
+      ],
+      variantes: [
+        {
+          id: "mixta",
+          nombre: "Mixta",
+          precio: 24500,
+          aliases: ["mixta", "pollo y carne", "carne y pollo"]
+        },
+        {
+          id: "solo_pollo",
+          nombre: "Solo pollo",
+          precio: 21000,
+          aliases: ["solo pollo", "con pollo", "de pollo"]
+        },
+        {
+          id: "solo_carne",
+          nombre: "Solo carne",
+          precio: 24500,
+          aliases: ["solo carne", "con carne", "de carne"]
+        }
+      ],
+      modificadoresComunes: [
+        "sin champiñones",
+        "sin pico de gallo",
+        "sin maiz",
+        "sin maíz",
+        "sin salsa"
+      ],
+      extrasDisponibles: [
+        "extra_pollo",
+        "extra_carne",
+        "extra_queso",
+        "extra_champinones",
+        "extra_maiz",
+        "jalapenos"
+      ]
+    },
+    {
+      id: "ranchera_mixta",
+      nombre: "Ranchera Mixta",
+      precio: 24500,
+      aliases: [
+        "ranchera mixta",
+        "ranchera",
+        "crepe ranchera mixta"
+      ],
+      ingredientes: [
+        "Carne desmechada y/o pollo desmechado",
+        "Maíz",
+        "Jamón premium",
+        "Salsa paris (bechamel)",
+        "Queso doble crema"
+      ],
+      variantes: [
+        {
+          id: "mixta",
+          nombre: "Mixta",
+          precio: 24500,
+          aliases: ["mixta", "pollo y carne", "carne y pollo"]
+        },
+        {
+          id: "solo_pollo",
+          nombre: "Solo pollo",
+          precio: 21000,
+          aliases: ["solo pollo", "con pollo", "de pollo"]
+        },
+        {
+          id: "solo_carne",
+          nombre: "Solo carne",
+          precio: 24500,
+          aliases: ["solo carne", "con carne", "de carne"]
+        }
+      ],
+      modificadoresComunes: [
+        "sin maiz",
+        "sin maíz",
+        "sin jamon",
+        "sin jamón",
+        "sin queso",
+        "sin salsa"
+      ],
+      extrasDisponibles: [
+        "extra_pollo",
+        "extra_carne",
+        "extra_queso",
+        "extra_maiz",
+        "extra_jamon",
+        "jalapenos"
+      ]
+    },
+    {
+      id: "bolognesa",
+      nombre: "Bolognesa",
+      precio: 26500,
+      ingredientes: [
+        "Albóndigas mixtas de res y cerdo",
+        "Salsa boloñesa",
+        "Queso parmesano",
+        "Queso doble crema"
+      ],
+      aliases: [
+        "bolognesa",
+        "crepe bolognesa"
+      ],
+      modificadoresComunes: [
+        "sin queso",
+        "sin parmesano",
+        "sin salsa"
+      ],
+      extrasDisponibles: [
+        "extra_parmesano",
+        "extra_queso"
+      ]
+    },
+    {
+      id: "pollo_champinon",
+      nombre: "Pollo Champiñón",
+      precio: 16500,
+      ingredientes: [
+        "Pollo desmechado",
+        "Champiñones",
+        "Queso doble crema",
+        "Salsa paris (bechamel)"
+      ],
+      aliases: [
+        "pollo champiñon",
+        "pollo champinon",
+        "crepe pollo champiñon"
+      ],
+      modificadoresComunes: [
+        "sin pollo",
+        "sin champiñones",
+        "sin queso",
+        "sin salsa"
+      ],
+      extrasDisponibles: [
+        "extra_pollo",
+        "extra_champinones",
+        "extra_queso"
+      ]
+    },
+    {
+      id: "pollo_y_pina",
+      nombre: "Pollo y Piña",
+      precio: 15500,
+      ingredientes: [
+        "Pollo desmechado",
+        "Piña calada",
+        "Queso doble crema",
+        "Salsa paris (bechamel)"
+      ],
+      aliases: [
+        "pollo y piña",
+        "pollo y pina",
+        "crepe pollo y piña"
+      ],
+      modificadoresComunes: [
+        "sin pollo",
+        "sin piña",
+        "sin pina",
+        "sin queso",
+        "sin salsa"
+      ],
+      extrasDisponibles: [
+        "extra_pollo",
+        "extra_pina",
+        "extra_queso"
+      ]
+    },
+    {
+      id: "pollo_y_carne",
+      nombre: "Pollo y Carne",
+      precio: 17000,
+      ingredientes: [
+        "Pollo desmechado",
+        "Carne desmechada",
+        "Queso doble crema",
+        "Salsa paris (bechamel)"
+      ],
+      aliases: [
+        "pollo y carne",
+        "crepe pollo y carne"
+      ],
+      modificadoresComunes: [
+        "sin pollo",
+        "sin carne",
+        "sin queso",
+        "sin salsa"
+      ],
+      extrasDisponibles: [
+        "extra_pollo",
+        "extra_carne",
+        "extra_queso"
+      ]
+    },
+    {
+      id: "pollo",
+      nombre: "Pollo",
+      precio: 14500,
+      ingredientes: [
+        "Pollo desmechado",
+        "Queso doble crema",
+        "Salsa paris (bechamel)"
+      ],
+      aliases: [
+        "pollo",
+        "crepe pollo"
+      ],
+      modificadoresComunes: [
+        "sin pollo",
+        "sin queso",
+        "sin salsa"
+      ],
+      extrasDisponibles: [
+        "extra_pollo",
+        "extra_queso"
+      ]
+    },
+    {
+      id: "carne",
+      nombre: "Carne",
+      precio: 17000,
+      ingredientes: [
+        "Carne desmechada",
+        "Queso doble crema",
+        "Salsa paris (bechamel)"
+      ],
+      aliases: [
+        "carne",
+        "crepe carne"
+      ],
+      modificadoresComunes: [
+        "sin carne",
+        "sin queso",
+        "sin salsa"
+      ],
+      extrasDisponibles: [
+        "extra_carne",
+        "extra_queso"
+      ]
+    },
+    {
+      id: "hawaiana",
+      nombre: "Hawaiana",
+      precio: 14000,
+      ingredientes: [
+        "Jamón premium",
+        "Piña calada",
+        "Queso doble crema"
+      ],
+      aliases: [
+        "hawaiana",
+        "hawaina",
+        "crepe hawaiana"
+      ],
+      modificadoresComunes: [
+        "sin jamon",
+        "sin jamón",
+        "sin piña",
+        "sin pina",
+        "sin queso"
+      ],
+      extrasDisponibles: [
+        "extra_jamon",
+        "extra_pina",
+        "extra_queso"
+      ]
+    },
+    {
+      id: "ranchera",
+      nombre: "Ranchera",
+      precio: 14500,
+      ingredientes: [
+        "Salchicha ranchera",
+        "Maíz tierno",
+        "Queso doble crema",
+        "Salsa cheddar"
+      ],
+      aliases: [
+        "ranchera",
+        "crepe ranchera"
+      ],
+      modificadoresComunes: [
+        "sin ranchera",
+        "sin maiz",
+        "sin maíz",
+        "sin queso",
+        "sin cheddar"
+      ],
+      extrasDisponibles: [
+        "extra_ranchera",
+        "extra_maiz",
+        "extra_queso",
+        "extra_cheddar"
+      ]
+    }
+  ]
+},
+    {
       id: "fast_food",
       nombre: "Fast Food",
       productos: [
