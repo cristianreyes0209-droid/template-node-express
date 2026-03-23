@@ -169,6 +169,7 @@ function findVariantInFragment(fragment: string, product: any) {
     return null;
   }
 
+  // 1. detectar alias explícitos
   for (const variante of product.variantes) {
     for (const alias of variante.aliases) {
       const cleanAlias = escapeRegex(normalizeText(alias));
@@ -180,9 +181,21 @@ function findVariantInFragment(fragment: string, product: any) {
     }
   }
 
-  return null;
-}
+  // 2. lógica inteligente (clave)
+  const hasPollo = fragment.includes("pollo");
+  const hasCarne = fragment.includes("carne");
 
+  if (hasPollo && !hasCarne) {
+    return product.variantes.find((v: any) => v.id === "solo_pollo");
+  }
+
+  if (hasCarne && !hasPollo) {
+    return product.variantes.find((v: any) => v.id === "solo_carne");
+  }
+
+  // 3. default = mixta
+  return product.variantes.find((v: any) => v.id === "mixta");
+}
 function extractExtrasFromFragment(fragment: string, extrasAliasList: any[]) {
   const extrasFound: any[] = [];
 
