@@ -692,7 +692,7 @@ if (!currentOrder) {
     "\nTotal: $" + totals.total +
     "\n📍 Dirección: " + order.direccion +
     "\n\n¿Confirmas tu pedido? (SI / NO)";
-
+}
 } else if (currentOrder?.step === "esperando_confirmacion") {
   if (lower === "si" || lower === "sí") {
     updateOrderStep(phone, "esperando_pago");
