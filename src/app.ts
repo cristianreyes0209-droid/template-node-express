@@ -173,12 +173,12 @@ export const initApp = async (
   }
 
 });
-function formatoObservaciones(obs?: string) {
+    function formatObservaciones(obs?: string) {
   if (!obs) return "";
+
   return obs
     .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean)
+    .map(o => o.trim())
     .join(" • ");
 }
 app.post('/whatsapp', async (req, res) => {
@@ -216,16 +216,10 @@ if (!phone) {
 let replyMessage = "";
 const parseResult = parseOrder(text);
 const parsedItems = parseResult.items;
-const lower = text.toLowerCase().trim();
-
-if (
-  currentOrder &&
-  currentOrder.step !== "esperando_menu_principal" &&
-  parseResult.ambiguousChoice
-) {
+const lower = text.toLowerCase();
+    if (parseResult.ambiguousChoice && currentOrder) {
   setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
   updateOrderStep(phone, "esperando_aclaracion_producto");
-  currentOrder = getOrder(phone)!;
 
   replyMessage =
     "¿Te refieres a:\n\n" +
@@ -253,15 +247,14 @@ if (
   await response.json();
   return res.sendStatus(200);
 }
-
-if (!currentOrder) {
+  if (!currentOrder) {
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
   currentOrder = getOrder(phone)!;
 
   replyMessage =
-    "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
-    "Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
+"Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
+"Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
     "A. Recoger en tienda 🏪\n" +
     "B. Domicilio 🚚\n" +
     "C. Agendar pedido 📅\n" +
@@ -286,8 +279,8 @@ if (!currentOrder) {
     currentOrder.lastInteraction = now;
 
     replyMessage =
-      "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
-      "Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
+"Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
+"Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
       "A. Recoger en tienda 🏪\n" +
       "B. Domicilio 🚚\n" +
       "C. Agendar pedido 📅\n" +
@@ -296,11 +289,11 @@ if (!currentOrder) {
       "F. Otros 💬";
 
     await fetch(
-      `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+      "https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          "Authorization": "Bearer " + process.env.WHATSAPP_TOKEN,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -317,8 +310,10 @@ if (!currentOrder) {
 
   currentOrder.lastInteraction = now;
 }
+
+
  
-   if (currentOrder?.step === "esperando_menu_principal") {
+     if (currentOrder?.step === "esperando_menu_principal") {
   if (
     lower === "a" ||
     lower.includes("recoger") ||
@@ -327,7 +322,7 @@ if (!currentOrder) {
     currentOrder.canal = "recoger";
     updateOrderDeliveryType(phone, "recoger");
     updateOrderStep(phone, "esperando_sucursal");
-    currentOrder = getOrder(phone)!;
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -338,13 +333,14 @@ if (!currentOrder) {
   } else if (
     lower === "b" ||
     lower.includes("domicilio") ||
+    lower.includes("enviar") ||
     lower.includes("envio") ||
     lower.includes("envío")
   ) {
     currentOrder.canal = "domicilio";
     updateOrderDeliveryType(phone, "domicilio");
     updateOrderStep(phone, "esperando_sucursal");
-    currentOrder = getOrder(phone)!;
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -355,12 +351,13 @@ if (!currentOrder) {
   } else if (
     lower === "c" ||
     lower.includes("agendar") ||
-    lower.includes("programar")
+    lower.includes("programar") ||
+    lower.includes("pedido programado")
   ) {
     replyMessage =
       "Perfecto 👌\n\n" +
       "Muy pronto podrás agendar pedidos por este medio.\n\n" +
-      "Por ahora puedo ayudarte con pedidos para recoger o domicilio.";
+      "Por ahora puedo ayudarte con pedidos inmediatos para recoger o domicilio.";
 
   } else if (
     lower === "d" ||
@@ -371,7 +368,7 @@ if (!currentOrder) {
     replyMessage =
       "Perfecto 👌\n\n" +
       "Muy pronto podrás hacer reservas por este medio.\n\n" +
-      "Por ahora puedo ayudarte con pedidos para recoger o domicilio.";
+      "Por ahora, si deseas, puedo ayudarte con un pedido para recoger o domicilio.";
 
   } else if (
     lower === "e" ||
@@ -384,35 +381,32 @@ if (!currentOrder) {
   ) {
     replyMessage =
       "Claro 😊\n\n" +
-      "Por favor escríbeme tu solicitud, queja, reclamo o sugerencia.";
+      "Por favor escríbeme tu solicitud, queja, reclamo o sugerencia, y te ayudaremos a gestionarla.";
 
   } else if (
     lower === "f" ||
     lower.includes("otros") ||
+    lower.includes("otra cosa") ||
     lower.includes("ayuda")
   ) {
     replyMessage =
       "Con gusto 😊\n\n" +
       "Cuéntame en qué puedo ayudarte.";
 
-  } else if (parsedItems.length > 0 || parseResult.ambiguousChoice) {
-    replyMessage =
-      "Antes de tomar tu pedido, dime si deseas:\n\n" +
-      "A. Recoger en tienda 🏪\n" +
-      "B. Domicilio 🚚";
-
   } else {
     replyMessage =
-      "Por favor elige una opción:\n\n" +
-      "A. Recoger en tienda 🏪\n" +
-      "B. Domicilio 🚚\n" +
-      "C. Agendar pedido 📅\n" +
-      "D. Hacer reserva 🍽️\n" +
-      "E. PQR 📝\n" +
-      "F. Otros 💬";
+ replyMessage =
+  "Hola 👋 Bienvenido a LAS CREPES ✨\n\n" +
+  "Qué alegría atenderte 😊\n\n" +
+  "Elige una de estas opciones para continuar:\n\n" +
+  "A. Recoger en tienda 🏪\n" +
+  "B. Domicilio 🚚\n" +
+  "C. Agendar pedido 📅\n" +
+  "D. Hacer reserva 🍽️\n" +
+  "E. PQR 📝\n" +
+  "F. Otros 💬";
   }
-}
-} else if (currentOrder?.step === "esperando_sucursal") {
+    } else if (currentOrder?.step === "esperando_sucursal") {
   if (
     lower === "a" ||
     lower.includes("villa") ||
@@ -420,7 +414,7 @@ if (!currentOrder) {
   ) {
     currentOrder.sucursal = "la_villa";
     updateOrderStep(phone, "armando_pedido");
-    currentOrder = getOrder(phone)!;
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👍\n\n" +
@@ -436,7 +430,7 @@ if (!currentOrder) {
   ) {
     currentOrder.sucursal = "circunvalar";
     updateOrderStep(phone, "armando_pedido");
-    currentOrder = getOrder(phone)!;
+      currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👍\n\n" +
@@ -444,13 +438,13 @@ if (!currentOrder) {
       "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
       "O si prefieres, escríbeme lo que deseas pedir y yo te ayudo por aquí 😊";
 
-  } else {
+ } else {
     replyMessage =
       "Por favor elige la sucursal:\n\n" +
       "A. La Villa\n" +
       "B. Av. Circunvalar";
   }
-      if (currentOrder?.step === "esperando_aclaracion_producto") {
+         if (currentOrder?.step === "esperando_aclaracion_producto") {
   const opciones = currentOrder.aclaracionPendiente?.opciones || [];
 
   if ((lower === "1" || lower === "2") && opciones.length === 2) {
@@ -470,12 +464,13 @@ if (!currentOrder) {
 
       clearPendingClarification(phone);
       updateOrderStep(phone, "armando_pedido");
-      currentOrder = getOrder(phone)!;
 
-      const resumen = currentOrder.items
+      const order = getOrder(phone)!;
+
+      const resumen = order.items
         .map((item: any) => {
           const observacionesTexto = item.observaciones
-            ? ` (${formatoObservaciones(item.observaciones)})`
+            ? ` (${formatObservaciones(item.observaciones)})`
             : "";
 
           const extrasTexto =
@@ -509,32 +504,33 @@ if (!currentOrder) {
       "1 o 2 😊";
   }
 }
+
 } else if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
   updateOrderStep(phone, "armando_pedido");
-  currentOrder = getOrder(phone)!;
+         currentOrder = getOrder(phone)!;
 
-  const resumen = order.items
-    .map((item: any) => {
-      const observacionesTexto = item.observaciones
-        ? ` (${formatoObservaciones(item.observaciones)})`
+const resumen = order.items
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
+
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
         : "";
 
-      const extrasTexto =
-        item.extras && item.extras.length > 0
-          ? " +" +
-            item.extras
-              .map((extra: any) =>
-                extra.cantidad > 1
-                  ? `${extra.cantidad} ${extra.nombre}`
-                  : extra.nombre
-              )
-              .join(", +")
-          : "";
-
-      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-    })
-    .join("\n");
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
   replyMessage =
     "Perfecto 👌\n\n" +
@@ -573,27 +569,27 @@ if (!currentOrder) {
       const order = getOrder(phone)!;
       const totals = calculateTotal(order);
 
-      const resumen = order.items
-        .map((item: any) => {
-          const observacionesTexto = item.observaciones
-            ? ` (${formatoObservaciones(item.observaciones)})`
-            : "";
+    const resumen = order.items
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
 
-          const extrasTexto =
-            item.extras && item.extras.length > 0
-              ? " +" +
-                item.extras
-                  .map((extra: any) =>
-                    extra.cantidad > 1
-                      ? `${extra.cantidad} ${extra.nombre}`
-                      : extra.nombre
-                  )
-                  .join(", +")
-              : "";
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
+        : "";
 
-          return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-        })
-        .join("\n");
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
       replyMessage =
         "Perfecto 👌\n\n" +
@@ -604,12 +600,10 @@ if (!currentOrder) {
         "\n\n¿Confirmas tu pedido? (SI / NO)";
     }
   }
-}
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
   if (currentOrder?.tipoEntrega === "domicilio") {
     updateOrderStep(phone, "esperando_direccion");
     currentOrder = getOrder(phone)!;
-
     replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
   } else {
     updateOrderStep(phone, "esperando_confirmacion");
@@ -618,27 +612,27 @@ if (!currentOrder) {
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
-    const resumen = order.items
-      .map((item: any) => {
-        const observacionesTexto = item.observaciones
-          ? ` (${formatoObservaciones(item.observaciones)})`
-          : "";
+const resumen = order.items
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
 
-        const extrasTexto =
-          item.extras && item.extras.length > 0
-            ? " +" +
-              item.extras
-                .map((extra: any) =>
-                  extra.cantidad > 1
-                    ? `${extra.cantidad} ${extra.nombre}`
-                    : extra.nombre
-                )
-                .join(", +")
-            : "";
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
+        : "";
 
-        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-      })
-      .join("\n");
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -648,7 +642,6 @@ if (!currentOrder) {
       "\nTotal: $" + totals.total +
       "\n\n¿Confirmas tu pedido? (SI / NO)";
   }
-}
 
 } else if (currentOrder?.step === "esperando_direccion") {
   console.log("ENTRÓ A ESPERANDO_DIRECCION");
@@ -658,27 +651,27 @@ if (!currentOrder) {
   const order = getOrder(phone)!;
   const totals = calculateTotal(order);
 
-  const resumen = order.items
-    .map((item: any) => {
-      const observacionesTexto = item.observaciones
-        ? ` (${formatoObservaciones(item.observaciones)})`
+const resumen = order.items
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
+
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
         : "";
 
-      const extrasTexto =
-        item.extras && item.extras.length > 0
-          ? " +" +
-            item.extras
-              .map((extra: any) =>
-                extra.cantidad > 1
-                  ? `${extra.cantidad} ${extra.nombre}`
-                  : extra.nombre
-              )
-              .join(", +")
-          : "";
-
-      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-    })
-    .join("\n");
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
   updateOrderStep(phone, "esperando_confirmacion");
   currentOrder = getOrder(phone)!;
@@ -692,9 +685,8 @@ if (!currentOrder) {
     "\nTotal: $" + totals.total +
     "\n📍 Dirección: " + order.direccion +
     "\n\n¿Confirmas tu pedido? (SI / NO)";
-}
-} else if (currentOrder?.step === "esperando_confirmacion") {
-  if (lower === "si" || lower === "sí") {
+         } else if (currentOrder?.step === "esperando_confirmacion") {
+  if (lower.includes("si")) {
     updateOrderStep(phone, "esperando_pago");
     currentOrder = getOrder(phone)!;
 
@@ -704,9 +696,26 @@ if (!currentOrder) {
       "• Nequi\n" +
       "• Daviplata\n" +
       "• Bancolombia";
-  } else if (lower === "no") {
+  } else if (lower.includes("no")) {
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
+    replyMessage = "Perfecto 👍 ¿Qué deseas cambiar?";
+  } else {
+    replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
+  }
+  if (lower.includes("si")) {
+    updateOrderStep(phone, "esperando_pago");
+      currentOrder = getOrder(phone)!;
+
+    replyMessage =
+      "Perfecto 👌\n\n¿Cómo deseas pagar?\n" +
+      "• Efectivo\n" +
+      "• Nequi\n" +
+      "• Daviplata\n" +
+      "• Bancolombia";
+  } else if (lower.includes("no")) {
+    updateOrderStep(phone, "armando_pedido");
+      currentOrder = getOrder(phone)!;
     replyMessage = "Perfecto 👍 ¿Qué deseas cambiar?";
   } else {
     replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
@@ -723,26 +732,26 @@ if (!currentOrder) {
     const totals = calculateTotal(order);
 
     const resumen = order.items
-      .map((item: any) => {
-        const observacionesTexto = item.observaciones
-          ? ` (${formatoObservaciones(item.observaciones)})`
-          : "";
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
 
-        const extrasTexto =
-          item.extras && item.extras.length > 0
-            ? " +" +
-              item.extras
-                .map((extra: any) =>
-                  extra.cantidad > 1
-                    ? `${extra.cantidad} ${extra.nombre}`
-                    : extra.nombre
-                )
-                .join(", +")
-            : "";
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
+        : "";
 
-        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-      })
-      .join("\n");
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
     const tiempoTexto =
       order.tipoEntrega === "domicilio"
@@ -810,6 +819,7 @@ if (!currentOrder) {
       "• Daviplata\n" +
       "• Bancolombia";
   }
+
 } else if (currentOrder?.step === "esperando_comprobante") {
   if (lower.includes("listo") || lower.includes("ya")) {
     updateOrderStep(phone, "confirmado");
@@ -819,27 +829,27 @@ if (!currentOrder) {
     const orderJSON = buildOrderJSON(order);
     const totals = calculateTotal(order);
 
-    const resumen = order.items
-      .map((item: any) => {
-        const observacionesTexto = item.observaciones
-          ? ` (${formatoObservaciones(item.observaciones)})`
-          : "";
+   const resumen = order.items
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
 
-        const extrasTexto =
-          item.extras && item.extras.length > 0
-            ? " +" +
-              item.extras
-                .map((extra: any) =>
-                  extra.cantidad > 1
-                    ? `${extra.cantidad} ${extra.nombre}`
-                    : extra.nombre
-                )
-                .join(", +")
-            : "";
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
+        : "";
 
-        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-      })
-      .join("\n");
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
     const tiempoTexto =
       order.tipoEntrega === "domicilio"
@@ -869,7 +879,6 @@ if (!currentOrder) {
     replyMessage =
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
   }
-
 } else if (currentOrder?.step === "confirmado") {
   if (
     lower.includes("como va") ||
@@ -884,7 +893,6 @@ if (!currentOrder) {
     replyMessage =
       "Tu pedido sigue en preparación 👨‍🍳🚚\n\n" +
       "Tiempo estimado: 40-50 min. Te avisaremos si hay alguna novedad.";
-
   } else if (
     lower.includes("gracias") ||
     lower.includes("ok") ||
@@ -893,7 +901,6 @@ if (!currentOrder) {
   ) {
     replyMessage =
       "Con gusto 😊 Tu pedido ya está en proceso. Te avisaremos cualquier novedad.";
-
   } else {
     replyMessage =
       "Tu pedido fue confirmado ✅\n\n" +
@@ -902,33 +909,30 @@ if (!currentOrder) {
 
 } else if (currentOrder?.step === "armando_pedido") {
   if (
-    lower === "si" ||
-    lower === "sí" ||
-    lower === "ya" ||
-    lower === "ok" ||
-    lower === "vale" ||
-    lower === "dale" ||
-    lower === "de una"
+    lower.includes("si") ||
+    lower.includes("sí") ||
+    lower.includes("ya") ||
+    lower.includes("ok") ||
+    lower.includes("vale") ||
+    lower.includes("dale") ||
+    lower.includes("de una")
   ) {
     replyMessage =
       "Perfecto 👌 ¿Qué más deseas agregar?\n\n" +
       "Puedes decirme otra crepe, bebida o topping.";
-
   } else if (
-    lower === "no" ||
-    lower === "nada" ||
-    lower === "listo" ||
+    lower.includes("no") ||
+    lower.includes("nada") ||
+    lower.includes("listo") ||
     lower.includes("no mas") ||
     lower.includes("no más") ||
     lower.includes("eso es todo")
   ) {
     updateOrderStep(phone, "esperando_nombre");
-    currentOrder = getOrder(phone)!;
-
+      currentOrder = getOrder(phone)!;
     replyMessage =
       "Perfecto 👍\n\n" +
       "Antes de continuar, ¿cómo es tu nombre?";
-
   } else {
     replyMessage =
       "¿Deseas agregar algo más? 😊\n\n" +
@@ -959,6 +963,7 @@ if (!currentOrder) {
     "• 1 Nutella y 1 Tropical\n\n" +
     "También puedo ayudarte con domicilio o recoger.";
 }
+
 console.log("ENVIANDO MENSAJE A:", phone);
 
 const response = await fetch(
@@ -966,7 +971,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBRNKzCm6a2EkaNCLY0KIzrlrJZBJfCtqq4lTc3j8dskP2DRU5o3QMWU7AYEoG9GUu8yg0wXFoXgZCd9Gykqh8TApk2hxgMT980JnzQuZAr0MfPpE5wefgRJvsKAyxMptNlnrUnzG6P94xElSatEcNzjNLt8PwVCrss1nv9nZCt9WRZCwm7OE7eVmwQvpFqCtOLQ7jOxwv3ibFJpO0hvoHTANmaJPBo2VsgrQdxcx7yzVMPzxD7vbRpAH2TuueHwScaMog4UL9d8QZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBRBFfy0bDpcR2J4oQfibPNy2KlqYZAgXqxeDtpiEn30eqMp49CIq3BVjZAhXyC4Yt6JLsZB8aC231R8cifUpBJEHZBqnN2cvO5qfQAtDGQqK4TzQc1Ag59x9rf1iBJWTGQcgCWaRH6EAnGUEMp4dDqukf0vnbjeTCQnITZCDt4WsmXZBZAC1k6ZCjxzmoyar5aerX4W4JaQS0Q3kbeFAWta9bm3s4UbYHvy5v14RRGsZB8IozK0zaXBdG6YiKVzUp971gViPaitVNk7KAZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
