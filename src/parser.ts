@@ -292,6 +292,12 @@ export function parseOrder(text: string): ParseResult {
   const mainProducts = normalCategories.flatMap((categoria) => categoria.productos as any[]);
   const extraProducts = extrasCategory ? (extrasCategory.productos as any[]) : [];
   const ambiguity = detectAmbiguousProduct(lower, mainProducts);
+  console.log("PARSER LOWER:", lower);
+console.log(
+  "PARSER IDS:",
+  mainProducts.map((p: any) => p.id)
+);
+console.log("PARSER AMBIGUITY:", JSON.stringify(ambiguity, null, 2));
 
 if (ambiguity) {
   return {
