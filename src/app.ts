@@ -217,15 +217,14 @@ let replyMessage = "";
 const parseResult = parseOrder(text);
 const parsedItems = parseResult.items;
 const lower = text.toLowerCase();
-if (parseResult.ambiguousChoice) {
-  if (!currentOrder) {
-    createOrUpdateOrder(phone, []);
-    currentOrder = getOrder(phone)!;
-    updateOrderStep(phone, "armando_pedido");
-  }
-
+if (
+  currentOrder &&
+  currentOrder.step !== "esperando_menu_principal" &&
+  parseResult.ambiguousChoice
+) {
   setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
   updateOrderStep(phone, "esperando_aclaracion_producto");
+  currentOrder = getOrder(phone)!;
 
   replyMessage =
     "¿Te refieres a:\n\n" +
@@ -258,15 +257,21 @@ if (parseResult.ambiguousChoice) {
   updateOrderStep(phone, "esperando_menu_principal");
   currentOrder = getOrder(phone)!;
 
-  replyMessage =
-"Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
-"Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
-    "A. Recoger en tienda 🏪\n" +
-    "B. Domicilio 🚚\n" +
-    "C. Agendar pedido 📅\n" +
-    "D. Hacer reserva 🍽️\n" +
-    "E. PQR 📝\n" +
-    "F. Otros 💬";
+ } else if (parsedItems.length > 0 || parseResult.ambiguousChoice) {
+    replyMessage =
+      "Antes de tomar tu pedido, dime si deseas:\n\n" +
+      "A. Recoger en tienda 🏪\n" +
+      "B. Domicilio 🚚";
+  } else {
+    replyMessage =
+      "Por favor elige una opción:\n\n" +
+      "A. Recoger en tienda 🏪\n" +
+      "B. Domicilio 🚚\n" +
+      "C. Agendar pedido 📅\n" +
+      "D. Hacer reserva 🍽️\n" +
+      "E. PQR 📝\n" +
+      "F. Otros 💬";
+  }
 
 } else {
   const now = Date.now();
@@ -294,8 +299,8 @@ if (parseResult.ambiguousChoice) {
       "E. PQR 📝\n" +
       "F. Otros 💬";
 
-    await fetch(
-      "https://graph.facebook.com/v18.0/1066064689915977/messages",
+   await fetch(
+  `https://graph.facebook.com/v22.0/${process.env.1066064689915977}/messages`,
       {
         method: "POST",
         headers: {
