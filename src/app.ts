@@ -252,26 +252,20 @@ if (
   await response.json();
   return res.sendStatus(200);
 }
-  if (!currentOrder) {
+if (!currentOrder) {
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
   currentOrder = getOrder(phone)!;
 
- } else if (parsedItems.length > 0 || parseResult.ambiguousChoice) {
-    replyMessage =
-      "Antes de tomar tu pedido, dime si deseas:\n\n" +
-      "A. Recoger en tienda 🏪\n" +
-      "B. Domicilio 🚚";
-  } else {
-    replyMessage =
-      "Por favor elige una opción:\n\n" +
-      "A. Recoger en tienda 🏪\n" +
-      "B. Domicilio 🚚\n" +
-      "C. Agendar pedido 📅\n" +
-      "D. Hacer reserva 🍽️\n" +
-      "E. PQR 📝\n" +
-      "F. Otros 💬";
-  }
+  replyMessage =
+    "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
+    "Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
+    "A. Recoger en tienda 🏪\n" +
+    "B. Domicilio 🚚\n" +
+    "C. Agendar pedido 📅\n" +
+    "D. Hacer reserva 🍽️\n" +
+    "E. PQR 📝\n" +
+    "F. Otros 💬";
 
 } else {
   const now = Date.now();
@@ -290,8 +284,8 @@ if (
     currentOrder.lastInteraction = now;
 
     replyMessage =
-"Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
-"Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
+      "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
+      "Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
       "A. Recoger en tienda 🏪\n" +
       "B. Domicilio 🚚\n" +
       "C. Agendar pedido 📅\n" +
@@ -299,12 +293,12 @@ if (
       "E. PQR 📝\n" +
       "F. Otros 💬";
 
-await fetch(
-  `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+    await fetch(
+      `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
       {
         method: "POST",
         headers: {
-          "Authorization": "Bearer " + process.env.WHATSAPP_TOKEN,
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -321,7 +315,6 @@ await fetch(
 
   currentOrder.lastInteraction = now;
 }
-
 
  
      if (currentOrder?.step === "esperando_menu_principal") {
