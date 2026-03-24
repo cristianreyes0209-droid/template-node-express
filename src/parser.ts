@@ -221,41 +221,6 @@ function detectAmbiguousProduct(fragment: string, products: any[]) {
   };
 }
 
-  const mentionsMediterranea =
-    text.includes("mediterranea") || text.includes("mediterránea");
-
-  const mentionsMarinera = text.includes("marinera");
-  const mentionsGourmet = text.includes("gourmet");
-
-  // Si ya especificó cuál, NO hay ambigüedad
-  if (mentionsMediterranea || mentionsMarinera || mentionsGourmet) {
-    return null;
-  }
-
-  const mediterranea = products.find(
-    (p: any) => p.id === "mediterranea_camarones"
-  );
-  const gourmet = products.find(
-    (p: any) => p.id === "camarones_gourmet"
-  );
-
-  if (!mediterranea || !gourmet) {
-    return null;
-  }
-
-  return {
-    opciones: [
-      {
-        nombre: mediterranea.nombre,
-        productoId: mediterranea.id
-      },
-      {
-        nombre: gourmet.nombre,
-        productoId: gourmet.id
-      }
-    ]
-  };
-}
 
 function findProductInFragment(fragment: string, aliasList: any[]) {
   for (const entry of aliasList) {
