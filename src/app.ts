@@ -450,7 +450,7 @@ if (!currentOrder) {
       "A. La Villa\n" +
       "B. Av. Circunvalar";
   }
-} else if (currentOrder?.step === "esperando_aclaracion_producto") {
+      if (currentOrder?.step === "esperando_aclaracion_producto") {
   const opciones = currentOrder.aclaracionPendiente?.opciones || [];
 
   if ((lower === "1" || lower === "2") && opciones.length === 2) {
