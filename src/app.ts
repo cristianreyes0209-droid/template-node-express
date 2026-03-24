@@ -412,7 +412,7 @@ if (!currentOrder) {
       "F. Otros 💬";
   }
 }
-    } else if (currentOrder?.step === "esperando_sucursal") {
+} else if (currentOrder?.step === "esperando_sucursal") {
   if (
     lower === "a" ||
     lower.includes("villa") ||
@@ -420,7 +420,7 @@ if (!currentOrder) {
   ) {
     currentOrder.sucursal = "la_villa";
     updateOrderStep(phone, "armando_pedido");
-      currentOrder = getOrder(phone)!;
+    currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👍\n\n" +
@@ -436,7 +436,7 @@ if (!currentOrder) {
   ) {
     currentOrder.sucursal = "circunvalar";
     updateOrderStep(phone, "armando_pedido");
-      currentOrder = getOrder(phone)!;
+    currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👍\n\n" +
@@ -444,7 +444,7 @@ if (!currentOrder) {
       "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
       "O si prefieres, escríbeme lo que deseas pedir y yo te ayudo por aquí 😊";
 
- } else {
+  } else {
     replyMessage =
       "Por favor elige la sucursal:\n\n" +
       "A. La Villa\n" +
@@ -604,6 +604,7 @@ if (!currentOrder) {
         "\n\n¿Confirmas tu pedido? (SI / NO)";
     }
   }
+}
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
   if (currentOrder?.tipoEntrega === "domicilio") {
     updateOrderStep(phone, "esperando_direccion");
