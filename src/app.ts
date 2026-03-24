@@ -217,9 +217,14 @@ let replyMessage = "";
 const parseResult = parseOrder(text);
 const parsedItems = parseResult.items;
 const lower = text.toLowerCase();
-    if (parseResult.ambiguousChoice && currentOrder) {
+   if (
+  currentOrder &&
+  currentOrder.step !== "esperando_menu_principal" &&
+  parseResult.ambiguousChoice
+) {
   setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
   updateOrderStep(phone, "esperando_aclaracion_producto");
+  currentOrder = getOrder(phone)!;
 
   replyMessage =
     "¿Te refieres a:\n\n" +
@@ -394,7 +399,7 @@ const lower = text.toLowerCase();
       "Cuéntame en qué puedo ayudarte.";
 
   } else {
-    replyMessage =
+  
  replyMessage =
   "Hola 👋 Bienvenido a LAS CREPES ✨\n\n" +
   "Qué alegría atenderte 😊\n\n" +
