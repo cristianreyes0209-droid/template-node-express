@@ -216,7 +216,8 @@ if (!phone) {
 let replyMessage = "";
 const parseResult = parseOrder(text);
 const parsedItems = parseResult.items;
-const lower = text.toLowerCase();
+const lower = text.toLowerCase().trim();
+
 if (
   currentOrder &&
   currentOrder.step !== "esperando_menu_principal" &&
@@ -252,6 +253,7 @@ if (
   await response.json();
   return res.sendStatus(200);
 }
+
 if (!currentOrder) {
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
@@ -266,7 +268,7 @@ if (!currentOrder) {
     "D. Hacer reserva 🍽️\n" +
     "E. PQR 📝\n" +
     "F. Otros 💬";
-}
+
 } else {
   const now = Date.now();
   const diff = now - (currentOrder.lastInteraction || 0);
@@ -315,7 +317,6 @@ if (!currentOrder) {
 
   currentOrder.lastInteraction = now;
 }
-
  
    if (currentOrder?.step === "esperando_menu_principal") {
   if (
