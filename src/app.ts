@@ -217,6 +217,13 @@ let replyMessage = "";
 const parseResult = parseOrder(text);
 const parsedItems = parseResult.items;
 const lower = text.toLowerCase();
+    console.log("==== DEBUG PARSER ====");
+console.log("TEXT:", text);
+console.log("LOWER:", lower);
+console.log("STEP:", currentOrder?.step);
+console.log("PARSED ITEMS:", JSON.stringify(parsedItems, null, 2));
+console.log("AMBIGUOUS CHOICE:", JSON.stringify(parseResult.ambiguousChoice, null, 2));
+console.log("======================");
    if (
   currentOrder &&
   currentOrder.step !== "esperando_menu_principal" &&
