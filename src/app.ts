@@ -714,23 +714,6 @@ const resumen = order.items
   } else {
     replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
   }
-  if (lower.includes("si")) {
-    updateOrderStep(phone, "esperando_pago");
-      currentOrder = getOrder(phone)!;
-
-    replyMessage =
-      "Perfecto 👌\n\n¿Cómo deseas pagar?\n" +
-      "• Efectivo\n" +
-      "• Nequi\n" +
-      "• Daviplata\n" +
-      "• Bancolombia";
-  } else if (lower.includes("no")) {
-    updateOrderStep(phone, "armando_pedido");
-      currentOrder = getOrder(phone)!;
-    replyMessage = "Perfecto 👍 ¿Qué deseas cambiar?";
-  } else {
-    replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
-  }
 
 } else if (currentOrder?.step === "esperando_pago") {
   if (lower.includes("efectivo")) {
