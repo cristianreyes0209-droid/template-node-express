@@ -162,12 +162,64 @@ function buildAliasList(products: any[]) {
 function detectAmbiguousProduct(fragment: string, products: any[]) {
   const text = normalizeText(fragment);
 
+  console.log("AMB TEXT:", text);
+  console.log(
+    "HAS CAMARONES:",
+    /\bcamarones\b|\bcamaron\b|\bcamarón\b/.test(text)
+  );
+  console.log(
+    "HAS MEDITERRANEA:",
+    text.includes("mediterranea") || text.includes("mediterránea")
+  );
+  console.log("HAS MARINERA:", text.includes("marinera"));
+  console.log("HAS GOURMET:", text.includes("gourmet"));
+
   const mentionsCamarones =
     /\bcamarones\b|\bcamaron\b|\bcamarón\b/.test(text);
 
   if (!mentionsCamarones) {
     return null;
   }
+
+  const mentionsMediterranea =
+    text.includes("mediterranea") || text.includes("mediterránea");
+
+  const mentionsMarinera = text.includes("marinera");
+  const mentionsGourmet = text.includes("gourmet");
+
+  if (mentionsMediterranea || mentionsMarinera || mentionsGourmet) {
+    return null;
+  }
+
+  const mediterranea = products.find(
+    (p: any) => p.id === "mediterranea_camarones"
+  );
+  const gourmet = products.find(
+    (p: any) => p.id === "camarones_gourmet"
+  );
+
+  console.log("AMB PRODUCT CHECK:", {
+    mediterraneaEncontrada: !!mediterranea,
+    gourmetEncontrado: !!gourmet
+  });
+
+  if (!mediterranea || !gourmet) {
+    return null;
+  }
+
+  return {
+    opciones: [
+      {
+        nombre: mediterranea.nombre,
+        productoId: mediterranea.id
+      },
+      {
+        nombre: gourmet.nombre,
+        productoId: gourmet.id
+      }
+    ]
+  };
+}
 
   const mentionsMediterranea =
     text.includes("mediterranea") || text.includes("mediterránea");
