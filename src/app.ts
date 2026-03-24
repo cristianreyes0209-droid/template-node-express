@@ -299,8 +299,8 @@ if (
       "E. PQR 📝\n" +
       "F. Otros 💬";
 
-   await fetch(
-  `https://graph.facebook.com/v22.0/${process.env.1066064689915977}/messages`,
+await fetch(
+  `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
       {
         method: "POST",
         headers: {
@@ -405,7 +405,7 @@ if (
       "Cuéntame en qué puedo ayudarte.";
 
   } else {
-    replyMessage =
+   
  replyMessage =
   "Hola 👋 Bienvenido a LAS CREPES ✨\n\n" +
   "Qué alegría atenderte 😊\n\n" +
@@ -455,7 +455,7 @@ if (
       "A. La Villa\n" +
       "B. Av. Circunvalar";
   }
-         if (currentOrder?.step === "esperando_aclaracion_producto") {
+   } else if (currentOrder?.step === "esperando_aclaracion_producto") {
   const opciones = currentOrder.aclaracionPendiente?.opciones || [];
 
   if ((lower === "1" || lower === "2") && opciones.length === 2) {
