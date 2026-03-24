@@ -173,12 +173,12 @@ export const initApp = async (
   }
 
 });
-    function formatObservaciones(obs?: string) {
+function formatoObservaciones(obs?: string) {
   if (!obs) return "";
-
   return obs
     .split(",")
-    .map(o => o.trim())
+    .map((o) => o.trim())
+    .filter(Boolean)
     .join(" • ");
 }
 app.post('/whatsapp', async (req, res) => {
@@ -266,7 +266,7 @@ if (!currentOrder) {
     "D. Hacer reserva 🍽️\n" +
     "E. PQR 📝\n" +
     "F. Otros 💬";
-
+}
 } else {
   const now = Date.now();
   const diff = now - (currentOrder.lastInteraction || 0);
@@ -317,7 +317,7 @@ if (!currentOrder) {
 }
 
  
-     if (currentOrder?.step === "esperando_menu_principal") {
+   if (currentOrder?.step === "esperando_menu_principal") {
   if (
     lower === "a" ||
     lower.includes("recoger") ||
@@ -326,7 +326,7 @@ if (!currentOrder) {
     currentOrder.canal = "recoger";
     updateOrderDeliveryType(phone, "recoger");
     updateOrderStep(phone, "esperando_sucursal");
-      currentOrder = getOrder(phone)!;
+    currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -337,14 +337,13 @@ if (!currentOrder) {
   } else if (
     lower === "b" ||
     lower.includes("domicilio") ||
-    lower.includes("enviar") ||
     lower.includes("envio") ||
     lower.includes("envío")
   ) {
     currentOrder.canal = "domicilio";
     updateOrderDeliveryType(phone, "domicilio");
     updateOrderStep(phone, "esperando_sucursal");
-      currentOrder = getOrder(phone)!;
+    currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -355,13 +354,12 @@ if (!currentOrder) {
   } else if (
     lower === "c" ||
     lower.includes("agendar") ||
-    lower.includes("programar") ||
-    lower.includes("pedido programado")
+    lower.includes("programar")
   ) {
     replyMessage =
       "Perfecto 👌\n\n" +
       "Muy pronto podrás agendar pedidos por este medio.\n\n" +
-      "Por ahora puedo ayudarte con pedidos inmediatos para recoger o domicilio.";
+      "Por ahora puedo ayudarte con pedidos para recoger o domicilio.";
 
   } else if (
     lower === "d" ||
@@ -372,7 +370,7 @@ if (!currentOrder) {
     replyMessage =
       "Perfecto 👌\n\n" +
       "Muy pronto podrás hacer reservas por este medio.\n\n" +
-      "Por ahora, si deseas, puedo ayudarte con un pedido para recoger o domicilio.";
+      "Por ahora puedo ayudarte con pedidos para recoger o domicilio.";
 
   } else if (
     lower === "e" ||
@@ -385,31 +383,34 @@ if (!currentOrder) {
   ) {
     replyMessage =
       "Claro 😊\n\n" +
-      "Por favor escríbeme tu solicitud, queja, reclamo o sugerencia, y te ayudaremos a gestionarla.";
+      "Por favor escríbeme tu solicitud, queja, reclamo o sugerencia.";
 
   } else if (
     lower === "f" ||
     lower.includes("otros") ||
-    lower.includes("otra cosa") ||
     lower.includes("ayuda")
   ) {
     replyMessage =
       "Con gusto 😊\n\n" +
       "Cuéntame en qué puedo ayudarte.";
 
+  } else if (parsedItems.length > 0 || parseResult.ambiguousChoice) {
+    replyMessage =
+      "Antes de tomar tu pedido, dime si deseas:\n\n" +
+      "A. Recoger en tienda 🏪\n" +
+      "B. Domicilio 🚚";
+
   } else {
-   
- replyMessage =
-  "Hola 👋 Bienvenido a LAS CREPES ✨\n\n" +
-  "Qué alegría atenderte 😊\n\n" +
-  "Elige una de estas opciones para continuar:\n\n" +
-  "A. Recoger en tienda 🏪\n" +
-  "B. Domicilio 🚚\n" +
-  "C. Agendar pedido 📅\n" +
-  "D. Hacer reserva 🍽️\n" +
-  "E. PQR 📝\n" +
-  "F. Otros 💬";
+    replyMessage =
+      "Por favor elige una opción:\n\n" +
+      "A. Recoger en tienda 🏪\n" +
+      "B. Domicilio 🚚\n" +
+      "C. Agendar pedido 📅\n" +
+      "D. Hacer reserva 🍽️\n" +
+      "E. PQR 📝\n" +
+      "F. Otros 💬";
   }
+}
     } else if (currentOrder?.step === "esperando_sucursal") {
   if (
     lower === "a" ||
@@ -448,7 +449,7 @@ if (!currentOrder) {
       "A. La Villa\n" +
       "B. Av. Circunvalar";
   }
-   } else if (currentOrder?.step === "esperando_aclaracion_producto") {
+  } else if (currentOrder?.step === "esperando_aclaracion_producto") {
   const opciones = currentOrder.aclaracionPendiente?.opciones || [];
 
   if ((lower === "1" || lower === "2") && opciones.length === 2) {
@@ -468,13 +469,12 @@ if (!currentOrder) {
 
       clearPendingClarification(phone);
       updateOrderStep(phone, "armando_pedido");
+      currentOrder = getOrder(phone)!;
 
-      const order = getOrder(phone)!;
-
-      const resumen = order.items
+      const resumen = currentOrder.items
         .map((item: any) => {
           const observacionesTexto = item.observaciones
-            ? ` (${formatObservaciones(item.observaciones)})`
+            ? ` (${formatoObservaciones(item.observaciones)})`
             : "";
 
           const extrasTexto =
@@ -506,7 +506,6 @@ if (!currentOrder) {
     replyMessage =
       "Por favor respóndeme:\n\n" +
       "1 o 2 😊";
-  }
 }
 
 } else if (parsedItems.length > 0) {
@@ -532,8 +531,7 @@ const resumen = order.items
             .join(", +")
         : "";
 
-    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-  })
+   return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
   .join("\n");
 
   replyMessage =
