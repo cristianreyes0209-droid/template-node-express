@@ -229,7 +229,7 @@ if (
   currentOrder &&
   currentOrder.step !== "esperando_menu_principal" &&
   parseResult.ambiguousChoice
-)
+) {
   setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
   updateOrderStep(phone, "esperando_aclaracion_producto");
   currentOrder = getOrder(phone)!;
