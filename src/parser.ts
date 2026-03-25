@@ -81,19 +81,6 @@ function escapeRegex(text: string) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function extractCantidad(fragment: string) {
-  for (const key of Object.keys(numbers)) {
-    const cleanKey = escapeRegex(key);
-    const regex = new RegExp(`\\b${cleanKey}\\b`, "i");
-
-    if (regex.test(fragment)) {
-      return numbers[key];
-    }
-  }
-
-  return 1;
-}
-
 function extractObservaciones(fragment: string) {
   const observaciones: string[] = [];
 
