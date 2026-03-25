@@ -249,7 +249,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBRBBYEHYezxqRwFcZAXx7sYw6mXKvepl9IlKaI36RirQZBIpXhMoKUgaemHjzB8V2bYog5yHZCERVjycDKUGQPpwBZAB2uJyBZAOQJOOO31jSqId5aRHHEGfPelSwDTlCBYfzc4TWFZAvvb3DnuoLI1xFhGQiPnBFzXby6qtTEpyCny5IBtFaLtco8WV2Gg4KURVqZClH0pcRHBkNMmZAOZAqMFc9irLWRpkqGZCegGvqntZB2OED8uXZBiZC1A2mudW6RO2r5wzUVqaKZBoAZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBRCoGMAySatZCHUaDW4qlJGHfIm5VX1ZB75pEjgkovKEb27x8UfG9Lp7cs4gOOiZCyPrssaAJTW11zMjQ16ZAyd0v0krxYLSN7lv2k6TrAkZAYtwfd4GF9gejvcn2eW2L33GVTWPIwJ9vpqAjBghiatOQFFWb5xz8e7iOstKDUjWWE0rmAalmAuFSRuJcSNcgOFVbifky6WH4HHhCNZCZBQqWgJoTDZBbpZAXZCbJra3KzXri2PvJQhCNdCnBCyDQOGIXOiL70kjErfqQYZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -309,11 +309,11 @@ return res.sendStatus(200);
       "F. Otros 💬";
 
     await fetch(
- `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+ "https://graph.facebook.com/v18.0/1066064689915977/messages",
       {
         method: "POST",
         headers: {
-          "Authorization": "Bearer " + process.env.WHATSAPP_TOKEN,
+          "Authorization": "Bearer EAAKig65Oi0EBRCoGMAySatZCHUaDW4qlJGHfIm5VX1ZB75pEjgkovKEb27x8UfG9Lp7cs4gOOiZCyPrssaAJTW11zMjQ16ZAyd0v0krxYLSN7lv2k6TrAkZAYtwfd4GF9gejvcn2eW2L33GVTWPIwJ9vpqAjBghiatOQFFWb5xz8e7iOstKDUjWWE0rmAalmAuFSRuJcSNcgOFVbifky6WH4HHhCNZCZBQqWgJoTDZBbpZAXZCbJra3KzXri2PvJQhCNdCnBCyDQOGIXOiL70kjErfqQYZD",
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -991,7 +991,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBRBBYEHYezxqRwFcZAXx7sYw6mXKvepl9IlKaI36RirQZBIpXhMoKUgaemHjzB8V2bYog5yHZCERVjycDKUGQPpwBZAB2uJyBZAOQJOOO31jSqId5aRHHEGfPelSwDTlCBYfzc4TWFZAvvb3DnuoLI1xFhGQiPnBFzXby6qtTEpyCny5IBtFaLtco8WV2Gg4KURVqZClH0pcRHBkNMmZAOZAqMFc9irLWRpkqGZCegGvqntZB2OED8uXZBiZC1A2mudW6RO2r5wzUVqaKZBoAZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBRCoGMAySatZCHUaDW4qlJGHfIm5VX1ZB75pEjgkovKEb27x8UfG9Lp7cs4gOOiZCyPrssaAJTW11zMjQ16ZAyd0v0krxYLSN7lv2k6TrAkZAYtwfd4GF9gejvcn2eW2L33GVTWPIwJ9vpqAjBghiatOQFFWb5xz8e7iOstKDUjWWE0rmAalmAuFSRuJcSNcgOFVbifky6WH4HHhCNZCZBQqWgJoTDZBbpZAXZCbJra3KzXri2PvJQhCNdCnBCyDQOGIXOiL70kjErfqQYZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
