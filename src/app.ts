@@ -225,20 +225,11 @@ console.log("STEP:", currentOrder?.step);
 console.log("PARSED ITEMS:", JSON.stringify(parsedItems, null, 2));
 console.log("AMBIGUOUS CHOICE:", JSON.stringify(parseResult.ambiguousChoice, null, 2));
 console.log("======================");
- if (parseResult.ambiguousChoice) {
-  setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
-  updateOrderStep(phone, "esperando_aclaracion_producto");
-
-  replyMessage =
-    "¿Te refieres a:\n\n" +
-    parseResult.ambiguousChoice.opciones
-      .map((op: any, i: number) => `${i + 1}. ${op.nombre}`)
-      .join("\n") +
-    "\n\nRespóndeme el número 😊";
-
-  await sendWhatsAppMessage(phone, replyMessage);
-  return res.sendStatus(200);
-}
+if (
+  currentOrder &&
+  currentOrder.step !== "esperando_menu_principal" &&
+  parseResult.ambiguousChoice
+)
   setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
   updateOrderStep(phone, "esperando_aclaracion_producto");
   currentOrder = getOrder(phone)!;
