@@ -224,7 +224,7 @@ console.log("STEP:", currentOrder?.step);
 console.log("PARSED ITEMS:", JSON.stringify(parsedItems, null, 2));
 console.log("AMBIGUOUS CHOICE:", JSON.stringify(parseResult.ambiguousChoice, null, 2));
 console.log("======================");
-   if (
+  if (
   currentOrder &&
   currentOrder.step !== "esperando_menu_principal" &&
   parseResult.ambiguousChoice
@@ -238,6 +238,8 @@ console.log("======================");
     "1. " + parseResult.ambiguousChoice.opciones[0].nombre + " 🧄\n" +
     "2. " + parseResult.ambiguousChoice.opciones[1].nombre + " 🍤\n\n" +
     "Respóndeme 1 o 2 😊";
+
+  console.log("ENVIANDO AMBIGÜEDAD:", replyMessage);
 
   const response = await fetch(
     `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
@@ -256,7 +258,10 @@ console.log("======================");
     }
   );
 
-  await response.json();
+  const responseText = await response.text();
+  console.log("STATUS AMBIGÜEDAD:", response.status);
+  console.log("RESPUESTA AMBIGÜEDAD:", responseText);
+
   return res.sendStatus(200);
 }
   if (!currentOrder) {
@@ -301,7 +306,7 @@ console.log("======================");
       "F. Otros 💬";
 
     await fetch(
-      "https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages",
+  `https://graph.facebook.com/v22.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
       {
         method: "POST",
         headers: {
