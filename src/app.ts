@@ -215,6 +215,7 @@ if (!phone) {
 
 let replyMessage = "";
 const parseResult = parseOrder(text);
+    console.log("PARSE RESULT:", JSON.stringify(parseResult, null, 2));
 const parsedItems = parseResult.items;
 const lower = text.toLowerCase();
     console.log("==== DEBUG PARSER ====");
