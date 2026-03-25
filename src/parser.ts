@@ -1,10 +1,22 @@
 import { menu } from "./menu";
 
 type ParsedExtra = {
+  id: string;
   nombre: string;
   precio: number;
   cantidad: number;
 };
+
+type ParsedItem = {
+  productoId: string;
+  producto: string;
+  cantidad: number;
+  precio: number;
+  variante?: string;
+  observaciones?: string;
+  extras?: ParsedExtra[];
+};
+
 type ParseResult = {
   items: ParsedItem[];
   ambiguousChoice?: {
@@ -13,15 +25,6 @@ type ParseResult = {
       productoId: string;
     }[];
   };
-};
-
-type ParsedItem = {
-  producto: string;
-  variante?: string;
-  cantidad: number;
-  precio: number;
-  observaciones?: string;
-  extras?: ParsedExtra[];
 };
 
 const numbers: Record<string, number> = {
