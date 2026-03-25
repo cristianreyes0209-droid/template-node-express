@@ -261,6 +261,12 @@ function findBestProductMatches(fragment: string, products: any[]) {
   return uniqueProducts.map((m) => m.product);
 }
 function detectAmbiguousProduct(fragment: string, products: any[]) {
+  const genericAmbiguity = detectGenericAmbiguity(fragment, products);
+
+  if (genericAmbiguity) {
+    return genericAmbiguity;
+  }
+
   const bestMatches = findBestProductMatches(fragment, products);
 
   if (bestMatches.length <= 1) {
