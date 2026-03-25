@@ -112,19 +112,11 @@ function extractObservaciones(fragment: string) {
     "sin piña",
     "sin pina",
     "sin salsa",
-    "sin frijol",
-    "sin frijoles",
-    "sin chile",
-    "sin chile con carne",
-    "sin pico de gallo",
     "sin jalapeños",
     "sin jalapenos",
-    "sin nachos",
-    "sin huevo",
-    "sin huevos",
-    "sin tocineta",
-    "sin jamon",
-    "sin jamón"
+    "sin chile",
+    "sin frijol",
+    "sin parmesano"
   ];
 
   for (const regla of reglas) {
@@ -135,7 +127,6 @@ function extractObservaciones(fragment: string) {
 
   return observaciones.length > 0 ? observaciones.join(", ") : undefined;
 }
-
 function splitIntoFragments(text: string) {
   const commaParts = text
     .split(/,/i)
@@ -168,13 +159,13 @@ function splitIntoFragments(text: string) {
   return result;
 }
 function buildAliasEntries(products: any[]) {
-  return products.flatMap((product) =>
-    (product.aliases || []).map((alias: string) => ({
-      product,
-      alias: normalizeText(alias)
-    }))
- 
- )
+  return products
+    .flatMap((product) =>
+      (product.aliases || []).map((alias: string) => ({
+        product,
+        alias: normalizeText(alias)
+      }))
+    )
     .sort((a, b) => b.alias.length - a.alias.length);
 }
 function findBestProductMatches(fragment: string, products: any[]) {
@@ -213,132 +204,92 @@ function findBestProductMatches(fragment: string, products: any[]) {
   return uniqueProducts.map((m) => m.product);
 }
 function detectAmbiguousProduct(fragment: string, products: any[]) {
-  const text = normalizeText(fragment);
+  const bestMatches = findBestProductMatches(fragment, products);
 
-  console.log("AMB TEXT:", text);
-  console.log(
-    "HAS CAMARONES:",
-    /\bcamarones\b|\bcamaron\b|\bcamarón\b/.test(text)
-  );
-  console.log(
-    "HAS MEDITERRANEA:",
-    text.includes("mediterranea") || text.includes("mediterránea")
-  );
-  console.log("HAS MARINERA:", text.includes("marinera"));
-  console.log("HAS GOURMET:", text.includes("gourmet"));
-
-  const mentionsCamarones =
-    /\bcamarones\b|\bcamaron\b|\bcamarón\b/.test(text);
-
-  if (!mentionsCamarones) {
-    return null;
-  }
-
-  const mentionsMediterranea =
-    text.includes("mediterranea") || text.includes("mediterránea");
-
-  const mentionsMarinera = text.includes("marinera");
-  const mentionsGourmet = text.includes("gourmet");
-
-  if (mentionsMediterranea || mentionsMarinera || mentionsGourmet) {
-    return null;
-  }
-
-  const mediterranea = products.find(
-    (p: any) => p.id === "mediterranea_camarones"
-  );
-  const gourmet = products.find(
-    (p: any) => p.id === "camarones_gourmet"
-  );
-
-  console.log("AMB PRODUCT CHECK:", {
-    mediterraneaEncontrada: !!mediterranea,
-    gourmetEncontrado: !!gourmet
-  });
-
-  if (!mediterranea || !gourmet) {
+  if (bestMatches.length <= 1) {
     return null;
   }
 
   return {
-    opciones: [
-      {
-        nombre: mediterranea.nombre,
-        productoId: mediterranea.id
-      },
-      {
-        nombre: gourmet.nombre,
-        productoId: gourmet.id
-      }
-    ]
+    opciones: bestMatches.map((p: any) => ({
+      nombre: p.nombre,
+      productoId: p.id
+    }))
   };
 }
 
 
-function findProductInFragment(fragment: string, aliasList: any[]) {
-  for (const entry of aliasList) {
-    const { product, alias } = entry;
-    const cleanAlias = escapeRegex(alias);
-    const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
+function findProductInFragment(fragment: string, products: any[]) {
+  const bestMatches = findBestProductMatches(fragment, products);
 
-    if (aliasRegex.test(fragment)) {
-      return product;
-    }
+  if (bestMatches.length === 1) {
+    return bestMatches[0];
   }
 
   return null;
 }
+
 function findVariantInFragment(fragment: string, product: any) {
   if (!product.variantes || product.variantes.length === 0) {
     return null;
   }
 
-  // 1. detectar alias explícitos
-  for (const variante of product.variantes) {
-    for (const alias of variante.aliases) {
-      const cleanAlias = escapeRegex(normalizeText(alias));
-      const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
+  const text = normalizeText(fragment);
+  const variantMatches: { variante: any; alias: string }[] = [];
 
-      if (aliasRegex.test(fragment)) {
-        return variante;
+  for (const variante of product.variantes) {
+    for (const alias of variante.aliases || []) {
+      const normalizedAlias = normalizeText(alias);
+      const regex = new RegExp(`\\b${escapeRegex(normalizedAlias)}\\b`, "i");
+
+      if (regex.test(text)) {
+        variantMatches.push({
+          variante,
+          alias: normalizedAlias
+        });
       }
     }
   }
 
-  // 2. lógica inteligente (clave)
-  const hasPollo = fragment.includes("pollo");
-  const hasCarne = fragment.includes("carne");
-
-  if (hasPollo && !hasCarne) {
-    return product.variantes.find((v: any) => v.id === "solo_pollo");
+  if (variantMatches.length === 0) {
+    return null;
   }
 
-  if (hasCarne && !hasPollo) {
-    return product.variantes.find((v: any) => v.id === "solo_carne");
-  }
+  const maxAliasLength = Math.max(...variantMatches.map((m) => m.alias.length));
+  const strongest = variantMatches.filter(
+    (m) => m.alias.length === maxAliasLength
+  );
 
-  // 3. default = mixta
-  return product.variantes.find((v: any) => v.id === "mixta");
+  return strongest[0].variante;
 }
-function extractExtrasFromFragment(fragment: string, extrasAliasList: any[]) {
-  const extrasFound: any[] = [];
 
-  for (const entry of extrasAliasList) {
-    const { product, alias } = entry;
+function extractExtrasFromFragment(fragment: string, extrasProducts: any[]) {
+  const text = normalizeText(fragment);
+  const extrasFound: ParsedExtra[] = [];
 
-    const cleanAlias = escapeRegex(alias);
-    const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
+  for (const extra of extrasProducts) {
+    for (const alias of extra.aliases || []) {
+      const normalizedAlias = normalizeText(alias);
+      const regex = new RegExp(`\\b${escapeRegex(normalizedAlias)}\\b`, "i");
 
-    const hasTrigger =
-      fragment.includes("extra") ||
-      fragment.includes("mas") ||
-      fragment.includes("más") ||
-      fragment.includes("con");
+      const hasTrigger =
+        text.includes(`extra ${normalizedAlias}`) ||
+        text.includes(`con extra ${normalizedAlias}`) ||
+        text.includes(`mas ${normalizedAlias}`) ||
+        text.includes(`más ${normalizedAlias}`) ||
+        text.includes(`adicional ${normalizedAlias}`);
 
-    if (aliasRegex.test(fragment) && hasTrigger) {
-      const alreadyAdded = extrasFound.find((e) => e.id === product.id);
-      if (!alreadyAdded) {
-        extrasFound.push(product);
+      if (regex.test(text) && hasTrigger) {
+        const existing = extrasFound.find((e) => e.id === extra.id);
+
+        if (!existing) {
+          extrasFound.push({
+            id: extra.id,
+            nombre: extra.nombre,
+            precio: extra.precio,
+            cantidad: 1
+          });
+        }
       }
     }
   }
@@ -350,6 +301,27 @@ function sameExtras(a?: ParsedExtra[], b?: ParsedExtra[]) {
   return JSON.stringify(a || []) === JSON.stringify(b || []);
 }
 
+function mergeParsedItems(items: ParsedItem[]) {
+  const merged: ParsedItem[] = [];
+
+  for (const item of items) {
+    const existing = merged.find(
+      (i) =>
+        i.productoId === item.productoId &&
+        (i.variante || "") === (item.variante || "") &&
+        (i.observaciones || "") === (item.observaciones || "") &&
+        sameExtras(i.extras, item.extras)
+    );
+
+    if (existing) {
+      existing.cantidad += item.cantidad;
+    } else {
+      merged.push({ ...item });
+    }
+  }
+
+  return merged;
+}
 export function parseOrder(text: string): ParseResult {
   const lower = normalizeText(text);
   const fragments = splitIntoFragments(lower);
@@ -359,82 +331,50 @@ export function parseOrder(text: string): ParseResult {
   const extrasCategory = menu.categorias.find((c) => c.id === "extras");
   const normalCategories = menu.categorias.filter((c) => c.id !== "extras");
 
-  const mainProducts = normalCategories.flatMap((categoria) => categoria.productos as any[]);
-  const extraProducts = extrasCategory ? (extrasCategory.productos as any[]) : [];
-  const ambiguity = detectAmbiguousProduct(lower, mainProducts);
-  console.log("PARSER LOWER:", lower);
-console.log(
-  "PARSER IDS:",
-  mainProducts.map((p: any) => p.id)
-);
-console.log("PARSER AMBIGUITY:", JSON.stringify(ambiguity, null, 2));
+  const mainProducts = normalCategories.flatMap(
+    (categoria) => categoria.productos as any[]
+  );
+  const extraProducts = extrasCategory
+    ? (extrasCategory.productos as any[])
+    : [];
 
-if (ambiguity) {
-  return {
-    items: [],
-    ambiguousChoice: ambiguity
-  };
-}
-
-  const mainAliasList = buildAliasList(mainProducts);
-  const extrasAliasList = buildAliasList(extraProducts);
-
+  // detectar ambigüedad por fragmento
   for (const fragment of fragments) {
-    const cantidad = extractCantidad(fragment);
-    const observaciones = extractObservaciones(fragment);
+    const ambiguity = detectAmbiguousProduct(fragment, mainProducts);
 
-   const mainProduct = findProductInFragment(fragment, mainAliasList);
-const extras = extractExtrasFromFragment(fragment, extrasAliasList);
-const variante = mainProduct ? findVariantInFragment(fragment, mainProduct) : null;
-
-    const parsedExtras: ParsedExtra[] = extras.map((extra) => ({
-      nombre: extra.nombre,
-      precio: extra.precio,
-      cantidad: 1
-    }));
-
-    if (mainProduct) {
-     const existing = items.find(
-  (i) =>
-    i.producto === mainProduct.nombre &&
-    (i.variante || "") === (variante ? variante.nombre : "") &&
-    (i.observaciones || "") === (observaciones || "") &&
-    sameExtras(i.extras, parsedExtras)
-);
-
-      if (existing) {
-        existing.cantidad += cantidad;
-      } else {
-       items.push({
-  producto: mainProduct.nombre,
-  variante: variante ? variante.nombre : undefined,
-  cantidad,
-  precio: variante ? variante.precio : mainProduct.precio,
-  observaciones,
-  extras: parsedExtras.length > 0 ? parsedExtras : undefined
-});
-      }
-    } else if (parsedExtras.length > 0) {
-      for (const extra of parsedExtras) {
-        const existingExtra = items.find(
-          (i) =>
-            i.producto === extra.nombre &&
-            !i.observaciones &&
-            !i.extras
-        );
-
-        if (existingExtra) {
-          existingExtra.cantidad += extra.cantidad;
-        } else {
-          items.push({
-            producto: extra.nombre,
-            cantidad: extra.cantidad,
-            precio: extra.precio
-          });
-        }
-      }
+    if (ambiguity) {
+      return {
+        items: [],
+        ambiguousChoice: ambiguity
+      };
     }
   }
 
-  return { items };
+  // parsear cada fragmento
+  for (const fragment of fragments) {
+    const cantidad = extractCantidad(fragment);
+    const product = findProductInFragment(fragment, mainProducts);
+
+    if (!product) {
+      continue;
+    }
+
+    const variant = findVariantInFragment(fragment, product);
+    const observaciones = extractObservaciones(fragment);
+    const extras = extractExtrasFromFragment(fragment, extraProducts);
+
+    items.push({
+      productoId: product.id,
+      producto: product.nombre,
+      cantidad,
+      precio: variant?.precio || product.precio,
+      variante: variant?.nombre,
+      observaciones,
+      extras
+    });
+  }
+
+  return {
+    items: mergeParsedItems(items)
+  };
 }
