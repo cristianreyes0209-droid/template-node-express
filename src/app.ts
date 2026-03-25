@@ -225,6 +225,8 @@ console.log("STEP:", currentOrder?.step);
 console.log("PARSED ITEMS:", JSON.stringify(parsedItems, null, 2));
 console.log("AMBIGUOUS CHOICE:", JSON.stringify(parseResult.ambiguousChoice, null, 2));
 console.log("======================");
+    console.log("PHONE ID:", process.env.WHATSAPP_PHONE_NUMBER_ID);
+console.log("TOKEN:", process.env.WHATSAPP_TOKEN?.slice(0, 10));
 if (
   currentOrder &&
   currentOrder.step !== "esperando_menu_principal" &&
@@ -243,11 +245,11 @@ if (
 console.log("ENVIANDO AMBIGÜEDAD:", replyMessage);
 
 const response = await fetch(
-  `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+  "https://graph.facebook.com/v18.0/1066064689915977/messages",
   {
     method: "POST",
     headers: {
-      Authorization: `Bearer EAAKig65Oi0EBRBBYEHYezxqRwFcZAXx7sYw6mXKvepl9IlKaI36RirQZBIpXhMoKUgaemHjzB8V2bYog5yHZCERVjycDKUGQPpwBZAB2uJyBZAOQJOOO31jSqId5aRHHEGfPelSwDTlCBYfzc4TWFZAvvb3DnuoLI1xFhGQiPnBFzXby6qtTEpyCny5IBtFaLtco8WV2Gg4KURVqZClH0pcRHBkNMmZAOZAqMFc9irLWRpkqGZCegGvqntZB2OED8uXZBiZC1A2mudW6RO2r5wzUVqaKZBoAZDZD`,
+      "Authorization": "Bearer EAAKig65Oi0EBRBBYEHYezxqRwFcZAXx7sYw6mXKvepl9IlKaI36RirQZBIpXhMoKUgaemHjzB8V2bYog5yHZCERVjycDKUGQPpwBZAB2uJyBZAOQJOOO31jSqId5aRHHEGfPelSwDTlCBYfzc4TWFZAvvb3DnuoLI1xFhGQiPnBFzXby6qtTEpyCny5IBtFaLtco8WV2Gg4KURVqZClH0pcRHBkNMmZAOZAqMFc9irLWRpkqGZCegGvqntZB2OED8uXZBiZC1A2mudW6RO2r5wzUVqaKZBoAZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
