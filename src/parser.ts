@@ -41,7 +41,77 @@ const numbers: Record<string, number> = {
   "cuatro": 4,
   "cinco": 5
 };
+const STOP_WORDS = new Set([
+  "un",
+  "una",
+  "uno",
+  "dos",
+  "tres",
+  "cuatro",
+  "cinco",
+  "de",
+  "del",
+  "la",
+  "el",
+  "los",
+  "las",
+  "y",
+  "con",
+  "sin",
+  "para",
+  "por",
+  "favor"
+]);
 
+function getMeaningfulTokens(text: string) {
+  return normalizeText(text)
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .filter((t) => !STOP_WORDS.has(t));
+}
+
+function productMatchesGenericToken(product: any, token: string) {
+  const searchable = [
+    product.nombre,
+    ...(product.aliases || [])
+  ]
+    .map((s) => normalizeText(s))
+    .join(" ");
+
+  const regex = new RegExp(`\\b${escapeRegex(token)}\\b`, "i");
+  return regex.test(searchable);
+}
+
+function detectGenericAmbiguity(fragment: string, products: any[]) {
+  const tokens = getMeaningfulTokens(fragment);
+
+  if (tokens.length !== 1) {
+    return null;
+  }
+
+  const token = tokens[0];
+
+  const matches = products.filter((product: any) =>
+    productMatchesGenericToken(product, token)
+  );
+
+  const uniqueMatches = matches.filter(
+    (product: any, index: number, arr: any[]) =>
+      arr.findIndex((p) => p.id === product.id) === index
+  );
+
+  if (uniqueMatches.length <= 1) {
+    return null;
+  }
+
+  return {
+    opciones: uniqueMatches.map((p: any) => ({
+      nombre: p.nombre,
+      productoId: p.id
+    }))
+  };
+}
 function extractCantidad(fragment: string) {
   for (const key of Object.keys(numbers)) {
     const cleanKey = escapeRegex(key);
