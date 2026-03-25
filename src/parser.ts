@@ -42,11 +42,23 @@ const numbers: Record<string, number> = {
   "cinco": 5
 };
 
+function extractCantidad(fragment: string) {
+  for (const key of Object.keys(numbers)) {
+    const cleanKey = escapeRegex(key);
+    const regex = new RegExp(`\\b${cleanKey}\\b`, "i");
+
+    if (regex.test(fragment)) {
+      return numbers[key];
+    }
+  }
+
+  return 1;
+}
+
 function normalizeText(text: string) {
   return text
     .toLowerCase()
     .trim()
-    .replace(/\s+ni\s+/g, " y sin ")
     .replace(/\s+/g, " ")
     .replace(/,/g, " , ")
     .replace(/\./g, " ")
@@ -58,9 +70,13 @@ function normalizeText(text: string) {
     .replace("degranada", "desgranada")
     .replace("champinon", "champiñon")
     .replace("champinones", "champiñones")
-    .replace("pina", "piña");
+    .replace("pina", "piña")
+    .replace("mediteranea", "mediterranea")
+    .replace("medterranea", "mediterranea")
+    .replace("estrogonof", "strogonoff")
+    .replace("estrogonoff", "strogonoff")
+    .replace("strogonof", "strogonoff");
 }
-
 function escapeRegex(text: string) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -151,16 +167,50 @@ function splitIntoFragments(text: string) {
 
   return result;
 }
-
-function buildAliasList(products: any[]) {
-  return products
-    .flatMap((product) =>
-      product.aliases.map((alias: string) => ({
-        product,
-        alias: normalizeText(alias)
-      }))
-    )
+function buildAliasEntries(products: any[]) {
+  return products.flatMap((product) =>
+    (product.aliases || []).map((alias: string) => ({
+      product,
+      alias: normalizeText(alias)
+    }))
+ 
+ )
     .sort((a, b) => b.alias.length - a.alias.length);
+}
+function findBestProductMatches(fragment: string, products: any[]) {
+  const text = normalizeText(fragment);
+  const aliasEntries = buildAliasEntries(products);
+
+  const matches: { product: any; alias: string }[] = [];
+
+  for (const entry of aliasEntries) {
+    const cleanAlias = escapeRegex(entry.alias);
+    const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
+
+    if (aliasRegex.test(text)) {
+      matches.push({
+        product: entry.product,
+        alias: entry.alias
+      });
+    }
+  }
+
+  if (matches.length === 0) {
+    return [];
+  }
+
+  const maxAliasLength = Math.max(...matches.map((m) => m.alias.length));
+
+  const strongestMatches = matches.filter(
+    (m) => m.alias.length === maxAliasLength
+  );
+
+  const uniqueProducts = strongestMatches.filter(
+    (match, index, arr) =>
+      arr.findIndex((m) => m.product.id === match.product.id) === index
+  );
+
+  return uniqueProducts.map((m) => m.product);
 }
 function detectAmbiguousProduct(fragment: string, products: any[]) {
   const text = normalizeText(fragment);
