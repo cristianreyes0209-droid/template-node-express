@@ -247,7 +247,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+      Authorization: `Bearer EAAKig65Oi0EBRBBYEHYezxqRwFcZAXx7sYw6mXKvepl9IlKaI36RirQZBIpXhMoKUgaemHjzB8V2bYog5yHZCERVjycDKUGQPpwBZAB2uJyBZAOQJOOO31jSqId5aRHHEGfPelSwDTlCBYfzc4TWFZAvvb3DnuoLI1xFhGQiPnBFzXby6qtTEpyCny5IBtFaLtco8WV2Gg4KURVqZClH0pcRHBkNMmZAOZAqMFc9irLWRpkqGZCegGvqntZB2OED8uXZBiZC1A2mudW6RO2r5wzUVqaKZBoAZDZD`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -989,7 +989,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBRMagvi8UvaTEWELmlrt9cslJT2T3bMXYemsDZBj9d8IJ4g0R4NNMAgoNBcllZBzNWj2xVi9MQSumIdX0AnY48oMF1kbopFU9qRrkjxELsoV6DZBVFUkwOObDR4mXyxOGcSUYT6FDvjnT69f4DMLYZBCMsqEpTNYl42tNqfnEidnpIfbm9VRFs4QNhSG6VPvg3LlvcZAG3j8T9AsricXZAJq1CLMjMdvwJVMsQ1Qn1JpChsAF3ESQg546ztoilvLuHQZB15a9KmAkgZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBRBBYEHYezxqRwFcZAXx7sYw6mXKvepl9IlKaI36RirQZBIpXhMoKUgaemHjzB8V2bYog5yHZCERVjycDKUGQPpwBZAB2uJyBZAOQJOOO31jSqId5aRHHEGfPelSwDTlCBYfzc4TWFZAvvb3DnuoLI1xFhGQiPnBFzXby6qtTEpyCny5IBtFaLtco8WV2Gg4KURVqZClH0pcRHBkNMmZAOZAqMFc9irLWRpkqGZCegGvqntZB2OED8uXZBiZC1A2mudW6RO2r5wzUVqaKZBoAZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
