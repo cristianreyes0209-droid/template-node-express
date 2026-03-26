@@ -295,41 +295,24 @@ if (parseResult.ambiguousChoice) {
     currentOrder.step = "esperando_menu_principal";
     currentOrder.lastInteraction = now;
 
-    replyMessage =
-"Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
-"Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
-      "A. Recoger en tienda 🏪\n" +
-      "B. Domicilio 🚚\n" +
-      "C. Agendar pedido 📅\n" +
-      "D. Hacer reserva 🍽️\n" +
-      "E. PQR 📝\n" +
-      "F. Otros 💬";
+  replyMessage =
+  "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
+  "Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
+  "A. Recoger en tienda 🏪\n" +
+  "B. Domicilio 🚚\n" +
+  "C. Agendar pedido 📅\n" +
+  "D. Hacer reserva 🍽️\n" +
+  "E. PQR 📝\n" +
+  "F. Otros 💬";
 
-    await fetch(
- "https://graph.facebook.com/v18.0/1066064689915977/messages",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer EAAKig65Oi0EBRI0LoRQzQpxadT8Bvr7NIqF38ea44AVNEm6hNkco90ZCuZBZADr1peG36oZCgG8YYYie0zp5vsR08pHjvhvbwhhjtzpPNrsOlj19T755K17jp2OZBtBtFd4uZAl1kdSTBF45MYFSHfWusbhQD048v9pCO4JV9j3DMWtLlBn6h80sXv7quL52xHKlx5U4KFi9Hfg4iPFMzZBYMkAsy8bv027kf92CJ5upneGuAp862zzVkJEcc2X1T3bHMZAd7bqoaAXmI0GubV2RPwZDZD",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: phone,
-          type: "text",
-          text: { body: replyMessage }
-        })
-      }
-    );
+await sendWhatsAppMessage(phone, replyMessage);
 
-    return res.sendStatus(200);
-  }
-
-  currentOrder.lastInteraction = now;
+return res.sendStatus(200);
 }
 
+currentOrder.lastInteraction = now;
+}
 
- 
      if (currentOrder?.step === "esperando_menu_principal") {
   if (
     lower === "a" ||
@@ -970,7 +953,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBRI0LoRQzQpxadT8Bvr7NIqF38ea44AVNEm6hNkco90ZCuZBZADr1peG36oZCgG8YYYie0zp5vsR08pHjvhvbwhhjtzpPNrsOlj19T755K17jp2OZBtBtFd4uZAl1kdSTBF45MYFSHfWusbhQD048v9pCO4JV9j3DMWtLlBn6h80sXv7quL52xHKlx5U4KFi9Hfg4iPFMzZBYMkAsy8bv027kf92CJ5upneGuAp862zzVkJEcc2X1T3bHMZAd7bqoaAXmI0GubV2RPwZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBRHzc3Xr9gMZBJ9KKyDG3YsE7mpb37I4wTuYIIMZBagZBwwsG3KuY5XRD7SZBOC7k0jlJBmggPxZBkSs5y3noQ90EEHqSxjWTZBPYg9etzQYAXKpMT9ZBBZAjtfFTBz3R4HHwDZCyBrlIxpZCrZAlgjBtY1fNO7d9fRoAfXragcPOZAez8eQG1CbuynUDqY0dInTDrdOhf0zoJryn5oJ0ZClM2NJb2pgSJjxLWZBZCcp2BTEBofZBkwzykNwRpyd4qTuTB3rmoMKKq3PbnyqskAZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
