@@ -53,7 +53,7 @@ async function sendWhatsAppMessage(phone: string, message: string) {
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer EAAKig65Oi0EBROvKoOPuZBjZAKSbhcVl0KIdqdSzKcNHRVYzetZA3x33rdnhrCPoMDyEkyvJ4RxYLq4sv5i08U1nXjePIIzDiVllHoOQTg0ZAp8v69tBvYuEn6bN7dBZA1aUwBYTPZAnZATaDXYZCKcVb5UTplgQzboZCEM0Bw51ZBtDzZB59paziEunT2ZAhmqPVxMPugZDZD`,
+        Authorization: `Bearer PZAnZATaDXYZCKcVb5UTplgQzboZCEM0Bw51ZBtDzZB59paziEunT2ZAhmqPVxMPugZDZD`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -953,7 +953,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBROvKoOPuZBjZAKSbhcVl0KIdqdSzKcNHRVYzetZA3x33rdnhrCPoMDyEkyvJ4RxYLq4sv5i08U1nXjePIIzDiVllHoOQTg0ZAp8v69tBvYuEn6bN7dBZA1aUwBYTPZAnZATaDXYZCKcVb5UTplgQzboZCEM0Bw51ZBtDzZB59paziEunT2ZAhmqPVxMPugZDZD",
+      "Authorization": "Bearer EkyvJ4RxYLq4sv5i08U1nXjePIIzDVllHoOQTg0ZAp8v69tBvYuEn6bN7dBZA1aUwBYTPZAnZATaDXYZCKcVb5UTplgQzboZCEM0Bw51ZBtDzZB59paziEunT2ZAhmqPVxMPugZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
