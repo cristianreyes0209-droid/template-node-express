@@ -217,7 +217,7 @@ let replyMessage = "";
 const parseResult = parseOrder(text);
     console.log("PARSE RESULT:", JSON.stringify(parseResult, null, 2));
 const parsedItems = parseResult.items;
-const lower = text.toLowerCase();
+const lower = text.toLowerCase().trim();
     console.log("==== DEBUG PARSER ====");
 console.log("TEXT:", text);
 console.log("LOWER:", lower);
@@ -227,39 +227,23 @@ console.log("AMBIGUOUS CHOICE:", JSON.stringify(parseResult.ambiguousChoice, nul
 console.log("======================");
     console.log("PHONE ID:", process.env.WHATSAPP_PHONE_NUMBER_ID);
 console.log("TOKEN:", process.env.WHATSAPP_TOKEN?.slice(0, 10));
-if (
-  currentOrder &&
-  currentOrder.step !== "esperando_menu_principal" &&
-  parseResult.ambiguousChoice
-) {
+if (parseResult.ambiguousChoice) {
   setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
   updateOrderStep(phone, "esperando_aclaracion_producto");
   currentOrder = getOrder(phone)!;
 
- replyMessage =
-  "¿Te refieres a:\n\n" +
-  "1. " + parseResult.ambiguousChoice.opciones[0].nombre + " 🧄\n" +
-  "2. " + parseResult.ambiguousChoice.opciones[1].nombre + " 🍤\n\n" +
-  "Respóndeme 1 o 2 😊";
+  console.log("STEP DESPUÉS DE AMBIGÜEDAD:", currentOrder?.step);
+  console.log("ACLARACIÓN GUARDADA:", currentOrder?.aclaracionPendiente);
 
-console.log("ENVIANDO AMBIGÜEDAD:", replyMessage);
+  replyMessage =
+    "¿Te refieres a:\n\n" +
+    "1. " + parseResult.ambiguousChoice.opciones[0].nombre + " 🧄\n" +
+    "2. " + parseResult.ambiguousChoice.opciones[1].nombre + " 🍤\n\n" +
+    "Respóndeme 1 o 2 😊";
 
-const response = await fetch(
-  "https://graph.facebook.com/v18.0/1066064689915977/messages",
-  {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBRI0LoRQzQpxadT8Bvr7NIqF38ea44AVNEm6hNkco90ZCuZBZADr1peG36oZCgG8YYYie0zp5vsR08pHjvhvbwhhjtzpPNrsOlj19T755K17jp2OZBtBtFd4uZAl1kdSTBF45MYFSHfWusbhQD048v9pCO4JV9j3DMWtLlBn6h80sXv7quL52xHKlx5U4KFi9Hfg4iPFMzZBYMkAsy8bv027kf92CJ5upneGuAp862zzVkJEcc2X1T3bHMZAd7bqoaAXmI0GubV2RPwZDZD",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "text",
-      text: { body: replyMessage }
-    })
-  }
-);
+  await sendWhatsAppMessage(phone, replyMessage);
+  return res.sendStatus(200);
+}
 
 const responseText = await response.text();
 console.log("STATUS AMBIGÜEDAD:", response.status);
@@ -464,7 +448,7 @@ return res.sendStatus(200);
       "A. La Villa\n" +
       "B. Av. Circunvalar";
   }
-         if (currentOrder?.step === "esperando_aclaracion_producto") {
+   if (currentOrder?.step === "esperando_aclaracion_producto") {
   const opciones = currentOrder.aclaracionPendiente?.opciones || [];
 
   if ((lower === "1" || lower === "2") && opciones.length === 2) {
@@ -476,34 +460,34 @@ return res.sendStatus(200);
     if (product) {
       createOrUpdateOrder(phone, [
         {
+          productoId: product.id,
           producto: product.nombre,
           cantidad: 1,
-          precio: product.precio
+          precio: product.precio,
+          extras: []
         }
       ]);
 
       clearPendingClarification(phone);
       updateOrderStep(phone, "armando_pedido");
+      currentOrder = getOrder(phone)!;
 
-      const order = getOrder(phone)!;
-
-      const resumen = order.items
+      const resumen = currentOrder.items
         .map((item: any) => {
           const observacionesTexto = item.observaciones
-            ? ` (${formatObservaciones(item.observaciones)})`
+            ? ` (${formatoObservaciones(item.observaciones)})`
             : "";
 
           const extrasTexto =
             item.extras && item.extras.length > 0
-              ? " (+" +
+              ? " +" +
                 item.extras
                   .map((extra: any) =>
                     extra.cantidad > 1
                       ? `${extra.cantidad} ${extra.nombre}`
                       : extra.nombre
                   )
-                  .join(", +") +
-                ")"
+                  .join(", +")
               : "";
 
           return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
@@ -525,6 +509,7 @@ return res.sendStatus(200);
   }
 }
 
+   
 } else if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
   updateOrderStep(phone, "armando_pedido");
