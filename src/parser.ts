@@ -261,27 +261,31 @@ function findBestProductMatches(fragment: string, products: any[]) {
   return uniqueProducts.map((m) => m.product);
 }
 function detectAmbiguousProduct(fragment: string, products: any[]) {
+  const bestMatches = findBestProductMatches(fragment, products);
+
+  // Si hay un match claro y único por alias fuerte, no hay ambigüedad
+  if (bestMatches.length === 1) {
+    return null;
+  }
+
+  // Solo si NO hubo match claro, intentamos ambigüedad genérica
   const genericAmbiguity = detectGenericAmbiguity(fragment, products);
 
   if (genericAmbiguity) {
     return genericAmbiguity;
   }
 
-  const bestMatches = findBestProductMatches(fragment, products);
-
-  if (bestMatches.length <= 1) {
-    return null;
+  if (bestMatches.length > 1) {
+    return {
+      opciones: bestMatches.map((p: any) => ({
+        nombre: p.nombre,
+        productoId: p.id
+      }))
+    };
   }
 
-  return {
-    opciones: bestMatches.map((p: any) => ({
-      nombre: p.nombre,
-      productoId: p.id
-    }))
-  };
+  return null;
 }
-
-
 function findProductInFragment(fragment: string, products: any[]) {
   const bestMatches = findBestProductMatches(fragment, products);
 
