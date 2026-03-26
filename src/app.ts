@@ -669,9 +669,9 @@ const resumen = order.items
 
 const resumen = order.items
   .map((item: any) => {
-    const observacionesTexto = item.observaciones
-      ? ` (${formatObservaciones(item.observaciones)})`
-      : "";
+   const observacionesTexto = item.observaciones
+  ? ` (${item.observaciones})`
+  : "";
 
     const extrasTexto =
       item.extras && item.extras.length > 0
@@ -734,9 +734,8 @@ const resumen = order.items
     const resumen = order.items
   .map((item: any) => {
     const observacionesTexto = item.observaciones
-      ? ` (${formatObservaciones(item.observaciones)})`
-      : "";
-
+  ? ` (${item.observaciones})`
+  : "";
     const extrasTexto =
       item.extras && item.extras.length > 0
         ? " +" +
@@ -832,8 +831,8 @@ const resumen = order.items
    const resumen = order.items
   .map((item: any) => {
     const observacionesTexto = item.observaciones
-      ? ` (${formatObservaciones(item.observaciones)})`
-      : "";
+  ? ` (${item.observaciones})`
+  : "";
 
     const extrasTexto =
       item.extras && item.extras.length > 0
