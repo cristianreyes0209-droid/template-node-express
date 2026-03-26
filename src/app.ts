@@ -487,8 +487,8 @@ if (parseResult.ambiguousChoice) {
       const resumen = currentOrder.items
         .map((item: any) => {
           const observacionesTexto = item.observaciones
-            ? ` (${formatoObservaciones(item.observaciones)})`
-            : "";
+  ? ` (${item.observaciones})`
+  : "";
 
           const extrasTexto =
             item.extras && item.extras.length > 0
