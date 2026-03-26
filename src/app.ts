@@ -244,13 +244,6 @@ if (parseResult.ambiguousChoice) {
   await sendWhatsAppMessage(phone, replyMessage);
   return res.sendStatus(200);
 }
-
-const responseText = await response.text();
-console.log("STATUS AMBIGÜEDAD:", response.status);
-console.log("RESPUESTA AMBIGÜEDAD:", responseText);
-
-return res.sendStatus(200);
-}
   if (!currentOrder) {
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
