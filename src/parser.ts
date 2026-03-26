@@ -86,14 +86,12 @@ function productMatchesGenericToken(product: any, token: string) {
 function detectGenericAmbiguity(fragment: string, products: any[]) {
   const tokens = getMeaningfulTokens(fragment);
 
-  if (tokens.length !== 1) {
+  if (tokens.length === 0) {
     return null;
   }
 
-  const token = tokens[0];
-
   const matches = products.filter((product: any) =>
-    productMatchesGenericToken(product, token)
+    tokens.some((token) => productMatchesGenericToken(product, token))
   );
 
   const uniqueMatches = matches.filter(
@@ -112,7 +110,6 @@ function detectGenericAmbiguity(fragment: string, products: any[]) {
     }))
   };
 }
-
 function extractCantidad(fragment: string): number {
   const text = normalizeText(fragment);
 
