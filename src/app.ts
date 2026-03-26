@@ -473,7 +473,6 @@ if (parseResult.ambiguousChoice) {
     if (product) {
       createOrUpdateOrder(phone, [
         {
-          productoId: product.id,
           producto: product.nombre,
           cantidad: 1,
           precio: product.precio,
@@ -522,7 +521,6 @@ if (parseResult.ambiguousChoice) {
   }
 }
 
-   
 } else if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
   updateOrderStep(phone, "armando_pedido");
@@ -531,7 +529,7 @@ if (parseResult.ambiguousChoice) {
 const resumen = order.items
   .map((item: any) => {
     const observacionesTexto = item.observaciones
-      ? ` (${formatObservaciones(item.observaciones)})`
+      ? ` (${item.observaciones})`
       : "";
 
     const extrasTexto =
