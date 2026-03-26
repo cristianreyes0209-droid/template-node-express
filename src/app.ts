@@ -49,11 +49,11 @@ declare global {
 }
 async function sendWhatsAppMessage(phone: string, message: string) {
   const response = await fetch(
-    `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+    "https://graph.facebook.com/v18.0/1066064689915977/messages",
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        Authorization: `Bearer EAAKig65Oi0EBRJL0kbERjFUS1zX3JBZBZCbHiQGhKAkA4OpGY8DEjPZBQmXmHkMTGqJKkBRs5LwwQc6UkWUbFtalZCsYTNlkBKjIYfRNaT2uYDKVvvvdcjq1QjEM16HQhc2UZAFxMthrAgNcsFsMxB7yQr5iZBs6EZCNX7i19W4QPwtRAB1Ja8fxj5IZBPYnZBDhpRWw0dqwLrARIqoZC5U12L6CP4c88rRZAHDwEV3Gn8vGTUKg9h2ZAvLydSdVHDpw3tlZBLHNIcoXZCxZAySw4u8lXuwDAZDZD`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -953,7 +953,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      "Authorization": "Bearer EAAKig65Oi0EBRDiVQG3WpkTPI9Be48fItvo9HElFEQ17wRVtuf0cRmfiYxhkJTN9TVjUiT3kuZBrORJF8Kn34BWNXBXslXfs21XEBZCysDZCMjRQGZCYTuryZAmbjqzKWN9ZCGx061EZBnaM4VoLWVuZB3TVszitcREG75IPy7b6wZALMzZBiRiMHyF7KKrBoms44TNxdYpX8jyyV7RGH1GZBu6bf92FtZBRnJZC5D6wZAKinV6o33htLM5Qj7arp4orxvgkjQj9gIOrGEwiYlO1rHa2RAiAZDZD",
+      "Authorization": "Bearer EAAKig65Oi0EBRJL0kbERjFUS1zX3JBZBZCbHiQGhKAkA4OpGY8DEjPZBQmXmHkMTGqJKkBRs5LwwQc6UkWUbFtalZCsYTNlkBKjIYfRNaT2uYDKVvvvdcjq1QjEM16HQhc2UZAFxMthrAgNcsFsMxB7yQr5iZBs6EZCNX7i19W4QPwtRAB1Ja8fxj5IZBPYnZBDhpRWw0dqwLrARIqoZC5U12L6CP4c88rRZAHDwEV3Gn8vGTUKg9h2ZAvLydSdVHDpw3tlZBLHNIcoXZCxZAySw4u8lXuwDAZDZD",
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
