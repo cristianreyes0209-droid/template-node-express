@@ -541,12 +541,11 @@ currentOrder.lastInteraction = now;
     } else {
       replyMessage = "No pude encontrar esa opción. Inténtalo de nuevo 😊";
     }
-  } else {
+} else {
     replyMessage =
       "Por favor respóndeme:\n\n" +
       "1 o 2 😊";
   }
-}
 
 } else if (parsedItems.length > 0) {
   const order = createOrUpdateOrder(phone, parsedItems);
@@ -974,23 +973,11 @@ const resumen = order.items
   lower.includes("buenas tardes") ||
   lower.includes("buenas noches")
 ) {
-  replyMessage =
-    "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
-    "Puedes hacer tu pedido aquí:\n" +
-    "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
-    "O si prefieres, escríbeme qué deseas pedir y yo te ayudo por aquí 😊";
-
-} else {
-  replyMessage =
-    "Con gusto te ayudo 😊\n\n" +
-    "Puedes pedirme una crepe así:\n" +
-    "• 1 París\n" +
-    "• 2 Hawaianas\n" +
-    "• 1 Nutella y 1 Tropical\n\n" +
-    "También puedo ayudarte con domicilio o recoger.";
-}
-
-console.log("ENVIANDO MENSAJE A:", phone);
+replyMessage =
+  "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
+  "Puedes hacer tu pedido aquí:\n" +
+  "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
+  "O si prefieres, escríbeme qué deseas pedir y yo te ayudo por aquí 😊";
 
 } else {
   replyMessage =
