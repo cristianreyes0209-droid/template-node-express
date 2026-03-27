@@ -19,11 +19,7 @@ import { parseOrder } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
-  clearPendingClarification
-} from "./orders";
-
-
-import {
+  clearPendingClarification,
   createOrUpdateOrder,
   getOrder,
   updateOrderName,
@@ -48,12 +44,15 @@ declare global {
     }
 }
 async function sendWhatsAppMessage(phone: string, message: string) {
+  console.log("PHONE ID ENV:", process.env.WHATSAPP_PHONE_NUMBER_ID);
+  console.log("TOKEN ENV START:", process.env.WHATSAPP_TOKEN?.slice(0, 12));
+
   const response = await fetch(
-    "https://graph.facebook.com/v18.0/1066064689915977/messages",
+    `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer PZAnZATaDXYZCKcVb5UTplgQzboZCEM0Bw51ZBtDzZB59paziEunT2ZAhmqPVxMPugZDZD`,
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -202,69 +201,69 @@ export const initApp = async (
     .join(" • ");
 }
 app.post('/whatsapp', async (req, res) => {
+  const message = req.body;
 
-const message = req.body;
+  console.log("============== PAYLOAD ==============");
+  console.log(JSON.stringify(req.body, null, 2));
+  console.log("=====================================");
 
-console.log("============== PAYLOAD ==============");
-console.log(JSON.stringify(req.body, null, 2));
-console.log("=====================================");
+  const messageData = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
-console.log("Mensaje recibido de WhatsApp:", message);
-console.log(JSON.stringify(message, null, 2));
+  if (!messageData) {
+    console.log("No hay mensaje de usuario");
+    return res.sendStatus(200);
+  }
 
-const messageData = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+  const phone = messageData.from;
+  const text = messageData.text?.body || "mensaje";
 
-if (!messageData) {
-  console.log("No hay mensaje de usuario");
-  return res.sendStatus(200);
-}
+  if (!phone) {
+    console.log("Evento sin telefono");
+    return res.sendStatus(200);
+  }
 
-const phone = messageData.from;
-const text = messageData.text?.body || "mensaje";
-let currentOrder = getOrder(phone);
-    console.log("STEP ACTUAL:", currentOrder?.step);
-console.log("TIPO ENTREGA ACTUAL:", currentOrder?.tipoEntrega);
+  let currentOrder = getOrder(phone);
 
-console.log("PHONE:", phone);
-console.log("TEXT:", text);
+  console.log("STEP ACTUAL:", currentOrder?.step);
+  console.log("TIPO ENTREGA ACTUAL:", currentOrder?.tipoEntrega);
+  console.log("PHONE:", phone);
+  console.log("TEXT:", text);
 
-if (!phone) {
-  console.log("Evento sin telefono");
-  return res.sendStatus(200);
-}
+  let replyMessage = "";
+  const parseResult = parseOrder(text);
+  const parsedItems = parseResult.items;
+  const lower = text.toLowerCase().trim();
 
-let replyMessage = "";
-const parseResult = parseOrder(text);
-    console.log("PARSE RESULT:", JSON.stringify(parseResult, null, 2));
-const parsedItems = parseResult.items;
-const lower = text.toLowerCase().trim();
-    console.log("==== DEBUG PARSER ====");
-console.log("TEXT:", text);
-console.log("LOWER:", lower);
-console.log("STEP:", currentOrder?.step);
-console.log("PARSED ITEMS:", JSON.stringify(parsedItems, null, 2));
-console.log("AMBIGUOUS CHOICE:", JSON.stringify(parseResult.ambiguousChoice, null, 2));
-console.log("======================");
-    console.log("PHONE ID:", process.env.WHATSAPP_PHONE_NUMBER_ID);
-console.log("TOKEN:", process.env.WHATSAPP_TOKEN?.slice(0, 10));
-if (parseResult.ambiguousChoice) {
-  setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
-  updateOrderStep(phone, "esperando_aclaracion_producto");
-  currentOrder = getOrder(phone)!;
+  console.log("==== DEBUG PARSER ====");
+  console.log("TEXT:", text);
+  console.log("LOWER:", lower);
+  console.log("STEP:", currentOrder?.step);
+  console.log("PARSED ITEMS:", JSON.stringify(parsedItems, null, 2));
+  console.log("AMBIGUOUS CHOICE:", JSON.stringify(parseResult.ambiguousChoice, null, 2));
+  console.log("======================");
+  console.log("PHONE ID:", process.env.WHATSAPP_PHONE_NUMBER_ID);
+  console.log("TOKEN:", process.env.WHATSAPP_TOKEN?.slice(0, 10));
 
-  console.log("STEP DESPUÉS DE AMBIGÜEDAD:", currentOrder?.step);
-  console.log("ACLARACIÓN GUARDADA:", currentOrder?.aclaracionPendiente);
+  if (parseResult.ambiguousChoice) {
+    setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
+    updateOrderStep(phone, "esperando_aclaracion_producto");
+    currentOrder = getOrder(phone)!;
 
-  replyMessage =
-    "¿Te refieres a:\n\n" +
-    "1. " + parseResult.ambiguousChoice.opciones[0].nombre + " 🧄\n" +
-    "2. " + parseResult.ambiguousChoice.opciones[1].nombre + " 🍤\n\n" +
-    "Respóndeme 1 o 2 😊";
+    console.log("STEP DESPUÉS DE AMBIGÜEDAD:", currentOrder?.step);
+    console.log("ACLARACIÓN GUARDADA:", currentOrder?.aclaracionPendiente);
 
-  await sendWhatsAppMessage(phone, replyMessage);
-  return res.sendStatus(200);
-}
-  if (!currentOrder) {
+    replyMessage =
+      "¿Te refieres a:\n\n" +
+      parseResult.ambiguousChoice.opciones
+        .map((op: any, i: number) => `${i + 1}. ${op.nombre}`)
+        .join("\n") +
+      "\n\nRespóndeme con el número 😊";
+
+    await sendWhatsAppMessage(phone, replyMessage);
+    return res.sendStatus(200);
+  }
+
+if (!currentOrder) {
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
   currentOrder = getOrder(phone)!;
