@@ -46,13 +46,14 @@ declare global {
 async function sendWhatsAppMessage(phone: string, message: string) {
   console.log("PHONE ID ENV:", process.env.WHATSAPP_PHONE_NUMBER_ID);
   console.log("TOKEN ENV START:", process.env.WHATSAPP_TOKEN?.slice(0, 12));
+  console.log("TOKEN ENV LENGTH:", process.env.WHATSAPP_TOKEN?.length);
 
   const response = await fetch(
     `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
     {
       method: "POST",
       headers: {
-        Authorization: Bearer ${process.env.WHATSAPP_TOKEN}`,
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
