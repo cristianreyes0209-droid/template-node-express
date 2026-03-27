@@ -1108,22 +1108,29 @@ export const menu = {
           ]
         },
         {
-          id: "camarones_gourmet",
-          nombre: "Camarones",
-          precio: 35500,
-          ingredientes: [
-            "Camarones",
-            "Salsa marinera",
-            "Queso doble crema"
-          ],
-          aliases: [
+     id: "camarones_gourmet",
+nombre: "Camarones Gourmet",
+precio: 35500,
+ingredientes: [
+  "Camarones",
+  "Salsa marinera",
+  "Queso doble crema"
+],
+aliases: [
+  "camaron",
+  "camarones",
+  "camaron gourmet",
   "camarones gourmet",
   "camarones marinera",
-  "crepe camarones marinera",
-  "de camarones marinera",
-  "de camarones gourmet"
-
-          ],
+  "crepe de camaron",
+  "crepe de camarones",
+  "crepe de camarones gourmet",
+  "de camaron",
+  "de camarones",
+  "de camaron gourmet",
+  "de camarones gourmet",
+  "de camarones marinera"
+],
           modificadoresComunes: [
             "sin queso",
             "sin salsa"
