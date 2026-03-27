@@ -952,29 +952,36 @@ const resumen = order.items
 
 console.log("ENVIANDO MENSAJE A:", phone);
 
-const response = await fetch(
-  "https://graph.facebook.com/v18.0/1066064689915977/messages",
-  {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer EkyvJ4RxYLq4sv5i08U1nXjePIIzDVllHoOQTg0ZAp8v69tBvYuEn6bN7dBZA1aUwBYTPZAnZATaDXYZCKcVb5UTplgQzboZCEM0Bw51ZBtDzZB59paziEunT2ZAhmqPVxMPugZDZD",
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: phone,
-      type: "text",
-      text: {
-        body: replyMessage
-      }
-    })
-  }
-);
+} else {
+  replyMessage =
+    "Con gusto te ayudo 😊\n\n" +
+    "Puedes pedirme una crepe así:\n" +
+    "• 1 París\n" +
+    "• 2 Hawaianas\n" +
+    "• 1 Nutella y 1 Tropical\n\n" +
+    "También puedo ayudarte con domicilio o recoger.";
+}
 
-const data = await response.json();
-console.log("RESPUESTA META:", data);
+console.log("ENVIANDO MENSAJE A:", phone);
+await sendWhatsAppMessage(phone, replyMessage);
 return res.sendStatus(200);
-    });
+});
+
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  asl.getStore()?.logger.error(err);
+
+  if (res.headersSent) return;
+
+  res.status(500);
+  res.json({ msg: 'Something went wrong' });
+});
+
+return {
+  requestListener: app,
+  shutdown: async () => {
+    // add any cleanup code here including database/redis disconnecting and background job shutdown
+  },
+};
     app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
         asl.getStore()?.logger.error(err);
 
