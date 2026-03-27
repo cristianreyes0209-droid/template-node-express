@@ -52,7 +52,7 @@ async function sendWhatsAppMessage(phone: string, message: string) {
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        Authorization: `Bearer EAAKig65Oi0EBROrkfRNyRu7ZCHpiFJZCtAEnTzOyXcWk1ZBeX9T8mPSUn6tcl1dvVHyhQLkzQ3NbNb2EcC8LB7FarMnOkoKOf1C0DhUZAgEezZAiFvj8kfQKsXzMxshznTP03LROfzI0ENfO4bnpfZCgRZCtXbVJjmfOZBSh0qUcaxFCWqkVEkZBsV6PSG4COAxVDthHVK7SjNk2C1QlHSPcT7glvVkZCobfSizAAxwDAFaZCeTQyZBTWhOicQ1QEaJE2gZAQR7rDHdigL4yVSlCiKaqOlQZDZD`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
