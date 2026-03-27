@@ -44,6 +44,7 @@ declare global {
     }
 }
 async function sendWhatsAppMessage(phone: string, message: string) {
+  console.log("SEND FUNC V2");
   console.log("PHONE ID ENV:", process.env.WHATSAPP_PHONE_NUMBER_ID);
   console.log("TOKEN ENV START:", process.env.WHATSAPP_TOKEN?.slice(0, 20));
   console.log("TOKEN ENV END:", process.env.WHATSAPP_TOKEN?.slice(-20));
