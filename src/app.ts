@@ -52,7 +52,7 @@ async function sendWhatsAppMessage(phone: string, message: string) {
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer EAAKig65Oi0EBROrkfRNyRu7ZCHpiFJZCtAEnTzOyXcWk1ZBeX9T8mPSUn6tcl1dvVHyhQLkzQ3NbNb2EcC8LB7FarMnOkoKOf1C0DhUZAgEezZAiFvj8kfQKsXzMxshznTP03LROfzI0ENfO4bnpfZCgRZCtXbVJjmfOZBSh0qUcaxFCWqkVEkZBsV6PSG4COAxVDthHVK7SjNk2C1QlHSPcT7glvVkZCobfSizAAxwDAFaZCeTQyZBTWhOicQ1QEaJE2gZAQR7rDHdigL4yVSlCiKaqOlQZDZD`,
+        Authorization: `Bearer EAAKig65Oi0EBREnZBIjrcPxXiVm1MBPeZBq5qiC0WHZC1QLziB6YM9WxnkcIB24h39z65Lj4zjukjdUISAgXZCZA8UZBcJh7757QaYTiqwITxeoW0tFEVfnhXmPu4FrNoGCf0GVB3DEqJhCfz869oemqtjXykUIdFOiUFtD6PfPNuYFHkZC2F0Tctl0Emv9roZAtjZC3x4XoPPSjZBfOK7mVz0kroCx01JxA8TLVJOc8JcHDHmzat4lJljPNdZC6lHOoJAphHNrCAY0DA7wssymJNqmkwZDZD`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
