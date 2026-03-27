@@ -1149,26 +1149,30 @@ aliases: [
       nombre: "Crepes del mar",
       productos: [
         {
-          id: "mediterranea_camarones",
-          nombre: "Mediterránea de camarones",
-          precio: 33500,
-          ingredientes: [
-            "Camarones tigre",
-            "Ajo",
-            "Pimentón",
-            "Finas hierbas",
-            "Queso doble crema",
-            "Queso parmesano"
-          ],
-       aliases: [
-  "mediterranea camarones",
+        id: "mediterranea_camarones",
+nombre: "Mediterránea de camarones",
+precio: 33500,
+ingredientes: [
+  "Camarones tigre",
+  "Ajo",
+  "Pimentón",
+  "Finas hierbas",
+  "Queso doble crema",
+  "Queso parmesano"
+],
+aliases: [
+  "mediterranea",
+  "mediterranea de camaron",
   "mediterranea de camarones",
-  "crepe mediterranea camarones",
-  "camarones mediterranea",
-  "camaron mediterranea",
-  "camarón mediterranea"
-
-          ],
+  "mediterranea camaron",
+  "mediterranea camarones",
+  "crepe mediterranea de camaron",
+  "crepe mediterranea de camarones",
+  "mediteranea de camaron",
+  "mediteranea de camarones",
+  "medterranea de camaron",
+  "medterranea de camarones"
+],
           modificadoresComunes: [
             "sin queso",
             "sin parmesano",
@@ -1200,8 +1204,15 @@ aliases: [
             "Queso parmesano"
           ],
           aliases: [
+          
+         "mediterranea de mariscos",
+         "mediterranea mariscos",
+          "crepe mediterranea de mariscos",
+          "mediteranea de mariscos",
+          "medterranea de mariscos"
+
             "mariscos",
-            "mediterranea mariscos",
+            
             "crepe mariscos"
           ],
           modificadoresComunes: [
