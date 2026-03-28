@@ -262,21 +262,31 @@ function findBestProductMatches(fragment: string, products: any[]) {
 
   return uniqueProducts.map((m) => m.product);
 }
-function detectAmbiguousProduct(fragment: string, products: any[]) {
-  const genericAmbiguity = detectGenericAmbiguity(fragment, products);
+function detectGenericAmbiguity(fragment: string, products: any[]) {
+  const tokens = getMeaningfulTokens(fragment);
 
-  if (genericAmbiguity) {
-    return genericAmbiguity;
+  // SOLO palabras sueltas → comportamiento genérico
+  if (tokens.length !== 1) {
+    return null;
   }
 
-  const bestMatches = findBestProductMatches(fragment, products);
+  const token = tokens[0];
 
-  if (bestMatches.length <= 1) {
+  const matches = products.filter((product: any) =>
+    productMatchesGenericToken(product, token)
+  );
+
+  const uniqueMatches = matches.filter(
+    (product: any, index: number, arr: any[]) =>
+      arr.findIndex((p) => p.id === product.id) === index
+  );
+
+  if (uniqueMatches.length <= 1) {
     return null;
   }
 
   return {
-    opciones: bestMatches.map((p: any) => ({
+    opciones: uniqueMatches.map((p: any) => ({
       nombre: p.nombre,
       productoId: p.id
     }))
