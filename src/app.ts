@@ -1,3 +1,4 @@
+import "dotenv/config";
 import "./db";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
