@@ -1108,7 +1108,7 @@ export const menu = {
           ]
         },
         {
-     id: "camarones_gourmet",
+id: "camarones_gourmet",
 nombre: "Camarones Gourmet",
 precio: 35500,
 ingredientes: [
@@ -1149,7 +1149,7 @@ aliases: [
       nombre: "Crepes del mar",
       productos: [
         {
-        id: "mediterranea_camarones",
+id: "mediterranea_camarones",
 nombre: "Mediterránea de camarones",
 precio: 33500,
 ingredientes: [
@@ -1189,32 +1189,24 @@ aliases: [
           ]
         },
         {
-          id: "mediterranea_mariscos",
-          nombre: "Mediterránea de mariscos",
-          precio: 35500,
-          ingredientes: [
-            "Camarones",
-            "Pulpo",
-            "Calamar",
-            "Pescado",
-            "Ajo",
-            "Pimentón",
-            "Finas hierbas",
-            "Queso doble crema",
-            "Queso parmesano"
-          ],
-          aliases: [
-          
-         "mediterranea de mariscos",
-         "mediterranea mariscos",
-          "crepe mediterranea de mariscos",
-          "mediteranea de mariscos",
-          "medterranea de mariscos"
-
-            "mariscos",
-            
-            "crepe mariscos"
-          ],
+       id: "mediterranea_mariscos",
+nombre: "Mediterránea de mariscos",
+precio: 35500,
+ingredientes: [
+  "Mariscos",
+  "Ajo",
+  "Pimentón",
+  "Finas hierbas",
+  "Queso doble crema",
+  "Queso parmesano"
+],
+aliases: [
+  "mediterranea de mariscos",
+  "mediterranea mariscos",
+  "crepe mediterranea de mariscos",
+  "mediteranea de mariscos",
+  "medterranea de mariscos"
+],
           modificadoresComunes: [
             "sin queso",
             "sin parmesano",
