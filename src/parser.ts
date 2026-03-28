@@ -145,6 +145,8 @@ function normalizeText(text: string) {
     .replace("medterranea", "mediterranea")
     .replace("estrogonof", "strogonoff")
     .replace("estrogonoff", "strogonoff")
+    .replace("camorones", "camarones")
+    .replace("camarone", "camarones")
     .replace("strogonof", "strogonoff");
 }
 function escapeRegex(text: string) {
