@@ -1,3 +1,4 @@
+import "./db";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { RequestListener } from 'node:http';
