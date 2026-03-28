@@ -282,8 +282,6 @@ function detectAmbiguousProduct(fragment: string, products: any[]) {
     }))
   };
 }
-  return null;
-}
 function findProductInFragment(fragment: string, products: any[]) {
   const bestMatches = findBestProductMatches(fragment, products);
 
