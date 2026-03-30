@@ -1,5 +1,6 @@
 import "dotenv/config";
 import "./db";
+import { upsertCustomer, getCustomerByPhone } from "./customers";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { RequestListener } from 'node:http';
@@ -221,7 +222,8 @@ app.post('/whatsapp', async (req, res) => {
     return res.sendStatus(200);
   }
 
-  const phone = messageData.from;
+  const phone = messageData.from;   
+  const customer = await getCustomerByPhone(phone);
   const text = messageData.text?.body || "mensaje";
 
   if (!phone) {
@@ -649,6 +651,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   updateOrderAddress(phone, text);
 
   const order = getOrder(phone)!;
+  
   const totals = calculateTotal(order);
 
   const resumen = order.items
@@ -712,6 +715,15 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
+
+    await upsertCustomer({
+      phone: order.telefono,
+      name: order.nombre,
+      last_address: order.direccion,
+      last_order: order.items,
+      last_order_at: new Date().toISOString()
+    });
+
     const orderJSON = buildOrderJSON(order);
     const totals = calculateTotal(order);
 
@@ -732,7 +744,6 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
                 )
                 .join(", +")
             : "";
-
         return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
       })
       .join("\n");
@@ -808,6 +819,13 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
+      await upsertCustomer({
+  phone: order.telefono,
+  name: order.nombre,
+  last_address: order.direccion,
+  last_order: order.items,
+  last_order_at: new Date().toISOString()
+});
     const orderJSON = buildOrderJSON(order);
     const totals = calculateTotal(order);
 
