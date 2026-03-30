@@ -714,15 +714,17 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     updateOrderStep(phone, "confirmado");
     currentOrder = getOrder(phone)!;
 
-    const order = getOrder(phone)!;
+ if (currentOrder?.step === "confirmado") {
+  const order = getOrder(phone)!;
 
   await upsertCustomer({
-  phone: phone,
-  name: order.nombre,
-  last_address: order.direccion,
-  last_order: order.items,
-  last_order_at: new Date().toISOString()
-});
+    phone: phone,
+    name: order.nombre,
+    last_address: order.direccion,
+    last_order: order.items,
+    last_order_at: new Date().toISOString()
+  });
+}
 
     const orderJSON = buildOrderJSON(order);
     const totals = calculateTotal(order);
@@ -818,14 +820,16 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     updateOrderStep(phone, "confirmado");
     currentOrder = getOrder(phone)!;
 
-    const order = getOrder(phone)!;
-await upsertCustomer({
-  phone: phone,
-  name: order.nombre,
-  last_address: order.direccion,
-  last_order: order.items,
-  last_order_at: new Date().toISOString()
-});
+  const order = getOrder(phone)!;
+
+  await upsertCustomer({
+    phone: phone,
+    name: order.nombre,
+    last_address: order.direccion,
+    last_order: order.items,
+    last_order_at: new Date().toISOString()
+  });
+}
     const orderJSON = buildOrderJSON(order);
     const totals = calculateTotal(order);
 
