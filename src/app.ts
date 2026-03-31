@@ -360,13 +360,16 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   }
 
 } else if (currentOrder?.step === "esperando_menu_principal") {
+
   if (customer) {
+
     if (
       lower === "a" ||
       lower.includes("lo mismo") ||
       lower.includes("igual") ||
       lower.includes("el mismo")
     ) {
+
       if (customer.last_order) {
         const order = getOrder(phone)!;
 
@@ -385,33 +388,30 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
             `📍 ${customer.last_address}\n\n` +
             `A. Sí, esa misma\n` +
             `B. No, quiero cambiarla`;
+
         } else {
           updateOrderStep(phone, "esperando_confirmacion");
           currentOrder = getOrder(phone)!;
 
           const totals = calculateTotal(order);
 
-          const resumen = order.items
-            .map((item: any) => {
-              const observacionesTexto = item.observaciones
-                ? ` (${formatObservaciones(item.observaciones)})`
+          const resumen = order.items.map((item: any) => {
+            const observacionesTexto = item.observaciones
+              ? ` (${formatObservaciones(item.observaciones)})`
+              : "";
+
+            const extrasTexto =
+              item.extras && item.extras.length > 0
+                ? " +" +
+                  item.extras.map((extra: any) =>
+                    extra.cantidad > 1
+                      ? `${extra.cantidad} ${extra.nombre}`
+                      : extra.nombre
+                  ).join(", +")
                 : "";
 
-              const extrasTexto =
-                item.extras && item.extras.length > 0
-                  ? " +" +
-                    item.extras
-                      .map((extra: any) =>
-                        extra.cantidad > 1
-                          ? `${extra.cantidad} ${extra.nombre}`
-                          : extra.nombre
-                      )
-                      .join(", +")
-                  : "";
-
-              return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-            })
-            .join("\n");
+            return `* ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+          }).join("\n");
 
           replyMessage =
             "🔥 Perfecto, estoy repitiendo tu último pedido\n\n" +
@@ -421,33 +421,35 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
             "\nTotal: $" + totals.total +
             "\n\n¿Confirmas tu pedido? (SI / NO)";
         }
+
       } else {
         replyMessage =
           "No encontré un pedido anterior 😊\n\n" +
           "Cuéntame qué deseas pedir.";
       }
 
-  } else if (
-  lower === "b" ||
-  lower.includes("nuevo") ||
-  lower.includes("diferente") ||
-  lower.includes("otra cosa")
-) {
-  updateOrderStep(phone, "esperando_menu_nuevo");
-  currentOrder = getOrder(phone)!;
+    } else if (
+      lower === "b" ||
+      lower.includes("nuevo") ||
+      lower.includes("diferente") ||
+      lower.includes("otra cosa")
+    ) {
 
-  replyMessage =
-    "Perfecto 👌\n\n" +
-    "¿Qué deseas hacer hoy?\n\n" +
-    "A. Recoger en tienda 🏪\n" +
-    "B. Domicilio 🚚\n" +
-    "C. Agendar pedido 📅\n" +
-    "D. Hacer reserva 🍽️\n" +
-    "E. PQR 📝\n" +
-    "F. Otros 💬";
-}
+      updateOrderStep(phone, "esperando_menu_nuevo");
+      currentOrder = getOrder(phone)!;
+
+      replyMessage =
+        "Perfecto 👌\n\n" +
+        "¿Qué deseas hacer hoy?\n\n" +
+        "A. Recoger en tienda 🏪\n" +
+        "B. Domicilio 🚚\n" +
+        "C. Agendar pedido 📅\n" +
+        "D. Hacer reserva 🍽️\n" +
+        "E. PQR 📝\n" +
+        "F. Otros 💬";
 
     } else {
+
       replyMessage =
         `Hola ${customer.name || ""} 👋\n\n` +
         `Qué bueno tenerte de vuelta en LAS CREPES ✨\n\n` +
@@ -535,7 +537,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "Con gusto 😊\n\n" +
       "Cuéntame en qué puedo ayudarte.";
 
-  } else {
+} else {
     replyMessage =
       "Hola 👋 Bienvenido a LAS CREPES ✨\n\n" +
       "Qué alegría atenderte 😊\n\n" +
@@ -546,8 +548,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "D. Hacer reserva 🍽️\n" +
       "E. PQR 📝\n" +
       "F. Otros 💬";
-  
-    } else if (currentOrder?.step === "esperando_menu_nuevo") {
+  }
+
+} else if (currentOrder?.step === "esperando_menu_nuevo") {
   if (
     lower === "a" ||
     lower.includes("recoger") ||
@@ -575,7 +578,6 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     updateOrderDeliveryType(phone, "domicilio");
     updateOrderStep(phone, "esperando_sucursal");
     currentOrder = getOrder(phone)!;
-
     replyMessage =
       "Perfecto 👌\n\n" +
       "¿Para cuál sucursal es tu pedido?\n\n" +
