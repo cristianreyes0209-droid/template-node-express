@@ -944,6 +944,60 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         "• 1 Camarones\n" +
         "• 1 Hawaiana\n" +
         "• 1 Mediterránea de camarones";
+    } else if (customer?.name) {
+      updateOrderName(phone, customer.name);
+      currentOrder = getOrder(phone)!;
+
+      if (currentOrder.tipoEntrega === "domicilio") {
+        updateOrderStep(phone, "esperando_direccion");
+        currentOrder = getOrder(phone)!;
+
+        if (customer?.last_address) {
+          replyMessage =
+            `Perfecto 👍\n\n¿Deseas usar la misma dirección de siempre?\n\n` +
+            `📍 ${customer.last_address}\n\n` +
+            `A. Sí, esa misma\n` +
+            `B. No, quiero cambiarla`;
+        } else {
+          replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+        }
+      } else {
+        updateOrderStep(phone, "esperando_confirmacion");
+        currentOrder = getOrder(phone)!;
+
+        const order = getOrder(phone)!;
+        const totals = calculateTotal(order);
+
+        const resumen = order.items
+          .map((item: any) => {
+            const observacionesTexto = item.observaciones
+              ? ` (${formatObservaciones(item.observaciones)})`
+              : "";
+
+            const extrasTexto =
+              item.extras && item.extras.length > 0
+                ? " +" +
+                  item.extras
+                    .map((extra: any) =>
+                      extra.cantidad > 1
+                        ? `${extra.cantidad} ${extra.nombre}`
+                        : extra.nombre
+                    )
+                    .join(", +")
+                : "";
+
+            return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+          })
+          .join("\n");
+
+        replyMessage =
+          "Perfecto 👌\n\n" +
+          "Tu pedido es:\n" +
+          resumen +
+          "\n\nSubtotal: $" + totals.subtotal +
+          "\nTotal: $" + totals.total +
+          "\n\n¿Confirmas tu pedido? (SI / NO)";
+      }
     } else {
       updateOrderStep(phone, "esperando_nombre");
       currentOrder = getOrder(phone)!;
@@ -955,7 +1009,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     replyMessage =
       "¿Deseas agregar algo más? 😊\n\n" +
       "Puedes escribir otra crepe, bebida o topping, o responder SI o NO.";
-  
+  }
 }
 } else if (
   lower.includes("hola") ||
