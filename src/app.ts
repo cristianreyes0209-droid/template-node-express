@@ -419,7 +419,10 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
             resumen +
             "\n\nSubtotal: $" + totals.subtotal +
             "\nTotal: $" + totals.total +
-            "\n\n¿Confirmas tu pedido? (SI / NO)";
+            "\n\n¿Qué deseas hacer?\n\n" +
+            "A. Confirmar pedido ✅\n" +
+            "B. Corregir pedido ✏️\n" +
+            "C. Agregar más productos ➕";
         }
 
       } else {
@@ -770,7 +773,10 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         resumen +
         "\n\nSubtotal: $" + totals.subtotal +
         "\nTotal: $" + totals.total +
-        "\n\n¿Confirmas tu pedido? (SI / NO)";
+      "\n\n¿Qué deseas hacer?\n\n" +
+      "A. Confirmar pedido ✅\n" +
+      "B. Corregir pedido ✏️\n" +
+      "C. Agregar más productos ➕" ;
     }
   }
 
@@ -814,7 +820,10 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       resumen +
       "\n\nSubtotal: $" + totals.subtotal +
       "\nTotal: $" + totals.total +
-      "\n\n¿Confirmas tu pedido? (SI / NO)";
+      "\n\n¿Qué deseas hacer?\n\n" +
+     "A. Confirmar pedido ✅\n" +
+     "B. Corregir pedido ✏️\n" +
+     "C. Agregar más productos ➕";
   }
 
 } else if (currentOrder?.step === "esperando_direccion") {
@@ -857,7 +866,10 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     "\nDomicilio: $" + totals.domicilio +
     "\nTotal: $" + totals.total +
     "\n📍 Dirección: " + order.direccion +
-    "\n\n¿Confirmas tu pedido? (SI / NO)";
+    "\n\n¿Qué deseas hacer?\n\n" +
+    "A. Confirmar pedido ✅\n" +
+    "B. Corregir pedido ✏️\n" +
+    "C. Agregar más productos ➕";
 
 } else if (currentOrder?.step === "esperando_confirmacion") {
   if (lower.includes("si")) {
@@ -1160,7 +1172,10 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
           resumen +
           "\n\nSubtotal: $" + totals.subtotal +
           "\nTotal: $" + totals.total +
-          "\n\n¿Confirmas tu pedido? (SI / NO)";
+          "\n\n¿Qué deseas hacer?\n\n" +
+          "A. Confirmar pedido ✅\n" +
+          "B. Corregir pedido ✏️\n" +
+          "C. Agregar más productos ➕";
       }
     } else {
       updateOrderStep(phone, "esperando_nombre");
@@ -1219,7 +1234,10 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "\nDomicilio: $" + totals.domicilio +
       "\nTotal: $" + totals.total +
       "\n📍 Dirección: " + order.direccion +
-      "\n\n¿Confirmas tu pedido? (SI / NO)";
+      "\n\n¿Qué deseas hacer?\n\n" +
+      "A. Confirmar pedido ✅\n" +
+      "B. Corregir pedido ✏️\n" +
+      "C. Agregar más productos ➕";
   } else if (lower === "b" || lower.includes("cambiar")) {
     updateOrderStep(phone, "esperando_direccion");
     currentOrder = getOrder(phone)!;
