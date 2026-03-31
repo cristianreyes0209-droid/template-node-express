@@ -872,7 +872,12 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     "C. Agregar más productos ➕";
 
 } else if (currentOrder?.step === "esperando_confirmacion") {
-  if (lower.includes("si")) {
+  if (
+    lower === "a" ||
+    lower === "si" ||
+    lower === "sí" ||
+    lower.includes("confirmar")
+  ) {
     updateOrderStep(phone, "esperando_pago");
     currentOrder = getOrder(phone)!;
 
@@ -882,12 +887,39 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "• Nequi\n" +
       "• Daviplata\n" +
       "• Bancolombia";
-  } else if (lower.includes("no")) {
+
+  } else if (
+    lower === "b" ||
+    lower.includes("corregir") ||
+    lower.includes("cambiar")
+  ) {
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
-    replyMessage = "Perfecto 👍 ¿Qué deseas cambiar?";
+
+    replyMessage =
+      "Perfecto 👍\n\n" +
+      "Dime qué deseas corregir de tu pedido.";
+
+  } else if (
+    lower === "c" ||
+    lower.includes("agregar") ||
+    lower.includes("más") ||
+    lower.includes("mas")
+  ) {
+    updateOrderStep(phone, "armando_pedido");
+    currentOrder = getOrder(phone)!;
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "¿Qué deseas agregar?\n\n" +
+      "Puedes escribir otra crepe, bebida o topping.";
+
   } else {
-    replyMessage = "Por favor responde SI o NO para confirmar tu pedido.";
+    replyMessage =
+      "Respóndeme por favor:\n\n" +
+      "A. Confirmar pedido ✅\n" +
+      "B. Corregir pedido ✏️\n" +
+      "C. Agregar más productos ➕";
   }
 
 } else if (currentOrder?.step === "esperando_pago") {
