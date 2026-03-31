@@ -1109,7 +1109,7 @@ export const menu = {
         },
         {
 id: "camarones_gourmet",
-nombre: "Camarones",
+nombre: "camarones_gourmet",
 precio: 35500,
 ingredientes: [
   "Camarones",
@@ -1124,7 +1124,7 @@ aliases: [
   "camarones marinera",
   "crepe de camaron",
   "crepe de camarones",
-  "mediterranea de camarones",
+  "camarones en salsa",
   "crepe de camarones gourmet",
   "de camaron",
   "de camarones",
