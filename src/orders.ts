@@ -18,11 +18,13 @@ export type OrderItem = {
 
 export type OrderStep =
   | "esperando_menu_principal"
+  | "esperando_menu_nuevo"
   | "esperando_sucursal"
   | "armando_pedido"
   | "esperando_nombre"
   | "esperando_tipo_entrega"
   | "esperando_direccion"
+  | "esperando_confirmacion_direccion"
   | "esperando_confirmacion"
   | "esperando_pago"
   | "esperando_comprobante"
