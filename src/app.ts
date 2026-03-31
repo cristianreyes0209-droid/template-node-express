@@ -277,34 +277,17 @@ if (!currentOrder) {
   updateOrderStep(phone, "esperando_menu_principal");
   currentOrder = getOrder(phone)!;
 
-  replyMessage =
-    "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
-    "Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
-    "A. Recoger en tienda 🏪\n" +
-    "B. Domicilio 🚚\n" +
-    "C. Agendar pedido 📅\n" +
-    "D. Hacer reserva 🍽️\n" +
-    "E. PQR 📝\n" +
-    "F. Otros 💬";
+  if (customer) {
+    const nombreCliente = customer.name || "";
 
-  await sendWhatsAppMessage(phone, replyMessage);
-  return res.sendStatus(200);
-} else {
-  const now = Date.now();
-  const diff = now - (currentOrder.lastInteraction || 0);
-  const THIRTY_MIN = 30 * 60 * 1000;
+    replyMessage =
+      `Hola ${nombreCliente} 👋\n\n` +
+      `Qué bueno tenerte de vuelta en LAS CREPES ✨\n\n` +
+      `¿Deseas pedir lo mismo de siempre o quieres algo diferente? 😋\n\n` +
+      `A. Lo mismo\n` +
+      `B. Quiero pedir algo nuevo`;
 
-  if (diff > THIRTY_MIN && currentOrder.step !== "confirmado") {
-    currentOrder.items = [];
-    currentOrder.nombre = undefined;
-    currentOrder.tipoEntrega = undefined;
-    currentOrder.direccion = undefined;
-    currentOrder.formaPago = undefined;
-    currentOrder.canal = undefined;
-    currentOrder.sucursal = undefined;
-    currentOrder.step = "esperando_menu_principal";
-    currentOrder.lastInteraction = now;
-
+  } else {
     replyMessage =
       "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
       "Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
@@ -314,12 +297,10 @@ if (!currentOrder) {
       "D. Hacer reserva 🍽️\n" +
       "E. PQR 📝\n" +
       "F. Otros 💬";
-
-    await sendWhatsAppMessage(phone, replyMessage);
-    return res.sendStatus(200);
   }
 
-  currentOrder.lastInteraction = now;
+  await sendWhatsAppMessage(phone, replyMessage);
+  return res.sendStatus(200);
 }
 
 if (currentOrder?.step === "esperando_aclaracion_producto") {
@@ -380,6 +361,33 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   }
 
 } else if (currentOrder?.step === "esperando_menu_principal") {
+    if (
+  lower === "a" ||
+  lower.includes("lo mismo") ||
+  lower.includes("igual") ||
+  lower.includes("el mismo")
+) {
+  if (customer && customer.last_order) {
+    const order = getOrder(phone)!;
+
+    order.items = customer.last_order;
+    order.direccion = customer.last_address;
+    order.nombre = customer.name;
+
+    updateOrderStep(phone, "confirmado");
+
+    replyMessage =
+      "🔥 Perfecto, estoy repitiendo tu último pedido\n\n" +
+      "¿Confirmas que deseas el mismo pedido? (SI / NO)";
+  } else {
+    replyMessage =
+      "No encontré un pedido anterior 😊\n\n" +
+      "Cuéntame qué deseas pedir.";
+  }
+
+  await sendWhatsAppMessage(phone, replyMessage);
+  return res.sendStatus(200);
+}
   if (
     lower === "a" ||
     lower.includes("recoger") ||
