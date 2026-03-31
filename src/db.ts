@@ -46,7 +46,7 @@ export async function upsertCustomer({
     await pool.query(
       `
       INSERT INTO clientes (phone, name, last_address, last_order, last_order_at)
-      VALUES ($1, $2, $3, $4, $5)
+      VALUES ($1, $2, $3, $4::jsonb, $5)
       ON CONFLICT (phone)
       DO UPDATE SET
         name = EXCLUDED.name,
@@ -55,7 +55,13 @@ export async function upsertCustomer({
         last_order_at = EXCLUDED.last_order_at,
         updated_at = NOW()
       `,
-      [phone, name || null, last_address || null, last_order || null, last_order_at || null]
+      [
+        phone,
+        name || null,
+        last_address || null,
+        last_order ? JSON.stringify(last_order) : null,
+        last_order_at || null
+      ]
     );
 
     console.log("✅ Cliente guardado/actualizado:", phone);
