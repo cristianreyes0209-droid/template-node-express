@@ -1109,7 +1109,7 @@ export const menu = {
         },
         {
 id: "camarones_gourmet",
-nombre: "camarones gourmet",
+nombre: "Camarones Gourmet",
 precio: 35500,
 ingredientes: [
   "Camarones",
@@ -1117,31 +1117,26 @@ ingredientes: [
   "Queso doble crema"
 ],
 aliases: [
-  "camaron",
-  "camarones",
   "camaron gourmet",
   "camarones gourmet",
   "camarones marinera",
-  "crepe de camaron",
-  "crepe de camarones",
   "camarones en salsa",
+  "crepe de camaron gourmet",
   "crepe de camarones gourmet",
-  "de camaron",
-  "de camarones",
   "de camaron gourmet",
   "de camarones gourmet",
   "de camarones marinera"
 ],
-          modificadoresComunes: [
-            "sin queso",
-            "sin salsa"
-          ],
-          extrasDisponibles: [
-            "extra_queso",
-            "extra_parmesano",
-            "extra_champinones",
-            "jalapenos"
-          ]
+modificadoresComunes: [
+  "sin queso",
+  "sin salsa"
+],
+extrasDisponibles: [
+  "extra_queso",
+  "extra_parmesano",
+  "extra_champinones",
+  "jalapenos"
+]
         }
       ]
     },
