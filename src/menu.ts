@@ -1124,6 +1124,7 @@ aliases: [
   "camarones marinera",
   "crepe de camaron",
   "crepe de camarones",
+  "mediterranea de camarones",
   "crepe de camarones gourmet",
   "de camaron",
   "de camarones",
