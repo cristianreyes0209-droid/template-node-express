@@ -947,7 +947,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     replyMessage =
       "¿Deseas agregar algo más? 😊\n\n" +
       "Puedes escribir otra crepe, bebida o topping, o responder SI o NO.";
-  }
+  
 }
 } else if (
   lower.includes("hola") ||
