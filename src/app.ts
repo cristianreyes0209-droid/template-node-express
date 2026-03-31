@@ -929,18 +929,26 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     lower.includes("no más") ||
     lower.includes("eso es todo")
   ) {
-    updateOrderStep(phone, "esperando_nombre");
-    currentOrder = getOrder(phone)!;
-
-    replyMessage =
-      "Perfecto 👍\n\n" +
-      "Antes de continuar, ¿cómo es tu nombre?";
+    if (!currentOrder.items || currentOrder.items.length === 0) {
+      replyMessage =
+        "Aún no veo productos en tu pedido 😊\n\n" +
+        "Escríbeme qué deseas pedir, por ejemplo:\n" +
+        "• 1 Camarones\n" +
+        "• 1 Hawaiana\n" +
+        "• 1 Mediterránea de camarones";
+    } else {
+      updateOrderStep(phone, "esperando_nombre");
+      currentOrder = getOrder(phone)!;
+      replyMessage =
+        "Perfecto 👍\n\n" +
+        "Antes de continuar, ¿cómo es tu nombre?";
+    }
   } else {
     replyMessage =
       "¿Deseas agregar algo más? 😊\n\n" +
       "Puedes escribir otra crepe, bebida o topping, o responder SI o NO.";
   }
-
+}
 } else if (
   lower.includes("hola") ||
   lower.includes("buenas") ||
