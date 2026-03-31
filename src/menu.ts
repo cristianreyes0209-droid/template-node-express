@@ -1109,7 +1109,7 @@ export const menu = {
         },
         {
 id: "camarones_gourmet",
-nombre: "camarones_gourmet",
+nombre: "camarones gourmet",
 precio: 35500,
 ingredientes: [
   "Camarones",
