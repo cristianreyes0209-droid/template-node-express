@@ -546,7 +546,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "D. Hacer reserva 🍽️\n" +
       "E. PQR 📝\n" +
       "F. Otros 💬";
-  }
+  
     } else if (currentOrder?.step === "esperando_menu_nuevo") {
   if (
     lower === "a" ||
