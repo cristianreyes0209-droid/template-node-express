@@ -208,6 +208,49 @@ export const initApp = async (
     .map(o => o.trim())
     .join(" • ");
 }
+   // 🔥 AQUÍ PEGAS LA FUNCIÓN
+async function handleOperationalRouting(order: any, totals: any) {
+  const resumenInterno =
+    "🔥 NUEVO PEDIDO\n\n" +
+    `👤 ${order.nombre}\n` +
+    `📞 ${order.telefono}\n\n` +
+    "🧾 Pedido:\n" +
+    order.items.map((i:any)=>`* ${i.cantidad} ${i.producto}`).join("\n") +
+    `\n\n💰 Total: $${totals.total}\n` +
+    `📍 ${order.direccion || "Recoger en tienda"}`;
+
+  if (order.sucursal === "circunvalar") {
+    await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE!, resumenInterno);
+    return;
+  }
+
+  if (order.sucursal === "la_villa") {
+
+    if (order.tipoEntrega === "domicilio") {
+      const domicilioMsg =
+        "🚚 DOMICILIO VILLA\n\n" +
+        `👤 ${order.nombre}\n` +
+        `📞 ${order.telefono}\n` +
+        `📍 ${order.direccion}\n` +
+        `💳 Pago: ${order.formaPago}\n` +
+        `💰 Pedido: $${totals.subtotal}\n` +
+        `🛵 Domicilio: $${totals.domicilio}\n` +
+        (order.formaPago === "efectivo"
+          ? `💵 Cobrar: $${totals.total}\n`
+          : "");
+
+      await sendWhatsAppMessage(process.env.VILLA_DOMICILIOS_DESTINO!, domicilioMsg);
+    }
+
+    console.log("🖨️ IMPRIMIR COMANDA VILLA:");
+    console.log(resumenInterno);
+
+    return;
+  }
+}
+
+// 👇 DESPUÉS sigue tu endpoint
+app.post("/whatsapp", async (req: Request, res: Response) => { 
 app.post('/whatsapp', async (req, res) => {
   const message = req.body;
 
@@ -1049,6 +1092,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
+    const totals = calculateTotal(order);
 
     await upsertCustomer({
       phone: phone,
@@ -1058,8 +1102,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       last_order_at: new Date().toISOString()
     });
 
+    await handleOperationalRouting(order, totals);
+
     const orderJSON = buildOrderJSON(order);
-    const totals = calculateTotal(order);
 
     const resumen = order.items
       .map((item: any) => {
@@ -1088,7 +1133,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         ? "50 min 🚚"
         : "15 min 🏪";
 
-    replyMessage =
+    const resumenCliente =
       "🔥 Pedido confirmado\n\n" +
       "👤 Nombre: " + order.nombre + "\n" +
       "📞 Tel: " + order.telefono + "\n\n" +
@@ -1104,6 +1149,8 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
     console.log("========== ORDEN FINAL JSON ==========");
     console.log(JSON.stringify(orderJSON, null, 2));
+
+    replyMessage = resumenCliente;
 
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
