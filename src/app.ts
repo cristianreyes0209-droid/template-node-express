@@ -1450,7 +1450,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "Respóndeme por favor:\n\n" +
       "A. Sí, esa misma\n" +
       "B. No, quiero cambiarla";
-  
+  }
 } else if (
   lower.includes("hola") ||
   lower.includes("buenas") ||
