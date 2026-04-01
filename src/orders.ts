@@ -22,6 +22,7 @@ export type OrderStep =
   | "esperando_sucursal"
   | "armando_pedido"
   | "esperando_nombre"
+  | "esperando_observacion_general"
   | "esperando_tipo_entrega"
   | "esperando_direccion"
   | "esperando_confirmacion_direccion"
@@ -43,6 +44,7 @@ export type CustomerOrder = {
   items: OrderItem[];
   step: OrderStep;
   lastInteraction: number;
+  observacionesGenerales?: string;
   aclaracionPendiente?: {
     opciones: {
       nombre: string;
