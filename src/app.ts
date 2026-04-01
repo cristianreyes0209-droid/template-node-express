@@ -935,18 +935,24 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "• Daviplata\n" +
       "• Bancolombia";
 
-  } else if (
-    lower === "b" ||
-    lower.includes("corregir") ||
-    lower.includes("cambiar")
-  ) {
-    updateOrderStep(phone, "armando_pedido");
-    currentOrder = getOrder(phone)!;
+} else if (
+  lower === "b" ||
+  lower.includes("retirar") ||
+  lower.includes("eliminar") ||
+  lower.includes("quitar")
+) {
+  updateOrderStep(phone, "retirando_productos");
+  currentOrder = getOrder(phone)!;
 
-    replyMessage =
-      "Perfecto 👍\n\n" +
-      "Dime qué deseas corregir de tu pedido.";
+  const resumen = currentOrder.items
+    .map((item: any, index: number) => `* ${index + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`)
+    .join("\n");
 
+  replyMessage =
+    "Perfecto 👍\n\n" +
+    "¿Qué producto deseas retirar?\n\n" +
+    resumen +
+    "\n\nRespóndeme con el número del producto.";
   } else if (
     lower === "c" ||
     lower.includes("agregar") ||
@@ -967,6 +973,73 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "A. Confirmar pedido ✅\n" +
       "B. Eliminar Productos ✏️\n" +
       "C. Agregar más productos ➕";
+  }
+    } else if (currentOrder?.step === "retirando_productos") {
+  const order = getOrder(phone)!;
+  const index = Number(lower) - 1;
+
+  if (!Number.isNaN(index) && index >= 0 && index < order.items.length) {
+    order.items.splice(index, 1);
+    currentOrder = getOrder(phone)!;
+
+    if (!order.items || order.items.length === 0) {
+      updateOrderStep(phone, "armando_pedido");
+      currentOrder = getOrder(phone)!;
+
+      replyMessage =
+        "Listo 👍 Ya retiré ese producto.\n\n" +
+        "Tu pedido quedó vacío.\n\n" +
+        "¿Qué deseas pedir?";
+    } else {
+      const totals = calculateTotal(order);
+
+      const resumen = order.items
+        .map((item: any) => {
+          const observacionesTexto = item.observaciones
+            ? ` (${formatObservaciones(item.observaciones)})`
+            : "";
+
+          const extrasTexto =
+            item.extras && item.extras.length > 0
+              ? " +" +
+                item.extras
+                  .map((extra: any) =>
+                    extra.cantidad > 1
+                      ? `${extra.cantidad} ${extra.nombre}`
+                      : extra.nombre
+                  )
+                  .join(", +")
+              : "";
+
+          return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+        })
+        .join("\n");
+
+      updateOrderStep(phone, "esperando_confirmacion");
+      currentOrder = getOrder(phone)!;
+
+      replyMessage =
+        "Perfecto 👌\n\n" +
+        "Tu pedido actualizado es:\n" +
+        resumen +
+        "\n\nSubtotal: $" + totals.subtotal +
+        "\nDomicilio: $" + totals.domicilio +
+        "\nTotal: $" + totals.total +
+        "\n📍 Dirección: " + (order.direccion || "No aplica") +
+        "\n\n¿Qué deseas hacer?\n\n" +
+        "A. Confirmar pedido ✅\n" +
+        "B. Eliminar productos ➖\n" +
+        "C. Agregar más productos ➕";
+    }
+  } else {
+    const resumen = order.items
+      .map((item: any, i: number) => `* ${i + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`)
+      .join("\n");
+
+    replyMessage =
+      "No entendí cuál producto deseas retirar 😊\n\n" +
+      "Respóndeme con el número:\n\n" +
+      resumen;
   }
 
 } else if (currentOrder?.step === "esperando_pago") {
