@@ -1496,22 +1496,7 @@ return {
     // add any cleanup code here including database/redis disconnecting and background job shutdown
   },
 };
-    app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-        asl.getStore()?.logger.error(err);
-
-        if (res.headersSent) return;
-
-        res.status(500);
-        res.json({ msg: 'Something went wrong' });
-    });
-
-    return {
-        requestListener: app,
-        shutdown: async () => {
-            // add any cleanup code here including database/redis disconnecting and background job shutdown
-        },
-    };
-};
+  
 
 type Store = {
     logger: pino.Logger;
