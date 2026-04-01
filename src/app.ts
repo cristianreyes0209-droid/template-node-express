@@ -812,13 +812,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
 } else if (
   parsedItems.length > 0 &&
-  (
-    currentOrder?.step === "armando_pedido" ||
-    currentOrder?.step === "esperando_sucursal" ||
-    currentOrder?.step === "esperando_menu_principal" ||
-    currentOrder?.step === "esperando_menu_nuevo" ||
-    !currentOrder
-  )
+  currentOrder?.step === "armando_pedido"
 ) {
   const order = createOrUpdateOrder(phone, parsedItems);
   updateOrderStep(phone, "armando_pedido");
@@ -850,8 +844,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     "Perfecto 👌\n\n" +
     "Estoy registrando:\n\n" +
     resumen +
-    "\n\n¿Deseas agregar otra crepe, bebida o topping?";
-
+    "\n\n¿Deseas agregar otra crepe, bebida, topping o hacer una observación?";
 } else if (currentOrder?.step === "esperando_nombre") {
   if (
     lower === "si" ||
@@ -1168,6 +1161,10 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   const observacionGeneralTexto = order.observacionesGenerales
     ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales
     : "";
+    "🧾 Tu pedido:\n" +
+resumen +
+observacionGeneralTexto +
+"\n\n"
 
   replyMessage =
     "Perfecto 👌\n\n" +
