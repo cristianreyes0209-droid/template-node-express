@@ -1440,7 +1440,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "A. Confirmar pedido ✅\n" +
       "B. Eliminar Productos\n" +
       "C. Agregar más productos ➕";
-      } 
+      
   } else if (lower === "b" || lower.includes("cambiar")) {
     updateOrderStep(phone, "esperando_direccion");
     currentOrder = getOrder(phone)!;
