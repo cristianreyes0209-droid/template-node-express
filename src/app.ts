@@ -1151,7 +1151,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     console.log(JSON.stringify(orderJSON, null, 2));
 
     replyMessage = resumenCliente;
-}
+
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
     updateOrderStep(phone, "esperando_comprobante");
