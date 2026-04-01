@@ -464,7 +464,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
             "\nTotal: $" + totals.total +
             "\n\n¿Qué deseas hacer?\n\n" +
             "A. Confirmar pedido ✅\n" +
-            "B. Corregir pedido ✏️\n" +
+            "B. Eliminar productos ➖\n" +
             "C. Agregar más productos ➕";
         }
 
@@ -965,7 +965,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     replyMessage =
       "Respóndeme por favor:\n\n" +
       "A. Confirmar pedido ✅\n" +
-      "B. Corregir pedido ✏️\n" +
+      "B. Eliminar Productos ✏️\n" +
       "C. Agregar más productos ➕";
   }
 
@@ -1253,7 +1253,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
           "\nTotal: $" + totals.total +
           "\n\n¿Qué deseas hacer?\n\n" +
           "A. Confirmar pedido ✅\n" +
-          "B. Corregir pedido ✏️\n" +
+          "B. Eliminar Productos ✏️\n" +
           "C. Agregar más productos ➕";
       }
     } else {
@@ -1315,7 +1315,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "\n📍 Dirección: " + order.direccion +
       "\n\n¿Qué deseas hacer?\n\n" +
       "A. Confirmar pedido ✅\n" +
-      "B. Corregir pedido ✏️\n" +
+      "B. Eliminar Productos✏️\n" +
       "C. Agregar más productos ➕";
   } else if (lower === "b" || lower.includes("cambiar")) {
     updateOrderStep(phone, "esperando_direccion");
