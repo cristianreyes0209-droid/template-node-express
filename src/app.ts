@@ -251,7 +251,7 @@ async function handleOperationalRouting(order: any, totals: any) {
 
 // 👇 DESPUÉS sigue tu endpoint
 app.post("/whatsapp", async (req: Request, res: Response) => { 
-app.post('/whatsapp', async (req, res) => {
+
   const message = req.body;
 
   console.log("============== PAYLOAD ==============");
