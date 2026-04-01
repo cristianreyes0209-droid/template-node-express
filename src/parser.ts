@@ -138,6 +138,43 @@ function normalizeText(text: string) {
     .replace(/\buna de camarones\b/g, "camarones")
     .replace(/\bde camarones\b/g, "camarones");
 }
+function similarity(a: string, b: string) {
+  const longer = a.length > b.length ? a : b;
+  const shorter = a.length > b.length ? b : a;
+
+  const longerLength = longer.length;
+  if (longerLength === 0) return 1;
+
+  return (longerLength - editDistance(longer, shorter)) / longerLength;
+}
+
+function editDistance(a: string, b: string) {
+  const matrix: number[][] = [];
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+}
 function escapeRegex(text: string) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -222,17 +259,22 @@ function findBestProductMatches(fragment: string, products: any[]) {
 
   const matches: { product: any; alias: string }[] = [];
 
-  for (const entry of aliasEntries) {
-    const cleanAlias = escapeRegex(entry.alias);
-    const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
+for (const entry of aliasEntries) {
+  const cleanAlias = escapeRegex(entry.alias);
+  const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
 
-    if (aliasRegex.test(text)) {
-      matches.push({
-        product: entry.product,
-        alias: entry.alias
-      });
-    }
+  if (
+    aliasRegex.test(text) ||
+    text.includes(entry.alias) ||
+    entry.alias.includes(text) ||
+    similarity(text, entry.alias) > 0.78
+  ) {
+    matches.push({
+      product: entry.product,
+      alias: entry.alias
+    });
   }
+}
 
   if (matches.length === 0) {
     return [];
