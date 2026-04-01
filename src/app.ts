@@ -810,7 +810,16 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "B. Av. Circunvalar";
   }
 
-} else if (parsedItems.length > 0) {
+} else if (
+  parsedItems.length > 0 &&
+  (
+    currentOrder?.step === "armando_pedido" ||
+    currentOrder?.step === "esperando_sucursal" ||
+    currentOrder?.step === "esperando_menu_principal" ||
+    currentOrder?.step === "esperando_menu_nuevo" ||
+    !currentOrder
+  )
+) {
   const order = createOrUpdateOrder(phone, parsedItems);
   updateOrderStep(phone, "armando_pedido");
   currentOrder = getOrder(phone)!;
