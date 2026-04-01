@@ -978,24 +978,25 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "• Daviplata\n" +
       "• Bancolombia";
 
-} else if (
-  lower === "b" ||
-  lower.includes("retirar") ||
-  lower.includes("eliminar") ||
-  lower.includes("quitar")
-) {
-  updateOrderStep(phone, "retirando_productos");
-  currentOrder = getOrder(phone)!;
+  } else if (
+    lower === "b" ||
+    lower.includes("retirar") ||
+    lower.includes("eliminar") ||
+    lower.includes("quitar")
+  ) {
+    updateOrderStep(phone, "retirando_productos");
+    currentOrder = getOrder(phone)!;
 
-  const resumen = currentOrder.items
-    .map((item: any, index: number) => `* ${index + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`)
-    .join("\n");
+    const resumen = currentOrder.items
+      .map((item: any, index: number) => `* ${index + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`)
+      .join("\n");
 
-  replyMessage =
-    "Perfecto 👍\n\n" +
-    "¿Qué producto deseas retirar?\n\n" +
-    resumen +
-    "\n\nRespóndeme con el número del producto.";
+    replyMessage =
+      "Perfecto 👍\n\n" +
+      "¿Qué producto deseas retirar?\n\n" +
+      resumen +
+      "\n\nRespóndeme con el número del producto.";
+
   } else if (
     lower === "c" ||
     lower.includes("agregar") ||
@@ -1014,10 +1015,11 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     replyMessage =
       "Respóndeme por favor:\n\n" +
       "A. Confirmar pedido ✅\n" +
-      "B. Eliminar Productos \n" +
+      "B. Eliminar productos ➖\n" +
       "C. Agregar más productos ➕";
   }
-    } else if (currentOrder?.step === "retirando_productos") {
+
+} else if (currentOrder?.step === "retirando_productos") {
   const order = getOrder(phone)!;
   const index = Number(lower) - 1;
 
