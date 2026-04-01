@@ -1496,7 +1496,8 @@ return {
   requestListener: app,
   shutdown: async () => {
     // add any cleanup code here including database/redis disconnecting and background job shutdown
-  },
+  }, 
+};
 };
 type Store = {
     logger: pino.Logger;
