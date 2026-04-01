@@ -1292,46 +1292,8 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     replyMessage =
       "Tu pedido fue confirmado ✅\n\n" +
       "Si deseas, puedes preguntarme cómo va tu pedido.";
-  }
-if (
-  currentOrder?.step === "armando_pedido" &&
-  (
-    lower === "no" ||
-    lower === "nada" ||
-    lower === "listo" ||
-    lower === "ya" ||
-    lower === "eso es todo"
-  )
-) {
-  if (!currentOrder.items || currentOrder.items.length === 0) {
-    replyMessage =
-      "Aún no veo productos en tu pedido 😊\n\n" +
-      "Escríbeme qué deseas pedir.";
-  } else {
-    updateOrderStep(phone, "esperando_confirmacion");
-    currentOrder = getOrder(phone)!;
+ 
 
-    const order = getOrder(phone)!;
-    const totals = calculateTotal(order);
-
-    const resumen = order.items
-      .map((item: any) => `* ${item.cantidad} ${item.producto}`)
-      .join("\n");
-
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Tu pedido es:\n" +
-      resumen +
-      "\n\nSubtotal: $" + totals.subtotal +
-      "\nTotal: $" + totals.total +
-      "\n\n¿Qué deseas hacer?\n\n" +
-      "A. Confirmar pedido ✅\n" +
-      "B. Retirar productos ➖\n" +
-      "C. Agregar más productos ➕";
-  }
-
-  await sendWhatsAppMessage(phone, replyMessage);
-  return res.sendStatus(200);
 }
 } else if (currentOrder?.step === "armando_pedido") {
   if (
