@@ -1194,7 +1194,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "• Daviplata\n" +
       "• Bancolombia";
   
-}
+
 } else if (currentOrder?.step === "esperando_comprobante") {
   if (lower.includes("listo") || lower.includes("ya")) {
     updateOrderStep(phone, "confirmado");
