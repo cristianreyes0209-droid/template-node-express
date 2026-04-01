@@ -26,6 +26,7 @@ export type OrderStep =
   | "esperando_direccion"
   | "esperando_confirmacion_direccion"
   | "esperando_confirmacion"
+  | "retirando_productos"
   | "esperando_pago"
   | "esperando_comprobante"
   | "esperando_aclaracion_producto"
