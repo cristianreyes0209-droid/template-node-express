@@ -192,3 +192,9 @@ export function buildOrderJSON(order: CustomerOrder) {
 export function clearOrder(phone: string) {
   delete orders[phone];
 }
+export function updateOrderGeneralNotes(phone: string, notes: string) {
+  const order = orders[phone];
+  if (!order) return;
+
+  order.observacionesGenerales = notes;
+}
