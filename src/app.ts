@@ -477,7 +477,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         "Perfecto 👌\n\n" +
         "Estoy registrando:\n\n" +
         resumen +
-        "\n\n¿Deseas agregar otra crepe, bebida o topping?";
+        "Puedes escribir otra crepe, bebida, topping o una observación."
     } else {
       replyMessage = "No pude encontrar esa opción. Inténtalo de nuevo 😊";
     }
@@ -1058,7 +1058,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     replyMessage =
       "Perfecto 👌\n\n" +
       "¿Qué deseas agregar?\n\n" +
-      "Puedes escribir otra crepe, bebida o topping.";
+      "Puedes escribir otra crepe, bebida, topping o hacer una observación."
 
   } else {
     replyMessage =
@@ -1135,6 +1135,54 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "Respóndeme con el número:\n\n" +
       resumen;
   }
+    } else if (currentOrder?.step === "esperando_observacion_general") {
+  updateOrderGeneralNotes(phone, text);
+  updateOrderStep(phone, "esperando_confirmacion");
+  currentOrder = getOrder(phone)!;
+
+  const order = getOrder(phone)!;
+  const totals = calculateTotal(order);
+
+  const resumen = order.items
+    .map((item: any) => {
+      const observacionesTexto = item.observaciones
+        ? ` (${formatObservaciones(item.observaciones)})`
+        : "";
+
+      const extrasTexto =
+        item.extras && item.extras.length > 0
+          ? " +" +
+            item.extras
+              .map((extra: any) =>
+                extra.cantidad > 1
+                  ? `${extra.cantidad} ${extra.nombre}`
+                  : extra.nombre
+              )
+              .join(", +")
+          : "";
+
+      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+    })
+    .join("\n");
+
+  const observacionGeneralTexto = order.observacionesGenerales
+    ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales
+    : "";
+
+  replyMessage =
+    "Perfecto 👌\n\n" +
+    "Tu pedido es:\n" +
+    resumen +
+    observacionGeneralTexto +
+    "\n\nSubtotal: $" + totals.subtotal +
+    "\nDomicilio: $" + totals.domicilio +
+    "\nTotal: $" + totals.total +
+    "\n📍 Dirección: " + (order.direccion || "No aplica") +
+    "\n\n¿Qué deseas hacer?\n\n" +
+    "A. Confirmar pedido ✅\n" +
+    "B. Eliminar productos ➖\n" +
+    "C. Agregar más productos ➕\n" +
+    "D. Agregar observación 📝";
 
 } else if (currentOrder?.step === "esperando_pago") {
   if (lower.includes("efectivo")) {
@@ -1356,7 +1404,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   ) {
     replyMessage =
       "Perfecto 👌 ¿Qué más deseas agregar?\n\n" +
-      "Puedes decirme otra crepe, bebida o topping.";
+      "Puedes escribir otra crepe, bebida, topping o una observación."
   } else if (
     lower.includes("no") ||
     lower.includes("nada") ||
@@ -1441,7 +1489,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   } else {
     replyMessage =
       "¿Deseas agregar algo más? 😊\n\n" +
-      "Puedes escribir otra crepe, bebida o topping, o responder SI o NO.";
+      "Puedes escribir otra crepe, bebida, topping, hacer observacion, o responder SI o NO.";
   }
 
 } else if (currentOrder?.step === "esperando_confirmacion_direccion") {
