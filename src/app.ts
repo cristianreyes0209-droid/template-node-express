@@ -225,6 +225,48 @@ app.post('/whatsapp', async (req, res) => {
   const phone = messageData.from;   
   const customer = await getCustomerByPhone(phone);
   const text = messageData.text?.body || "mensaje";
+    if (
+  currentOrder?.step === "confirmado" &&
+  (
+    lower.includes("hola") ||
+    lower.includes("buenas") ||
+    lower.includes("buenos dias") ||
+    lower.includes("buen día") ||
+    lower.includes("buen dia") ||
+    lower.includes("buenas tardes") ||
+    lower.includes("buenas noches") ||
+    lower.includes("quiero pedir") ||
+    lower.includes("nuevo pedido")
+  )
+) {
+  createOrUpdateOrder(phone, []);
+  updateOrderStep(phone, "esperando_menu_principal");
+  currentOrder = getOrder(phone)!;
+
+  if (customer) {
+    const nombreCliente = customer.name ? ` ${customer.name}` : "";
+
+    replyMessage =
+      `Hola${nombreCliente} 👋\n\n` +
+      `Qué bueno tenerte de vuelta en LAS CREPES ✨\n\n` +
+      `¿Deseas pedir lo mismo de siempre o quieres algo diferente? 😋\n\n` +
+      `A. Lo mismo\n` +
+      `B. Quiero pedir algo nuevo`;
+  } else {
+    replyMessage =
+      "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
+      "Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
+      "A. Recoger en tienda 🏪\n" +
+      "B. Domicilio 🚚\n" +
+      "C. Agendar pedido 📅\n" +
+      "D. Hacer reserva 🍽️\n" +
+      "E. PQR 📝\n" +
+      "F. Otros 💬";
+  }
+
+  await sendWhatsAppMessage(phone, replyMessage);
+  return res.sendStatus(200);
+}
 
   if (!phone) {
     console.log("Evento sin telefono");
@@ -768,15 +810,17 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         .join("\n");
 
       replyMessage =
-        "Perfecto 👌\n\n" +
-        "Tu pedido es:\n" +
-        resumen +
-        "\n\nSubtotal: $" + totals.subtotal +
-        "\nTotal: $" + totals.total +
-      "\n\n¿Qué deseas hacer?\n\n" +
-      "A. Confirmar pedido ✅\n" +
-      "B. Corregir pedido ✏️\n" +
-      "C. Agregar más productos ➕" ;
+  "Perfecto 👌\n\n" +
+  "Tu pedido es:\n" +
+  resumen +
+  "\n\nSubtotal: $" + totals.subtotal +
+  "\nDomicilio: $" + totals.domicilio +
+  "\nTotal: $" + totals.total +
+  "\n📍 Dirección: " + (order.direccion || "No aplica") +
+  "\n\n¿Qué deseas hacer?\n\n" +
+  "A. Confirmar pedido ✅\n" +
+  "B. Retirar productos ➖\n" +
+  "C. Agregar más productos ➕";
     }
   }
 
@@ -814,16 +858,18 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       })
       .join("\n");
 
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Tu pedido es:\n" +
-      resumen +
-      "\n\nSubtotal: $" + totals.subtotal +
-      "\nTotal: $" + totals.total +
-      "\n\n¿Qué deseas hacer?\n\n" +
-     "A. Confirmar pedido ✅\n" +
-     "B. Corregir pedido ✏️\n" +
-     "C. Agregar más productos ➕";
+ replyMessage =
+  "Perfecto 👌\n\n" +
+  "Tu pedido es:\n" +
+  resumen +
+  "\n\nSubtotal: $" + totals.subtotal +
+  "\nDomicilio: $" + totals.domicilio +
+  "\nTotal: $" + totals.total +
+  "\n📍 Dirección: " + (order.direccion || "No aplica") +
+  "\n\n¿Qué deseas hacer?\n\n" +
+  "A. Confirmar pedido ✅\n" +
+  "B. Retirar productos ➖\n" +
+  "C. Agregar más productos ➕";
   }
 
 } else if (currentOrder?.step === "esperando_direccion") {
@@ -858,18 +904,18 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   updateOrderStep(phone, "esperando_confirmacion");
   currentOrder = getOrder(phone)!;
 
-  replyMessage =
-    "Perfecto 👌\n\n" +
-    "Tu pedido es:\n" +
-    resumen +
-    "\n\nSubtotal: $" + totals.subtotal +
-    "\nDomicilio: $" + totals.domicilio +
-    "\nTotal: $" + totals.total +
-    "\n📍 Dirección: " + order.direccion +
-    "\n\n¿Qué deseas hacer?\n\n" +
-    "A. Confirmar pedido ✅\n" +
-    "B. Corregir pedido ✏️\n" +
-    "C. Agregar más productos ➕";
+ replyMessage =
+  "Perfecto 👌\n\n" +
+  "Tu pedido es:\n" +
+  resumen +
+  "\n\nSubtotal: $" + totals.subtotal +
+  "\nDomicilio: $" + totals.domicilio +
+  "\nTotal: $" + totals.total +
+  "\n📍 Dirección: " + (order.direccion || "No aplica") +
+  "\n\n¿Qué deseas hacer?\n\n" +
+  "A. Confirmar pedido ✅\n" +
+  "B. Retirar productos ➖\n" +
+  "C. Agregar más productos ➕";
 
 } else if (currentOrder?.step === "esperando_confirmacion") {
   if (
