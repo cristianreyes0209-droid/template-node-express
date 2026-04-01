@@ -1151,7 +1151,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     console.log(JSON.stringify(orderJSON, null, 2));
 
     replyMessage = resumenCliente;
-
+}
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
     updateOrderStep(phone, "esperando_comprobante");
@@ -1194,13 +1194,14 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "• Daviplata\n" +
       "• Bancolombia";
   
-
+}
 } else if (currentOrder?.step === "esperando_comprobante") {
   if (lower.includes("listo") || lower.includes("ya")) {
     updateOrderStep(phone, "confirmado");
     currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
+    const totals = calculateTotal(order);
 
     await upsertCustomer({
       phone: phone,
@@ -1210,8 +1211,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       last_order_at: new Date().toISOString()
     });
 
+    await handleOperationalRouting(order, totals);
+
     const orderJSON = buildOrderJSON(order);
-    const totals = calculateTotal(order);
 
     const resumen = order.items
       .map((item: any) => {
@@ -1234,6 +1236,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
       })
       .join("\n");
+
     const tiempoTexto =
       order.tipoEntrega === "domicilio"
         ? "50 min 🚚"
