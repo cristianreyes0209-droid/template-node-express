@@ -558,7 +558,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
             return `* ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
           }).join("\n");
-
+          const observacionGeneralTexto = getObservacionGeneralTexto(order);
           replyMessage =
             "🔥 Perfecto, estoy repitiendo tu último pedido\n\n" +
            "Tu pedido es:\n" +
