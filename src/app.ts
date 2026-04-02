@@ -294,7 +294,11 @@ const lower = text.toLowerCase().trim();
 if (
   currentOrder?.step === "armando_pedido" &&
   parsedItems.length === 0 &&
-  !["si", "sí", "no", "ok", "ya", "listo", "vale", "dale", "de una"].includes(lower)
+  !["si", "sí", "no", "ok", "ya", "listo", "vale", "dale", "de una"].includes(lower) &&
+  !lower.includes("otro") &&
+  !lower.includes("otra") &&
+  !lower.includes("crepe") &&
+  !lower.includes("quiero")
 ) {
   updateOrderGeneralNotes(phone, text);
   updateOrderStep(phone, "esperando_confirmacion");
