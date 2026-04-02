@@ -1066,7 +1066,9 @@ replyMessage =
     currentOrder = getOrder(phone)!;
 
     const resumen = currentOrder.items
-      .map((item: any, index: number) => `* ${index + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`)
+      .map((item: any, index: number) =>
+        `* ${index + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`
+      )
       .join("\n");
 
     replyMessage =
@@ -1087,27 +1089,28 @@ replyMessage =
     replyMessage =
       "Perfecto 👌\n\n" +
       "¿Qué deseas agregar?\n\n" +
-      "Puedes escribir otra crepe, bebida, topping o hacer una observación."
+      "Puedes escribir otra crepe, bebida, topping o hacer una observación.";
+
+  } else if (
+    lower === "d" ||
+    lower.includes("observacion") ||
+    lower.includes("observación")
+  ) {
+    updateOrderStep(phone, "esperando_observacion_general");
+    currentOrder = getOrder(phone)!;
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "Escríbeme la observación para tu pedido 😊";
 
   } else {
     replyMessage =
       "Respóndeme por favor:\n\n" +
       "A. Confirmar pedido ✅\n" +
       "B. Eliminar productos ➖\n" +
-      "C. Agregar más productos ➕";
-      } else if (
-  lower === "d" ||
-  lower.includes("observacion") ||
-  lower.includes("observación")
-) {
-  updateOrderStep(phone, "esperando_observacion_general");
-  currentOrder = getOrder(phone)!;
-
-  replyMessage =
-    "Perfecto 👌\n\n" +
-    "Escríbeme la observación para tu pedido 😊";
+      "C. Agregar más productos ➕\n" +
+      "D. Agregar observación 📝";
   }
-
 } else if (currentOrder?.step === "retirando_productos") {
   const order = getOrder(phone)!;
   const index = Number(lower) - 1;
