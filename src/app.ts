@@ -1095,6 +1095,17 @@ replyMessage =
       "A. Confirmar pedido ✅\n" +
       "B. Eliminar productos ➖\n" +
       "C. Agregar más productos ➕";
+      } else if (
+  lower === "d" ||
+  lower.includes("observacion") ||
+  lower.includes("observación")
+) {
+  updateOrderStep(phone, "esperando_observacion_general");
+  currentOrder = getOrder(phone)!;
+
+  replyMessage =
+    "Perfecto 👌\n\n" +
+    "Escríbeme la observación para tu pedido 😊";
   }
 
 } else if (currentOrder?.step === "retirando_productos") {
