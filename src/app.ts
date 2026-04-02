@@ -1373,8 +1373,7 @@ replyMessage =
       "• Nequi\n" +
       "• Daviplata\n" +
       "• Bancolombia";
-  }
-
+  
 }
 } else if (currentOrder?.step === "esperando_comprobante") {
   if (lower.includes("listo") || lower.includes("ya")) {
