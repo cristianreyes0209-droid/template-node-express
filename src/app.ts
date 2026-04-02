@@ -1177,7 +1177,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     "B. Eliminar productos ➖\n" +
     "C. Agregar más productos ➕\n" +
     "D. Agregar observación 📝";
-      }
+      
 } else if (currentOrder?.step === "esperando_pago") {
   if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
