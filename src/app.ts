@@ -946,7 +946,7 @@ replyMessage =
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
-      const observacionGeneralTexto = order.observacionesGenerales?.trim()
+     
   
 
     const resumen = order.items
@@ -993,7 +993,7 @@ replyMessage =
   const order = getOrder(phone)!;
   
   const totals = calculateTotal(order);
-    const observacionGeneralTexto = order.observacionesGenerales?.trim()
+ 
  
 
   const resumen = order.items
@@ -1017,10 +1017,10 @@ replyMessage =
       return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
     })
     .join("\n");
-
+ const observacionGeneralTexto = getObservacionGeneralTexto(order);
   updateOrderStep(phone, "esperando_confirmacion");
   currentOrder = getOrder(phone)!;
- const observacionGeneralTexto = getObservacionGeneralTexto(order);
+
  replyMessage =
   "Perfecto 👌\n\n" +
  "Tu pedido es:\n" +
@@ -1133,10 +1133,10 @@ replyMessage =
           return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
         })
         .join("\n");
-
+ const observacionGeneralTexto = getObservacionGeneralTexto(order);
       updateOrderStep(phone, "esperando_confirmacion");
       currentOrder = getOrder(phone)!;
- const observacionGeneralTexto = getObservacionGeneralTexto(order);
+ 
       replyMessage =
         "Perfecto 👌\n\n" +
         "Tu pedido actualizado es:\n" +
