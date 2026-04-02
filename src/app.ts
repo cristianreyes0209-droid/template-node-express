@@ -255,6 +255,9 @@ async function handleOperationalRouting(order: any, totals: any) {
 
 // 👇 DESPUÉS sigue tu endpoint
 app.post("/whatsapp", async (req: Request, res: Response) => { 
+    if (!req.body.entry?.[0]?.changes?.[0]?.value?.messages) {
+  return res.sendStatus(200);
+}
 
   const message = req.body;
 
