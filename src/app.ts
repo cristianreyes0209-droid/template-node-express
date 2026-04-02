@@ -296,58 +296,15 @@ const lower = text.toLowerCase().trim();
 
 if (
   currentOrder?.step === "armando_pedido" &&
-  parsedItems.length === 0 &&
-  !["si", "sí", "no", "ok", "ya", "listo", "vale", "dale", "de una"].includes(lower) &&
-  !lower.includes("otro") &&
-  !lower.includes("otra") &&
-  !lower.includes("crepe") &&
-  !lower.includes("quiero")
+  parsedItems.length === 0
 ) {
-  updateOrderGeneralNotes(phone, text);
-  updateOrderStep(phone, "esperando_confirmacion");
-  currentOrder = getOrder(phone)!;
-
-  const order = getOrder(phone)!;
-  const totals = calculateTotal(order);
-
-  const resumen = order.items
-    .map((item: any) => {
-      const observacionesTexto = item.observaciones
-        ? ` (${formatObservaciones(item.observaciones)})`
-        : "";
-
-      const extrasTexto =
-        item.extras && item.extras.length > 0
-          ? " +" +
-            item.extras
-              .map((extra: any) =>
-                extra.cantidad > 1
-                  ? `${extra.cantidad} ${extra.nombre}`
-                  : extra.nombre
-              )
-              .join(", +")
-          : "";
-
-      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-    })
-    .join("\n");
-
-  const observacionGeneralTexto = getObservacionGeneralTexto(order);
-
   replyMessage =
-    "Perfecto 👌\n\n" +
-    "Tu pedido es:\n" +
-    resumen +
-    observacionGeneralTexto +
-    "\n\nSubtotal: $" + totals.subtotal +
-    "\nDomicilio: $" + totals.domicilio +
-    "\nTotal: $" + totals.total +
-    "\n📍 Dirección: " + (order.direccion || "No aplica") +
-    "\n\n¿Qué deseas hacer?\n\n" +
-    "A. Confirmar pedido ✅\n" +
-    "B. Eliminar productos ➖\n" +
-    "C. Agregar más productos ➕\n" +
-    "D. Agregar observación 📝";
+    "No logré entender bien tu pedido 😅\n\n" +
+    "Puedes escribirlo así:\n" +
+    "• 1 Hawaiana\n" +
+    "• 2 Ranchera\n" +
+    "• 1 Especial\n\n" +
+    "O dime si quieres ayuda 😊";
 
   await sendWhatsAppMessage(phone, replyMessage);
   return res.sendStatus(200);
