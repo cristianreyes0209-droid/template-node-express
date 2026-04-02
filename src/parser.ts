@@ -138,6 +138,39 @@ function normalizeText(text: string) {
     .replace(/\buna de camarones\b/g, "camarones")
     .replace(/\bde camarones\b/g, "camarones");
 }
+function splitOrderFragments(text: string): string[] {
+  return normalizeText(text)
+    .replace(/\bpor favor\b/g, " ")
+    .replace(/\bpara pedir\b/g, " ")
+    .replace(/\bseria\b/g, " ")
+    .replace(/\bsería\b/g, " ")
+    .replace(/\bquiero\b/g, " ")
+    .replace(/\bme das\b/g, " ")
+    .replace(/\bme regalas\b/g, " ")
+    .replace(/\be\b/g, ",")
+    .replace(/\by\b/g, ",")
+    .split(",")
+    .map(part => part.trim())
+    .filter(Boolean);
+}
+function extractQuantity(fragment: string): { quantity: number; text: string } {
+  const match = fragment.match(/^(\d+|una|uno|un)\s+(.*)$/i);
+
+  if (!match) {
+    return { quantity: 1, text: fragment.trim() };
+  }
+
+  const rawQty = match[1].toLowerCase();
+  const quantity =
+    rawQty === "un" || rawQty === "una" || rawQty === "uno"
+      ? 1
+      : Number(rawQty);
+
+  return {
+    quantity: Number.isNaN(quantity) ? 1 : quantity,
+    text: match[2].trim()
+  };
+}
 function similarity(a: string, b: string) {
   const longer = a.length > b.length ? a : b;
   const shorter = a.length > b.length ? b : a;
