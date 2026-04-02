@@ -296,15 +296,30 @@ const lower = text.toLowerCase().trim();
 
 if (
   currentOrder?.step === "armando_pedido" &&
-  parsedItems.length === 0
+  parsedItems.length === 0 &&
+  !parseResult.ambiguousChoice
 ) {
-  replyMessage =
-    "No logré entender bien tu pedido 😅\n\n" +
-    "Puedes escribirlo así:\n" +
-    "• 1 Hawaiana\n" +
-    "• 2 Ranchera\n" +
-    "• 1 Especial\n\n" +
-    "O dime si quieres ayuda 😊";
+  if (
+    lower.includes("ayuda") ||
+    lower.includes("como pedir") ||
+    lower.includes("cómo pedir")
+  ) {
+    replyMessage =
+      "Claro 😊\n\n" +
+      "Puedes escribir tu pedido así:\n" +
+      "• 1 Hawaiana\n" +
+      "• 1 París sin queso\n" +
+      "• 2 Ranchera\n\n" +
+      "Por ahora te recomiendo agregar un producto por mensaje para que salga perfecto.";
+  } else {
+    replyMessage =
+      "No logré entender bien tu pedido 😅\n\n" +
+      "Puedes escribirlo así:\n" +
+      "• 1 Hawaiana\n" +
+      "• 2 Ranchera\n" +
+      "• 1 Especial\n\n" +
+      "O escribe ayuda 😊";
+  }
 
   await sendWhatsAppMessage(phone, replyMessage);
   return res.sendStatus(200);
