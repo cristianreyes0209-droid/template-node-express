@@ -1248,6 +1248,22 @@ replyMessage =
       "• Nequi\n" +
       "• Daviplata\n" +
       "• Bancolombia";
+   } else if (
+    lower.includes("datafono") ||
+    lower.includes("datáfono") ||
+    lower.includes("tarjeta") ||
+    lower.includes("credito") ||
+    lower.includes("crédito") ||
+    lower.includes("debito") ||
+    lower.includes("débito")
+  ) {
+    replyMessage =
+      "Por ahora no tenemos pago con datáfono 😊\n\n" +
+      "Puedes pagar con:\n" +
+      "• Efectivo\n" +
+      "• Nequi\n" +
+      "• Daviplata\n" +
+      "• Bancolombia";   
 
   } else if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
