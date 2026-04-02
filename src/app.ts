@@ -1229,14 +1229,34 @@ replyMessage =
     "D. Agregar observación 📝";
       
 } else if (currentOrder?.step === "esperando_pago") {
-  if (lower.includes("efectivo")) {
+
+  if (
+    lower.includes("cuanto es") ||
+    lower.includes("cuánto es") ||
+    lower.includes("cuanto debo") ||
+    lower.includes("cuánto debo") ||
+    lower.includes("total") ||
+    lower.includes("precio")
+  ) {
+    const order = getOrder(phone)!;
+    const totals = calculateTotal(order);
+
+    replyMessage =
+      `El total de tu pedido es: $${totals.total} 😊\n\n` +
+      "¿Cómo deseas pagar?\n" +
+      "• Efectivo\n" +
+      "• Nequi\n" +
+      "• Daviplata\n" +
+      "• Bancolombia";
+
+  } else if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
     updateOrderStep(phone, "confirmado");
     currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
-   
+
     await upsertCustomer({
       phone: phone,
       name: order.nombre,
@@ -1252,7 +1272,7 @@ replyMessage =
     const resumen = order.items
       .map((item: any) => {
         const observacionesTexto = item.observaciones
-          ? ` (${item.observaciones})`
+          ? ` (${formatObservaciones(item.observaciones)})`
           : "";
 
         const extrasTexto =
@@ -1270,7 +1290,8 @@ replyMessage =
         return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
       })
       .join("\n");
-      const observacionGeneralTexto = getObservacionGeneralTexto(order);
+
+    const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
     const tiempoTexto =
       order.tipoEntrega === "domicilio"
@@ -1282,7 +1303,9 @@ replyMessage =
       "👤 Nombre: " + order.nombre + "\n" +
       "📞 Tel: " + order.telefono + "\n\n" +
       "🧾 Tu pedido:\n" +
-      resumen + "\n\n" +
+      resumen +
+      observacionGeneralTexto +
+      "\n\n" +
       "💰 Subtotal: $" + totals.subtotal + "\n" +
       "🚚 Domicilio: $" + totals.domicilio + "\n" +
       "💵 Total: $" + totals.total + "\n\n" +
@@ -1295,6 +1318,19 @@ replyMessage =
     console.log(JSON.stringify(orderJSON, null, 2));
 
     replyMessage = resumenCliente;
+
+  } else if (
+    lower.includes("datafono") ||
+    lower.includes("datáfono") ||
+    lower.includes("tarjeta")
+  ) {
+    replyMessage =
+      "Por ahora no tenemos pago con datáfono 😊\n\n" +
+      "Puedes pagar con:\n" +
+      "• Efectivo\n" +
+      "• Nequi\n" +
+      "• Daviplata\n" +
+      "• Bancolombia";
 
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
@@ -1337,8 +1373,9 @@ replyMessage =
       "• Nequi\n" +
       "• Daviplata\n" +
       "• Bancolombia";
-   }
+  }
 
+}
 } else if (currentOrder?.step === "esperando_comprobante") {
   if (lower.includes("listo") || lower.includes("ya")) {
     updateOrderStep(phone, "confirmado");
