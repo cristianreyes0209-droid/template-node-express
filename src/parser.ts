@@ -140,6 +140,7 @@ function normalizeText(text: string) {
 }
 function splitOrderFragments(text: string): string[] {
   return normalizeText(text)
+    .replace(/[.]/g, ",")
     .replace(/\bpor favor\b/g, " ")
     .replace(/\bpara pedir\b/g, " ")
     .replace(/\bseria\b/g, " ")
@@ -147,8 +148,8 @@ function splitOrderFragments(text: string): string[] {
     .replace(/\bquiero\b/g, " ")
     .replace(/\bme das\b/g, " ")
     .replace(/\bme regalas\b/g, " ")
-    .replace(/\be\b/g, ",")
-    .replace(/\by\b/g, ",")
+    .replace(/\s+y\s+/g, ",")
+    .replace(/\s+e\s+/g, ",")
     .split(",")
     .map(part => part.trim())
     .filter(Boolean);
@@ -489,29 +490,34 @@ export function parseOrder(text: string): ParseResult {
   }
 
   // parsear cada fragmento
-  for (const fragment of fragments) {
-    const cantidad = extractCantidad(fragment);
-    const product = findProductInFragment(fragment, mainProducts);
+  // parsear cada fragmento
+for (const fragment of fragments) {
+  const fragmentLimpio = fragment
+    .replace(/^(\d+|una|uno|un)\s+/i, "")
+    .replace(/\bcrepe\b/g, "")
+    .trim();
 
-    if (!product) {
-      continue;
-    }
+  const cantidad = extractCantidad(fragment);
+  const product = findProductInFragment(fragmentLimpio, mainProducts);
 
-    const variant = findVariantInFragment(fragment, product);
-    const observaciones = extractObservaciones(fragment);
-    const extras = extractExtrasFromFragment(fragment, extraProducts);
-
-    items.push({
-      productoId: product.id,
-      producto: product.nombre,
-      cantidad,
-      precio: variant?.precio || product.precio,
-      variante: variant?.nombre,
-      observaciones,
-      extras
-    });
+  if (!product) {
+    continue;
   }
 
+  const variant = findVariantInFragment(fragment, product);
+  const observaciones = extractObservaciones(fragment);
+  const extras = extractExtrasFromFragment(fragment, extraProducts);
+
+  items.push({
+    productoId: product.id,
+    producto: product.nombre,
+    cantidad,
+    precio: variant?.precio || product.precio,
+    variante: variant?.nombre,
+    observaciones,
+    extras
+  });
+}
   return {
     items: mergeParsedItems(items)
   };
