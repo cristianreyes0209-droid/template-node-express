@@ -281,50 +281,68 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   console.log("PHONE:", phone);
   console.log("TEXT:", text);
 
-  let replyMessage = "";
-  const parseResult = parseOrder(text);
-  const parsedItems = parseResult.items;
-  const lower = text.toLowerCase().trim();
-    if (
+let replyMessage = "";
+const parseResult = parseOrder(text);
+const parsedItems = parseResult.items;
+const lower = text.toLowerCase().trim();
+
+if (
   currentOrder?.step === "armando_pedido" &&
-  (
-    lower === "no" ||
-    lower === "nada" ||
-    lower === "listo" ||
-    lower === "ya" ||
-    lower === "eso es todo"
-  )
+  parsedItems.length === 0 &&
+  !["si", "no", "ok", "ya", "listo"].includes(lower)
 ) {
-  if (!currentOrder.items || currentOrder.items.length === 0) {
-    replyMessage =
-      "Aún no veo productos en tu pedido 😊\n\n" +
-      "Escríbeme qué deseas pedir.";
-  } else {
-    updateOrderStep(phone, "esperando_confirmacion");
-    currentOrder = getOrder(phone)!;
+  updateOrderGeneralNotes(phone, text);
+  updateOrderStep(phone, "esperando_confirmacion");
+  currentOrder = getOrder(phone)!;
 
-    const order = getOrder(phone)!;
-    const totals = calculateTotal(order);
+  const order = getOrder(phone)!;
+  const totals = calculateTotal(order);
 
-    const resumen = order.items
-      .map((item: any) => `* ${item.cantidad} ${item.producto}`)
-      .join("\n");
+  const resumen = order.items
+    .map((item: any) => {
+      const observacionesTexto = item.observaciones
+        ? ` (${formatObservaciones(item.observaciones)})`
+        : "";
 
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Tu pedido es:\n" +
-      resumen +
-      "\n\nSubtotal: $" + totals.subtotal +
-      "\nTotal: $" + totals.total +
-      "\n\n¿Qué deseas hacer?\n\n" +
-      "A. Confirmar pedido ✅\n" +
-      "B. Retirar productos ➖\n" +
-      "C. Agregar más productos ➕";
-  }
+      const extrasTexto =
+        item.extras && item.extras.length > 0
+          ? " +" +
+            item.extras
+              .map((extra: any) =>
+                extra.cantidad > 1
+                  ? `${extra.cantidad} ${extra.nombre}`
+                  : extra.nombre
+              )
+              .join(", +")
+          : "";
+
+      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+    })
+    .join("\n");
+
+  const observacionGeneralTexto = order.observacionesGenerales
+    ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales
+    : "";
+
+  replyMessage =
+    "Perfecto 👌\n\n" +
+    "Tu pedido es:\n" +
+    resumen +
+    observacionGeneralTexto +
+    "\n\nSubtotal: $" + totals.subtotal +
+    "\nDomicilio: $" + totals.domicilio +
+    "\nTotal: $" + totals.total +
+    "\n📍 Dirección: " + (order.direccion || "No aplica") +
+    "\n\n¿Qué deseas hacer?\n\n" +
+    "A. Confirmar pedido ✅\n" +
+    "B. Eliminar productos ➖\n" +
+    "C. Agregar más productos ➕\n" +
+    "D. Agregar observación 📝";
 
   await sendWhatsAppMessage(phone, replyMessage);
   return res.sendStatus(200);
 }
+
     if (
   currentOrder?.step === "confirmado" &&
   (
