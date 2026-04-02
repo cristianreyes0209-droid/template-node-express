@@ -890,6 +890,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
       const order = getOrder(phone)!;
       const totals = calculateTotal(order);
+        const observacionGeneralTexto = order.observacionesGenerales?.trim()
+  ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales.trim()
+  : "";
 
       const resumen = order.items
         .map((item: any) => {
@@ -940,6 +943,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
+      const observacionGeneralTexto = order.observacionesGenerales?.trim()
+  ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales.trim()
+  : "";
 
     const resumen = order.items
       .map((item: any) => {
@@ -984,6 +990,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   const order = getOrder(phone)!;
   
   const totals = calculateTotal(order);
+    const observacionGeneralTexto = order.observacionesGenerales?.trim()
+  ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales.trim()
+  : "";
 
   const resumen = order.items
     .map((item: any) => {
@@ -1157,6 +1166,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
   const order = getOrder(phone)!;
   const totals = calculateTotal(order);
+    const observacionGeneralTexto = order.observacionesGenerales?.trim()
+  ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales.trim()
+  : "";
 
   const resumen = order.items
     .map((item: any) => {
@@ -1208,6 +1220,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
+      const observacionGeneralTexto = order.observacionesGenerales?.trim()
+  ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales.trim()
+  : "";
 
     await upsertCustomer({
       phone: phone,
@@ -1317,6 +1332,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
+      const observacionGeneralTexto = order.observacionesGenerales?.trim()
+  ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales.trim()
+  : "";
 
     await upsertCustomer({
       phone: phone,
@@ -1461,6 +1479,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
         const order = getOrder(phone)!;
         const totals = calculateTotal(order);
+          const observacionGeneralTexto = order.observacionesGenerales?.trim()
+  ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales.trim()
+  : "";
 
         const resumen = order.items
           .map((item: any) => {
@@ -1522,6 +1543,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
+      const observacionGeneralTexto = order.observacionesGenerales?.trim()
+  ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales.trim()
+  : "";
 
     const resumen = order.items
       .map((item: any) => {
