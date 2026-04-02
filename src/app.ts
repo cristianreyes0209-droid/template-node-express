@@ -181,8 +181,7 @@ export const initApp = async (
             res.end();
         }
     );
-    app.get('/whatsapp', (req, res) => {
-
+app.get('/whatsapp', (req, res) => {
   const VERIFY_TOKEN = "crepes_token";
 
   const mode = req.query['hub.mode'];
@@ -190,16 +189,15 @@ export const initApp = async (
   const challenge = req.query['hub.challenge'];
 
   if (mode && token) {
-
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       console.log("WEBHOOK_VERIFICADO");
-      res.status(200).send(challenge);
+      return res.status(200).send(challenge);
     } else {
-      res.sendStatus(403);
+      return res.sendStatus(403);
     }
-
   }
 
+  return res.status(400).send("Missing hub params");
 });
     function formatObservaciones(obs?: string) {
   if (!obs) return "";
