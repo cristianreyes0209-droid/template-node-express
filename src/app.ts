@@ -1020,7 +1020,7 @@ replyMessage =
 
   updateOrderStep(phone, "esperando_confirmacion");
   currentOrder = getOrder(phone)!;
-const observacionGeneralTexto = getObservacionGeneralTexto(order);
+ const observacionGeneralTexto = getObservacionGeneralTexto(order);
  replyMessage =
   "Perfecto 👌\n\n" +
  "Tu pedido es:\n" +
@@ -1136,7 +1136,7 @@ const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
       updateOrderStep(phone, "esperando_confirmacion");
       currentOrder = getOrder(phone)!;
-
+ const observacionGeneralTexto = getObservacionGeneralTexto(order);
       replyMessage =
         "Perfecto 👌\n\n" +
         "Tu pedido actualizado es:\n" +
@@ -1328,7 +1328,7 @@ const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
-  const observacionGeneralTexto = getObservacionGeneralTexto(order);
+ 
     await upsertCustomer({
       phone: phone,
       name: order.nombre,
@@ -1362,7 +1362,7 @@ const observacionGeneralTexto = getObservacionGeneralTexto(order);
         return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
       })
       .join("\n");
-
+ const observacionGeneralTexto = getObservacionGeneralTexto(order);
     const tiempoTexto =
       order.tipoEntrega === "domicilio"
         ? "50 min 🚚"
@@ -1472,7 +1472,7 @@ const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
         const order = getOrder(phone)!;
         const totals = calculateTotal(order);
-     const observacionGeneralTexto = getObservacionGeneralTexto(order);
+    
 
         const resumen = order.items
           .map((item: any) => {
@@ -1495,7 +1495,7 @@ const observacionGeneralTexto = getObservacionGeneralTexto(order);
             return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
           })
           .join("\n");
-
+ const observacionGeneralTexto = getObservacionGeneralTexto(order);
         replyMessage =
           "Perfecto 👌\n\n" +
          "Tu pedido es:\n" +
@@ -1532,44 +1532,47 @@ const observacionGeneralTexto = getObservacionGeneralTexto(order);
     updateOrderStep(phone, "esperando_confirmacion");
     currentOrder = getOrder(phone)!;
 
-    const order = getOrder(phone)!;
-    const totals = calculateTotal(order);
+ const order = getOrder(phone)!;
+const totals = calculateTotal(order);
 
-    const resumen = order.items
-      .map((item: any) => {
-        const observacionesTexto = item.observaciones
-          ? ` (${formatObservaciones(item.observaciones)})`
-          : "";
+const resumen = order.items
+  .map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
 
-        const extrasTexto =
-          item.extras && item.extras.length > 0
-            ? " +" +
-              item.extras
-                .map((extra: any) =>
-                  extra.cantidad > 1
-                    ? `${extra.cantidad} ${extra.nombre}`
-                    : extra.nombre
-                )
-                .join(", +")
-            : "";
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras
+            .map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            )
+            .join(", +")
+        : "";
 
-        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-      })
-      .join("\n");
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+  })
+  .join("\n");
 
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Tu pedido es:\n" +
-        const observacionGeneralTexto = getObservacionGeneralTexto(order);
-      resumen +
-      "\n\nSubtotal: $" + totals.subtotal +
-      "\nDomicilio: $" + totals.domicilio +
-      "\nTotal: $" + totals.total +
-      "\n📍 Dirección: " + order.direccion +
-      "\n\n¿Qué deseas hacer?\n\n" +
-      "A. Confirmar pedido ✅\n" +
-      "B. Eliminar Productos\n" +
-      "C. Agregar más productos ➕";
+// 🔥 SIEMPRE ANTES DEL reply
+const observacionGeneralTexto = getObservacionGeneralTexto(order);
+
+replyMessage =
+  "Perfecto 👌\n\n" +
+  "Tu pedido es:\n" +
+  resumen +
+  observacionGeneralTexto +
+  "\n\nSubtotal: $" + totals.subtotal +
+  "\nDomicilio: $" + totals.domicilio +
+  "\nTotal: $" + totals.total +
+  "\n📍 Dirección: " + order.direccion +
+  "\n\n¿Qué deseas hacer?\n\n" +
+  "A. Confirmar pedido ✅\n" +
+  "B. Eliminar Productos\n" +
+  "C. Agregar más productos ➕";
       
   } else if (lower === "b" || lower.includes("cambiar")) {
     updateOrderStep(phone, "esperando_direccion");
