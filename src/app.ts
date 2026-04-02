@@ -1128,7 +1128,8 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "Respóndeme con el número:\n\n" +
       resumen;
   }
-    } else if (currentOrder?.step === "esperando_observacion_general") {
+
+} else if (currentOrder?.step === "esperando_observacion_general") {
   updateOrderGeneralNotes(phone, text);
   updateOrderStep(phone, "esperando_confirmacion");
   currentOrder = getOrder(phone)!;
@@ -1161,10 +1162,6 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   const observacionGeneralTexto = order.observacionesGenerales
     ? "\n\n📝 Observaciones:\n" + order.observacionesGenerales
     : "";
-    "🧾 Tu pedido:\n" +
-resumen +
-observacionGeneralTexto +
-"\n\n"
 
   replyMessage =
     "Perfecto 👌\n\n" +
@@ -1180,7 +1177,7 @@ observacionGeneralTexto +
     "B. Eliminar productos ➖\n" +
     "C. Agregar más productos ➕\n" +
     "D. Agregar observación 📝";
-}
+
 } else if (currentOrder?.step === "esperando_pago") {
   if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
