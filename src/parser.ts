@@ -476,21 +476,31 @@ export function parseOrder(text: string): ParseResult {
     : [];
 
   // detectar ambigüedad por fragmento
-  for (const fragment of fragments) {
-    const ambiguity = detectAmbiguousProduct(fragment, mainProducts);
+ for (const fragment of fragments) {
+  const fragmentLimpio = fragment
+    .replace(/^(\d+|una|uno|un)\s+/i, "")
+    .replace(/\bcrepe\b/g, "")
+    .trim();
 
-    if (ambiguity) {
-      return {
-        items: [],
-        ambiguousChoice: ambiguity
-      };
-    }
+  const ambiguity = detectAmbiguousProduct(fragmentLimpio, mainProducts);
+
+  if (ambiguity) {
+    return {
+      items: [],
+      ambiguousChoice: ambiguity
+    };
   }
+}
 
   // parsear cada fragmento
-  for (const fragment of fragments) {
-    const cantidad = extractCantidad(fragment);
-    const product = findProductInFragment(fragment, mainProducts);
+ for (const fragment of fragments) {
+  const fragmentLimpio = fragment
+    .replace(/^(\d+|una|uno|un)\s+/i, "")
+    .replace(/\bcrepe\b/g, "")
+    .trim();
+
+  const cantidad = extractCantidad(fragment);
+  const product = findProductInFragment(fragmentLimpio, mainProducts);
 
     if (!product) {
       continue;
