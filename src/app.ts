@@ -30,6 +30,7 @@ import {
   updateOrderAddress,
   updateOrderDeliveryType,
   updateOrderPayment,
+  updateOrderGeneralNotes, // 👈 ESTA LÍNEA
   calculateTotal,
   buildOrderJSON
 } from "./orders";
