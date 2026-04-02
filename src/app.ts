@@ -1376,13 +1376,31 @@ replyMessage =
   
 }
 } else if (currentOrder?.step === "esperando_comprobante") {
-  if (lower.includes("listo") || lower.includes("ya")) {
+
+  // 🔥 RESPONDER TOTAL AQUÍ TAMBIÉN
+  if (
+    lower.includes("cuanto es") ||
+    lower.includes("cuánto es") ||
+    lower.includes("cuanto debo") ||
+    lower.includes("cuánto debo") ||
+    lower.includes("total") ||
+    lower.includes("precio")
+  ) {
+    const order = getOrder(phone)!;
+    const totals = calculateTotal(order);
+
+    replyMessage =
+      `El total de tu pedido es: $${totals.total} 😊\n\n` +
+      "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
+
+  } else if (lower.includes("listo") || lower.includes("ya")) {
+
     updateOrderStep(phone, "confirmado");
     currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
- 
+
     await upsertCustomer({
       phone: phone,
       name: order.nombre,
@@ -1398,7 +1416,7 @@ replyMessage =
     const resumen = order.items
       .map((item: any) => {
         const observacionesTexto = item.observaciones
-          ? ` (${item.observaciones})`
+          ? ` (${formatObservaciones(item.observaciones)})`
           : "";
 
         const extrasTexto =
@@ -1416,7 +1434,10 @@ replyMessage =
         return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
       })
       .join("\n");
- const observacionGeneralTexto = getObservacionGeneralTexto(order);
+
+    // 🔥 INCLUIR OBSERVACIONES GENERALES
+    const observacionGeneralTexto = getObservacionGeneralTexto(order);
+
     const tiempoTexto =
       order.tipoEntrega === "domicilio"
         ? "50 min 🚚"
@@ -1427,7 +1448,9 @@ replyMessage =
       "👤 Nombre: " + order.nombre + "\n" +
       "📞 Tel: " + order.telefono + "\n\n" +
       "🧾 Tu pedido:\n" +
-      resumen + "\n\n" +
+      resumen +
+      observacionGeneralTexto +
+      "\n\n" +
       "💰 Subtotal: $" + totals.subtotal + "\n" +
       "🚚 Domicilio: $" + totals.domicilio + "\n" +
       "💵 Total: $" + totals.total + "\n\n" +
