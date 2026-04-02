@@ -558,8 +558,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
           replyMessage =
             "🔥 Perfecto, estoy repitiendo tu último pedido\n\n" +
-            "Tu pedido es:\n" +
-            resumen +
+           "Tu pedido es:\n" +
+             resumen +
+             observacionGeneralTexto +
             "\n\nSubtotal: $" + totals.subtotal +
             "\nTotal: $" + totals.total +
             "\n\n¿Qué deseas hacer?\n\n" +
@@ -860,8 +861,8 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   replyMessage =
     "Perfecto 👌\n\n" +
     "Estoy registrando:\n\n" +
-    resumen +
-    "\n\n¿Deseas agregar otra crepe, bebida, topping o hacer una observación?";
+      resumen + "\n\n" +
+    "¿Deseas agregar otra crepe, bebida, topping o hacer una observación?";
 } else if (currentOrder?.step === "esperando_nombre") {
   if (
     lower === "si" ||
@@ -915,7 +916,8 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       replyMessage =
   "Perfecto 👌\n\n" +
   "Tu pedido es:\n" +
-  resumen +
+   resumen +
+   observacionGeneralTexto +
   "\n\nSubtotal: $" + totals.subtotal +
   "\nDomicilio: $" + totals.domicilio +
   "\nTotal: $" + totals.total +
@@ -963,8 +965,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
  replyMessage =
   "Perfecto 👌\n\n" +
-  "Tu pedido es:\n" +
+ "Tu pedido es:\n" + 
   resumen +
+  observacionGeneralTexto +
   "\n\nSubtotal: $" + totals.subtotal +
   "\nDomicilio: $" + totals.domicilio +
   "\nTotal: $" + totals.total +
@@ -1009,8 +1012,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
  replyMessage =
   "Perfecto 👌\n\n" +
-  "Tu pedido es:\n" +
-  resumen +
+ "Tu pedido es:\n" +
+   resumen +
+   observacionGeneralTexto +
   "\n\nSubtotal: $" + totals.subtotal +
   "\nDomicilio: $" + totals.domicilio +
   "\nTotal: $" + totals.total +
@@ -1183,7 +1187,8 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   replyMessage =
     "Perfecto 👌\n\n" +
     "Tu pedido es:\n" +
-    resumen +
+     resumen +
+     observacionGeneralTexto +
     observacionGeneralTexto +
     "\n\nSubtotal: $" + totals.subtotal +
     "\nDomicilio: $" + totals.domicilio +
@@ -1481,8 +1486,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
         replyMessage =
           "Perfecto 👌\n\n" +
-          "Tu pedido es:\n" +
-          resumen +
+         "Tu pedido es:\n" +
+         resumen +
+         observacionGeneralTexto +
           "\n\nSubtotal: $" + totals.subtotal +
           "\nTotal: $" + totals.total +
           "\n\n¿Qué deseas hacer?\n\n" +
