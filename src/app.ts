@@ -472,11 +472,11 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         })
         .join("\n");
 
-      replyMessage =
-        "Perfecto 👌\n\n" +
-        "Estoy registrando:\n\n" +
-        resumen +
-        "Puedes escribir otra crepe, bebida, topping o una observación."
+     replyMessage =
+  "Perfecto 👌\n\n" +
+  "Estoy registrando:\n\n" +
+  resumen +
+  "\n\nPuedes escribir otra crepe, bebida, topping o una observación.";
     } else {
       replyMessage = "No pude encontrar esa opción. Inténtalo de nuevo 😊";
     }
