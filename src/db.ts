@@ -14,6 +14,46 @@ pool.connect()
   .catch((err) => {
     console.error("❌ Error conectando a PostgreSQL:", err);
   });
+import { supabase } from "./supabase"; // o tu import real
+
+function normalizePhone(phone: string) {
+  return phone.replace(/\D/g, "");
+}
+
+export async function getCustomerByPhone(phone: string) {
+  const normalizedPhone = normalizePhone(phone);
+
+  const { data, error } = await supabase
+    .from("customers")
+    .select("*")
+    .eq("phone", normalizedPhone)
+    .maybeSingle();
+
+  if (error) {
+    console.error("ERROR getCustomerByPhone:", error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function upsertCustomer(customer: any) {
+  const normalizedPhone = normalizePhone(customer.phone);
+
+  const { error } = await supabase
+    .from("customers")
+    .upsert(
+      {
+        ...customer,
+        phone: normalizedPhone
+      },
+      { onConflict: "phone" }
+    );
+
+  if (error) {
+    console.error("ERROR upsertCustomer:", error);
+  }
+}
 
 export async function getCustomerByPhone(phone: string) {
   try {
