@@ -472,12 +472,17 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         })
         .join("\n");
 
-    replyMessage =
+  updateOrderStep(phone, "post_agregar_producto");
+
+replyMessage =
   "Perfecto 👌\n\n" +
   "Estoy registrando:\n\n" +
   resumen +
-  "\n\n¿Deseas agregar algo más?\n\n" +
-  "Puedes escribir otra crepe, bebida, topping o una observación.";
+  "\n\n¿Qué deseas hacer ahora?\n\n" +
+  "1. Confirmar pedido ✅\n" +
+  "2. Agregar más productos ➕\n" +
+  "3. Eliminar productos ➖\n" +
+  "4. Dejar observación 📝";
     } else {
       replyMessage = "No pude encontrar esa opción. Inténtalo de nuevo 😊";
     }
