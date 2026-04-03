@@ -1224,13 +1224,29 @@ replyMessage =
   }
 
 } else if (currentOrder?.step === "esperando_observacion_general") {
+
+  const texto = text.toLowerCase();
+
+  // 👇 AQUÍ VA LA LÓGICA DE MISMA DIRECCIÓN
+  if (
+    texto.includes("misma direccion") ||
+    texto.includes("misma dirección") ||
+    texto === "la misma" ||
+    texto === "igual"
+  ) {
+    const customer = getCustomer(phone);
+
+    if (customer?.last_address) {
+      updateOrderAddress(phone, customer.last_address);
+    }
+  }
+
   updateOrderGeneralNotes(phone, text);
   updateOrderStep(phone, "esperando_confirmacion");
   currentOrder = getOrder(phone)!;
 
   const order = getOrder(phone)!;
   const totals = calculateTotal(order);
-  
 
   const resumen = order.items
     .map((item: any) => {
@@ -1254,14 +1270,13 @@ replyMessage =
     })
     .join("\n");
 
- const observacionGeneralTexto = getObservacionGeneralTexto(order);
+  const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
   replyMessage =
     "Perfecto 👌\n\n" +
     "Tu pedido es:\n" +
-     resumen +
-     observacionGeneralTexto +
-  
+    resumen +
+    observacionGeneralTexto +
     "\n\nSubtotal: $" + totals.subtotal +
     "\nDomicilio: $" + totals.domicilio +
     "\nTotal: $" + totals.total +
@@ -1271,6 +1286,7 @@ replyMessage =
     "B. Eliminar productos ➖\n" +
     "C. Agregar más productos ➕\n" +
     "D. Agregar observación 📝";
+
     } else if (currentOrder?.step === "post_agregar_producto") {
 
   if (lower === "1") {
