@@ -1887,7 +1887,7 @@ if (order.sucursal === "circunvalar") {
   await sendWhatsAppMessage("573217233342", resumenInterno);
   return;
 
-});
+}
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   asl.getStore()?.logger.error(err);
