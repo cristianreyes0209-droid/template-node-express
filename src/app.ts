@@ -1315,13 +1315,29 @@ replyMessage =
       updateOrderName(phone, customer.name);
     }
 
-    if (currentOrder.tipoEntrega === "domicilio" && !currentOrder.direccion) {
-      updateOrderStep(phone, "esperando_direccion");
-      replyMessage =
-        "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
-      await sendWhatsAppMessage(phone, replyMessage);
-      return res.sendStatus(200);
-    }
+   if (currentOrder.tipoEntrega === "domicilio" && !currentOrder.direccion) {
+  if (customer?.last_address) {
+    updateOrderStep(phone, "esperando_confirmacion_direccion");
+    currentOrder = getOrder(phone)!;
+
+    replyMessage =
+      "Perfecto 👍\n\n" +
+      "Tu dirección anterior es:\n" +
+      `📍 ${customer.last_address}\n\n` +
+      "¿Qué deseas hacer?\n\n" +
+      "A. Sí, enviar a esa misma dirección\n" +
+      "B. No, quiero cambiarla";
+
+    await sendWhatsAppMessage(phone, replyMessage);
+    return res.sendStatus(200);
+  }
+
+  updateOrderStep(phone, "esperando_direccion");
+  replyMessage =
+    "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+  await sendWhatsAppMessage(phone, replyMessage);
+  return res.sendStatus(200);
+}
 
     updateOrderStep(phone, "esperando_confirmacion");
     currentOrder = getOrder(phone)!;
@@ -1806,64 +1822,74 @@ replyMessage =
     lower === "a" ||
     lower.includes("si") ||
     lower.includes("sí") ||
-    lower.includes("esa misma")
+    lower.includes("esa misma") ||
+    lower.includes("la misma")
   ) {
-    updateOrderAddress(phone, customer?.last_address || "");
+    if (customer?.last_address) {
+      updateOrderAddress(phone, customer.last_address);
+    }
+
     updateOrderStep(phone, "esperando_confirmacion");
     currentOrder = getOrder(phone)!;
 
- const order = getOrder(phone)!;
-const totals = calculateTotal(order);
+    const order = getOrder(phone)!;
+    const totals = calculateTotal(order);
 
-const resumen = order.items
-  .map((item: any) => {
-    const observacionesTexto = item.observaciones
-      ? ` (${formatObservaciones(item.observaciones)})`
-      : "";
+    const resumen = order.items
+      .map((item: any) => {
+        const observacionesTexto = item.observaciones
+          ? ` (${formatObservaciones(item.observaciones)})`
+          : "";
 
-    const extrasTexto =
-      item.extras && item.extras.length > 0
-        ? " +" +
-          item.extras
-            .map((extra: any) =>
-              extra.cantidad > 1
-                ? `${extra.cantidad} ${extra.nombre}`
-                : extra.nombre
-            )
-            .join(", +")
-        : "";
+        const extrasTexto =
+          item.extras && item.extras.length > 0
+            ? " +" +
+              item.extras
+                .map((extra: any) =>
+                  extra.cantidad > 1
+                    ? `${extra.cantidad} ${extra.nombre}`
+                    : extra.nombre
+                )
+                .join(", +")
+            : "";
 
-    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-  })
-  .join("\n");
+        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+      })
+      .join("\n");
 
-// 🔥 SIEMPRE ANTES DEL reply
-const observacionGeneralTexto = getObservacionGeneralTexto(order);
+    const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
-replyMessage =
-  "Perfecto 👌\n\n" +
-  "Tu pedido es:\n" +
-  resumen +
-  observacionGeneralTexto +
-  "\n\nSubtotal: $" + totals.subtotal +
-  "\nDomicilio: $" + totals.domicilio +
-  "\nTotal: $" + totals.total +
-  "\n📍 Dirección: " + order.direccion +
-  "\n\n¿Qué deseas hacer?\n\n" +
-  "A. Confirmar pedido ✅\n" +
-  "B. Eliminar Productos\n" +
-  "C. Agregar más productos ➕";
-      
-  } else if (lower === "b" || lower.includes("cambiar")) {
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "Tu pedido es:\n" +
+      resumen +
+      observacionGeneralTexto +
+      "\n\nSubtotal: $" + totals.subtotal +
+      "\nDomicilio: $" + totals.domicilio +
+      "\nTotal: $" + totals.total +
+      "\n📍 Dirección: " + (order.direccion || "No aplica") +
+      "\n\n¿Qué deseas hacer?\n\n" +
+      "A. Confirmar pedido ✅\n" +
+      "B. Eliminar productos ➖\n" +
+      "C. Agregar más productos ➕\n" +
+      "D. Agregar observación 📝";
+
+  } else if (
+    lower === "b" ||
+    lower.includes("cambiar")
+  ) {
     updateOrderStep(phone, "esperando_direccion");
     currentOrder = getOrder(phone)!;
-    replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+
+    replyMessage =
+      "Perfecto 👍\n\n¿Me compartes la nueva dirección por favor?";
   } else {
     replyMessage =
       "Respóndeme por favor:\n\n" +
-      "A. Sí, esa misma\n" +
+      "A. Sí, enviar a esa misma dirección\n" +
       "B. No, quiero cambiarla";
   }
+}
 } else if (
   lower.includes("hola") ||
   lower.includes("buenas") ||
