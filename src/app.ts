@@ -1304,7 +1304,15 @@ replyMessage =
     } else if (currentOrder?.step === "post_agregar_producto") {
 
   if (lower === "1") {
-    updateOrderStep(phone, "esperando_confirmacion");
+   } else if (lower === "1") {
+  if (!currentOrder.nombre && !customer?.name) {
+    updateOrderStep(phone, "esperando_nombre");
+    replyMessage = "Perfecto 👍\n\nAntes de continuar, ¿cómo es tu nombre?";
+    await sendWhatsAppMessage(phone, replyMessage);
+    return res.sendStatus(200);
+ 
+  }
+  updateOrderStep(phone, "esperando_confirmacion");
     currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
