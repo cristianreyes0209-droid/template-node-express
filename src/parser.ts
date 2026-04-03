@@ -139,11 +139,59 @@ function normalizeText(text: string) {
     .replace(/\bde camarones\b/g, "camarones");
 }
 
-function splitIntoFragments(text: string): string[] {
-  return text
+function splitIntoFragments(text: string) {
+  // Primero separamos por coma
+  const commaParts = text
     .split(/,/i)
     .map((part) => part.trim())
     .filter(Boolean);
+
+  const result: string[] = [];
+
+  for (const part of commaParts) {
+    // Si tiene "sin X y sin Y" no partir por "y"
+    if (/sin\s+\w+.*\s+y\s+sin\s+\w+/i.test(part)) {
+      result.push(...splitByInlineNumbers(part));
+      continue;
+    }
+
+    // Partir por "y" o "e"
+    const yParts = part
+      .split(/\s+y\s+|\s+e\s+/i)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    for (const yPart of yParts) {
+      result.push(...splitByInlineNumbers(yPart));
+    }
+  }
+
+  return result;
+}
+
+// 🆕 NUEVA FUNCIÓN: detecta "1 paris 2 hawaiana" y lo parte en ["1 paris", "2 hawaiana"]
+function splitByInlineNumbers(text: string): string[] {
+  // Busca patrones como: número/palabra + nombre de producto repetidos
+  // Ejemplo: "1 paris 1 hawaiana" → ["1 paris", "1 hawaiana"]
+  const parts = text
+    .split(/(?=\b(?:\d+|dos|tres|cuatro|cinco|un|una|uno)\s+\w)/i)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  // Si solo hay 1 parte, no había nada que separar
+  if (parts.length <= 1) {
+    return [text];
+  }
+
+  // Verificar que cada parte tenga sentido (que no sea solo "1")
+  const partsValidas = parts.filter((p) => p.split(/\s+/).length >= 2);
+
+  if (partsValidas.length <= 1) {
+    return [text];
+  }
+
+  return partsValidas;
+
 }
 
 function extractQuantity(fragment: string): { quantity: number; text: string } {
