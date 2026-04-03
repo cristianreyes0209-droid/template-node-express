@@ -1882,13 +1882,10 @@ replyMessage =
     "También puedo ayudarte con domicilio o recoger.";
 }
 
-if (order.sucursal === "circunvalar") {
-  await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE!, resumenInterno);
-  await sendWhatsAppMessage("573217233342", resumenInterno);
-  return;
-
-}
-
+console.log("ENVIANDO MENSAJE A:", phone);
+ await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE!, resumenInterno);
+return res.sendStatus(200);
+});
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   asl.getStore()?.logger.error(err);
 
