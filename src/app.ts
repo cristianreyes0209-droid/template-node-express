@@ -501,62 +501,44 @@ replyMessage =
       lower.includes("el mismo")
     ) {
 
-      if (customer.last_order) {
-        const order = getOrder(phone)!;
+if (customer.last_order) {
+  const order = getOrder(phone)!;
 
-        order.items = customer.last_order;
-        order.direccion = customer.last_address;
-        order.nombre = customer.name;
+  order.items = customer.last_order;
+  order.direccion = customer.last_address;
+  order.nombre = customer.name;
 
-        if (customer.last_address) {
-          updateOrderDeliveryType(phone, "domicilio");
-          updateOrderStep(phone, "esperando_confirmacion_direccion");
-          currentOrder = getOrder(phone)!;
+  updateOrderStep(phone, "esperando_tipo_entrega_repetido");
+  currentOrder = getOrder(phone)!;
 
-          replyMessage =
-            "🔥 Perfecto, estoy preparando tu pedido de siempre\n\n" +
-            `¿Deseas usar la misma dirección?\n\n` +
-            `📍 ${customer.last_address}\n\n` +
-            `A. Sí, esa misma\n` +
-            `B. No, quiero cambiarla`;
+  const resumen = order.items.map((item: any) => {
+    const observacionesTexto = item.observaciones
+      ? ` (${formatObservaciones(item.observaciones)})`
+      : "";
 
-        } else {
-          updateOrderStep(phone, "esperando_confirmacion");
-          currentOrder = getOrder(phone)!;
+    const extrasTexto =
+      item.extras && item.extras.length > 0
+        ? " +" +
+          item.extras.map((extra: any) =>
+            extra.cantidad > 1
+              ? `${extra.cantidad} ${extra.nombre}`
+              : extra.nombre
+          ).join(", +")
+        : "";
 
-          const totals = calculateTotal(order);
+    return `* ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+  }).join("\n");
 
-          const resumen = order.items.map((item: any) => {
-            const observacionesTexto = item.observaciones
-              ? ` (${formatObservaciones(item.observaciones)})`
-              : "";
+  const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
-            const extrasTexto =
-              item.extras && item.extras.length > 0
-                ? " +" +
-                  item.extras.map((extra: any) =>
-                    extra.cantidad > 1
-                      ? `${extra.cantidad} ${extra.nombre}`
-                      : extra.nombre
-                  ).join(", +")
-                : "";
-
-            return `* ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
-          }).join("\n");
-          const observacionGeneralTexto = getObservacionGeneralTexto(order);
-          replyMessage =
-            "🔥 Perfecto, estoy repitiendo tu último pedido\n\n" +
-           "Tu pedido es:\n" +
-             resumen +
-             observacionGeneralTexto +
-            "\n\nSubtotal: $" + totals.subtotal +
-            "\nTotal: $" + totals.total +
-            "\n\n¿Qué deseas hacer?\n\n" +
-            "A. Confirmar pedido ✅\n" +
-            "B. Eliminar productos ➖\n" +
-            "C. Agregar más productos ➕";
-        }
-
+  replyMessage =
+    "🔥 Perfecto, estoy repitiendo tu último pedido\n\n" +
+    "Tu pedido es:\n" +
+    resumen +
+    observacionGeneralTexto +
+    "\n\n¿Cómo deseas recibirlo hoy?\n\n" +
+    "A. Recoger en tienda 🏪\n" +
+    "B. Domicilio 🚚";
       } else {
         replyMessage =
           "No encontré un pedido anterior 😊\n\n" +
@@ -776,7 +758,85 @@ replyMessage =
       "E. PQR 📝\n" +
       "F. Otros 💬";
   }
+} else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
+  if (
+    lower === "a" ||
+    lower.includes("recoger") ||
+    lower.includes("tienda")
+  ) {
+    updateOrderDeliveryType(phone, "recoger");
+    updateOrderStep(phone, "esperando_confirmacion");
+    currentOrder = getOrder(phone)!;
 
+    const order = getOrder(phone)!;
+    const totals = calculateTotal(order);
+
+    const resumen = order.items.map((item: any) => {
+      const observacionesTexto = item.observaciones
+        ? ` (${formatObservaciones(item.observaciones)})`
+        : "";
+
+      const extrasTexto =
+        item.extras && item.extras.length > 0
+          ? " +" +
+            item.extras.map((extra: any) =>
+              extra.cantidad > 1
+                ? `${extra.cantidad} ${extra.nombre}`
+                : extra.nombre
+            ).join(", +")
+          : "";
+
+      return `* ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+    }).join("\n");
+
+    const observacionGeneralTexto = getObservacionGeneralTexto(order);
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "Tu pedido es:\n" +
+      resumen +
+      observacionGeneralTexto +
+      "\n\nSubtotal: $" + totals.subtotal +
+      "\nDomicilio: $" + totals.domicilio +
+      "\nTotal: $" + totals.total +
+      "\n📍 Dirección: No aplica" +
+      "\n\n¿Qué deseas hacer?\n\n" +
+      "A. Confirmar pedido ✅\n" +
+      "B. Eliminar productos ➖\n" +
+      "C. Agregar más productos ➕\n" +
+      "D. Agregar observación 📝";
+
+  } else if (
+    lower === "b" ||
+    lower.includes("domicilio")
+  ) {
+    updateOrderDeliveryType(phone, "domicilio");
+
+    if (customer?.last_address) {
+      updateOrderStep(phone, "esperando_confirmacion_direccion");
+      currentOrder = getOrder(phone)!;
+
+      replyMessage =
+        "Perfecto 👍\n\n" +
+        "¿Deseas usar la misma dirección?\n\n" +
+        `📍 ${customer.last_address}\n\n` +
+        "A. Sí, esa misma\n" +
+        "B. No, quiero cambiarla";
+    } else {
+      updateOrderStep(phone, "esperando_direccion");
+      currentOrder = getOrder(phone)!;
+
+      replyMessage =
+        "Perfecto 👍\n\n" +
+        "¿Me compartes tu dirección por favor?";
+    }
+
+  } else {
+    replyMessage =
+      "¿Cómo deseas recibirlo hoy?\n\n" +
+      "A. Recoger en tienda 🏪\n" +
+      "B. Domicilio 🚚";
+  }
 } else if (currentOrder?.step === "esperando_sucursal") {
   if (
     lower === "a" ||
