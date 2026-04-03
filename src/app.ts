@@ -443,10 +443,8 @@ replyMessage =
 if (currentOrder?.step === "esperando_aclaracion_producto") {
   const opciones = currentOrder.aclaracionPendiente?.opciones || [];
 
-const numSeleccion = parseInt(lower) - 1;
-if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length) {
-  const seleccion = opciones[numSeleccion];
-
+if ((lower === "1" || lower === "2") && opciones.length >= 2) {
+  const seleccion = lower === "1" ? opciones[0] : opciones[1];
     const allProducts = menu.categorias.flatMap((c: any) => c.productos);
     const product = allProducts.find((p: any) => p.id === seleccion.productoId);
 
