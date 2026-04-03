@@ -143,6 +143,7 @@ function splitIntoFragments(text: string) {
     .split(/,/i)
     .map((part) => part.trim())
     .filter(Boolean);
+   }
 function extractQuantity(fragment: string): { quantity: number; text: string } {
   const match = fragment.match(/^(\d+|una|uno|un)\s+(.*)$/i);
 
