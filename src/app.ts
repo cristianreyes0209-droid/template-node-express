@@ -386,12 +386,12 @@ if (
     console.log("STEP DESPUÉS DE AMBIGÜEDAD:", currentOrder?.step);
     console.log("ACLARACIÓN GUARDADA:", currentOrder?.aclaracionPendiente);
 
-    replyMessage =
-      "¿Te refieres a:\n\n" +
-      parseResult.ambiguousChoice.opciones
-        .map((op: any, i: number) => `${i + 1}. ${op.nombre}`)
-        .join("\n") +
-      "\n\nRespóndeme con el número 😊";
+  replyMessage =
+  "¿Te refieres a:\n\n" +
+  parseResult.ambiguousChoice.opciones
+    .map((op: any, i: number) => `${i + 1}. ${op.nombre}`)
+    .join("\n") +
+  "\n\nRespóndeme con el número 😊";
 
     await sendWhatsAppMessage(phone, replyMessage);
     return res.sendStatus(200);
@@ -430,8 +430,9 @@ if (!currentOrder) {
 if (currentOrder?.step === "esperando_aclaracion_producto") {
   const opciones = currentOrder.aclaracionPendiente?.opciones || [];
 
-  if ((lower === "1" || lower === "2") && opciones.length >= 2) {
-    const seleccion = lower === "1" ? opciones[0] : opciones[1];
+const numSeleccion = parseInt(lower) - 1;
+if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length) {
+  const seleccion = opciones[numSeleccion];
 
     const allProducts = menu.categorias.flatMap((c: any) => c.productos);
     const product = allProducts.find((p: any) => p.id === seleccion.productoId);
