@@ -1003,13 +1003,14 @@ export const menu = {
             "Vino blanco",
             "Queso doble crema"
           ],
-          aliases: [
-            "strogonoff de pollo",
-            "strogonoff pollo",
-            "pollo strogonoff",
-            "estrogonof de pollo",
-            "estrogonoff de pollo"
-          ],
+        aliases: [
+  "strogonoff de pollo",
+  "stroganoff de pollo",
+  "stroganoff de pollo",
+  "strogsanoff de pollo",
+  "strogonoff pollo",
+  "stroganoff pollo"
+ ],
           modificadoresComunes: [
             "sin pollo",
             "sin champiñones",
