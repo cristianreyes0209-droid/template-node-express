@@ -232,11 +232,11 @@ const resumenInterno =
   `\n\n💰 Total: $${totals.total}\n` +
   `📍 ${order.direccion || "Recoger en tienda"}`;
 
-  if (order.sucursal === "circunvalar") {
-    await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE!, resumenInterno);
-    return;
-  }
-
+ if (order.sucursal === "circunvalar") {
+  await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE!, resumenInterno);
+  await sendWhatsAppMessage("573217233342", resumenInterno);
+  return;
+}
   if (order.sucursal === "la_villa") {
 
     if (order.tipoEntrega === "domicilio") {
@@ -1883,7 +1883,7 @@ replyMessage =
 }
 
 console.log("ENVIANDO MENSAJE A:", phone);
- await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE!,resumen + );
+ await sendWhatsAppMessage(phone, replyMessage);
 return res.sendStatus(200);
 });
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
