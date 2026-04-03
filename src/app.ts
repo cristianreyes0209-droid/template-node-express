@@ -487,9 +487,9 @@ replyMessage =
     } else {
       replyMessage = "No pude encontrar esa opción. Inténtalo de nuevo 😊";
     }
-  } else {
-    replyMessage = "Por favor respóndeme 1 o 2 😊";
-  }
+ } else {
+  replyMessage = `Por favor respóndeme con un número entre 1 y ${opciones.length} 😊`;
+}
 
 } else if (currentOrder?.step === "esperando_menu_principal") {
 
