@@ -1463,7 +1463,7 @@ replyMessage =
 
     const resumenCliente =
       "🔥 Pedido confirmado\n\n" +
-      "👤 Nombre: " + order.nombre + "\n" +
+      "👤 Nombre: " + (order.nombre || customer?.name || "Cliente") + "\n" +
       "📞 Tel: " + order.telefono + "\n\n" +
       "🧾 Tu pedido:\n" +
       resumen +
@@ -1608,7 +1608,7 @@ replyMessage =
 
     replyMessage =
       "🔥 Pedido confirmado\n\n" +
-      "👤 Nombre: " + order.nombre + "\n" +
+      "👤 Nombre: " + (order.nombre || customer?.name || "Cliente") + "\n" +
       "📞 Tel: " + order.telefono + "\n\n" +
       "🧾 Tu pedido:\n" +
       resumen +
