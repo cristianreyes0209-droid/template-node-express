@@ -214,14 +214,23 @@ app.get('/whatsapp', (req, res) => {
 }
    // 🔥 AQUÍ PEGAS LA FUNCIÓN
 async function handleOperationalRouting(order: any, totals: any) {
-  const resumenInterno =
-    "🔥 NUEVO PEDIDO\n\n" +
-    `👤 ${order.nombre}\n` +
-    `📞 ${order.telefono}\n\n` +
-    "🧾 Pedido:\n" +
-    order.items.map((i:any)=>`* ${i.cantidad} ${i.producto}`).join("\n") +
-    `\n\n💰 Total: $${totals.total}\n` +
-    `📍 ${order.direccion || "Recoger en tienda"}`;
+ const ahora = new Date();
+const horaTexto = ahora.toLocaleTimeString("es-CO", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: true,
+  timeZone: "America/Bogota"
+});
+
+const resumenInterno =
+  "🔥 NUEVO PEDIDO\n\n" +
+  `🕐 Hora: ${horaTexto}\n` +
+  `👤 ${order.nombre}\n` +
+  `📞 ${order.telefono}\n\n` +
+  "🧾 Pedido:\n" +
+  order.items.map((i:any)=>`* ${i.cantidad} ${i.producto}`).join("\n") +
+  `\n\n💰 Total: $${totals.total}\n` +
+  `📍 ${order.direccion || "Recoger en tienda"}`;
 
   if (order.sucursal === "circunvalar") {
     await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE!, resumenInterno);
