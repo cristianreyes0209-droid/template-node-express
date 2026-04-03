@@ -1882,9 +1882,11 @@ replyMessage =
     "También puedo ayudarte con domicilio o recoger.";
 }
 
-console.log("ENVIANDO MENSAJE A:", phone);
-await sendWhatsAppMessage(phone, replyMessage);
-return res.sendStatus(200);
+if (order.sucursal === "circunvalar") {
+  await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE!, resumenInterno);
+  await sendWhatsAppMessage("573217233342", resumenInterno);
+  return;
+
 });
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
