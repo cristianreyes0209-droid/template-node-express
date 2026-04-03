@@ -214,54 +214,89 @@ app.get('/whatsapp', (req, res) => {
 }
    // 🔥 AQUÍ PEGAS LA FUNCIÓN
 async function handleOperationalRouting(order: any, totals: any) {
- const ahora = new Date();
-const horaTexto = ahora.toLocaleTimeString("es-CO", {
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: true,
-  timeZone: "America/Bogota"
-});
+  const ahora = new Date();
+  const horaTexto = ahora.toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "America/Bogota"
+  });
 
-const resumenInterno =
-  "🔥 NUEVO PEDIDO\n\n" +
-  `🕐 Hora: ${horaTexto}\n` +
-  `👤 ${order.nombre}\n` +
-  `📞 ${order.telefono}\n\n` +
-  "🧾 Pedido:\n" +
-  order.items.map((i:any)=>`* ${i.cantidad} ${i.producto}`).join("\n") +
-  `\n\n💰 Total: $${totals.total}\n` +
-  `📍 ${order.direccion || "Recoger en tienda"}`;
+  const resumenInterno =
+    "🔥 NUEVO PEDIDO\n\n" +
+    `🕐 Hora: ${horaTexto}\n` +
+    `👤 ${order.nombre || "Cliente"}\n` +
+    `📞 ${order.telefono}\n\n` +
+    "🧾 Pedido:\n" +
+    order.items.map((i: any) => `* ${i.cantidad} ${i.producto}`).join("\n") +
+    `\n\n💰 Total: $${totals.total}\n` +
+    `📍 ${order.direccion || "Recoger en tienda"}\n` +
+    `🏬 Sucursal: ${order.sucursal || "No definida"}\n` +
+    `🚚 Tipo: ${order.tipoEntrega || "No definido"}\n` +
+    `💳 Pago: ${order.formaPago || "No definido"}`;
 
- if (order.sucursal === "circunvalar") {
-  await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE!, resumenInterno);
-  await sendWhatsAppMessage("573217233342", resumenInterno);
-  return;
-}
-  if (order.sucursal === "la_villa") {
+  console.log("=== ROUTING OPERATIVO ===");
+  console.log("SUCURSAL:", order.sucursal);
+  console.log("TIPO ENTREGA:", order.tipoEntrega);
+  console.log("FORMA PAGO:", order.formaPago);
+  console.log("CIRCUNVALAR_PHONE:", process.env.CIRCUNVALAR_PHONE);
+  console.log("VILLA_DOMICILIOS_DESTINO:", process.env.VILLA_DOMICILIOS_DESTINO);
+
+  const sucursal = (order.sucursal || "").toString().trim().toLowerCase();
+
+  if (sucursal === "circunvalar") {
+    console.log("✅ ENTRÓ A RUTA CIRCUNVALAR");
+
+    if (!process.env.CIRCUNVALAR_PHONE) {
+      console.error("❌ CIRCUNVALAR_PHONE no está definida");
+      return;
+    }
+
+    try {
+      await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE, resumenInterno);
+      console.log("✅ MENSAJE ENVIADO A CIRCUNVALAR");
+    } catch (error) {
+      console.error("❌ ERROR ENVIANDO A CIRCUNVALAR:", error);
+    }
+
+    return;
+  }
+
+  if (sucursal === "la_villa") {
+    console.log("✅ ENTRÓ A RUTA LA VILLA");
 
     if (order.tipoEntrega === "domicilio") {
       const domicilioMsg =
         "🚚 DOMICILIO VILLA\n\n" +
-        `👤 ${order.nombre}\n` +
+        `👤 ${order.nombre || "Cliente"}\n` +
         `📞 ${order.telefono}\n` +
-        `📍 ${order.direccion}\n` +
-        `💳 Pago: ${order.formaPago}\n` +
+        `📍 ${order.direccion || "Sin dirección"}\n` +
+        `💳 Pago: ${order.formaPago || "No definido"}\n` +
         `💰 Pedido: $${totals.subtotal}\n` +
         `🛵 Domicilio: $${totals.domicilio}\n` +
         (order.formaPago === "efectivo"
           ? `💵 Cobrar: $${totals.total}\n`
           : "");
 
-      await sendWhatsAppMessage(process.env.VILLA_DOMICILIOS_DESTINO!, domicilioMsg);
+      if (!process.env.VILLA_DOMICILIOS_DESTINO) {
+        console.error("❌ VILLA_DOMICILIOS_DESTINO no está definida");
+      } else {
+        try {
+          await sendWhatsAppMessage(process.env.VILLA_DOMICILIOS_DESTINO, domicilioMsg);
+          console.log("✅ MENSAJE ENVIADO A DOMICILIOS VILLA");
+        } catch (error) {
+          console.error("❌ ERROR ENVIANDO A DOMICILIOS VILLA:", error);
+        }
+      }
     }
 
     console.log("🖨️ IMPRIMIR COMANDA VILLA:");
     console.log(resumenInterno);
-
     return;
   }
-}
 
+  console.warn("⚠️ SUCURSAL NO RECONOCIDA EN ROUTING:", order.sucursal);
+}
 // 👇 DESPUÉS sigue tu endpoint
 app.post("/whatsapp", async (req: Request, res: Response) => { 
     if (!req.body.entry?.[0]?.changes?.[0]?.value?.messages) {
