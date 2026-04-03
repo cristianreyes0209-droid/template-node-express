@@ -1485,6 +1485,7 @@ replyMessage =
       "📍 Dirección:\n" + (order.direccion || "No aplica") + "\n\n" +
       "💳 Pago: Efectivo\n" +
       "⏱ Tiempo estimado: " + tiempoTexto + "\n\n" +
+        "🏪 Sucursal: " + (order.sucursal === "la_villa" ? "La Villa" : order.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
       "🙏 Gracias por tu pedido en LAS CREPES 🥞";
 
     console.log("========== ORDEN FINAL JSON ==========");
@@ -1630,6 +1631,7 @@ replyMessage =
       "📍 Dirección:\n" + (order.direccion || "No aplica") + "\n\n" +
       "💳 Pago: " + (order.formaPago || "No definido") + "\n" +
       "⏱ Tiempo estimado: " + tiempoTexto + "\n\n" +
+        "🏪 Sucursal: " + (order.sucursal === "la_villa" ? "La Villa" : order.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
       "🙏 Gracias por tu pedido en LAS CREPES 🥞";
 
     console.log("========== ORDEN FINAL JSON ==========");
