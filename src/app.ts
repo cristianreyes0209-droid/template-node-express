@@ -1299,24 +1299,30 @@ replyMessage =
     "C. Agregar más productos ➕\n" +
     "D. Agregar observación 📝";
 
-    } else if (currentOrder?.step === "post_agregar_producto") {
+ } else if (currentOrder?.step === "post_agregar_producto") {
 
   if (lower === "1") {
-   } else if (lower === "1") {
-  if (!currentOrder.nombre && !customer?.name) {
-    updateOrderStep(phone, "esperando_nombre");
-    replyMessage = "Perfecto 👍\n\nAntes de continuar, ¿cómo es tu nombre?";
-    await sendWhatsAppMessage(phone, replyMessage);
-    return res.sendStatus(200);
- 
-  }
-  updateOrderStep(phone, "esperando_confirmacion");
-      if (currentOrder.tipoEntrega === "domicilio" && !currentOrder.direccion) {
-    updateOrderStep(phone, "esperando_direccion");
-    replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
-    await sendWhatsAppMessage(phone, replyMessage);
-    return res.sendStatus(200);
-  }
+    if (!currentOrder.nombre && !customer?.name) {
+      updateOrderStep(phone, "esperando_nombre");
+      replyMessage =
+        "Perfecto 👍\n\nAntes de continuar, ¿cómo es tu nombre?";
+      await sendWhatsAppMessage(phone, replyMessage);
+      return res.sendStatus(200);
+    }
+
+    if (customer?.name && !currentOrder.nombre) {
+      updateOrderName(phone, customer.name);
+    }
+
+    if (currentOrder.tipoEntrega === "domicilio" && !currentOrder.direccion) {
+      updateOrderStep(phone, "esperando_direccion");
+      replyMessage =
+        "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+      await sendWhatsAppMessage(phone, replyMessage);
+      return res.sendStatus(200);
+    }
+
+    updateOrderStep(phone, "esperando_confirmacion");
     currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
@@ -1363,6 +1369,7 @@ replyMessage =
 
   } else if (lower === "2") {
     updateOrderStep(phone, "armando_pedido");
+    currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
@@ -1388,6 +1395,7 @@ replyMessage =
 
   } else if (lower === "4") {
     updateOrderStep(phone, "esperando_observacion_general");
+    currentOrder = getOrder(phone)!;
 
     replyMessage =
       "Perfecto 👌\n\n" +
