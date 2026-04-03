@@ -138,12 +138,14 @@ function normalizeText(text: string) {
     .replace(/\buna de camarones\b/g, "camarones")
     .replace(/\bde camarones\b/g, "camarones");
 }
-function splitIntoFragments(text: string) {
-  const commaParts = text
+
+function splitIntoFragments(text: string): string[] {
+  return text
     .split(/,/i)
     .map((part) => part.trim())
     .filter(Boolean);
-   }
+}
+
 function extractQuantity(fragment: string): { quantity: number; text: string } {
   const match = fragment.match(/^(\d+|una|uno|un)\s+(.*)$/i);
 
