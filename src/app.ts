@@ -1515,7 +1515,11 @@ replyMessage =
       last_order_at: new Date().toISOString()
     });
 
-    await handleOperationalRouting(order, totals);
+   try {
+  await handleOperationalRouting(order, totals);
+} catch (error) {
+  console.error("❌ ERROR GENERAL EN handleOperationalRouting:", error);
+}
 
     const orderJSON = buildOrderJSON(order);
 
@@ -1661,7 +1665,11 @@ replyMessage =
       last_order_at: new Date().toISOString()
     });
 
-    await handleOperationalRouting(order, totals);
+   try {
+  await handleOperationalRouting(order, totals);
+} catch (error) {
+  console.error("❌ ERROR GENERAL EN handleOperationalRouting:", error);
+}
 
     const orderJSON = buildOrderJSON(order);
 
