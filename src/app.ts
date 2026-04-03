@@ -810,13 +810,12 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       "A. La Villa\n" +
       "B. Av. Circunvalar";
   }
-
 } else if (
   parsedItems.length > 0 &&
   currentOrder?.step === "armando_pedido"
 ) {
   const order = createOrUpdateOrder(phone, parsedItems);
-  updateOrderStep(phone, "armando_pedido");
+  updateOrderStep(phone, "post_agregar_producto");
   currentOrder = getOrder(phone)!;
 
   const resumen = order.items
@@ -844,8 +843,12 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   replyMessage =
     "Perfecto 👌\n\n" +
     "Estoy registrando:\n\n" +
-      resumen + "\n\n" +
-    "¿Deseas agregar otra crepe, bebida, topping o hacer una observación?";
+    resumen +
+    "\n\n¿Qué deseas hacer ahora?\n\n" +
+    "1. Confirmar pedido ✅\n" +
+    "2. Agregar más productos ➕\n" +
+    "3. Eliminar productos ➖\n" +
+    "4. Dejar observación 📝";
 } else if (currentOrder?.step === "esperando_nombre") {
   if (
     lower === "si" ||
