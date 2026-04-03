@@ -1313,6 +1313,12 @@ replyMessage =
  
   }
   updateOrderStep(phone, "esperando_confirmacion");
+      if (currentOrder.tipoEntrega === "domicilio" && !currentOrder.direccion) {
+    updateOrderStep(phone, "esperando_direccion");
+    replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+    await sendWhatsAppMessage(phone, replyMessage);
+    return res.sendStatus(200);
+  }
     currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
