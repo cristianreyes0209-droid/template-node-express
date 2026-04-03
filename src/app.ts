@@ -1211,6 +1211,94 @@ replyMessage =
     "B. Eliminar productos ➖\n" +
     "C. Agregar más productos ➕\n" +
     "D. Agregar observación 📝";
+    } else if (currentOrder?.step === "post_agregar_producto") {
+
+  if (lower === "1") {
+    updateOrderStep(phone, "esperando_confirmacion");
+    currentOrder = getOrder(phone)!;
+
+    const order = getOrder(phone)!;
+    const totals = calculateTotal(order);
+
+    const resumen = order.items
+      .map((item: any) => {
+        const observacionesTexto = item.observaciones
+          ? ` (${formatObservaciones(item.observaciones)})`
+          : "";
+
+        const extrasTexto =
+          item.extras && item.extras.length > 0
+            ? " +" +
+              item.extras
+                .map((extra: any) =>
+                  extra.cantidad > 1
+                    ? `${extra.cantidad} ${extra.nombre}`
+                    : extra.nombre
+                )
+                .join(", +")
+            : "";
+
+        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+      })
+      .join("\n");
+
+    const observacionGeneralTexto = getObservacionGeneralTexto(order);
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "Tu pedido es:\n" +
+      resumen +
+      observacionGeneralTexto +
+      "\n\nSubtotal: $" + totals.subtotal +
+      "\nDomicilio: $" + totals.domicilio +
+      "\nTotal: $" + totals.total +
+      "\n📍 Dirección: " + (order.direccion || "No aplica") +
+      "\n\n¿Qué deseas hacer?\n\n" +
+      "A. Confirmar pedido ✅\n" +
+      "B. Eliminar productos ➖\n" +
+      "C. Agregar más productos ➕\n" +
+      "D. Agregar observación 📝";
+
+  } else if (lower === "2") {
+    updateOrderStep(phone, "armando_pedido");
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "¿Qué deseas agregar?\n\n" +
+      "Recuerda: un producto por mensaje 😊";
+
+  } else if (lower === "3") {
+    updateOrderStep(phone, "retirando_productos");
+    currentOrder = getOrder(phone)!;
+
+    const resumen = currentOrder.items
+      .map((item: any, index: number) =>
+        `* ${index + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`
+      )
+      .join("\n");
+
+    replyMessage =
+      "Perfecto 👍\n\n" +
+      "¿Qué producto deseas retirar?\n\n" +
+      resumen +
+      "\n\nO escribe:\n* todos\n\n" +
+      'Respóndeme con el número del producto o escribe "todos".';
+
+  } else if (lower === "4") {
+    updateOrderStep(phone, "esperando_observacion_general");
+
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      "Escríbeme la observación para tu pedido 😊";
+
+  } else {
+    replyMessage =
+      "Respóndeme con una opción:\n\n" +
+      "1. Confirmar pedido\n" +
+      "2. Agregar más productos\n" +
+      "3. Eliminar productos\n" +
+      "4. Observación";
+  }
       
 } else if (currentOrder?.step === "esperando_pago") {
 
