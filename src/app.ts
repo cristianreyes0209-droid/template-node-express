@@ -1234,11 +1234,10 @@ replyMessage =
     texto === "la misma" ||
     texto === "igual"
   ) {
-    const customer = getCustomer(phone);
-
-    if (customer?.last_address) {
-      updateOrderAddress(phone, customer.last_address);
-    }
+    
+   if (customer?.last_address) {
+  updateOrderAddress(phone, customer.last_address);
+}
   }
 
   updateOrderGeneralNotes(phone, text);
