@@ -353,14 +353,16 @@ if (
   currentOrder = getOrder(phone)!;
 
   if (customer) {
-    const nombreCliente = customer.name ? ` ${customer.name}` : "";
+   const nombreCliente = (customer?.name && customer.name.trim() !== "") 
+  ? `, ${customer.name.trim()}` 
+  : "";
 
-    replyMessage =
-      `Hola${nombreCliente} 👋\n\n` +
-      `Qué bueno tenerte de vuelta en LAS CREPES ✨\n\n` +
-      `¿Deseas pedir lo mismo de siempre o quieres algo diferente? 😋\n\n` +
-      `A. Lo mismo\n` +
-      `B. Quiero pedir algo nuevo`;
+replyMessage =
+  `Hola${nombreCliente} 👋\n\n` +
+  `Qué bueno tenerte de vuelta en LAS CREPES ✨\n\n` +
+  `¿Deseas pedir lo mismo de siempre o quieres algo diferente? 😋\n\n` +
+  `A. Lo mismo\n` +
+  `B. Quiero pedir algo nuevo`;
   } else {
     replyMessage =
       "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
@@ -412,14 +414,16 @@ if (!currentOrder) {
   currentOrder = getOrder(phone)!;
 
   if (customer) {
-    const nombreCliente = customer.name ? ` ${customer.name}` : "";
+   const nombreCliente = (customer?.name && customer.name.trim() !== "") 
+  ? `, ${customer.name.trim()}` 
+  : "";
 
-    replyMessage =
-      `Hola${nombreCliente} 👋\n\n` +
-      `Qué bueno tenerte de vuelta en LAS CREPES ✨\n\n` +
-      `¿Deseas pedir lo mismo de siempre o quieres algo diferente? 😋\n\n` +
-      `A. Lo mismo\n` +
-      `B. Quiero pedir algo nuevo`;
+replyMessage =
+  `Hola${nombreCliente} 👋\n\n` +
+  `Qué bueno tenerte de vuelta en LAS CREPES ✨\n\n` +
+  `¿Deseas pedir lo mismo de siempre o quieres algo diferente? 😋\n\n` +
+  `A. Lo mismo\n` +
+  `B. Quiero pedir algo nuevo`;
   } else {
     replyMessage =
       "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
@@ -1485,8 +1489,9 @@ replyMessage =
       "💵 Total: $" + totals.total + "\n\n" +
       "📍 Dirección:\n" + (order.direccion || "No aplica") + "\n\n" +
       "💳 Pago: Efectivo\n" +
-      "⏱ Tiempo estimado: " + tiempoTexto + "\n\n" +
-        "🏪 Sucursal: " + (order.sucursal === "la_villa" ? "La Villa" : order.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
+      "⏱ Tiempo estimado: " + tiempoTexto + "\n" +
+      "🕐 Hora del pedido: " + new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }) + "\n\n" +
+      "🏪 Sucursal: " + (order.sucursal === "la_villa" ? "La Villa" : order.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
       "🙏 Gracias por tu pedido en LAS CREPES 🥞";
 
     console.log("========== ORDEN FINAL JSON ==========");
@@ -1631,8 +1636,9 @@ replyMessage =
       "💵 Total: $" + totals.total + "\n\n" +
       "📍 Dirección:\n" + (order.direccion || "No aplica") + "\n\n" +
       "💳 Pago: " + (order.formaPago || "No definido") + "\n" +
-      "⏱ Tiempo estimado: " + tiempoTexto + "\n\n" +
-        "🏪 Sucursal: " + (order.sucursal === "la_villa" ? "La Villa" : order.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
+      "⏱ Tiempo estimado: " + tiempoTexto + "\n" +
+      "🕐 Hora del pedido: " + new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }) + "\n\n" +
+      "🏪 Sucursal: " + (order.sucursal === "la_villa" ? "La Villa" : order.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
       "🙏 Gracias por tu pedido en LAS CREPES 🥞";
 
     console.log("========== ORDEN FINAL JSON ==========");
