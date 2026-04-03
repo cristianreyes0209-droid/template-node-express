@@ -21,6 +21,7 @@ export type OrderStep =
   | "esperando_menu_nuevo"
   | "esperando_sucursal"
   | "armando_pedido"
+  | "post_agregar_producto"
   | "esperando_nombre"
   | "esperando_observacion_general"
   | "esperando_tipo_entrega"
