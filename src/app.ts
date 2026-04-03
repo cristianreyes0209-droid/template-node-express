@@ -1261,7 +1261,7 @@ replyMessage =
     "Tu pedido es:\n" +
      resumen +
      observacionGeneralTexto +
-    observacionGeneralTexto +
+  
     "\n\nSubtotal: $" + totals.subtotal +
     "\nDomicilio: $" + totals.domicilio +
     "\nTotal: $" + totals.total +
