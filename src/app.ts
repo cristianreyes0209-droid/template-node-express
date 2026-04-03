@@ -1883,7 +1883,7 @@ replyMessage =
 }
 
 console.log("ENVIANDO MENSAJE A:", phone);
- await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE!, resumenInterno);
+ await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE!, resumen);
 return res.sendStatus(200);
 });
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
