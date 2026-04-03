@@ -517,6 +517,7 @@ if (customer.last_order) {
   order.items = customer.last_order;
   order.direccion = customer.last_address;
   order.nombre = customer.name;
+  updateOrderName(phone, customer.name || "");
 
   updateOrderStep(phone, "esperando_tipo_entrega_repetido");
   currentOrder = getOrder(phone)!;
