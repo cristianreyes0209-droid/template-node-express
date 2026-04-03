@@ -18,6 +18,7 @@ export type OrderItem = {
 
 export type OrderStep =
   | "esperando_menu_principal"
+  | "esperando_tipo_entrega_repetido"
   | "esperando_menu_nuevo"
   | "esperando_sucursal"
   | "armando_pedido"
