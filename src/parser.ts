@@ -469,7 +469,20 @@ function mergeParsedItems(items: ParsedItem[]) {
 }
 export function parseOrder(text: string): ParseResult {
   const lower = normalizeText(text);
-  const fragments = splitIntoFragments(lower);
+ // Primero limpiar palabras de cortesía, luego dividir
+const textoLimpio = lower
+  .replace(/\bpor favor\b/g, " ")
+  .replace(/\bpara pedir\b/g, " ")
+  .replace(/\bquiero\b/g, " ")
+  .replace(/\bme das\b/g, " ")
+  .replace(/\bme regalas\b/g, " ")
+  .replace(/\bseria\b/g, " ")
+  .replace(/\bsería\b/g, " ")
+  .replace(/[.]/g, ",")
+  .replace(/\s+/g, " ")
+  .trim();
+
+const fragments = splitIntoFragments(textoLimpio);
 
   const items: ParsedItem[] = [];
 
