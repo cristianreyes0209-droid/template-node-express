@@ -108,7 +108,6 @@ async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: st
 }
 
 const LARGE_JSON_PATH = '/large-json-payload';
-const LARGE_JSON_PATH = '/large-json-payload';
 const APPLICATION_JSON = 'application/json';
 
 export const initApp = async (
