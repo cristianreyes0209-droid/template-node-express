@@ -665,14 +665,11 @@ if (customer.last_order) {
     updateOrderStep(phone, "esperando_sucursal");
     currentOrder = getOrder(phone)!;
 
-   await sendWhatsAppButtons(phone,
-  "¿Para cuál sucursal es tu pedido?",
-  [
-    { id: "a", title: "La Villa 🏪" },
-    { id: "b", title: "Av. Circunvalar 🏪" }
-  ]
-);
-return res.sendStatus(200);
+   replyMessage =
+      "Perfecto 👌\n\n" +
+      "¿Para cuál sucursal es tu pedido?\n\n" +
+      "A. La Villa\n" +
+      "B. Av. Circunvalar";
       
   } else if (
     lower === "b" ||
