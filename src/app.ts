@@ -82,8 +82,7 @@ async function sendWhatsAppMessage(phone: string, message: string) {
   console.log("RESPUESTA META:", data);
 }
 
-// 👇 AQUÍ PEGAS LA FUNCIÓN NUEVA, justo después
-async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: string, title: string}[]) {
+/async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: string, title: string}[]) {
   const response = await fetch(
     `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
     {
@@ -113,7 +112,7 @@ async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: st
   const data = await response.json();
   console.log("RESPUESTA BOTONES META:", data);
 }
-
+// 👇 AQUÍ PEGAS LA FUNCIÓN NUEVA, justo despué
 // función que ya tienes
 const LARGE_JSON_PATH = '/large-json-payload';
 const LARGE_JSON_PATH = '/large-json-payload';
