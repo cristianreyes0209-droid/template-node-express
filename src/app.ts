@@ -82,36 +82,7 @@ async function sendWhatsAppMessage(phone: string, message: string) {
   console.log("RESPUESTA META:", data);
 }
 
-/async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: string, title: string}[]) {
-  const response = await fetch(
-    `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${(process.env.WHATSAPP_TOKEN || "").trim()}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: phone,
-        type: "interactive",
-        interactive: {
-          type: "button",
-          body: { text: body },
-          action: {
-            buttons: buttons.map(btn => ({
-              type: "reply",
-              reply: { id: btn.id, title: btn.title }
-            }))
-          }
-        }
-      })
-    }
-  );
 
-  const data = await response.json();
-  console.log("RESPUESTA BOTONES META:", data);
-}
 // 👇 AQUÍ PEGAS LA FUNCIÓN NUEVA, justo despué
 // función que ya tienes
 const LARGE_JSON_PATH = '/large-json-payload';
