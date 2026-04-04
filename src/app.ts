@@ -1133,11 +1133,18 @@ replyMessage =
   "C. Agregar más productos ➕";
 
 } else if (currentOrder?.step === "esperando_confirmacion") {
-  if (
-    lower === "a" ||
-    lower === "si" ||
-    lower === "sí" ||
-    lower.includes("confirmar")
+ if (
+  lower === "a" ||
+  lower === "1" ||
+  lower === "si" ||
+  lower === "sí" ||
+  lower.includes("confirmar") ||
+  lower.includes("confirmado") ||
+  lower.includes("listo") ||
+  lower.includes("dale") ||
+  lower.includes("de una") ||
+  lower.includes("va")
+
   ) {
     updateOrderStep(phone, "esperando_pago");
     currentOrder = getOrder(phone)!;
