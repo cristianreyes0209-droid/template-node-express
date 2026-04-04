@@ -349,7 +349,10 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
 
   const phone = messageData.from;   
   const customer = await getCustomerByPhone(phone);
-  const text = messageData.text?.body || "mensaje";
+  const text = messageData.text?.body 
+  || messageData.interactive?.button_reply?.id 
+  || messageData.interactive?.list_reply?.id 
+  || "mensaje";
    
 
   if (!phone) {
