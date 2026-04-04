@@ -674,7 +674,7 @@ if (customer.last_order) {
       "A. La Villa\n" +
       "B. Av. Circunvalar";
       
-  } else if (
+} else if (
     lower === "b" ||
     lower.includes("domicilio") ||
     lower.includes("enviar") ||
@@ -686,12 +686,14 @@ if (customer.last_order) {
     updateOrderStep(phone, "esperando_sucursal");
     currentOrder = getOrder(phone)!;
 
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "¿Para cuál sucursal es tu pedido?\n\n" +
-      "A. La Villa\n" +
-      "B. Av. Circunvalar";
-
+    await sendWhatsAppButtons(phone,
+      "Perfecto 👌\n\n¿Para cuál sucursal es tu pedido?",
+      [
+        { id: "a", title: "La Villa 🏪" },
+        { id: "b", title: "Av. Circunvalar 🏪" }
+      ]
+    );
+    return res.sendStatus(200);
   } else if (
     lower === "c" ||
     lower.includes("agendar") ||
