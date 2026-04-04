@@ -767,12 +767,14 @@ if (customer.last_order) {
     updateOrderStep(phone, "esperando_sucursal");
     currentOrder = getOrder(phone)!;
 
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "¿Para cuál sucursal es tu pedido?\n\n" +
-      "A. La Villa\n" +
-      "B. Av. Circunvalar";
-
+     await sendWhatsAppButtons(phone,
+      "Perfecto 👌\n\n¿Para cuál sucursal es tu pedido?",
+      [
+        { id: "a", title: "La Villa 🏪" },
+        { id: "b", title: "Av. Circunvalar 🏪" }
+      ]
+    );
+    return res.sendStatus(200);
   } else if (
     lower === "b" ||
     lower.includes("domicilio") ||
@@ -784,12 +786,14 @@ if (customer.last_order) {
     updateOrderDeliveryType(phone, "domicilio");
     updateOrderStep(phone, "esperando_sucursal");
     currentOrder = getOrder(phone)!;
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "¿Para cuál sucursal es tu pedido?\n\n" +
-      "A. La Villa\n" +
-      "B. Av. Circunvalar";
-
+    await sendWhatsAppButtons(phone,
+      "Perfecto 👌\n\n¿Para cuál sucursal es tu pedido?",
+      [
+        { id: "a", title: "La Villa 🏪" },
+        { id: "b", title: "Av. Circunvalar 🏪" }
+      ]
+    );
+    return res.sendStatus(200);
   } else if (
     lower === "c" ||
     lower.includes("agendar") ||
@@ -959,10 +963,14 @@ if (customer.last_order) {
       "O si prefieres, escríbeme lo que deseas pedir y yo te ayudo por aquí 😊";
 
   } else {
-    replyMessage =
-      "Por favor elige la sucursal:\n\n" +
-      "A. La Villa\n" +
-      "B. Av. Circunvalar";
+    await sendWhatsAppButtons(phone,
+      "Perfecto 👌\n\n¿Para cuál sucursal es tu pedido?",
+      [
+        { id: "a", title: "La Villa 🏪" },
+        { id: "b", title: "Av. Circunvalar 🏪" }
+      ]
+    );
+    return res.sendStatus(200);
   }
 } else if (
   parsedItems.length > 0 &&
