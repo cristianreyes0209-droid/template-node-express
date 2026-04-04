@@ -658,23 +658,27 @@ if (customer.last_order) {
         `B. Quiero pedir algo nuevo`;
     }
 
-  } else if (
+} else if (
     lower === "a" ||
-    lower.includes("recoger") ||
-    lower.includes("tienda")
+    lower.includes("domicilio") ||
+    lower.includes("enviar") ||
+    lower.includes("envio") ||
+    lower.includes("envío")
   ) {
-    currentOrder.canal = "recoger";
-    updateOrderDeliveryType(phone, "recoger");
+    currentOrder.canal = "domicilio";
+    updateOrderDeliveryType(phone, "domicilio");
     updateOrderStep(phone, "esperando_sucursal");
     currentOrder = getOrder(phone)!;
 
-   replyMessage =
-      "Perfecto 👌\n\n" +
-      "¿Para cuál sucursal es tu pedido?\n\n" +
-      "A. La Villa\n" +
-      "B. Av. Circunvalar";
-      
-} else if (
+    await sendWhatsAppButtons(phone,
+      "Perfecto 👌\n\n¿Para cuál sucursal es tu pedido?",
+      [
+        { id: "a", title: "La Villa 🏪" },
+        { id: "b", title: "Av. Circunvalar 🏪" }
+      ]
+    );
+    return res.sendStatus(200);
+  } else if (
     lower === "b" ||
     lower.includes("domicilio") ||
     lower.includes("enviar") ||
