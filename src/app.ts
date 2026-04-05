@@ -1312,12 +1312,15 @@ replyMessage =
       "Escríbeme la observación para tu pedido 😊";
 
   } else {
-    replyMessage =
-      "Respóndeme por favor:\n\n" +
-      "A. Confirmar pedido ✅\n" +
-      "B. Eliminar productos ➖\n" +
-      "C. Agregar más productos ➕\n" +
-      "D. Agregar observación 📝";
+  await sendWhatsAppButtons(phone,
+  replyMessage,
+  [
+    { id: "a", title: "Confirmar ✅" },
+    { id: "b", title: "Eliminar ➖" },
+    { id: "c", title: "Agregar más ➕" }
+  ]
+);
+return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "retirando_productos") {
   const order = getOrder(phone)!;
@@ -1569,12 +1572,15 @@ replyMessage =
       "Escríbeme la observación para tu pedido 😊";
 
   } else {
-    replyMessage =
-      "Respóndeme con una opción:\n\n" +
-      "1. Confirmar pedido\n" +
-      "2. Agregar más productos\n" +
-      "3. Eliminar productos\n" +
-      "4. Observación";
+  await sendWhatsAppButtons(phone,
+  replyMessage,
+  [
+    { id: "a", title: "Confirmar ✅" },
+    { id: "b", title: "Eliminar ➖" },
+    { id: "c", title: "Agregar más ➕" }
+  ]
+);
+return res.sendStatus(200);
   }
       
 } else if (currentOrder?.step === "esperando_pago") {
