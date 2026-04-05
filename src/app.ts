@@ -106,6 +106,51 @@ async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: st
   const data = await response.json();
   console.log("RESPUESTA BOTONES META:", data);
 }
+async function calcularDomicilio(direccionCliente: string, sucursal: string): Promise<{
+  distanciaKm: number;
+  valorDomicilio: number;
+  descripcion: string;
+}> {
+  const sucursales: Record<string, string> = {
+    "la_villa": "Calle 83 #16a-22, Barrio La Villa, Pereira, Colombia",
+    "circunvalar": "Avenida Circunvalar #8-94, Pereira, Colombia"
+  };
+
+  const origen = encodeURIComponent(sucursales[sucursal] || sucursales["la_villa"]);
+  const destino = encodeURIComponent(direccionCliente + ", Pereira, Colombia");
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origen}&destinations=${destino}&mode=driving&key=${apiKey}`;
+
+  const response = await fetch(url);
+  const data = await response.json();
+
+  console.log("GOOGLE MAPS RESPONSE:", JSON.stringify(data, null, 2));
+
+  const elemento = data.rows?.[0]?.elements?.[0];
+
+  if (!elemento || elemento.status !== "OK") {
+    return { distanciaKm: 0, valorDomicilio: 4500, descripcion: "Domicilio base" };
+  }
+
+  const distanciaKm = elemento.distance.value / 1000;
+  const MINIMO = 4500;
+  const VALOR_POR_KM = 1000;
+  const KM_MINIMO = 2;
+
+  let valorDomicilio = MINIMO;
+  if (distanciaKm > KM_MINIMO) {
+    valorDomicilio = MINIMO + Math.ceil(distanciaKm - KM_MINIMO) * VALOR_POR_KM;
+  }
+
+  valorDomicilio = Math.ceil(valorDomicilio / 500) * 500;
+
+  return {
+    distanciaKm: Math.round(distanciaKm * 10) / 10,
+    valorDomicilio,
+    descripcion: `${Math.round(distanciaKm * 10) / 10}km → $${valorDomicilio.toLocaleString("es-CO")}`
+  };
+}
 
 const LARGE_JSON_PATH = '/large-json-payload';
 const APPLICATION_JSON = 'application/json';
