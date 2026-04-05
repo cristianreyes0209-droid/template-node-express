@@ -1,5 +1,5 @@
 
-export const DOMICILIO = 5000;
+export const DOMICILIO = 4500;
 
 export type OrderExtra = {
   nombre: string;
@@ -43,21 +43,15 @@ export type CustomerOrder = {
   formaPago?: string;
   canal?: string;
   sucursal?: string;
+  valorDomicilio?: number;
   items: OrderItem[];
-  step: OrderStep;
-  lastInteraction: number;
-  observacionesGenerales?: string;
-  aclaracionPendiente?: {
-    opciones: {
-      nombre: string;
-      productoId: string;
     }[];
   };
 };
 
 const orders: Record<string, CustomerOrder> = {};
 
-export function calculateTotal(order: CustomerOrder) {
+export function calculateTotal(order: CustomerOrder, valorDomicilioOverride?: number) {
   let subtotal = 0;
 
   for (const item of order.items) {
@@ -72,7 +66,10 @@ export function calculateTotal(order: CustomerOrder) {
     subtotal += itemTotal * item.cantidad;
   }
 
-  const domicilio = order.tipoEntrega === "domicilio" ? DOMICILIO : 0;
+  const domicilio = order.tipoEntrega === "domicilio"
+    ? (valorDomicilioOverride ?? order.valorDomicilio ?? DOMICILIO)
+    : 0;
+
   const total = subtotal + domicilio;
 
   return { subtotal, domicilio, total };
