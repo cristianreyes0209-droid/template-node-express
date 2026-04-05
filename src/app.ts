@@ -608,8 +608,8 @@ await sendWhatsAppButtons(phone,
   [
     { id: "1", title: "Confirmar ✅" },
     { id: "2", title: "Agregar más ➕" },
-    { id: "3", title: "Eliminar ➖" },
-           "4. Dejar observación 📝"; 
+    { id: "3", title: "Eliminar ➖" }
+        
   ]
 );
 return res.sendStatus(200);
