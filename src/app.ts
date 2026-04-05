@@ -1257,12 +1257,15 @@ replyMessage =
     updateOrderStep(phone, "esperando_pago");
     currentOrder = getOrder(phone)!;
 
-    replyMessage =
-      "Perfecto 👌\n\n¿Cómo deseas pagar?\n" +
-      "• Efectivo\n" +
-      "• Nequi\n" +
-      "• Daviplata\n" +
-      "• Bancolombia";
+   await sendWhatsAppButtons(phone,
+  "Perfecto 👌\n\n¿Cómo deseas pagar?",
+  [
+    { id: "efectivo", title: "Efectivo 💵" },
+    { id: "nequi", title: "Nequi 📱" },
+    { id: "bancolombia", title: "Bancolombia 🏦" }
+  ]
+);
+return res.sendStatus(200);
 
   } else if (
     lower === "b" ||
