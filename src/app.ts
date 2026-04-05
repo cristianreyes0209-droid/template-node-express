@@ -1181,8 +1181,19 @@ replyMessage =
   updateOrderAddress(phone, text);
 
   const order = getOrder(phone)!;
-  
-  const totals = calculateTotal(order);
+
+  let valorDomicilio = 4500;
+  let descripcionDomicilio = "";
+  try {
+    const calculo = await calcularDomicilio(text, order.sucursal || "la_villa");
+    valorDomicilio = calculo.valorDomicilio;
+    descripcionDomicilio = calculo.descripcion;
+    order.valorDomicilio = valorDomicilio;
+  } catch (e) {
+    console.log("Error calculando domicilio:", e);
+  }
+
+  const totals = calculateTotal(order, valorDomicilio);
  
  
 
