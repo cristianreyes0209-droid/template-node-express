@@ -1971,23 +1971,26 @@ replyMessage =
       "Puedes escribir otra crepe, bebida, topping, hacer observacion, o responder SI o NO.";
   }
 
-} else if (currentOrder?.step === "esperando_confirmacion_direccion") {
-  if (
-    lower === "a" ||
-    lower.includes("si") ||
-    lower.includes("sí") ||
-    lower.includes("esa misma") ||
-    lower.includes("la misma")
-  ) {
-    if (customer?.last_address) {
-      updateOrderAddress(phone, customer.last_address);
-    }
+} else if (lower === "a" || lower.includes("si") || lower.includes("sí") || lower.includes("esa misma")) {
+  updateOrderAddress(phone, customer?.last_address || "");
+  
+  const order = getOrder(phone)!;
 
-    updateOrderStep(phone, "esperando_confirmacion");
-    currentOrder = getOrder(phone)!;
+  let valorDomicilio = 4500;
+  let descripcionDomicilio = "";
+  try {
+    const calculo = await calcularDomicilio(customer?.last_address || "", order.sucursal || "la_villa");
+    valorDomicilio = calculo.valorDomicilio;
+    descripcionDomicilio = calculo.descripcion;
+    order.valorDomicilio = valorDomicilio;
+  } catch (e) {
+    console.log("Error calculando domicilio:", e);
+  }
 
-    const order = getOrder(phone)!;
-    const totals = calculateTotal(order);
+  updateOrderStep(phone, "esperando_confirmacion");
+  currentOrder = getOrder(phone)!;
+
+  const totals = calculateTotal(order, valorDomicilio);
 
     const resumen = order.items
       .map((item: any) => {
@@ -2019,7 +2022,7 @@ replyMessage =
       resumen +
       observacionGeneralTexto +
       "\n\nSubtotal: $" + totals.subtotal +
-      "\nDomicilio: $" + totals.domicilio +
+      "\n🛵 Domicilio: $" + totals.domicilio + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "") +
       "\nTotal: $" + totals.total +
       "\n📍 Dirección: " + (order.direccion || "No aplica") +
       "\n\n¿Qué deseas hacer?\n\n" +
