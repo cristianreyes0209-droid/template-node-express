@@ -2031,13 +2031,12 @@ replyMessage =
       "C. Agregar más productos ➕\n" +
       "D. Agregar observación 📝";
 
-  } else if (
+} else if (
     lower === "b" ||
     lower.includes("cambiar")
   ) {
     updateOrderStep(phone, "esperando_direccion");
     currentOrder = getOrder(phone)!;
-
     replyMessage =
       "Perfecto 👍\n\n¿Me compartes la nueva dirección por favor?";
   } else {
@@ -2045,8 +2044,8 @@ replyMessage =
       "Respóndeme por favor:\n\n" +
       "A. Sí, enviar a esa misma dirección\n" +
       "B. No, quiero cambiarla";
-  
   }
+}
 } else if (
   lower.includes("hola") ||
   lower.includes("buenas") ||
