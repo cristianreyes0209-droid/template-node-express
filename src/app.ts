@@ -1971,11 +1971,11 @@ replyMessage =
       "Puedes escribir otra crepe, bebida, topping, hacer observacion, o responder SI o NO.";
   }
 
-} else if (lower === "a" || lower.includes("si") || lower.includes("sí") || lower.includes("esa misma")) {
+} else if (currentOrder?.step === "esperando_confirmacion_direccion") {
+  if (lower === "a" || lower.includes("si") || lower.includes("sí") || lower.includes("esa misma")) {
   updateOrderAddress(phone, customer?.last_address || "");
   
   const order = getOrder(phone)!;
-
   let valorDomicilio = 4500;
   let descripcionDomicilio = "";
   try {
