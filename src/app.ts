@@ -392,6 +392,15 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   }
 
   const phone = messageData.from;   
+    // Ignorar mensajes de grupos (tienen @ en el ID)
+if (phone.includes("@g.us")) {
+  return res.sendStatus(200);
+}
+
+// Ignorar mensajes del número interno de circunvalar
+if (phone === "573217233342" || phone === process.env.CIRCUNVALAR_PHONE) {
+  return res.sendStatus(200);
+}
   const customer = await getCustomerByPhone(phone);
   const text = messageData.text?.body 
   || messageData.interactive?.button_reply?.id 
