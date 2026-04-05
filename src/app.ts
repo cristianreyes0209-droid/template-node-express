@@ -134,10 +134,9 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
   }
 
   const distanciaKm = elemento.distance.value / 1000;
-  const MINIMO = 4500;
-  const VALOR_POR_KM = 1000;
-  const KM_MINIMO = 2;
-
+ const MINIMO = 4500;
+  const VALOR_POR_KM = 600;
+  const KM_MINIMO = 3;
   let valorDomicilio = MINIMO;
   if (distanciaKm > KM_MINIMO) {
     valorDomicilio = MINIMO + Math.ceil(distanciaKm - KM_MINIMO) * VALOR_POR_KM;
