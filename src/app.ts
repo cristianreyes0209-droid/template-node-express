@@ -603,12 +603,17 @@ if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length)
 replyMessage =
   "Perfecto 👌\n\n" +
   "Estoy registrando:\n\n" +
-  resumen +
-  "\n\n¿Qué deseas hacer ahora?\n\n" +
-  "1. Confirmar pedido ✅\n" +
-  "2. Agregar más productos ➕\n" +
-  "3. Eliminar productos ➖\n" +
-  "4. Dejar observación 📝";
+await sendWhatsAppButtons(phone,
+  resumen + "\n\n¿Qué deseas hacer ahora?",
+  [
+    { id: "1", title: "Confirmar ✅" },
+    { id: "2", title: "Agregar más ➕" },
+    { id: "3", title: "Eliminar ➖" }
+           "4. Dejar observación 📝"; 
+  ]
+);
+return res.sendStatus(200);
+  
     } else {
       replyMessage = "No pude encontrar esa opción. Inténtalo de nuevo 😊";
     }
