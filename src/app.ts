@@ -1228,7 +1228,7 @@ replyMessage =
    resumen +
    observacionGeneralTexto +
   "\n\nSubtotal: $" + totals.subtotal +
-  "\nDomicilio: $" + totals.domicilio +
+  "\n🛵 Domicilio: $" + totals.domicilio + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "") +
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
   "\n\n¿Qué deseas hacer?\n\n" +
