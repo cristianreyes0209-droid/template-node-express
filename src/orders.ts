@@ -34,6 +34,7 @@ export type OrderStep =
   | "esperando_comprobante"
   | "esperando_aclaracion_producto"
   | "confirmado";
+};
 
 export type CustomerOrder = {
   telefono: string;
@@ -45,6 +46,13 @@ export type CustomerOrder = {
   sucursal?: string;
   valorDomicilio?: number;
   items: OrderItem[];
+  step: OrderStep;
+  lastInteraction: number;
+  observacionesGenerales?: string;
+  aclaracionPendiente?: {
+    opciones: {
+      nombre: string;
+      productoId: string;
     }[];
   };
 };
