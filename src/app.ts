@@ -636,49 +636,43 @@ return res.sendStatus(200);
       lower.includes("el mismo")
     ) {
 
-if (customer.last_order) {
-  const order = getOrder(phone)!;
+      if (customer.last_order) {
+        const order = getOrder(phone)!;
+        order.items = customer.last_order;
+        order.direccion = customer.last_address;
+        order.nombre = customer.name;
+        updateOrderName(phone, customer.name || "");
+        updateOrderStep(phone, "esperando_tipo_entrega_repetido");
+        currentOrder = getOrder(phone)!;
 
-  order.items = customer.last_order;
-  order.direccion = customer.last_address;
-  order.nombre = customer.name;
-  updateOrderName(phone, customer.name || "");
+        const resumen = order.items.map((item: any) => {
+          const observacionesTexto = item.observaciones
+            ? ` (${formatObservaciones(item.observaciones)})`
+            : "";
+          const extrasTexto =
+            item.extras && item.extras.length > 0
+              ? " +" + item.extras.map((extra: any) =>
+                  extra.cantidad > 1
+                    ? `${extra.cantidad} ${extra.nombre}`
+                    : extra.nombre
+                ).join(", +")
+              : "";
+          return `* ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
+        }).join("\n");
 
-  updateOrderStep(phone, "esperando_tipo_entrega_repetido");
-  currentOrder = getOrder(phone)!;
+        const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
-  const resumen = order.items.map((item: any) => {
-    const observacionesTexto = item.observaciones
-      ? ` (${formatObservaciones(item.observaciones)})`
-      : "";
+        await sendWhatsAppButtons(phone,
+          "🔥 Perfecto, estoy repitiendo tu último pedido\n\nTu pedido es:\n" + resumen + observacionGeneralTexto + "\n\n¿Cómo deseas recibirlo hoy?",
+          [
+            { id: "a", title: "Recoger en tienda 🏪" },
+            { id: "b", title: "Domicilio 🚚" }
+          ]
+        );
+        return res.sendStatus(200);
 
-    const extrasTexto =
-      item.extras && item.extras.length > 0
-        ? " +" +
-          item.extras.map((extra: any) =>
-            extra.cantidad > 1
-              ? `${extra.cantidad} ${extra.nombre}`
-              : extra.nombre
-          ).join(", +")
-        : "";
-
-    return `* ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
-  }).join("\n");
-
-  const observacionGeneralTexto = getObservacionGeneralTexto(order);
-
-  replyMessage =
-    "🔥 Perfecto, estoy repitiendo tu último pedido\n\n" +
-    "Tu pedido es:\n" +
-    resumen +
-    observacionGeneralTexto +
-    "\n\n¿Cómo deseas recibirlo hoy?\n\n" +
-    "A. Recoger en tienda 🏪\n" +
-    "B. Domicilio 🚚";
       } else {
-        replyMessage =
-          "No encontré un pedido anterior 😊\n\n" +
-          "Cuéntame qué deseas pedir.";
+        replyMessage = "No encontré un pedido anterior 😊\n\nCuéntame qué deseas pedir.";
       }
 
     } else if (
@@ -687,126 +681,69 @@ if (customer.last_order) {
       lower.includes("diferente") ||
       lower.includes("otra cosa")
     ) {
-
       updateOrderStep(phone, "esperando_menu_nuevo");
       currentOrder = getOrder(phone)!;
 
-      replyMessage =
-        "Perfecto 👌\n\n" +
-        "¿Qué deseas hacer hoy?\n\n" +
-        "A. Recoger en tienda 🏪\n" +
-        "B. Domicilio 🚚\n" +
-        "C. Agendar pedido 📅\n" +
-        "D. Hacer reserva 🍽️\n" +
-        "E. PQR 📝\n" +
-        "F. Otros 💬";
+      await sendWhatsAppButtons(phone,
+        "Perfecto 👌\n\n¿Qué deseas hacer?",
+        [
+          { id: "1", title: "Hacer un pedido 🥞" },
+          { id: "2", title: "Ver menú 📋" },
+          { id: "3", title: "Otros 💬" }
+        ]
+      );
+      return res.sendStatus(200);
 
     } else {
-
-      replyMessage =
-        `Hola ${customer.name || ""} 👋\n\n` +
-        `Qué bueno tenerte de vuelta en LAS CREPES ✨\n\n` +
-        `¿Deseas pedir lo mismo de siempre o quieres algo diferente? 😋\n\n` +
-        `A. Lo mismo\n` +
-        `B. Quiero pedir algo nuevo`;
+      await sendWhatsAppButtons(phone,
+        `Hola, ${customer.name || ""} 👋\n\nQué bueno tenerte de vuelta en LAS CREPES ✨\n\n¿Qué deseas hacer?`,
+        [
+          { id: "a", title: "Lo mismo de siempre 🔄" },
+          { id: "b", title: "Pedir algo nuevo 🥞" },
+          { id: "3", title: "Otros 💬" }
+        ]
+      );
+      return res.sendStatus(200);
     }
 
-} else if (
-    lower === "a" ||
-    lower.includes("domicilio") ||
-    lower.includes("enviar") ||
-    lower.includes("envio") ||
-    lower.includes("envío")
-  ) {
-    currentOrder.canal = "domicilio";
-    updateOrderDeliveryType(phone, "domicilio");
+  } else if (lower === "1" || lower.includes("pedido") || lower.includes("pedir") || lower.includes("hacer")) {
+    updateOrderDeliveryType(phone, "");
     updateOrderStep(phone, "esperando_sucursal");
     currentOrder = getOrder(phone)!;
 
     await sendWhatsAppButtons(phone,
-      "Perfecto 👌\n\n¿Para cuál sucursal es tu pedido?",
+      "Perfecto 👌\n\n¿Cómo deseas recibir tu pedido?",
       [
-        { id: "a", title: "La Villa 🏪" },
-        { id: "b", title: "Av. Circunvalar 🏪" }
+        { id: "domicilio", title: "Domicilio 🚚" },
+        { id: "recoger", title: "Recoger en tienda 🏪" }
       ]
     );
     return res.sendStatus(200);
-  } else if (
-    lower === "b" ||
-    lower.includes("domicilio") ||
-    lower.includes("enviar") ||
-    lower.includes("envio") ||
-    lower.includes("envío")
-  ) {
-    currentOrder.canal = "domicilio";
-    updateOrderDeliveryType(phone, "domicilio");
-    updateOrderStep(phone, "esperando_sucursal");
-    currentOrder = getOrder(phone)!;
 
-    await sendWhatsAppButtons(phone,
-      "Perfecto 👌\n\n¿Para cuál sucursal es tu pedido?",
-      [
-        { id: "a", title: "La Villa 🏪" },
-        { id: "b", title: "Av. Circunvalar 🏪" }
-      ]
-    );
-    return res.sendStatus(200);
-  } else if (
-    lower === "c" ||
-    lower.includes("agendar") ||
-    lower.includes("programar") ||
-    lower.includes("pedido programado")
-  ) {
+  } else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
     replyMessage =
-      "Perfecto 👌\n\n" +
-      "Muy pronto podrás agendar pedidos por este medio.\n\n" +
-      "Por ahora puedo ayudarte con pedidos inmediatos para recoger o domicilio.";
+      "Aquí puedes ver nuestro menú completo 📋\n\n" +
+      "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=menu";
 
   } else if (
-    lower === "d" ||
-    lower.includes("reserva") ||
-    lower.includes("reservar") ||
-    lower.includes("mesa")
-  ) {
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Muy pronto podrás hacer reservas por este medio.\n\n" +
-      "Por ahora, si deseas, puedo ayudarte con un pedido para recoger o domicilio.";
-
-  } else if (
-    lower === "e" ||
+    lower === "3" ||
+    lower.includes("otros") ||
     lower.includes("pqr") ||
     lower.includes("queja") ||
-    lower.includes("reclamo") ||
-    lower.includes("peticion") ||
-    lower.includes("petición") ||
-    lower.includes("sugerencia")
-  ) {
-    replyMessage =
-      "Claro 😊\n\n" +
-      "Por favor escríbeme tu solicitud, queja, reclamo o sugerencia, y te ayudaremos a gestionarla.";
-
-  } else if (
-    lower === "f" ||
-    lower.includes("otros") ||
-    lower.includes("otra cosa") ||
     lower.includes("ayuda")
   ) {
-    replyMessage =
-      "Con gusto 😊\n\n" +
-      "Cuéntame en qué puedo ayudarte.";
+    replyMessage = "Con gusto 😊\n\nCuéntame en qué puedo ayudarte.";
 
-} else {
-    replyMessage =
-      "Hola 👋 Bienvenido a LAS CREPES ✨\n\n" +
-      "Qué alegría atenderte 😊\n\n" +
-      "Elige una de estas opciones para continuar:\n\n" +
-      "A. Recoger en tienda 🏪\n" +
-      "B. Domicilio 🚚\n" +
-      "C. Agendar pedido 📅\n" +
-      "D. Hacer reserva 🍽️\n" +
-      "E. PQR 📝\n" +
-      "F. Otros 💬";
+  } else {
+    await sendWhatsAppButtons(phone,
+      "Hola 👋 Bienvenido a LAS CREPES ✨\n\n¿Qué deseas hacer?",
+      [
+        { id: "1", title: "Hacer un pedido 🥞" },
+        { id: "2", title: "Ver menú 📋" },
+        { id: "3", title: "Otros 💬" }
+      ]
+    );
+    return res.sendStatus(200);
   }
 
 } else if (currentOrder?.step === "esperando_menu_nuevo") {
@@ -2088,8 +2025,10 @@ return res.sendStatus(200);
     "También puedo ayudarte con domicilio o recoger.";
 }
 
-console.log("ENVIANDO MENSAJE A:", phone);
- await sendWhatsAppMessage(phone, replyMessage);
+if (replyMessage) {
+  console.log("ENVIANDO MENSAJE A:", phone);
+  await sendWhatsAppMessage(phone, replyMessage);
+}
 return res.sendStatus(200);
 });
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
