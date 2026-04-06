@@ -696,7 +696,7 @@ return res.sendStatus(200);
       );
       return res.sendStatus(200);
 
-    } else {
+  } else {
       await sendWhatsAppButtons(phone,
         `Hola, ${customer.name || ""} 👋\n\nQué bueno tenerte de vuelta en LAS CREPES ✨\n\n¿Qué deseas hacer?`,
         [
@@ -707,7 +707,7 @@ return res.sendStatus(200);
       );
       return res.sendStatus(200);
     }
-} else if (lower === "1" || lower.includes("pedido") || lower.includes("pedir")) {
+  } else if (lower === "1" || lower.includes("pedido") || lower.includes("pedir")) {
   updateOrderStep(phone, "esperando_tipo_entrega");
   currentOrder = getOrder(phone)!;
 
