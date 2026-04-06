@@ -479,8 +479,9 @@ if (
   ? `, ${customer.name.trim()}` 
   : "";
 
+const nombreMostrar = (customer?.name && customer.name.trim() !== "") ? `, ${customer.name.trim()}` : "";
 await sendWhatsAppButtons(phone,
-  `Hola${nombreCliente} 👋\n\nQué bueno tenerte de vuelta en LAS CREPES ✨\n\n¿Qué deseas hacer?`,
+  `Hola${nombreMostrar} 👋 Qué bueno tenerte de vuelta en LAS CREPES\n\n¿Qué deseas hacer?`,
   [
     { id: "a", title: "Lo mismo de siempre 🔄" },
     { id: "b", title: "Pedir algo nuevo 🥞" },
@@ -490,7 +491,7 @@ await sendWhatsAppButtons(phone,
 return res.sendStatus(200);
   } else {
    await sendWhatsAppButtons(phone,
-  "Hola 👋 Bienvenido a LAS CREPES ✨\n\n¿Qué deseas hacer?",
+  "Hola 👋 Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
   [
     { id: "1", title: "Hacer un pedido 🥞" },
     { id: "2", title: "Ver menú 📋" },
