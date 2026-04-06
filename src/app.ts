@@ -557,6 +557,8 @@ return res.sendStatus(200);
   ]
 );
 return res.sendStatus(200);
+  }
+}
 
 if (currentOrder?.step === "esperando_aclaracion_producto") {
   const opciones = currentOrder.aclaracionPendiente?.opciones || [];
@@ -605,9 +607,6 @@ if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length)
 
   updateOrderStep(phone, "post_agregar_producto");
 
-replyMessage =
-  "Perfecto 👌\n\n" +
-  "Estoy registrando:\n\n" +
 await sendWhatsAppButtons(phone,
   resumen + "\n\n¿Qué deseas hacer ahora?",
   [
