@@ -707,8 +707,7 @@ return res.sendStatus(200);
       );
       return res.sendStatus(200);
     }
-
-  } else if (lower === "1" || lower.includes("pedido") || lower.includes("pedir")) {
+} else if (lower === "1" || lower.includes("pedido") || lower.includes("pedir")) {
   updateOrderStep(phone, "esperando_tipo_entrega");
   currentOrder = getOrder(phone)!;
 
