@@ -1443,6 +1443,7 @@ return res.sendStatus(200);
   ]
 );
 return res.sendStatus(200);
+  }
 
   updateOrderStep(phone, "esperando_direccion");
   replyMessage =
@@ -1931,6 +1932,7 @@ return res.sendStatus(200);
   ]
 );
 return res.sendStatus(200);
+      }
     } else {
       updateOrderStep(phone, "esperando_nombre");
       currentOrder = getOrder(phone)!;
