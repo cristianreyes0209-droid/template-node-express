@@ -836,6 +836,7 @@ return res.sendStatus(200);
   ]
 );
 return res.sendStatus(200);
+      }
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
     lower === "a" ||
@@ -1132,7 +1133,7 @@ await sendWhatsAppButtons(phone,
   ]
 );
 return res.sendStatus(200);
-
+ }
 } else if (currentOrder?.step === "esperando_direccion") {
   updateOrderAddress(phone, text);
 
