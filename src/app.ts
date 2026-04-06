@@ -1546,8 +1546,6 @@ return res.sendStatus(200);
       
 } else if (currentOrder?.step === "esperando_pago") {
       
-} else if (currentOrder?.step === "esperando_pago") {
-
   if (
     lower.includes("cuanto es") ||
     lower.includes("cuánto es") ||
