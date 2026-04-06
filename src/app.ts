@@ -708,45 +708,40 @@ return res.sendStatus(200);
       return res.sendStatus(200);
     }
 
-  } else if (lower === "1" || lower.includes("pedido") || lower.includes("pedir") || lower.includes("hacer")) {
-    updateOrderDeliveryType(phone, "");
-    updateOrderStep(phone, "esperando_sucursal");
-    currentOrder = getOrder(phone)!;
+  } else if (lower === "1" || lower.includes("pedido") || lower.includes("pedir")) {
+  updateOrderStep(phone, "esperando_tipo_entrega");
+  currentOrder = getOrder(phone)!;
 
-    await sendWhatsAppButtons(phone,
-      "Perfecto 👌\n\n¿Cómo deseas recibir tu pedido?",
-      [
-        { id: "domicilio", title: "Domicilio 🚚" },
-        { id: "recoger", title: "Recoger en tienda 🏪" }
-      ]
-    );
-    return res.sendStatus(200);
+  await sendWhatsAppButtons(phone,
+    "¿Cómo deseas recibir tu pedido?",
+    [
+      { id: "domicilio", title: "Domicilio 🚚" },
+      { id: "recoger", title: "Recoger en tienda 🏪" }
+    ]
+  );
+  return res.sendStatus(200);
 
-  } else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
-    replyMessage =
-      "Aquí puedes ver nuestro menú completo 📋\n\n" +
-      "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=menu";
+} else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
+  replyMessage =
+    "Aquí puedes ver nuestro menú completo 📋\n\n" +
+    "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=menu";
 
-  } else if (
-    lower === "3" ||
-    lower.includes("otros") ||
-    lower.includes("pqr") ||
-    lower.includes("queja") ||
-    lower.includes("ayuda")
-  ) {
-    replyMessage = "Con gusto 😊\n\nCuéntame en qué puedo ayudarte.";
+} else if (lower === "3" || lower.includes("otros") || lower.includes("ayuda") || lower.includes("pqr")) {
+  replyMessage =
+    "Con gusto te ayudo 😊\n\n" +
+    "Cuéntame en qué puedo ayudarte.";
 
-  } else {
-    await sendWhatsAppButtons(phone,
-      "Hola 👋 Bienvenido a LAS CREPES ✨\n\n¿Qué deseas hacer?",
-      [
-        { id: "1", title: "Hacer un pedido 🥞" },
-        { id: "2", title: "Ver menú 📋" },
-        { id: "3", title: "Otros 💬" }
-      ]
-    );
-    return res.sendStatus(200);
-  }
+} else {
+  await sendWhatsAppButtons(phone,
+    "Hola 👋 Bienvenido a LAS CREPES ✨\n\n¿Qué deseas hacer?",
+    [
+      { id: "1", title: "Hacer un pedido 🥞" },
+      { id: "2", title: "Ver menú 📋" },
+      { id: "3", title: "Otros 💬" }
+    ]
+  );
+  return res.sendStatus(200);
+}
 
 } else if (currentOrder?.step === "esperando_menu_nuevo") {
   if (
