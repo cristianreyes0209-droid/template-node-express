@@ -827,17 +827,15 @@ return res.sendStatus(200);
       "Cuéntame en qué puedo ayudarte.";
 
   } else {
-    replyMessage =
-      "Hola 👋 Bienvenido a LAS CREPES ✨\n\n" +
-      "Qué alegría atenderte 😊\n\n" +
-      "Elige una de estas opciones para continuar:\n\n" +
-      "A. Recoger en tienda 🏪\n" +
-      "B. Domicilio 🚚\n" +
-      "C. Agendar pedido 📅\n" +
-      "D. Hacer reserva 🍽️\n" +
-      "E. PQR 📝\n" +
-      "F. Otros 💬";
-  }
+  await sendWhatsAppButtons(phone,
+  "Hola 👋 Bienvenido a LAS CREPES ✨\n\n¿Qué deseas hacer?",
+  [
+    { id: "1", title: "Hacer un pedido 🥞" },
+    { id: "2", title: "Ver menú 📋" },
+    { id: "3", title: "Otros 💬" }
+  ]
+);
+return res.sendStatus(200);
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
     lower === "a" ||
@@ -871,21 +869,22 @@ return res.sendStatus(200);
 
     const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Tu pedido es:\n" +
-      resumen +
-      observacionGeneralTexto +
-      "\n\nSubtotal: $" + totals.subtotal +
-      "\nDomicilio: $" + totals.domicilio +
-      "\nTotal: $" + totals.total +
-      "\n📍 Dirección: No aplica" +
-      "\n\n¿Qué deseas hacer?\n\n" +
-      "A. Confirmar pedido ✅\n" +
-      "B. Eliminar productos ➖\n" +
-      "C. Agregar más productos ➕\n" +
-      "D. Agregar observación 📝";
-
+   await sendWhatsAppButtons(phone,
+  "Perfecto 👌\n\nTu pedido es:\n" +
+  resumen +
+  observacionGeneralTexto +
+  "\n\nSubtotal: $" + totals.subtotal +
+  "\n🛵 Domicilio: $" + totals.domicilio +
+  "\nTotal: $" + totals.total +
+  "\n📍 Dirección: " + (order.direccion || "No aplica") +
+  "\n\n📝 Si deseas una observación escríbela ahora, o elige una opción:",
+  [
+    { id: "a", title: "Confirmar ✅" },
+    { id: "b", title: "Eliminar ➖" },
+    { id: "c", title: "Agregar más ➕" }
+  ]
+);
+return res.sendStatus(200);
   } else if (
     lower === "b" ||
     lower.includes("domicilio")
@@ -896,12 +895,14 @@ return res.sendStatus(200);
       updateOrderStep(phone, "esperando_confirmacion_direccion");
       currentOrder = getOrder(phone)!;
 
-     replyMessage =
-  "Perfecto 👍\n\n" +
-  "¿Deseas usar la misma dirección?\n\n" +
-  `📍 ${customer.last_address}\n\n` +
-  "A. Sí, esa misma\n" +
-  "B. No, quiero cambiarla";
+  await sendWhatsAppButtons(phone,
+  `Perfecto 👍\n\n¿Deseas usar la misma dirección?\n\n📍 ${customer.last_address}`,
+  [
+    { id: "a", title: "Sí, esa misma ✅" },
+    { id: "b", title: "No, cambiarla 📍" }
+  ]
+);
+return res.sendStatus(200);
 
 await sendWhatsAppMessage(phone, replyMessage);
     } else {
@@ -914,10 +915,14 @@ await sendWhatsAppMessage(phone, replyMessage);
     }
 
   } else {
-    replyMessage =
-      "¿Cómo deseas recibirlo hoy?\n\n" +
-      "A. Recoger en tienda 🏪\n" +
-      "B. Domicilio 🚚";
+    await sendWhatsAppButtons(phone,
+  "¿Cómo deseas recibirlo hoy?",
+  [
+    { id: "a", title: "Recoger en tienda 🏪" },
+    { id: "b", title: "Domicilio 🚚" }
+  ]
+);
+return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "esperando_sucursal") {
   if (
@@ -991,15 +996,17 @@ await sendWhatsAppMessage(phone, replyMessage);
     })
     .join("\n");
 
-  replyMessage =
-    "Perfecto 👌\n\n" +
-    "Estoy registrando:\n\n" +
-    resumen +
-    "\n\n¿Qué deseas hacer ahora?\n\n" +
-    "1. Confirmar pedido ✅\n" +
-    "2. Agregar más productos ➕\n" +
-    "3. Eliminar productos ➖\n" +
-    "4. Dejar observación 📝";
+ await sendWhatsAppButtons(phone,
+  "Perfecto 👌\n\nEstoy registrando:\n\n" +
+  resumen +
+  "\n\n📝 Si deseas una observación escríbela, o elige:",
+  [
+    { id: "1", title: "Confirmar ✅" },
+    { id: "2", title: "Agregar más ➕" },
+    { id: "3", title: "Eliminar ➖" }
+  ]
+);
+return res.sendStatus(200);
 } else if (currentOrder?.step === "esperando_nombre") {
   if (
     lower === "si" ||
@@ -1053,19 +1060,22 @@ const resumen = order.items
 // 🔥 ESTA LÍNEA TE FALTABA
 const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
-replyMessage =
-  "Perfecto 👌\n\n" +
-  "Tu pedido es:\n" +
+await sendWhatsAppButtons(phone,
+  "Perfecto 👌\n\nTu pedido es:\n" +
   resumen +
   observacionGeneralTexto +
   "\n\nSubtotal: $" + totals.subtotal +
   "\nDomicilio: $" + totals.domicilio +
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
-  "\n\n¿Qué deseas hacer?\n\n" +
-  "A. Confirmar pedido ✅\n" +
-  "B. Retirar productos ➖\n" +
-  "C. Agregar más productos ➕";
+  "\n\n📝 Si deseas una observación escríbela, o elige:",
+  [
+    { id: "a", title: "Confirmar ✅" },
+    { id: "b", title: "Eliminar ➖" },
+    { id: "c", title: "Agregar más ➕" }
+  ]
+);
+return res.sendStatus(200);
     }
   }
 
@@ -1106,20 +1116,22 @@ replyMessage =
       .join("\n");
       const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
- replyMessage =
-  "Perfecto 👌\n\n" +
- "Tu pedido es:\n" + 
+await sendWhatsAppButtons(phone,
+  "Perfecto 👌\n\nTu pedido es:\n" +
   resumen +
   observacionGeneralTexto +
   "\n\nSubtotal: $" + totals.subtotal +
   "\nDomicilio: $" + totals.domicilio +
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
-  "\n\n¿Qué deseas hacer?\n\n" +
-  "A. Confirmar pedido ✅\n" +
-  "B. Retirar productos ➖\n" +
-  "C. Agregar más productos ➕";
-  }
+  "\n\n📝 Si deseas una observación escríbela, o elige:",
+  [
+    { id: "a", title: "Confirmar ✅" },
+    { id: "b", title: "Eliminar ➖" },
+    { id: "c", title: "Agregar más ➕" }
+  ]
+);
+return res.sendStatus(200);
 
 } else if (currentOrder?.step === "esperando_direccion") {
   updateOrderAddress(phone, text);
@@ -1166,20 +1178,22 @@ replyMessage =
   updateOrderStep(phone, "esperando_confirmacion");
   currentOrder = getOrder(phone)!;
 
- replyMessage =
-  "Perfecto 👌\n\n" +
- "Tu pedido es:\n" +
-   resumen +
-   observacionGeneralTexto +
+await sendWhatsAppButtons(phone,
+  "Perfecto 👌\n\nTu pedido es:\n" +
+  resumen +
+  observacionGeneralTexto +
   "\n\nSubtotal: $" + totals.subtotal +
-  "\n🛵 Domicilio: $" + totals.domicilio + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "") +
+  "\nDomicilio: $" + totals.domicilio +
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
-  "\n\n¿Qué deseas hacer?\n\n" +
-  "A. Confirmar pedido ✅\n" +
-  "B. Retirar productos ➖\n" +
-  "C. Agregar más productos ➕";
-
+  "\n\n📝 Si deseas una observación escríbela, o elige:",
+  [
+    { id: "a", title: "Confirmar ✅" },
+    { id: "b", title: "Eliminar ➖" },
+    { id: "c", title: "Agregar más ➕" }
+  ]
+);
+return res.sendStatus(200);
 } else if (currentOrder?.step === "esperando_confirmacion") {
  if (
   lower === "a" ||
@@ -1466,21 +1480,22 @@ return res.sendStatus(200);
 
     const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Tu pedido es:\n" +
-      resumen +
-      observacionGeneralTexto +
-      "\n\nSubtotal: $" + totals.subtotal +
-      "\nDomicilio: $" + totals.domicilio +
-      "\nTotal: $" + totals.total +
-      "\n📍 Dirección: " + (order.direccion || "No aplica") +
-      "\n\n¿Qué deseas hacer?\n\n" +
-      "A. Confirmar pedido ✅\n" +
-      "B. Eliminar productos ➖\n" +
-      "C. Agregar más productos ➕\n" +
-      "D. Agregar observación 📝";
-
+   await sendWhatsAppButtons(phone,
+  "Perfecto 👌\n\nTu pedido es:\n" +
+  resumen +
+  observacionGeneralTexto +
+  "\n\nSubtotal: $" + totals.subtotal +
+  "\nDomicilio: $" + totals.domicilio +
+  "\nTotal: $" + totals.total +
+  "\n📍 Dirección: " + (order.direccion || "No aplica") +
+  "\n\n📝 Si deseas una observación escríbela, o elige:",
+  [
+    { id: "a", title: "Confirmar ✅" },
+    { id: "b", title: "Eliminar ➖" },
+    { id: "c", title: "Agregar más ➕" }
+  ]
+);
+return res.sendStatus(200);
   } else if (lower === "2") {
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
@@ -1856,11 +1871,14 @@ return res.sendStatus(200);
           updateOrderStep(phone, "esperando_confirmacion_direccion");
           currentOrder = getOrder(phone)!;
 
-          replyMessage =
-            `Perfecto 👍\n\n¿Deseas usar la misma dirección de siempre?\n\n` +
-            `📍 ${customer.last_address}\n\n` +
-            `A. Sí, esa misma\n` +
-            `B. No, quiero cambiarla`;
+         await sendWhatsAppButtons(phone,
+  `Perfecto 👍\n\n¿Deseas usar la misma dirección de siempre?\n\n📍 ${customer.last_address}`,
+  [
+    { id: "a", title: "Sí, esa misma ✅" },
+    { id: "b", title: "No, cambiarla 📍" }
+  ]
+);
+return res.sendStatus(200);
         } else {
           updateOrderStep(phone, "esperando_direccion");
           currentOrder = getOrder(phone)!;
@@ -1896,18 +1914,22 @@ return res.sendStatus(200);
           })
           .join("\n");
  const observacionGeneralTexto = getObservacionGeneralTexto(order);
-        replyMessage =
-          "Perfecto 👌\n\n" +
-         "Tu pedido es:\n" +
-         resumen +
-         observacionGeneralTexto +
-          "\n\nSubtotal: $" + totals.subtotal +
-          "\nTotal: $" + totals.total +
-          "\n\n¿Qué deseas hacer?\n\n" +
-          "A. Confirmar pedido ✅\n" +
-          "B. Eliminar Productos \n" +
-          "C. Agregar más productos ➕";
-      }
+      await sendWhatsAppButtons(phone,
+  "Perfecto 👌\n\nTu pedido es:\n" +
+  resumen +
+  observacionGeneralTexto +
+  "\n\nSubtotal: $" + totals.subtotal +
+  "\nDomicilio: $" + totals.domicilio +
+  "\nTotal: $" + totals.total +
+  "\n📍 Dirección: " + (order.direccion || "No aplica") +
+  "\n\n📝 Si deseas una observación escríbela, o elige:",
+  [
+    { id: "a", title: "Confirmar ✅" },
+    { id: "b", title: "Eliminar ➖" },
+    { id: "c", title: "Agregar más ➕" }
+  ]
+);
+return res.sendStatus(200);
     } else {
       updateOrderStep(phone, "esperando_nombre");
       currentOrder = getOrder(phone)!;
@@ -1966,20 +1988,22 @@ return res.sendStatus(200);
 
     const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Tu pedido es:\n" +
-      resumen +
-      observacionGeneralTexto +
-      "\n\nSubtotal: $" + totals.subtotal +
-      "\n🛵 Domicilio: $" + totals.domicilio + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "") +
-      "\nTotal: $" + totals.total +
-      "\n📍 Dirección: " + (order.direccion || "No aplica") +
-      "\n\n¿Qué deseas hacer?\n\n" +
-      "A. Confirmar pedido ✅\n" +
-      "B. Eliminar productos ➖\n" +
-      "C. Agregar más productos ➕\n" +
-      "D. Agregar observación 📝";
+  await sendWhatsAppButtons(phone,
+  "Perfecto 👌\n\nTu pedido es:\n" +
+  resumen +
+  observacionGeneralTexto +
+  "\n\nSubtotal: $" + totals.subtotal +
+  "\n🛵 Domicilio: $" + totals.domicilio + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "") +
+  "\nTotal: $" + totals.total +
+  "\n📍 Dirección: " + (order.direccion || "No aplica") +
+  "\n\n📝 Si deseas una observación escríbela, o elige:",
+  [
+    { id: "a", title: "Confirmar ✅" },
+    { id: "b", title: "Eliminar ➖" },
+    { id: "c", title: "Agregar más ➕" }
+  ]
+);
+return res.sendStatus(200);
 
 } else if (
     lower === "b" ||
@@ -1990,10 +2014,14 @@ return res.sendStatus(200);
     replyMessage =
       "Perfecto 👍\n\n¿Me compartes la nueva dirección por favor?";
   } else {
-    replyMessage =
-      "Respóndeme por favor:\n\n" +
-      "A. Sí, enviar a esa misma dirección\n" +
-      "B. No, quiero cambiarla";
+   await sendWhatsAppButtons(phone,
+  `Perfecto 👍\n\n¿Deseas usar la misma dirección de siempre?\n\n📍 ${customer.last_address}`,
+  [
+    { id: "a", title: "Sí, esa misma ✅" },
+    { id: "b", title: "No, cambiarla 📍" }
+  ]
+);
+return res.sendStatus(200);
   
 }
 } else if (
