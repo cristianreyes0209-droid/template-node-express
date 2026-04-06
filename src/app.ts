@@ -2036,12 +2036,15 @@ return res.sendStatus(200);
   lower.includes("buenas tardes") ||
   lower.includes("buenas noches")
 ) {
-  replyMessage =
-    "Hola 👋 Qué alegría atenderte en Las Crepes de París 🥞\n\n" +
-    "Puedes hacer tu pedido aquí:\n" +
-    "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
-    "O si prefieres, escríbeme qué deseas pedir y yo te ayudo por aquí 😊";
-
+  await sendWhatsAppButtons(phone,
+    "Hola 👋 Bienvenido a LAS CREPES ✨\n\n¿Qué deseas hacer?",
+    [
+      { id: "1", title: "Hacer un pedido 🥞" },
+      { id: "2", title: "Ver menú 📋" },
+      { id: "3", title: "Otros 💬" }
+    ]
+  );
+  return res.sendStatus(200);
 } else {
   replyMessage =
     "Con gusto te ayudo 😊\n\n" +
