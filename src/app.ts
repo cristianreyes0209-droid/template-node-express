@@ -1532,9 +1532,7 @@ return res.sendStatus(200);
       "Perfecto 👌\n\n" +
       "Escríbeme la observación para tu pedido 😊";
 
-  } else {
-  await sendWhatsAppButtons(phone,
- } else {
+} else {
   await sendWhatsAppButtons(phone,
   "¿Qué deseas hacer?",
   [
