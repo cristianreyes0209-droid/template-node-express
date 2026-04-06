@@ -479,28 +479,25 @@ if (
   ? `, ${customer.name.trim()}` 
   : "";
 
-replyMessage =
-  `Hola${nombreCliente} 👋\n\n` +
-  `Qué bueno tenerte de vuelta en LAS CREPES ✨\n\n` +
-  `¿Deseas pedir lo mismo de siempre o quieres algo diferente? 😋\n\n` +
-  `A. Lo mismo\n` +
-  `B. Quiero pedir algo nuevo`;
+await sendWhatsAppButtons(phone,
+  `Hola${nombreCliente} 👋\n\nQué bueno tenerte de vuelta en LAS CREPES ✨\n\n¿Qué deseas hacer?`,
+  [
+    { id: "a", title: "Lo mismo de siempre 🔄" },
+    { id: "b", title: "Pedir algo nuevo 🥞" },
+    { id: "3", title: "Otros 💬" }
+  ]
+);
+return res.sendStatus(200);
   } else {
-    replyMessage =
-      "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
-      "Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
-      "A. Recoger en tienda 🏪\n" +
-      "B. Domicilio 🚚\n" +
-      "C. Agendar pedido 📅\n" +
-      "D. Hacer reserva 🍽️\n" +
-      "E. PQR 📝\n" +
-      "F. Otros 💬";
-  }
-
-  await sendWhatsAppMessage(phone, replyMessage);
-  return res.sendStatus(200);
-}
-
+   await sendWhatsAppButtons(phone,
+  "Hola 👋 Bienvenido a LAS CREPES ✨\n\n¿Qué deseas hacer?",
+  [
+    { id: "1", title: "Hacer un pedido 🥞" },
+    { id: "2", title: "Ver menú 📋" },
+    { id: "3", title: "Otros 💬" }
+  ]
+);
+return res.sendStatus(200);
   console.log("==== DEBUG PARSER ====");
   console.log("TEXT:", text);
   console.log("LOWER:", lower);
@@ -540,27 +537,25 @@ if (!currentOrder) {
   ? `, ${customer.name.trim()}` 
   : "";
 
-replyMessage =
-  `Hola${nombreCliente} 👋\n\n` +
-  `Qué bueno tenerte de vuelta en LAS CREPES ✨\n\n` +
-  `¿Deseas pedir lo mismo de siempre o quieres algo diferente? 😋\n\n` +
-  `A. Lo mismo\n` +
-  `B. Quiero pedir algo nuevo`;
+await sendWhatsAppButtons(phone,
+  `Hola${nombreCliente} 👋\n\nQué bueno tenerte de vuelta en LAS CREPES ✨\n\n¿Qué deseas hacer?`,
+  [
+    { id: "a", title: "Lo mismo de siempre 🔄" },
+    { id: "b", title: "Pedir algo nuevo 🥞" },
+    { id: "3", title: "Otros 💬" }
+  ]
+);
+return res.sendStatus(200);
   } else {
-    replyMessage =
-      "Hola 👋 Bienvenido a LAS CREPES✨\n\n" +
-      "Qué alegría atenderte. Cuéntame, ¿qué deseas hacer hoy?\n\n" +
-      "A. Recoger en tienda 🏪\n" +
-      "B. Domicilio 🚚\n" +
-      "C. Agendar pedido 📅\n" +
-      "D. Hacer reserva 🍽️\n" +
-      "E. PQR 📝\n" +
-      "F. Otros 💬";
-  }
-
-  await sendWhatsAppMessage(phone, replyMessage);
-  return res.sendStatus(200);
-}
+  await sendWhatsAppButtons(phone,
+  "Hola 👋 Bienvenido a LAS CREPES ✨\n\n¿Qué deseas hacer?",
+  [
+    { id: "1", title: "Hacer un pedido 🥞" },
+    { id: "2", title: "Ver menú 📋" },
+    { id: "3", title: "Otros 💬" }
+  ]
+);
+return res.sendStatus(200);
 
 if (currentOrder?.step === "esperando_aclaracion_producto") {
   const opciones = currentOrder.aclaracionPendiente?.opciones || [];
