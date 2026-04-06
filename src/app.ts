@@ -1271,11 +1271,11 @@ return res.sendStatus(200);
 
   } else {
   await sendWhatsAppButtons(phone,
-  replyMessage,
+  "¿Qué deseas hacer?",
   [
-    { id: "a", title: "Confirmar ✅" },
-    { id: "b", title: "Eliminar ➖" },
-    { id: "c", title: "Agregar más ➕" }
+    { id: "1", title: "Confirmar ✅" },
+    { id: "2", title: "Agregar más ➕" },
+    { id: "3", title: "Eliminar ➖" }
   ]
 );
 return res.sendStatus(200);
@@ -1534,15 +1534,19 @@ return res.sendStatus(200);
 
   } else {
   await sendWhatsAppButtons(phone,
-  replyMessage,
+ } else {
+  await sendWhatsAppButtons(phone,
+  "¿Qué deseas hacer?",
   [
-    { id: "a", title: "Confirmar ✅" },
-    { id: "b", title: "Eliminar ➖" },
-    { id: "c", title: "Agregar más ➕" }
+    { id: "1", title: "Confirmar ✅" },
+    { id: "2", title: "Agregar más ➕" },
+    { id: "3", title: "Eliminar ➖" }
   ]
 );
 return res.sendStatus(200);
   }
+      
+} else if (currentOrder?.step === "esperando_pago") {
       
 } else if (currentOrder?.step === "esperando_pago") {
 
