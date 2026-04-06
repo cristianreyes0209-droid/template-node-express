@@ -35,7 +35,6 @@ export type OrderStep =
   | "esperando_aclaracion_producto"
   | "confirmado";
 
-
 export type CustomerOrder = {
   telefono: string;
   nombre?: string;
