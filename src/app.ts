@@ -499,6 +499,8 @@ return res.sendStatus(200);
 );
 return res.sendStatus(200);
       }
+  }
+
   console.log("==== DEBUG PARSER ====");
   console.log("TEXT:", text);
   console.log("LOWER:", lower);
