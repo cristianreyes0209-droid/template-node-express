@@ -1542,13 +1542,15 @@ return res.sendStatus(200);
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
-    replyMessage =
-      `El total de tu pedido es: $${totals.total} 😊\n\n` +
-      "¿Cómo deseas pagar?\n" +
-      "• Efectivo\n" +
-      "• Nequi\n" +
-      "• Daviplata\n" +
-      "• Bancolombia";
+   await sendWhatsAppButtons(phone,
+  `El total de tu pedido es: $${totals.total} 😊\n\n¿Cómo deseas pagar?`,
+  [
+    { id: "efectivo", title: "Efectivo 💵" },
+    { id: "nequi", title: "Nequi/Daviplata 📱" },
+    { id: "bancolombia", title: "Bancolombia 🏦" }
+  ]
+);
+return res.sendStatus(200);
    } else if (
     lower.includes("datafono") ||
     lower.includes("datáfono") ||
@@ -1558,13 +1560,15 @@ return res.sendStatus(200);
     lower.includes("debito") ||
     lower.includes("débito")
   ) {
-    replyMessage =
-      "Por ahora no tenemos pago con datáfono 😊\n\n" +
-      "Puedes pagar con:\n" +
-      "• Efectivo\n" +
-      "• Nequi\n" +
-      "• Daviplata\n" +
-      "• Bancolombia";   
+ await sendWhatsAppButtons(phone,
+  "Por ahora no tenemos pago con datáfono 😊\n\nPuedes pagar con:",
+  [
+    { id: "efectivo", title: "Efectivo 💵" },
+    { id: "nequi", title: "Nequi/Daviplata 📱" },
+    { id: "bancolombia", title: "Bancolombia 🏦" }
+  ]
+);
+return res.sendStatus(200);
 
   } else if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
@@ -1647,14 +1651,15 @@ return res.sendStatus(200);
     lower.includes("datáfono") ||
     lower.includes("tarjeta")
   ) {
-    replyMessage =
-      "Por ahora no tenemos pago con datáfono 😊\n\n" +
-      "Puedes pagar con:\n" +
-      "• Efectivo\n" +
-      "• Nequi\n" +
-      "• Daviplata\n" +
-      "• Bancolombia";
-
+   await sendWhatsAppButtons(phone,
+  "Por ahora no tenemos pago con datáfono 😊\n\nPuedes pagar con:",
+  [
+    { id: "efectivo", title: "Efectivo 💵" },
+    { id: "nequi", title: "Nequi/Daviplata 📱" },
+    { id: "bancolombia", title: "Bancolombia 🏦" }
+  ]
+);
+return res.sendStatus(200);
   } else if (lower.includes("nequi")) {
     updateOrderPayment(phone, "nequi");
     updateOrderStep(phone, "esperando_comprobante");
@@ -1666,17 +1671,7 @@ return res.sendStatus(200);
       "📱 3207218267\n\n" +
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
 
-  } else if (lower.includes("daviplata")) {
-    updateOrderPayment(phone, "daviplata");
-    updateOrderStep(phone, "esperando_comprobante");
-    currentOrder = getOrder(phone)!;
-
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Pago por Daviplata:\n" +
-      "📱 3207218267\n\n" +
-      "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
-
+ 
   } else if (lower.includes("bancolombia") || lower.includes("transferencia")) {
     updateOrderPayment(phone, "bancolombia");
     updateOrderStep(phone, "esperando_comprobante");
@@ -1689,17 +1684,18 @@ return res.sendStatus(200);
       "💳 27033825108\n\n" +
       "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
 
-  } else {
-    replyMessage =
-      "¿Cómo deseas pagar?\n" +
-      "• Efectivo\n" +
-      "• Nequi\n" +
-      "• Daviplata\n" +
-      "• Bancolombia";
-  
-}
+} else {
+   await sendWhatsAppButtons(phone,
+  "Perfecto 👌\n\n¿Cómo deseas pagar?",
+  [
+    { id: "efectivo", title: "Efectivo 💵" },
+    { id: "nequi", title: "Nequi/Daviplata 📱" },
+    { id: "bancolombia", title: "Bancolombia 🏦" }
+  ]
+);
+return res.sendStatus(200);
+  }
 } else if (currentOrder?.step === "esperando_comprobante") {
-
   // 🔥 RESPONDER TOTAL AQUÍ TAMBIÉN
   if (
     lower.includes("cuanto es") ||
