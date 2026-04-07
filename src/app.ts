@@ -468,7 +468,7 @@ if (
     lower.includes("hola") ||
     lower.includes("buenas") ||
     lower.includes("buenos dias") ||
-    lower.includes("buen día") ||
+    lower.includes("buena tarde") ||
     lower.includes("buen dia") ||
     lower.includes("buenas tardes") ||
     lower.includes("buenas noches") ||
@@ -487,21 +487,21 @@ if (
 
 const nombreMostrar = (customer?.name && customer.name.trim() !== "") ? `, ${customer.name.trim()}` : "";
 await sendWhatsAppButtons(phone,
-  `Hola${nombreCliente}, que bueno tenerte de vuelta en LAS CREPES. ¿Que deseas hacer?`,
+    `Hola${nombreCliente} 👋\n\nQué bueno tenerte de vuelta en LAS CREPES ✨\n\n¿como podemos servirte hoy?`,
   [
-    { id: "a", title: "Lo mismo de siempre 🔄" },
-    { id: "b", title: "Pedir algo nuevo 🥞" },
-    { id: "3", title: "Otros 💬" }
+    { id: "a", title: "Lo mismo de siempre" },
+    { id: "b", title: "Pedir algo nuevo" },
+    { id: "3", title: "Otros" }
   ]
 );
 return res.sendStatus(200);
   } else {
    await sendWhatsAppButtons(phone,
-  "Hola  Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
+  "Hola 👋 Bienvenido a LAS CREPES \n\n¿como te podemos servir?",
   [
-    { id: "1", title: "Hacer un pedido 🥞" },
-    { id: "2", title: "Ver menú 📋" },
-    { id: "3", title: "Otros 💬" }
+    { id: "1", title: "Hacer un pedido" },
+    { id: "2", title: "Ver menú" },
+    { id: "3", title: "Otros" }
   ]
 );
 return res.sendStatus(200);
