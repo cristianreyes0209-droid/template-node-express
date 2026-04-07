@@ -684,25 +684,23 @@ return res.sendStatus(200);
         replyMessage = "No encontré un pedido anterior 😊\n\nCuéntame qué deseas pedir.";
       }
 
-    } else if (
+   } else if (
       lower === "b" ||
       lower.includes("nuevo") ||
       lower.includes("diferente") ||
       lower.includes("otra cosa")
     ) {
-      updateOrderStep(phone, "esperando_menu_nuevo");
+      updateOrderStep(phone, "esperando_tipo_entrega");
       currentOrder = getOrder(phone)!;
 
       await sendWhatsAppButtons(phone,
-        "Perfecto 👌\n\n¿Qué deseas hacer?",
+        "¿Como deseas recibir tu pedido?",
         [
-          { id: "1", title: "Hacer un pedido 🥞" },
-          { id: "2", title: "Ver menú 📋" },
-          { id: "3", title: "Otros 💬" }
+          { id: "domicilio", title: "Domicilio" },
+          { id: "recoger", title: "Recoger en tienda" }
         ]
       );
       return res.sendStatus(200);
-
   } else {
       await sendWhatsAppButtons(phone,
         `Hola, ${customer.name || ""} Qué bueno tenerte de vuelta en LAS CREPES ¿Qué deseas hacer?`,
