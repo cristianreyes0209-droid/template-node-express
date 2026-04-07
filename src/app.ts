@@ -487,7 +487,7 @@ if (
 
 const nombreMostrar = (customer?.name && customer.name.trim() !== "") ? `, ${customer.name.trim()}` : "";
 await sendWhatsAppButtons(phone,
-  `Hola${nombreMostrar} 👋 Qué bueno tenerte de vuelta en LAS CREPES\n\n¿Qué deseas hacer?`,
+  `Hola${nombreMostrar}  Qué bueno tenerte de vuelta en LAS CREPES\n\n¿Qué deseas hacer?`,
   [
     { id: "a", title: "Lo mismo de siempre 🔄" },
     { id: "b", title: "Pedir algo nuevo 🥞" },
@@ -497,7 +497,7 @@ await sendWhatsAppButtons(phone,
 return res.sendStatus(200);
   } else {
    await sendWhatsAppButtons(phone,
-  "Hola 👋 Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
+  "Hola  Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
   [
     { id: "1", title: "Hacer un pedido 🥞" },
     { id: "2", title: "Ver menú 📋" },
@@ -545,7 +545,7 @@ if (!currentOrder) {
     const nombreCliente = (customer?.name && customer.name.trim() !== "") 
       ? `, ${customer.name.trim()}` 
       : "";
-    const bodyMsg = `Hola${nombreCliente} 👋 Que bueno tenerte de vuelta en LAS CREPES\n\n¿Que deseas hacer?`;
+    const bodyMsg = `Hola${nombreCliente}  Que bueno tenerte de vuelta en LAS CREPES\n\n¿Que deseas hacer?`;
     console.log("BODY IF CUSTOMER:", JSON.stringify(bodyMsg));
     await sendWhatsAppButtons(phone,
       bodyMsg,
@@ -558,7 +558,7 @@ if (!currentOrder) {
     return res.sendStatus(200);
   } else {
     await sendWhatsAppButtons(phone,
-      "Hola 👋 Bienvenido a LAS CREPES\n\n¿Que deseas hacer?",
+      "Hola  Bienvenido a LAS CREPES\n\n¿Que deseas hacer?",
       [
         { id: "1", title: "Hacer un pedido 🥞" },
         { id: "2", title: "Ver menu 📋" },
@@ -705,7 +705,7 @@ return res.sendStatus(200);
 
   } else {
       await sendWhatsAppButtons(phone,
-        `Hola, ${customer.name || ""} 👋\n\nQué bueno tenerte de vuelta en LAS CREPES \n\n¿Qué deseas hacer?`,
+        `Hola, ${customer.name || ""} \n\nQué bueno tenerte de vuelta en LAS CREPES \n\n¿Qué deseas hacer?`,
         [
           { id: "a", title: "Lo mismo de siempre 🔄" },
           { id: "b", title: "Pedir algo nuevo 🥞" },
@@ -739,7 +739,7 @@ return res.sendStatus(200);
 
 } else {
   await sendWhatsAppButtons(phone,
-    "Hola 👋 Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
+    "Hola  Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
     [
       { id: "1", title: "Hacer un pedido 🥞" },
       { id: "2", title: "Ver menú 📋" },
@@ -834,7 +834,7 @@ return res.sendStatus(200);
 
   } else {
   await sendWhatsAppButtons(phone,
-  "Hola 👋 Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
+  "Hola  Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
   [
     { id: "1", title: "Hacer un pedido 🥞" },
     { id: "2", title: "Ver menú 📋" },
@@ -2043,7 +2043,7 @@ return res.sendStatus(200);
   lower.includes("buenas noches")
 ) {
   await sendWhatsAppButtons(phone,
-    "Hola 👋 Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
+    "Hola  Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
     [
       { id: "1", title: "Hacer un pedido 🥞" },
       { id: "2", title: "Ver menú 📋" },
