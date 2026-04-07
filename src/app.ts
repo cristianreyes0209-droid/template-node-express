@@ -550,9 +550,9 @@ if (!currentOrder) {
     await sendWhatsAppButtons(phone,
       bodyMsg,
       [
-        { id: "a", title: "Lo mismo de siempre 🔄" },
-        { id: "b", title: "Pedir algo nuevo 🥞" },
-        { id: "3", title: "Otros 💬" }
+       { id: "a", title: "Lo mismo de siempre" },
+       { id: "b", title: "Pedir algo nuevo" },
+       { id: "3", title: "Otros" }
       ]
     );
     return res.sendStatus(200);
