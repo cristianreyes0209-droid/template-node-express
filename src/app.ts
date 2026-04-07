@@ -750,99 +750,38 @@ return res.sendStatus(200);
 }
 
 } else if (currentOrder?.step === "esperando_menu_nuevo") {
-  if (
-    lower === "a" ||
-    lower.includes("recoger") ||
-    lower.includes("tienda")
-  ) {
-    currentOrder.canal = "recoger";
-    updateOrderDeliveryType(phone, "recoger");
-    updateOrderStep(phone, "esperando_sucursal");
+  if (lower === "1" || lower.includes("pedido") || lower.includes("pedir")) {
+    updateOrderStep(phone, "esperando_tipo_entrega");
     currentOrder = getOrder(phone)!;
 
-     await sendWhatsAppButtons(phone,
-      "Perfecto 👌\n\n¿Para cuál sucursal es tu pedido?",
-      [
-        { id: "a", title: "La Villa 🏪" },
-        { id: "b", title: "Av. Circunvalar 🏪" }
-      ]
-    );
-    return res.sendStatus(200);
-  } else if (
-    lower === "b" ||
-    lower.includes("domicilio") ||
-    lower.includes("enviar") ||
-    lower.includes("envio") ||
-    lower.includes("envío")
-  ) {
-    currentOrder.canal = "domicilio";
-    updateOrderDeliveryType(phone, "domicilio");
-    updateOrderStep(phone, "esperando_sucursal");
-    currentOrder = getOrder(phone)!;
     await sendWhatsAppButtons(phone,
-      "Perfecto 👌\n\n¿Para cuál sucursal es tu pedido?",
+      "¿Como deseas recibir tu pedido?",
       [
-        { id: "a", title: "La Villa 🏪" },
-        { id: "b", title: "Av. Circunvalar 🏪" }
+        { id: "domicilio", title: "Domicilio" },
+        { id: "recoger", title: "Recoger en tienda" }
       ]
     );
     return res.sendStatus(200);
-  } else if (
-    lower === "c" ||
-    lower.includes("agendar") ||
-    lower.includes("programar") ||
-    lower.includes("pedido programado")
-  ) {
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Muy pronto podrás agendar pedidos por este medio.\n\n" +
-      "Por ahora puedo ayudarte con pedidos inmediatos para recoger o domicilio.";
 
-  } else if (
-    lower === "d" ||
-    lower.includes("reserva") ||
-    lower.includes("reservar") ||
-    lower.includes("mesa")
-  ) {
+  } else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
     replyMessage =
-      "Perfecto 👌\n\n" +
-      "Muy pronto podrás hacer reservas por este medio.\n\n" +
-      "Por ahora, si deseas, puedo ayudarte con un pedido para recoger o domicilio.";
+      "Aqui puedes ver nuestro menu completo:\n" +
+      "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=menu";
 
-  } else if (
-    lower === "e" ||
-    lower.includes("pqr") ||
-    lower.includes("queja") ||
-    lower.includes("reclamo") ||
-    lower.includes("peticion") ||
-    lower.includes("petición") ||
-    lower.includes("sugerencia")
-  ) {
-    replyMessage =
-      "Claro 😊\n\n" +
-      "Por favor escríbeme tu solicitud, queja, reclamo o sugerencia, y te ayudaremos a gestionarla.";
-
-  } else if (
-    lower === "f" ||
-    lower.includes("otros") ||
-    lower.includes("otra cosa") ||
-    lower.includes("ayuda")
-  ) {
-    replyMessage =
-      "Con gusto 😊\n\n" +
-      "Cuéntame en qué puedo ayudarte.";
+  } else if (lower === "3" || lower.includes("otros") || lower.includes("ayuda") || lower.includes("pqr")) {
+    replyMessage = "Con gusto. Cuentame en que puedo ayudarte.";
 
   } else {
-  await sendWhatsAppButtons(phone,
-  "Hola  Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
-  [
-    { id: "1", title: "Hacer un pedido 🥞" },
-    { id: "2", title: "Ver menú 📋" },
-    { id: "3", title: "Otros 💬" }
-  ]
-);
-return res.sendStatus(200);
-      }
+    await sendWhatsAppButtons(phone,
+      "¿Que deseas hacer?",
+      [
+        { id: "1", title: "Hacer un pedido" },
+        { id: "2", title: "Ver menu" },
+        { id: "3", title: "Otros" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
     lower === "a" ||
