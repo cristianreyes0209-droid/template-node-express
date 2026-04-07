@@ -1460,13 +1460,33 @@ return res.sendStatus(200);
       "Perfecto 👌\n\n" +
       "Escríbeme la observación para tu pedido 😊";
 
+} else if (parsedItems.length > 0) {
+    const order = createOrUpdateOrder(phone, parsedItems);
+    currentOrder = getOrder(phone)!;
+    const resumen2 = order.items.map((item: any) => `* ${item.cantidad} ${item.producto}`).join("\n");
+    await sendWhatsAppButtons(phone,
+      "Perfecto, agregue:\n\n" + resumen2 + "\n\n📝 Si deseas una observacion escribela, o elige:",
+      [
+        { id: "1", title: "Confirmar" },
+        { id: "2", title: "Agregar mas" },
+        { id: "3", title: "Eliminar" }
+      ]
+    );
+    return res.sendStatus(200);
+
+} else if (text.length > 3 && !["hola", "ok", "dale", "bien", "listo"].includes(lower)) {
+    updateOrderGeneralNotes(phone, text);
+    updateOrderStep(phone, "esperando_confirmacion");
+    currentOrder = getOrder(phone)!;
+    replyMessage = "Observacion guardada. ¿Confirmamos el pedido?";
+
 } else {
   await sendWhatsAppButtons(phone,
-  "¿Qué deseas hacer?",
+  "¿Que deseas hacer?",
   [
-    { id: "1", title: "Confirmar ✅" },
-    { id: "2", title: "Agregar más ➕" },
-    { id: "3", title: "Eliminar ➖" }
+    { id: "1", title: "Confirmar" },
+    { id: "2", title: "Agregar mas" },
+    { id: "3", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
