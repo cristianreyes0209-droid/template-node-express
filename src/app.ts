@@ -424,6 +424,11 @@ let replyMessage = "";
 const parseResult = parseOrder(text);
 const parsedItems = parseResult.items;
 const lower = text.toLowerCase().trim();
+    console.log("=== DIAGNÓSTICO ===");
+console.log("CUSTOMER:", customer?.name);
+console.log("CURRENT ORDER:", currentOrder?.step);
+console.log("LOWER:", lower);
+console.log("===================");
 
 if (
   currentOrder?.step === "armando_pedido" &&
