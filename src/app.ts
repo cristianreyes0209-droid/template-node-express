@@ -487,7 +487,7 @@ if (
 
 const nombreMostrar = (customer?.name && customer.name.trim() !== "") ? `, ${customer.name.trim()}` : "";
 await sendWhatsAppButtons(phone,
-  `Hola${nombreMostrar}  Qué bueno tenerte de vuelta en LAS CREPES\n\n¿Qué deseas hacer?`,
+  `Hola${nombreCliente}, que bueno tenerte de vuelta en LAS CREPES. ¿Que deseas hacer?`,
   [
     { id: "a", title: "Lo mismo de siempre 🔄" },
     { id: "b", title: "Pedir algo nuevo 🥞" },
@@ -705,7 +705,7 @@ return res.sendStatus(200);
 
   } else {
       await sendWhatsAppButtons(phone,
-        `Hola, ${customer.name || ""} \n\nQué bueno tenerte de vuelta en LAS CREPES \n\n¿Qué deseas hacer?`,
+        `Hola, ${customer.name || ""} Qué bueno tenerte de vuelta en LAS CREPES ¿Qué deseas hacer?`,
         [
           { id: "a", title: "Lo mismo de siempre 🔄" },
           { id: "b", title: "Pedir algo nuevo 🥞" },
