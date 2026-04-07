@@ -545,8 +545,10 @@ if (!currentOrder) {
     const nombreCliente = (customer?.name && customer.name.trim() !== "") 
       ? `, ${customer.name.trim()}` 
       : "";
+    const bodyMsg = `Hola${nombreCliente} 👋 Que bueno tenerte de vuelta en LAS CREPES\n\n¿Que deseas hacer?`;
+    console.log("BODY IF CUSTOMER:", JSON.stringify(bodyMsg));
     await sendWhatsAppButtons(phone,
-      `Hola${nombreCliente} 👋 Que bueno tenerte de vuelta en LAS CREPES\n\n¿Que deseas hacer?`,
+      bodyMsg,
       [
         { id: "a", title: "Lo mismo de siempre 🔄" },
         { id: "b", title: "Pedir algo nuevo 🥞" },
