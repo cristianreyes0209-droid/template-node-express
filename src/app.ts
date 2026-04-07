@@ -2040,7 +2040,7 @@ return res.sendStatus(200);
   lower.includes("buenas noches")
 ) {
   await sendWhatsAppButtons(phone,
-    "Hola 👋 Bienvenido a LAS CREPES ✨\n\n¿Qué deseas hacer?",
+    "Hola 👋 Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
     [
       { id: "1", title: "Hacer un pedido 🥞" },
       { id: "2", title: "Ver menú 📋" },
