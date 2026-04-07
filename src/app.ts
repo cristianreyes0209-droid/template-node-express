@@ -78,6 +78,7 @@ async function sendWhatsAppMessage(phone: string, message: string) {
 }
 
 async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: string, title: string}[]) {
+  const safeBody = (body || "¿Qué deseas hacer?").trim().slice(0, 1024);
   const response = await fetch(
     `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
     {
