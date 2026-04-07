@@ -1024,59 +1024,44 @@ return res.sendStatus(200);
   }
 
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
-  if (currentOrder?.tipoEntrega === "domicilio") {
-    updateOrderStep(phone, "esperando_direccion");
+  if (lower === "domicilio" || lower.includes("domicilio")) {
+    updateOrderDeliveryType(phone, "domicilio");
+    updateOrderStep(phone, "esperando_sucursal");
     currentOrder = getOrder(phone)!;
-    replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+
+    await sendWhatsAppButtons(phone,
+      "¿Para cual sucursal es tu pedido?",
+      [
+        { id: "a", title: "La Villa" },
+        { id: "b", title: "Av. Circunvalar" }
+      ]
+    );
+    return res.sendStatus(200);
+
+  } else if (lower === "recoger" || lower.includes("recoger") || lower.includes("tienda")) {
+    updateOrderDeliveryType(phone, "recoger");
+    updateOrderStep(phone, "esperando_sucursal");
+    currentOrder = getOrder(phone)!;
+
+    await sendWhatsAppButtons(phone,
+      "¿Para cual sucursal es tu pedido?",
+      [
+        { id: "a", title: "La Villa" },
+        { id: "b", title: "Av. Circunvalar" }
+      ]
+    );
+    return res.sendStatus(200);
+
   } else {
-    updateOrderStep(phone, "esperando_confirmacion");
-    currentOrder = getOrder(phone)!;
-
-    const order = getOrder(phone)!;
-    const totals = calculateTotal(order);
-     
-  
-
-    const resumen = order.items
-      .map((item: any) => {
-        const observacionesTexto = item.observaciones
-          ? ` (${formatObservaciones(item.observaciones)})`
-          : "";
-
-        const extrasTexto =
-          item.extras && item.extras.length > 0
-            ? " +" +
-              item.extras
-                .map((extra: any) =>
-                  extra.cantidad > 1
-                    ? `${extra.cantidad} ${extra.nombre}`
-                    : extra.nombre
-                )
-                .join(", +")
-            : "";
-
-        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-      })
-      .join("\n");
-      const observacionGeneralTexto = getObservacionGeneralTexto(order);
-
-await sendWhatsAppButtons(phone,
-  "Perfecto 👌\n\nTu pedido es:\n" +
-  resumen +
-  observacionGeneralTexto +
-  "\n\nSubtotal: $" + totals.subtotal +
-  "\nDomicilio: $" + totals.domicilio +
-  "\nTotal: $" + totals.total +
-  "\n📍 Dirección: " + (order.direccion || "No aplica") +
-  "\n\n📝 Si deseas una observación escríbela, o elige:",
-  [
-    { id: "a", title: "Confirmar ✅" },
-    { id: "b", title: "Eliminar ➖" },
-    { id: "c", title: "Agregar más ➕" }
-  ]
-);
-return res.sendStatus(200);
- }
+    await sendWhatsAppButtons(phone,
+      "¿Como deseas recibir tu pedido?",
+      [
+        { id: "domicilio", title: "Domicilio" },
+        { id: "recoger", title: "Recoger en tienda" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
 } else if (currentOrder?.step === "esperando_direccion") {
   updateOrderAddress(phone, text);
 
