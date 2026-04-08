@@ -1152,7 +1152,7 @@ return res.sendStatus(200);
 
   } else if (
     lower === "b" ||
-    lower === "2" ||
+    lower === "3" ||
     lower.includes("retirar") ||
     lower.includes("eliminar") ||
     lower.includes("quitar")
@@ -1174,7 +1174,7 @@ return res.sendStatus(200);
 
   } else if (
     lower === "c" ||
-     lower === "3" ||
+     lower === "2" ||
     lower.includes("agregar") ||
     lower.includes("más") ||
     lower.includes("mas")
