@@ -654,6 +654,9 @@ return res.sendStatus(200);
         order.direccion = customer.last_address;
         order.nombre = customer.name;
         updateOrderName(phone, customer.name || "");
+          if (customer.last_sucursal) {
+  order.sucursal = customer.last_sucursal;
+}
         updateOrderStep(phone, "esperando_tipo_entrega_repetido");
         currentOrder = getOrder(phone)!;
 
