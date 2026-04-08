@@ -1483,8 +1483,8 @@ return res.sendStatus(200);
     replyMessage = "Observacion guardada. ¿Confirmamos el pedido?";
 
 } else {
-  await sendWhatsAppButtons(phone,
-  "¿Que deseas hacer?",
+await sendWhatsAppButtons(phone,
+  "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n📝 Si deseas una observacion escribela, o elige:",
   [
     { id: "1", title: "Confirmar" },
     { id: "2", title: "Agregar mas" },
@@ -1492,7 +1492,6 @@ return res.sendStatus(200);
   ]
 );
 return res.sendStatus(200);
-  }
       
 } else if (currentOrder?.step === "esperando_pago") {
       
