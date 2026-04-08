@@ -1577,13 +1577,14 @@ return res.sendStatus(200);
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
-    await upsertCustomer({
-      phone: phone,
-      name: order.nombre,
-      last_address: order.direccion,
-      last_order: order.items,
-      last_order_at: new Date().toISOString()
-    });
+   await upsertCustomer({
+  phone: phone,
+  name: order.nombre,
+  last_address: order.direccion,
+  last_order: order.items,
+  last_order_at: new Date().toISOString(),
+  last_sucursal: order.sucursal
+});
 
    try {
   await handleOperationalRouting(order, totals);
@@ -1719,14 +1720,14 @@ return res.sendStatus(200);
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
-    await upsertCustomer({
-      phone: phone,
-      name: order.nombre,
-      last_address: order.direccion,
-      last_order: order.items,
-      last_order_at: new Date().toISOString()
-    });
-
+  await upsertCustomer({
+  phone: phone,
+  name: order.nombre,
+  last_address: order.direccion,
+  last_order: order.items,
+  last_order_at: new Date().toISOString(),
+  last_sucursal: order.sucursal
+});
    try {
   await handleOperationalRouting(order, totals);
 } catch (error) {
