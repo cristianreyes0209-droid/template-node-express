@@ -1139,7 +1139,28 @@ return res.sendStatus(200);
   lower.includes("de una") ||
   lower.includes("va")
 
-  ) {
+ ) {
+    if (currentOrder.tipoEntrega === "domicilio" && !currentOrder.direccion) {
+      if (customer?.last_address) {
+        updateOrderStep(phone, "esperando_confirmacion_direccion");
+        currentOrder = getOrder(phone)!;
+        await sendWhatsAppButtons(phone,
+          `¿Deseas enviar a tu direccion anterior?\n📍 ${customer.last_address}`,
+          [
+            { id: "a", title: "Si, esa misma" },
+            { id: "b", title: "No, cambiarla" }
+          ]
+        );
+        return res.sendStatus(200);
+      } else {
+        updateOrderStep(phone, "esperando_direccion");
+        currentOrder = getOrder(phone)!;
+        replyMessage = "¿Me compartes tu direccion por favor?";
+        await sendWhatsAppMessage(phone, replyMessage);
+        return res.sendStatus(200);
+      }
+    }
+
     updateOrderStep(phone, "esperando_pago");
     currentOrder = getOrder(phone)!;
 
