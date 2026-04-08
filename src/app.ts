@@ -422,7 +422,12 @@ if (phone === "573217233342" || phone === process.env.CIRCUNVALAR_PHONE) {
   console.log("TEXT:", text);
 
 let replyMessage = "";
-const parseResult = parseOrder(text);
+const parseResult = (
+  currentOrder?.step === "post_agregar_producto" ||
+  currentOrder?.step === "esperando_observacion_general" ||
+  currentOrder?.step === "esperando_nombre" ||
+  currentOrder?.step === "esperando_direccion"
+) ? { items: [], ambiguousChoice: undefined } : parseOrder(text);
 const parsedItems = parseResult.items;
 const lower = text.toLowerCase().trim();
     console.log("=== DIAGNÓSTICO ===");
