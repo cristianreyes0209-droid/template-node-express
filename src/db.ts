@@ -40,13 +40,15 @@ export async function upsertCustomer({
   name,
   last_address,
   last_order,
-  last_order_at
+  last_order_at,
+  last_sucursal
 }: {
   phone: string;
   name?: string;
   last_address?: string;
   last_order?: any;
   last_order_at?: string;
+  last_sucursal?: string;
 }) {
   try {
     const normalizedPhone = normalizePhone(phone);
