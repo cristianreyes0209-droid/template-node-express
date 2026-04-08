@@ -541,6 +541,8 @@ export const menu = {
       aliases: [
         "pollo champiñon",
         "pollo champinon",
+        "pollo con champinon",
+        "pollo con champinones",
         "crepe pollo champiñon"
       ],
       modificadoresComunes: [
