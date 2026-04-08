@@ -1219,6 +1219,9 @@ return res.sendStatus(200);
     if (!order.items || order.items.length === 0) {
       updateOrderStep(phone, "armando_pedido");
       currentOrder = getOrder(phone)!;
+        if (customer?.name) {
+        updateOrderName(phone, customer.name);
+      }
 
       replyMessage =
         "Listo 👍 Ya retiré ese producto.\n\n" +
