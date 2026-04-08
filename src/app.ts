@@ -822,10 +822,10 @@ return res.sendStatus(200);
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
   "\n\n📝 Si deseas una observación escríbela ahora, o elige una opción:",
-  [
-    { id: "a", title: "Confirmar ✅" },
-    { id: "b", title: "Eliminar ➖" },
-    { id: "c", title: "Agregar más ➕" }
+ [
+    { id: "1", title: "Confirmar" },
+    { id: "2", title: "Agregar mas" },
+    { id: "3", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
@@ -1013,10 +1013,10 @@ await sendWhatsAppButtons(phone,
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
-  [
-    { id: "a", title: "Confirmar ✅" },
-    { id: "b", title: "Eliminar ➖" },
-    { id: "c", title: "Agregar más ➕" }
+[
+    { id: "1", title: "Confirmar" },
+    { id: "2", title: "Agregar mas" },
+    { id: "3", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
@@ -1152,6 +1152,7 @@ return res.sendStatus(200);
 
   } else if (
     lower === "b" ||
+    lower === "2" ||
     lower.includes("retirar") ||
     lower.includes("eliminar") ||
     lower.includes("quitar")
@@ -1173,6 +1174,7 @@ return res.sendStatus(200);
 
   } else if (
     lower === "c" ||
+     lower === "3" ||
     lower.includes("agregar") ||
     lower.includes("más") ||
     lower.includes("mas")
@@ -1260,10 +1262,10 @@ return res.sendStatus(200);
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
-  [
-    { id: "a", title: "Confirmar ✅" },
-    { id: "b", title: "Eliminar ➖" },
-    { id: "c", title: "Agregar más ➕" }
+ [
+    { id: "1", title: "Confirmar" },
+    { id: "2", title: "Agregar mas" },
+    { id: "3", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
@@ -1336,10 +1338,10 @@ await sendWhatsAppButtons(phone,
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
   "\n\n📝 Si deseas una observación escríbela ahora, o elige una opción:",
-  [
-    { id: "a", title: "Confirmar ✅" },
-    { id: "b", title: "Eliminar ➖" },
-    { id: "c", title: "Agregar más ➕" }
+ [
+    { id: "1", title: "Confirmar" },
+    { id: "2", title: "Agregar mas" },
+    { id: "3", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
@@ -1419,10 +1421,10 @@ return res.sendStatus(200);
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
-  [
-    { id: "a", title: "Confirmar ✅" },
-    { id: "b", title: "Eliminar ➖" },
-    { id: "c", title: "Agregar más ➕" }
+ [
+    { id: "1", title: "Confirmar" },
+    { id: "2", title: "Agregar mas" },
+    { id: "3", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
@@ -1873,10 +1875,10 @@ return res.sendStatus(200);
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
-  [
-    { id: "a", title: "Confirmar ✅" },
-    { id: "b", title: "Eliminar ➖" },
-    { id: "c", title: "Agregar más ➕" }
+ [
+    { id: "1", title: "Confirmar" },
+    { id: "2", title: "Agregar mas" },
+    { id: "3", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
@@ -1948,10 +1950,10 @@ return res.sendStatus(200);
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
-  [
-    { id: "a", title: "Confirmar ✅" },
-    { id: "b", title: "Eliminar ➖" },
-    { id: "c", title: "Agregar más ➕" }
+[
+    { id: "1", title: "Confirmar" },
+    { id: "2", title: "Agregar mas" },
+    { id: "3", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
