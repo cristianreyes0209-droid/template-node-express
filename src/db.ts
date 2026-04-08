@@ -53,16 +53,17 @@ export async function upsertCustomer({
   try {
     const normalizedPhone = normalizePhone(phone);
 
-    await pool.query(
+   await pool.query(
       `
-      INSERT INTO clientes (phone, name, last_address, last_order, last_order_at)
-      VALUES ($1, $2, $3, $4::jsonb, $5)
+      INSERT INTO clientes (phone, name, last_address, last_order, last_order_at, last_sucursal)
+      VALUES ($1, $2, $3, $4::jsonb, $5, $6)
       ON CONFLICT (phone)
       DO UPDATE SET
         name = EXCLUDED.name,
         last_address = EXCLUDED.last_address,
         last_order = EXCLUDED.last_order,
         last_order_at = EXCLUDED.last_order_at,
+        last_sucursal = EXCLUDED.last_sucursal,
         updated_at = NOW()
       `,
       [
@@ -70,7 +71,8 @@ export async function upsertCustomer({
         name || null,
         last_address || null,
         last_order ? JSON.stringify(last_order) : null,
-        last_order_at || null
+        last_order_at || null,
+        last_sucursal || null
       ]
     );
 
