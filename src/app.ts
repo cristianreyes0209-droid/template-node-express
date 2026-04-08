@@ -1507,8 +1507,15 @@ return res.sendStatus(200);
     updateOrderGeneralNotes(phone, text);
     updateOrderStep(phone, "esperando_confirmacion");
     currentOrder = getOrder(phone)!;
-    replyMessage = "Observacion guardada. ¿Confirmamos el pedido?";
-
+    await sendWhatsAppButtons(phone,
+      "Observacion guardada. ¿Confirmamos el pedido?",
+      [
+        { id: "1", title: "Confirmar" },
+        { id: "2", title: "Agregar mas" },
+        { id: "3", title: "Eliminar" }
+      ]
+    );
+    return res.sendStatus(200);
 } else {
   await sendWhatsAppButtons(phone,
     "¿Que deseas hacer?",
