@@ -827,7 +827,7 @@ return res.sendStatus(200);
   "\n🛵 Domicilio: $" + totals.domicilio +
   "\nTotal: $" + totals.total +
   "\n📍 Dirección: " + (order.direccion || "No aplica") +
-  "\n\n📝 Si deseas una observación escríbela ahora, o elige una opción:",
+  "\n\n📝 Si deseas hacer una observación escríbela ahora, o elige una opción:",
  [
     { id: "1", title: "Confirmar" },
     { id: "2", title: "Agregar mas" },
