@@ -52,6 +52,7 @@ export type CustomerOrder = {
   lastInteraction: number;
   observacionesGenerales?: string;
   holaclick_order?: string;
+  confirmedAt?: string;
   aclaracionPendiente?: {
     opciones: {
       nombre: string;

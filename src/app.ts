@@ -541,6 +541,13 @@ if (
     lower.includes("nuevo pedido")
   )
 ) {
+  const confirmedAt = currentOrder.confirmedAt ? new Date(currentOrder.confirmedAt).getTime() : 0;
+  const twoHoursMs = 2 * 60 * 60 * 1000;
+  if (Date.now() - confirmedAt < twoHoursMs) {
+    await sendWhatsAppMessage(phone, "Tu pedido ya fue confirmado ✅. Si necesitas algo más escríbenos.");
+    return res.sendStatus(200);
+  }
+
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
   currentOrder = getOrder(phone)!;
@@ -914,6 +921,7 @@ return res.sendStatus(200);
   clearTimeout(inactivityTimers.get(phone));
   inactivityTimers.delete(phone);
   currentOrder = getOrder(phone)!;
+  currentOrder.confirmedAt = new Date().toISOString();
 
   const order = getOrder(phone)!;
   const holaclickResumen = order.holaclick_order || "";
@@ -948,6 +956,8 @@ return res.sendStatus(200);
   updateOrderStep(phone, "confirmado");
   clearTimeout(inactivityTimers.get(phone));
   inactivityTimers.delete(phone);
+  currentOrder = getOrder(phone)!;
+  currentOrder.confirmedAt = new Date().toISOString();
   replyMessage = "Gracias por tu mensaje 😊 Un asesor te contactará pronto.";
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
@@ -1739,6 +1749,7 @@ return res.sendStatus(200);
     clearTimeout(inactivityTimers.get(phone));
     inactivityTimers.delete(phone);
     currentOrder = getOrder(phone)!;
+    currentOrder.confirmedAt = new Date().toISOString();
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
@@ -1888,6 +1899,7 @@ return res.sendStatus(200);
     clearTimeout(inactivityTimers.get(phone));
     inactivityTimers.delete(phone);
     currentOrder = getOrder(phone)!;
+    currentOrder.confirmedAt = new Date().toISOString();
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
@@ -1991,12 +2003,25 @@ return res.sendStatus(200);
     replyMessage =
       "Con gusto 😊 Tu pedido ya está en proceso. Te avisaremos cualquier novedad.";
   } else {
-    replyMessage =
-      "Tu pedido fue confirmado ✅\n\n" +
-      "Si deseas, puedes preguntarme cómo va tu pedido.";
- 
-
-}
+    const confirmedAt = currentOrder.confirmedAt ? new Date(currentOrder.confirmedAt).getTime() : 0;
+    const twoHoursMs = 2 * 60 * 60 * 1000;
+    if (Date.now() - confirmedAt < twoHoursMs) {
+      replyMessage = "Tu pedido ya fue confirmado ✅. Si necesitas algo más escríbenos.";
+    } else {
+      createOrUpdateOrder(phone, []);
+      updateOrderStep(phone, "esperando_menu_principal");
+      currentOrder = getOrder(phone)!;
+      await sendWhatsAppButtons(phone,
+        "👋 Hola, Bienvenido/a a LAS CREPES! ¿Como te podemos servir?",
+        [
+          { id: "1", title: "Hacer un pedido 🥞" },
+          { id: "2", title: "Ver menú 📋" },
+          { id: "3", title: "Otros 💬" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
+  }
 } else if (currentOrder?.step === "armando_pedido") {
   if (
     lower.includes("si") ||
