@@ -34,6 +34,7 @@ export type OrderStep =
   | "esperando_pago"
   | "esperando_comprobante"
   | "esperando_aclaracion_producto"
+  | "esperando_variante_producto"
   | "esperando_sucursal_holaclick"
   | "esperando_pago_holaclick"
   | "confirmado";
@@ -53,6 +54,7 @@ export type CustomerOrder = {
   observacionesGenerales?: string;
   holaclick_order?: string;
   confirmedAt?: string;
+  pendingProduct?: { id: string; nombre: string; precio: number };
   aclaracionPendiente?: {
     opciones: {
       nombre: string;

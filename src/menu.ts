@@ -1306,23 +1306,64 @@ aliases: [
       nombre: "Bebidas",
       productos: [
         {
-          id: "jugo_natural_agua",
-          nombre: "Jugo natural en agua",
+          id: "jugo_mora",
+          nombre: "Jugo de Mora",
           precio: 9900,
-          aliases: ["jugo", "jugo natural", "jugo en agua"],
+          aliases: ["mora", "jugo mora", "jugo de mora", "jugo", "jugo natural"],
           variantes: [
-            { id: "mango", nombre: "Mango", precio: 9900, aliases: ["mango"] },
-            { id: "maracuya", nombre: "Maracuyá", precio: 9900, aliases: ["maracuya", "maracuyá"] },
-            { id: "mora", nombre: "Mora", precio: 9900, aliases: ["mora"] },
-            { id: "fresa", nombre: "Fresa", precio: 9900, aliases: ["fresa"] },
-            { id: "guanabana", nombre: "Guanábana", precio: 9900, aliases: ["guanabana", "guanábana"] }
+            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
+            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
           ]
         },
         {
-          id: "jugo_natural_leche",
-          nombre: "Jugo natural en leche",
-          precio: 11500,
-          aliases: ["jugo en leche"]
+          id: "jugo_lulo",
+          nombre: "Jugo de Lulo",
+          precio: 9900,
+          aliases: ["lulo", "jugo lulo", "jugo de lulo", "jugo", "jugo natural"],
+          variantes: [
+            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
+            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
+          ]
+        },
+        {
+          id: "jugo_guanabana",
+          nombre: "Jugo de Guanábana",
+          precio: 9900,
+          aliases: ["guanabana", "guanábana", "jugo guanabana", "jugo", "jugo natural"],
+          variantes: [
+            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
+            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
+          ]
+        },
+        {
+          id: "jugo_maracuya",
+          nombre: "Jugo de Maracuyá",
+          precio: 9900,
+          aliases: ["maracuya", "maracuyá", "jugo maracuya", "jugo", "jugo natural"],
+          variantes: [
+            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
+            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
+          ]
+        },
+        {
+          id: "jugo_fresa",
+          nombre: "Jugo de Fresa",
+          precio: 9900,
+          aliases: ["fresa", "jugo fresa", "jugo de fresa", "jugo", "jugo natural"],
+          variantes: [
+            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
+            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
+          ]
+        },
+        {
+          id: "jugo_mango",
+          nombre: "Jugo de Mango",
+          precio: 9900,
+          aliases: ["mango", "jugo mango", "jugo de mango", "jugo", "jugo natural"],
+          variantes: [
+            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
+            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
+          ]
         },
         {
           id: "batido_frutas",

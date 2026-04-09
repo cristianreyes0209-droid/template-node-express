@@ -691,6 +691,26 @@ if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length)
     const product = allProducts.find((p: any) => p.id === seleccion.productoId);
 
     if (product) {
+      clearPendingClarification(phone);
+
+      if (product.variantes && product.variantes.length > 0) {
+        // Guardar producto temporalmente y pedir variante
+        currentOrder.pendingProduct = { id: product.id, nombre: product.nombre, precio: product.precio };
+        updateOrderStep(phone, "esperando_variante_producto");
+        currentOrder = getOrder(phone)!;
+
+        const botonesVariantes = product.variantes.slice(0, 3).map((v: any) => ({
+          id: `variante_${v.id}`,
+          title: `${v.nombre} $${v.precio.toLocaleString("es-CO")}`
+        }));
+
+        await sendWhatsAppButtons(phone,
+          `¿Cómo lo deseas?\n\n${product.nombre}`,
+          botonesVariantes
+        );
+        return res.sendStatus(200);
+      }
+
       createOrUpdateOrder(phone, [
         {
           producto: product.nombre,
@@ -700,49 +720,101 @@ if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length)
         }
       ]);
 
-      clearPendingClarification(phone);
-      updateOrderStep(phone, "armando_pedido");
+      updateOrderStep(phone, "post_agregar_producto");
       currentOrder = getOrder(phone)!;
 
       const resumen = currentOrder.items
         .map((item: any) => {
-          const observacionesTexto = item.observaciones
-            ? ` (${item.observaciones})`
+          const observacionesTexto = item.observaciones ? ` (${item.observaciones})` : "";
+          const extrasTexto = item.extras && item.extras.length > 0
+            ? " +" + item.extras.map((extra: any) =>
+                extra.cantidad > 1 ? `${extra.cantidad} ${extra.nombre}` : extra.nombre
+              ).join(", +")
             : "";
-
-          const extrasTexto =
-            item.extras && item.extras.length > 0
-              ? " +" +
-                item.extras
-                  .map((extra: any) =>
-                    extra.cantidad > 1
-                      ? `${extra.cantidad} ${extra.nombre}`
-                      : extra.nombre
-                  )
-                  .join(", +")
-              : "";
-
           return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
         })
         .join("\n");
 
-  updateOrderStep(phone, "post_agregar_producto");
-
-await sendWhatsAppButtons(phone,
-  "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n📝 Si deseas una observacion escribela, o elige:",
-  [
-    { id: "1", title: "Confirmar" },
-    { id: "2", title: "Agregar mas" },
-    { id: "3", title: "Eliminar" }
-  ]
-);
-return res.sendStatus(200);
+      await sendWhatsAppButtons(phone,
+        "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n📝 Si deseas una observacion escribela, o elige:",
+        [
+          { id: "1", title: "Confirmar" },
+          { id: "2", title: "Agregar mas" },
+          { id: "3", title: "Eliminar" }
+        ]
+      );
+      return res.sendStatus(200);
     } else {
       replyMessage = "No pude encontrar esa opción. Inténtalo de nuevo 😊";
     }
  } else {
   replyMessage = `Por favor respóndeme con un número entre 1 y ${opciones.length} 😊`;
 }
+
+} else if (currentOrder?.step === "esperando_variante_producto") {
+  const pending = currentOrder.pendingProduct;
+
+  if (!pending) {
+    updateOrderStep(phone, "armando_pedido");
+    replyMessage = "Ocurrió un error. ¿Qué deseas pedir?";
+  } else {
+    const allProducts = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+    const product = allProducts.find((p: any) => p.id === pending.id);
+    const variantes: any[] = product?.variantes || [];
+
+    // Buscar variante por id del botón o por texto
+    let varianteElegida = variantes.find((v: any) => lower === `variante_${v.id}`);
+    if (!varianteElegida) {
+      varianteElegida = variantes.find((v: any) =>
+        v.aliases?.some((a: string) => lower.includes(a)) ||
+        lower.includes(v.nombre.toLowerCase())
+      );
+    }
+
+    if (varianteElegida) {
+      createOrUpdateOrder(phone, [
+        {
+          producto: pending.nombre,
+          cantidad: 1,
+          precio: varianteElegida.precio,
+          variante: varianteElegida.nombre,
+          extras: []
+        }
+      ]);
+      currentOrder.pendingProduct = undefined;
+      updateOrderStep(phone, "post_agregar_producto");
+      currentOrder = getOrder(phone)!;
+
+      const resumen = currentOrder.items
+        .map((item: any) => {
+          const extrasTexto = item.extras && item.extras.length > 0
+            ? " +" + item.extras.map((e: any) => e.nombre).join(", +")
+            : "";
+          return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${extrasTexto}`;
+        })
+        .join("\n");
+
+      await sendWhatsAppButtons(phone,
+        "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n📝 Si deseas una observacion escribela, o elige:",
+        [
+          { id: "1", title: "Confirmar" },
+          { id: "2", title: "Agregar mas" },
+          { id: "3", title: "Eliminar" }
+        ]
+      );
+      return res.sendStatus(200);
+    } else {
+      const botonesVariantes = variantes.slice(0, 3).map((v: any) => ({
+        id: `variante_${v.id}`,
+        title: `${v.nombre} $${v.precio.toLocaleString("es-CO")}`
+      }));
+      await sendWhatsAppButtons(phone,
+        `¿Cómo lo deseas?\n\n${pending.nombre}`,
+        botonesVariantes
+      );
+      return res.sendStatus(200);
+    }
+  }
 
 } else if (currentOrder?.step === "esperando_menu_principal") {
 
