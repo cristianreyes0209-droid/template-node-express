@@ -1168,7 +1168,7 @@ return res.sendStatus(200);
   "Perfecto 👌\n\n¿Cómo deseas pagar?",
   [
     { id: "efectivo", title: "Efectivo 💵" },
-    { id: "nequi", title: "Nequi 📱" },
+    { id: "nequi", title: "Nequi/Daviplata 📱" },
     { id: "bancolombia", title: "Bancolombia 🏦" }
   ]
 );
@@ -1623,6 +1623,10 @@ return res.sendStatus(200);
         ? "50 min 🚚"
         : "15 min 🏪";
 
+    if (!order.nombre && customer?.name) {
+      updateOrderName(phone, customer.name);
+    }
+
     const resumenCliente =
       "🔥 Pedido confirmado\n\n" +
       "👤 Nombre: " + (order.nombre || customer?.name || "Cliente") + "\n" +
@@ -1661,7 +1665,7 @@ return res.sendStatus(200);
 );
 return res.sendStatus(200);
   } else if (lower.includes("nequi")) {
-    updateOrderPayment(phone, "nequi");
+    updateOrderPayment(phone, "nequi/daviplata");
     updateOrderStep(phone, "esperando_comprobante");
     currentOrder = getOrder(phone)!;
 
@@ -1765,6 +1769,10 @@ return res.sendStatus(200);
       order.tipoEntrega === "domicilio"
         ? "50 min 🚚"
         : "15 min 🏪";
+
+    if (!order.nombre && customer?.name) {
+      updateOrderName(phone, customer.name);
+    }
 
     replyMessage =
       "🔥 Pedido confirmado\n\n" +
