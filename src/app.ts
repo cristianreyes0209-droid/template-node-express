@@ -1846,11 +1846,11 @@ return res.sendStatus(200);
     updateOrderStep(phone, "esperando_comprobante");
     currentOrder = getOrder(phone)!;
 
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      "Pago por Nequi:\n" +
-      "📱 3207218267\n\n" +
-      "Cuando realices el pago, envíame el comprobante o escribe 'listo'.";
+    await sendWhatsAppButtons(phone,
+      "Perfecto 👌\n\nPago por Nequi/Daviplata:\n📱 3207218267\n\nCuando realices el pago presiona el botón o escribe 'listo'.",
+      [{ id: "listo", title: "Listo, ya pagué ✅" }]
+    );
+    return res.sendStatus(200);
 
  
   } else if (lower.includes("bancolombia") || lower.includes("transferencia")) {
