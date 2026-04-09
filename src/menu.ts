@@ -558,112 +558,6 @@ export const menu = {
       ]
     },
     {
-  id: "vegetales_mixta",
-  nombre: "Vegetales Mixta",
-  precio: 24500,
-  aliases: [
-    "vegetales",
-    "vegetales mixta",
-    "crepe vegetales",
-    "mixta vegetales"
-  ],
-  ingredientes: [
-    "Carne desmechada y/o pollo desmechado",
-    "Champiñones",
-    "Pico de gallo",
-    "Maíz",
-    "Salsa paris (bechamel)"
-  ],
-  variantes: [
-    {
-      id: "mixta",
-      nombre: "Mixta",
-      precio: 24500,
-      aliases: ["mixta", "pollo y carne", "carne y pollo"]
-    },
-    {
-      id: "solo_pollo",
-      nombre: "Solo pollo",
-      precio: 21000,
-      aliases: ["solo pollo", "con pollo", "de pollo"]
-    },
-    {
-      id: "solo_carne",
-      nombre: "Solo carne",
-      precio: 24500,
-      aliases: ["solo carne", "con carne", "de carne"]
-    }
-  ],
-  modificadoresComunes: [
-    "sin champiñones",
-    "sin pico de gallo",
-    "sin maiz",
-    "sin maíz",
-    "sin salsa"
-  ],
-  extrasDisponibles: [
-    "extra_pollo",
-    "extra_carne",
-    "extra_queso",
-    "extra_champinones",
-    "extra_maiz",
-    "jalapenos"
-    ]
-    },
-    {
-  id: "ranchera_mixta",
-  nombre: "Ranchera Mixta",
-  precio: 24500,
-  aliases: [
-    "ranchera mixta",
-    "ranchera",
-    "crepe ranchera mixta"
-  ],
-  ingredientes: [
-    "Carne desmechada y/o pollo desmechado",
-    "Maíz",
-    "Jamón premium",
-    "Salsa paris (bechamel)",
-    "Queso doble crema"
-  ],
-  variantes: [
-    {
-      id: "mixta",
-      nombre: "Mixta",
-      precio: 24500,
-      aliases: ["mixta", "pollo y carne", "carne y pollo"]
-    },
-    {
-      id: "solo_pollo",
-      nombre: "Solo pollo",
-      precio: 21000,
-      aliases: ["solo pollo", "con pollo", "de pollo"]
-    },
-    {
-      id: "solo_carne",
-      nombre: "Solo carne",
-      precio: 24500,
-      aliases: ["solo carne", "con carne", "de carne"]
-    }
-  ],
-  modificadoresComunes: [
-    "sin maiz",
-    "sin maíz",
-    "sin jamon",
-    "sin jamón",
-    "sin queso",
-    "sin salsa"
-  ],
-  extrasDisponibles: [
-    "extra_pollo",
-    "extra_carne",
-    "extra_queso",
-    "extra_maiz",
-    "extra_jamon",
-    "jalapenos"
-  ]
-    },
-    {
       id: "pollo_y_pina",
       nombre: "Pollo y Piña",
       precio: 15500,
@@ -1248,6 +1142,267 @@ aliases: [
             "extra_maiz",
             "extra_champinones",
             "jalapenos"
+          ]
+        }
+      ]
+    },
+    {
+      id: "entradas",
+      nombre: "Entradas",
+      productos: [
+        {
+          id: "super_nachos",
+          nombre: "Super Nachos",
+          precio: 32500,
+          aliases: ["super nachos", "nachos especiales"]
+        },
+        {
+          id: "nachos_paris",
+          nombre: "Nachos París",
+          precio: 27000,
+          aliases: ["nachos paris", "nachos de paris"]
+        },
+        {
+          id: "nachos_cheddar",
+          nombre: "Nachos con Cheddar",
+          precio: 18000,
+          aliases: ["nachos cheddar", "nachos con queso", "nachos con cheddar"]
+        }
+      ]
+    },
+    {
+      id: "vegetarianas",
+      nombre: "Vegetarianas",
+      productos: [
+        {
+          id: "strogonoff_veggie",
+          nombre: "Strogonoff Veggie",
+          precio: 36500,
+          ingredientes: [
+            "Albóndigas de soya y huevo",
+            "Champiñones",
+            "Salsa strogonoff",
+            "Vino blanco"
+          ],
+          aliases: ["strogonoff veggie", "veggie", "stroganoff veggie"]
+        },
+        {
+          id: "vegetariana",
+          nombre: "Vegetariana",
+          precio: 13900,
+          aliases: ["vegetariana", "crepe vegetariana"],
+          variantes: [
+            {
+              id: "con_salsa_paris",
+              nombre: "Con salsa París",
+              precio: 15900,
+              aliases: ["con salsa paris", "con paris"]
+            },
+            {
+              id: "con_salsa_italiana",
+              nombre: "Con salsa italiana",
+              precio: 14500,
+              aliases: ["con salsa italiana", "con italiana"]
+            }
+          ]
+        },
+        {
+          id: "burguessa_veggie",
+          nombre: "Burguessa Veggie",
+          precio: 25500,
+          ingredientes: [
+            "Proteína de soya y huevo",
+            "Tomate",
+            "Dos quesos",
+            "Lechuga",
+            "Cebolla salteada"
+          ],
+          aliases: ["burguessa veggie", "burgesa veggie", "veggie burger"]
+        }
+      ]
+    },
+    {
+      id: "con_frutas",
+      nombre: "Con Frutas",
+      productos: [
+        {
+          id: "tropinutella",
+          nombre: "Tropinutella",
+          precio: 19900,
+          ingredientes: [
+            "Nutella",
+            "Durazno",
+            "Fresa",
+            "Banano",
+            "Manzana",
+            "Queso cuajada",
+            "Queso doble crema",
+            "Crema de leche"
+          ],
+          aliases: ["tropinutella", "tropi nutella"]
+        },
+        {
+          id: "tropical",
+          nombre: "Tropical",
+          precio: 16900,
+          ingredientes: [
+            "Durazno",
+            "Fresa",
+            "Banano",
+            "Manzana",
+            "Queso cuajada",
+            "Queso doble crema",
+            "Crema de leche"
+          ],
+          aliases: ["tropical", "crepe tropical"]
+        },
+        {
+          id: "crepostre",
+          nombre: "Crepostre",
+          precio: 9500,
+          ingredientes: ["Nutella", "Fresa", "Durazno"],
+          aliases: ["crepostre", "cre postre"]
+        }
+      ]
+    },
+    {
+      id: "dulces",
+      nombre: "Dulces",
+      productos: [
+        {
+          id: "nutella_crepe",
+          nombre: "Nutella",
+          precio: 11500,
+          aliases: ["nutella", "crepe nutella", "de nutella"]
+        },
+        {
+          id: "chocolate_crepe",
+          nombre: "Chocolate",
+          precio: 10500,
+          aliases: ["chocolate", "crepe chocolate", "de chocolate"]
+        },
+        {
+          id: "arequipe_crepe",
+          nombre: "Arequipe",
+          precio: 10500,
+          aliases: ["arequipe", "crepe arequipe", "de arequipe"]
+        },
+        {
+          id: "crepe_oblea",
+          nombre: "Crepe Oblea",
+          precio: 11900,
+          ingredientes: [
+            "Arequipe",
+            "Queso cuajada",
+            "Salsa de mora",
+            "Crema de leche"
+          ],
+          aliases: ["oblea", "crepe oblea"]
+        }
+      ]
+    },
+    {
+      id: "bebidas",
+      nombre: "Bebidas",
+      productos: [
+        {
+          id: "jugo_natural_agua",
+          nombre: "Jugo natural en agua",
+          precio: 9900,
+          aliases: ["jugo", "jugo natural", "jugo en agua"],
+          variantes: [
+            { id: "mango", nombre: "Mango", precio: 9900, aliases: ["mango"] },
+            { id: "maracuya", nombre: "Maracuyá", precio: 9900, aliases: ["maracuya", "maracuyá"] },
+            { id: "mora", nombre: "Mora", precio: 9900, aliases: ["mora"] },
+            { id: "fresa", nombre: "Fresa", precio: 9900, aliases: ["fresa"] },
+            { id: "guanabana", nombre: "Guanábana", precio: 9900, aliases: ["guanabana", "guanábana"] }
+          ]
+        },
+        {
+          id: "jugo_natural_leche",
+          nombre: "Jugo natural en leche",
+          precio: 11500,
+          aliases: ["jugo en leche"]
+        },
+        {
+          id: "batido_frutas",
+          nombre: "Batido de frutas",
+          precio: 11500,
+          aliases: ["batido", "batido de frutas"]
+        },
+        {
+          id: "limonada_natural",
+          nombre: "Limonada natural",
+          precio: 5000,
+          aliases: ["limonada", "limonada natural"]
+        },
+        {
+          id: "limonada_coco",
+          nombre: "Limonada de coco",
+          precio: 10500,
+          aliases: ["limonada de coco", "limonada coco"]
+        },
+        {
+          id: "limonada_cereza",
+          nombre: "Limonada de cereza",
+          precio: 12500,
+          aliases: ["limonada de cereza", "limonada cereza"]
+        },
+        {
+          id: "malteada",
+          nombre: "Malteada",
+          precio: 17900,
+          aliases: ["malteada"],
+          variantes: [
+            { id: "vainilla", nombre: "Vainilla", precio: 17900, aliases: ["vainilla"] },
+            { id: "brownie_vainilla", nombre: "Brownie vainilla", precio: 17900, aliases: ["brownie vainilla", "brownie"] },
+            { id: "fresa", nombre: "Fresa", precio: 17900, aliases: ["fresa"] }
+          ]
+        },
+        {
+          id: "agua",
+          nombre: "Agua",
+          precio: 3900,
+          aliases: ["agua", "agua embotellada"]
+        },
+        {
+          id: "coca_cola",
+          nombre: "Coca Cola",
+          precio: 5900,
+          aliases: ["coca cola", "cocacola"]
+        },
+        {
+          id: "gaseosa",
+          nombre: "Gaseosa",
+          precio: 5900,
+          aliases: ["gaseosa"]
+        },
+        {
+          id: "te_hatsu",
+          nombre: "Te Hatsu",
+          precio: 9900,
+          aliases: ["te hatsu", "hatsu"]
+        }
+      ]
+    },
+    {
+      id: "crepe_salada",
+      nombre: "Crepe Salada",
+      productos: [
+        {
+          id: "crepe_salada_clasica",
+          nombre: "Crepe con masa clásica",
+          precio: 11500,
+          aliases: ["crepe salada", "arma tu crepe", "crepe clasica"],
+          extrasDisponibles: [
+            "extra_carne", "extra_pollo", "tocineta", "extra_pepperoni",
+            "extra_salami", "extra_jamon", "extra_ranchera", "extra_chile_con_carne",
+            "extra_queso", "extra_queso_americano", "extra_queso_cuajada",
+            "extra_parmesano", "extra_cheddar", "extra_champinones", "extra_maiz",
+            "pico_de_gallo", "jalapenos", "extra_fresa", "extra_banano",
+            "extra_durazno", "extra_manzana", "extra_pina", "extra_nutella",
+            "extra_chocolate", "extra_arequipe", "extra_crema_mani",
+            "helado_1_bola", "helado_2_bolas"
           ]
         }
       ]
