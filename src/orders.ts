@@ -34,6 +34,8 @@ export type OrderStep =
   | "esperando_pago"
   | "esperando_comprobante"
   | "esperando_aclaracion_producto"
+  | "esperando_sucursal_holaclick"
+  | "esperando_pago_holaclick"
   | "confirmado";
 
 export type CustomerOrder = {
@@ -49,6 +51,7 @@ export type CustomerOrder = {
   step: OrderStep;
   lastInteraction: number;
   observacionesGenerales?: string;
+  holaclick_order?: string;
   aclaracionPendiente?: {
     opciones: {
       nombre: string;

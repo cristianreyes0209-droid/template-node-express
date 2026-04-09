@@ -542,6 +542,23 @@ return res.sendStatus(200);
     return res.sendStatus(200);
   }
 
+if (text.includes("Vengo de https://las-crepes.ola.click")) {
+  createOrUpdateOrder(phone, []);
+  const order = getOrder(phone)!;
+  order.holaclick_order = text;
+  if (customer?.name) updateOrderName(phone, customer.name);
+  updateOrderStep(phone, "esperando_sucursal_holaclick");
+  await sendWhatsAppMessage(phone, "Tu pedido fue recibido ✅ Vamos a procesarlo.");
+  await sendWhatsAppButtons(phone,
+    "¿Para cuál sucursal es tu pedido?",
+    [
+      { id: "la_villa", title: "La Villa 🏪" },
+      { id: "circunvalar", title: "Av. Circunvalar 🏪" }
+    ]
+  );
+  return res.sendStatus(200);
+}
+
 if (!currentOrder) {
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
@@ -772,6 +789,98 @@ return res.sendStatus(200);
   );
   return res.sendStatus(200);
 }
+
+} else if (currentOrder?.step === "esperando_sucursal_holaclick") {
+  if (lower === "la_villa" || lower.includes("villa")) {
+    currentOrder.sucursal = "la_villa";
+    updateOrderStep(phone, "esperando_pago_holaclick");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      "¿Cómo deseas pagar?",
+      [
+        { id: "efectivo", title: "Efectivo 💵" },
+        { id: "nequi", title: "Nequi/Daviplata 📱" },
+        { id: "bancolombia", title: "Bancolombia 🏦" }
+      ]
+    );
+    return res.sendStatus(200);
+  } else if (lower === "circunvalar" || lower.includes("circunvalar")) {
+    currentOrder.sucursal = "circunvalar";
+    updateOrderStep(phone, "esperando_pago_holaclick");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      "¿Cómo deseas pagar?",
+      [
+        { id: "efectivo", title: "Efectivo 💵" },
+        { id: "nequi", title: "Nequi/Daviplata 📱" },
+        { id: "bancolombia", title: "Bancolombia 🏦" }
+      ]
+    );
+    return res.sendStatus(200);
+  } else {
+    await sendWhatsAppButtons(phone,
+      "¿Para cuál sucursal es tu pedido?",
+      [
+        { id: "la_villa", title: "La Villa 🏪" },
+        { id: "circunvalar", title: "Av. Circunvalar 🏪" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
+} else if (currentOrder?.step === "esperando_pago_holaclick") {
+  let formaPago = "";
+  if (lower.includes("efectivo")) {
+    formaPago = "efectivo";
+  } else if (lower.includes("nequi") || lower.includes("daviplata")) {
+    formaPago = "nequi/daviplata";
+  } else if (lower.includes("bancolombia") || lower.includes("transferencia")) {
+    formaPago = "bancolombia";
+  }
+
+  if (!formaPago) {
+    await sendWhatsAppButtons(phone,
+      "¿Cómo deseas pagar?",
+      [
+        { id: "efectivo", title: "Efectivo 💵" },
+        { id: "nequi", title: "Nequi/Daviplata 📱" },
+        { id: "bancolombia", title: "Bancolombia 🏦" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
+
+  updateOrderPayment(phone, formaPago);
+  updateOrderStep(phone, "confirmado");
+  currentOrder = getOrder(phone)!;
+
+  const order = getOrder(phone)!;
+  const holaclickResumen = order.holaclick_order || "";
+  const sucursalTexto = order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar";
+
+  const resumenInterno =
+    "🔥 PEDIDO HOLACLICK\n\n" +
+    `👤 ${order.nombre || customer?.name || "Cliente"}\n` +
+    `📞 ${phone}\n\n` +
+    `📋 Pedido original:\n${holaclickResumen}\n\n` +
+    `🏬 Sucursal: ${sucursalTexto}\n` +
+    `💳 Pago: ${formaPago}`;
+
+  try {
+    await handleOperationalRouting({ ...order, items: [] }, { subtotal: 0, domicilio: 0, total: 0 });
+    // Enviar resumen completo según sucursal
+    if (order.sucursal === "circunvalar" && process.env.CIRCUNVALAR_PHONE) {
+      await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE, resumenInterno);
+    } else if (order.sucursal === "la_villa" && process.env.VILLA_DOMICILIOS_DESTINO) {
+      await sendWhatsAppMessage(process.env.VILLA_DOMICILIOS_DESTINO, resumenInterno);
+    }
+  } catch (error) {
+    console.error("❌ ERROR enviando pedido HolaClick:", error);
+  }
+
+  replyMessage =
+    "Gracias por tu pedido 🔥 Ya está en proceso.\n\n" +
+    `🏬 Sucursal: ${sucursalTexto}\n` +
+    `💳 Pago: ${formaPago}`;
 
 } else if (currentOrder?.step === "esperando_ayuda") {
   updateOrderStep(phone, "confirmado");
