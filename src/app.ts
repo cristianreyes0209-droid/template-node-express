@@ -173,6 +173,8 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
   };
 }
 
+const inactivityTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 const LARGE_JSON_PATH = '/large-json-payload';
 const APPLICATION_JSON = 'application/json';
 
@@ -437,6 +439,27 @@ if (phone === "573217233342" || phone === process.env.CIRCUNVALAR_PHONE) {
 
   let currentOrder = getOrder(phone);
 
+  // Limpiar timer de inactividad al recibir cualquier mensaje
+  const existingTimer = inactivityTimers.get(phone);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    inactivityTimers.delete(phone);
+  }
+
+  // Reiniciar timer si hay un pedido en curso (no confirmado)
+  if (currentOrder && currentOrder.step !== "confirmado") {
+    const timer = setTimeout(async () => {
+      const order = getOrder(phone);
+      if (order && order.step !== "confirmado") {
+        await sendWhatsAppMessage(phone,
+          "¿Sigues ahí? 😊 Tu pedido está guardado. Escríbeme cuando quieras continuar."
+        );
+      }
+      inactivityTimers.delete(phone);
+    }, 10 * 60 * 1000);
+    inactivityTimers.set(phone, timer);
+  }
+
   // Verificar horario de atención solo si el cliente no está en medio de un pedido
   if (!currentOrder || currentOrder.step === "esperando_menu_principal") {
     const tipoEntrega = currentOrder?.tipoEntrega === "domicilio" ? "domicilio" : "recoger";
@@ -617,7 +640,7 @@ if (!currentOrder) {
     return res.sendStatus(200);
   } else {
     await sendWhatsAppButtons(phone,
-      "Hola  Bienvenido a LAS CREPES\n\n¿Que deseas hacer?",
+      "👋 Hola, Bienvenido/a a LAS CREPES! Estamos aquí para asegurarnos de darte la mejor atención para que puedas realizar tu pedido sin complicaciones. ¿Como te podemos servir?",
       [
         { id: "1", title: "Hacer un pedido 🥞" },
         { id: "2", title: "Ver menu 📋" },
@@ -888,6 +911,8 @@ return res.sendStatus(200);
 
   updateOrderPayment(phone, formaPago);
   updateOrderStep(phone, "confirmado");
+  clearTimeout(inactivityTimers.get(phone));
+  inactivityTimers.delete(phone);
   currentOrder = getOrder(phone)!;
 
   const order = getOrder(phone)!;
@@ -921,6 +946,8 @@ return res.sendStatus(200);
 
 } else if (currentOrder?.step === "esperando_ayuda") {
   updateOrderStep(phone, "confirmado");
+  clearTimeout(inactivityTimers.get(phone));
+  inactivityTimers.delete(phone);
   replyMessage = "Gracias por tu mensaje 😊 Un asesor te contactará pronto.";
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
@@ -1709,6 +1736,8 @@ return res.sendStatus(200);
   } else if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
     updateOrderStep(phone, "confirmado");
+    clearTimeout(inactivityTimers.get(phone));
+    inactivityTimers.delete(phone);
     currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
@@ -1856,6 +1885,8 @@ return res.sendStatus(200);
   } else if (lower.includes("listo") || lower.includes("ya")) {
 
     updateOrderStep(phone, "confirmado");
+    clearTimeout(inactivityTimers.get(phone));
+    inactivityTimers.delete(phone);
     currentOrder = getOrder(phone)!;
 
     const order = getOrder(phone)!;
