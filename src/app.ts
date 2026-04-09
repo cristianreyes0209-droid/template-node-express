@@ -774,17 +774,8 @@ return res.sendStatus(200);
 }
 
 } else if (currentOrder?.step === "esperando_ayuda") {
-  // El cliente escribió su consulta libre — responder y volver al menú
-  await sendWhatsAppButtons(phone,
-    "Gracias por escribirnos 😊 En breve un asesor te atenderá.\n\n¿Hay algo más en lo que pueda ayudarte?",
-    [
-      { id: "1", title: "Hacer un pedido 🥞" },
-      { id: "2", title: "Ver menú 📋" },
-      { id: "3", title: "Otros 💬" }
-    ]
-  );
-  updateOrderStep(phone, "esperando_menu_principal");
-  return res.sendStatus(200);
+  updateOrderStep(phone, "confirmado");
+  replyMessage = "Gracias por tu mensaje 😊 Un asesor te contactará pronto.";
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
     lower === "a" ||
