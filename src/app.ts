@@ -115,7 +115,7 @@ function isWithinBusinessHours(tipoEntrega: "domicilio" | "recoger"): boolean {
   const day = bogotaDate.getDay(); // 0=domingo, 5=viernes, 6=sábado
   const totalMinutes = bogotaDate.getHours() * 60 + bogotaDate.getMinutes();
 
-  const open = 16 * 60; // 4:00pm
+  const open = 15 * 60 + 30; // 3:30pm
   const isWeekend = day === 5 || day === 6; // viernes o sábado
 
   let close: number;
