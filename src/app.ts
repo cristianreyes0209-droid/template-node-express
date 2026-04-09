@@ -107,6 +107,27 @@ async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: st
   const data = await response.json();
   console.log("RESPUESTA BOTONES META:", data);
 }
+function isWithinBusinessHours(tipoEntrega: "domicilio" | "recoger"): boolean {
+  // Obtenemos la hora actual en Bogotá usando toLocaleString
+  const bogotaStr = new Date().toLocaleString("en-US", { timeZone: "America/Bogota" });
+  const bogotaDate = new Date(bogotaStr);
+
+  const day = bogotaDate.getDay(); // 0=domingo, 5=viernes, 6=sábado
+  const totalMinutes = bogotaDate.getHours() * 60 + bogotaDate.getMinutes();
+
+  const open = 16 * 60; // 4:00pm
+  const isWeekend = day === 5 || day === 6; // viernes o sábado
+
+  let close: number;
+  if (tipoEntrega === "recoger") {
+    close = isWeekend ? 23 * 60 : 22 * 60 + 30; // 11pm / 10:30pm
+  } else {
+    close = isWeekend ? 22 * 60 + 30 : 22 * 60; // 10:30pm / 10pm
+  }
+
+  return totalMinutes >= open && totalMinutes < close;
+}
+
 async function calcularDomicilio(direccionCliente: string, sucursal: string): Promise<{
   distanciaKm: number;
   valorDomicilio: number;
@@ -415,6 +436,22 @@ if (phone === "573217233342" || phone === process.env.CIRCUNVALAR_PHONE) {
   }
 
   let currentOrder = getOrder(phone);
+
+  // Verificar horario de atención solo si el cliente no está en medio de un pedido
+  if (!currentOrder || currentOrder.step === "esperando_menu_principal") {
+    const tipoEntrega = currentOrder?.tipoEntrega === "domicilio" ? "domicilio" : "recoger";
+    if (!isWithinBusinessHours(tipoEntrega)) {
+      await sendWhatsAppMessage(phone,
+        "Gracias por escribirnos 😊\n\n" +
+        "En este momento estamos fuera de horario de atención.\n\n" +
+        "🕐 Nuestro horario es:\n" +
+        "• Domingo a jueves: 4:00pm – 10:00pm\n" +
+        "• Viernes y sábado: 4:00pm – 10:30pm\n\n" +
+        "¡Te esperamos pronto! 🥞"
+      );
+      return res.sendStatus(200);
+    }
+  }
 
   console.log("STEP ACTUAL:", currentOrder?.step);
   console.log("TIPO ENTREGA ACTUAL:", currentOrder?.tipoEntrega);
@@ -763,7 +800,7 @@ return res.sendStatus(200);
 
 } else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
   await sendWhatsAppButtons(phone,
-    "Aquí puedes ver nuestro menú completo 📋\n\nhttps://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=menu\n\n¿Deseas hacer un pedido?",
+    "Aquí puedes ver nuestro menú completo 📋\n\nhttps://wa.me/c/573137160625\n\n¿Deseas hacer un pedido?",
     [
       { id: "1", title: "Sí, hacer un pedido 🥞" },
       { id: "3", title: "Otros 💬" }
@@ -863,7 +900,7 @@ return res.sendStatus(200);
     `📞 ${phone}\n\n` +
     `📋 Pedido original:\n${holaclickResumen}\n\n` +
     `🏬 Sucursal: ${sucursalTexto}\n` +
-    `💳 Pago: ${formaPago}`;
+    `💳 Pago: ${formaPago.charAt(0).toUpperCase() + formaPago.slice(1)}`;
 
   try {
     await handleOperationalRouting({ ...order, items: [] }, { subtotal: 0, domicilio: 0, total: 0 });
@@ -880,7 +917,7 @@ return res.sendStatus(200);
   replyMessage =
     "Gracias por tu pedido 🔥 Ya está en proceso.\n\n" +
     `🏬 Sucursal: ${sucursalTexto}\n` +
-    `💳 Pago: ${formaPago}`;
+    `💳 Pago: ${formaPago.charAt(0).toUpperCase() + formaPago.slice(1)}`;
 
 } else if (currentOrder?.step === "esperando_ayuda") {
   updateOrderStep(phone, "confirmado");
