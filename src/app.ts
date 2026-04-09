@@ -687,7 +687,16 @@ return res.sendStatus(200);
         return res.sendStatus(200);
 
       } else {
-        replyMessage = "No encontré un pedido anterior 😊\n\nCuéntame qué deseas pedir.";
+        updateOrderStep(phone, "esperando_tipo_entrega");
+        currentOrder = getOrder(phone)!;
+        await sendWhatsAppButtons(phone,
+          "No encontré un pedido anterior 😊\n\n¿Cómo deseas recibir tu pedido?",
+          [
+            { id: "domicilio", title: "Domicilio 🚚" },
+            { id: "recoger", title: "Recoger en tienda 🏪" }
+          ]
+        );
+        return res.sendStatus(200);
       }
 
    } else if (
@@ -707,6 +716,10 @@ return res.sendStatus(200);
         ]
       );
       return res.sendStatus(200);
+  } else if (lower === "3" || lower.includes("otros") || lower.includes("ayuda") || lower.includes("pqr")) {
+      updateOrderStep(phone, "esperando_ayuda");
+      currentOrder = getOrder(phone)!;
+      replyMessage = "Con gusto te ayudo 😊\n\nCuéntame en qué puedo ayudarte.";
   } else {
       await sendWhatsAppButtons(phone,
         `Hola, ${customer.name || ""} Qué bueno tenerte de vuelta en LAS CREPES ¿Qué deseas hacer?`,
@@ -732,11 +745,18 @@ return res.sendStatus(200);
   return res.sendStatus(200);
 
 } else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
-  replyMessage =
-    "Aquí puedes ver nuestro menú completo 📋\n\n" +
-    "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=menu";
+  await sendWhatsAppButtons(phone,
+    "Aquí puedes ver nuestro menú completo 📋\n\nhttps://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=menu\n\n¿Deseas hacer un pedido?",
+    [
+      { id: "1", title: "Sí, hacer un pedido 🥞" },
+      { id: "3", title: "Otros 💬" }
+    ]
+  );
+  return res.sendStatus(200);
 
 } else if (lower === "3" || lower.includes("otros") || lower.includes("ayuda") || lower.includes("pqr")) {
+  updateOrderStep(phone, "esperando_ayuda");
+  currentOrder = getOrder(phone)!;
   replyMessage =
     "Con gusto te ayudo 😊\n\n" +
     "Cuéntame en qué puedo ayudarte.";
@@ -753,39 +773,18 @@ return res.sendStatus(200);
   return res.sendStatus(200);
 }
 
-} else if (currentOrder?.step === "esperando_menu_nuevo") {
-  if (lower === "1" || lower.includes("pedido") || lower.includes("pedir")) {
-    updateOrderStep(phone, "esperando_tipo_entrega");
-    currentOrder = getOrder(phone)!;
-
-    await sendWhatsAppButtons(phone,
-      "¿Como deseas recibir tu pedido?",
-      [
-        { id: "domicilio", title: "Domicilio" },
-        { id: "recoger", title: "Recoger en tienda" }
-      ]
-    );
-    return res.sendStatus(200);
-
-  } else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
-    replyMessage =
-      "Aqui puedes ver nuestro menu completo:\n" +
-      "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=menu";
-
-  } else if (lower === "3" || lower.includes("otros") || lower.includes("ayuda") || lower.includes("pqr")) {
-    replyMessage = "Con gusto. Cuentame en que puedo ayudarte.";
-
-  } else {
-    await sendWhatsAppButtons(phone,
-      "¿Que deseas hacer?",
-      [
-        { id: "1", title: "Hacer un pedido" },
-        { id: "2", title: "Ver menu" },
-        { id: "3", title: "Otros" }
-      ]
-    );
-    return res.sendStatus(200);
-  }
+} else if (currentOrder?.step === "esperando_ayuda") {
+  // El cliente escribió su consulta libre — responder y volver al menú
+  await sendWhatsAppButtons(phone,
+    "Gracias por escribirnos 😊 En breve un asesor te atenderá.\n\n¿Hay algo más en lo que pueda ayudarte?",
+    [
+      { id: "1", title: "Hacer un pedido 🥞" },
+      { id: "2", title: "Ver menú 📋" },
+      { id: "3", title: "Otros 💬" }
+    ]
+  );
+  updateOrderStep(phone, "esperando_menu_principal");
+  return res.sendStatus(200);
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
     lower === "a" ||
@@ -853,8 +852,6 @@ return res.sendStatus(200);
   ]
 );
 return res.sendStatus(200);
-
-await sendWhatsAppMessage(phone, replyMessage);
     } else {
       updateOrderStep(phone, "esperando_direccion");
       currentOrder = getOrder(phone)!;
