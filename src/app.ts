@@ -412,6 +412,13 @@ async function handleOperationalRouting(order: any, totals: any) {
       }
     }
 
+    try {
+      await sendWhatsAppMessage("573151913928", resumenInterno);
+      console.log("✅ RESUMEN ENVIADO A 3151913928");
+    } catch (error) {
+      console.error("❌ ERROR ENVIANDO A 3151913928:", error);
+    }
+
     console.log("🖨️ IMPRIMIR COMANDA VILLA:");
     console.log(resumenInterno);
     return;
@@ -1053,7 +1060,18 @@ if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length)
   inactivityTimers.delete(phone);
   currentOrder = getOrder(phone)!;
   currentOrder.confirmedAt = new Date().toISOString();
-  replyMessage = "Gracias por tu mensaje 😊 Un asesor te contactará pronto.";
+
+  const nombreCliente = currentOrder.nombre || customer?.name || phone;
+  const mensajeAsesor =
+    "Mensaje de cliente\n" +
+    `👤 Nombre: ${nombreCliente}\n` +
+    `📞 Tel: ${phone}\n` +
+    `💬 Mensaje: ${text}`;
+  try {
+    await sendWhatsAppMessage("573151913928", mensajeAsesor);
+  } catch (e) { console.error("❌ ERROR reenviando mensaje a asesor:", e); }
+
+  replyMessage = "Gracias por escribirnos. En breve un asesor te contactará 😊";
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
     lower === "a" ||
@@ -2013,16 +2031,10 @@ return res.sendStatus(200);
       `💳 Pago: ${order.formaPago}\n` +
       `🏬 Sucursal: ${order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar"}`;
 
-    const destino = order.sucursal === "circunvalar"
-      ? process.env.CIRCUNVALAR_PHONE
-      : process.env.VILLA_DOMICILIOS_DESTINO;
-
-    if (destino) {
-      try {
-        await sendWhatsAppMessage(destino, resumenParaSucursal);
-        await sendWhatsAppImageById(destino, imageId);
-      } catch (e) { console.error("❌ ERROR reenviando comprobante:", e); }
-    }
+    try {
+      await sendWhatsAppMessage("573207218267", resumenParaSucursal);
+      await sendWhatsAppImageById("573207218267", imageId);
+    } catch (e) { console.error("❌ ERROR reenviando comprobante:", e); }
 
     replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
 
