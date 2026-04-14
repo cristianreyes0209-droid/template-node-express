@@ -155,9 +155,9 @@ function splitIntoFragments(text: string) {
       continue;
     }
 
-    // Partir por "y" o "e"
+    // Partir por "y", "e", "más", "mas", "también", "tambien"
     const yParts = part
-      .split(/\s+y\s+|\s+e\s+/i)
+      .split(/\s+(?:y|e|mas|más|también|tambien)\s+/i)
       .map((p) => p.trim())
       .filter(Boolean);
 
@@ -195,22 +195,27 @@ function splitByInlineNumbers(text: string): string[] {
 }
 
 function extractQuantity(fragment: string): { quantity: number; text: string } {
-  const match = fragment.match(/^(\d+|una|uno|un)\s+(.*)$/i);
+  const wordNums: Record<string, number> = {
+    "un": 1, "una": 1, "uno": 1,
+    "dos": 2, "tres": 3, "cuatro": 4, "cinco": 5
+  };
 
-  if (!match) {
-    return { quantity: 1, text: fragment.trim() };
+  // Try digit first
+  const numMatch = fragment.match(/^(\d+)\s+(.+)$/i);
+  if (numMatch) {
+    return { quantity: Number(numMatch[1]) || 1, text: numMatch[2].trim() };
   }
 
-  const rawQty = match[1].toLowerCase();
-  const quantity =
-    rawQty === "un" || rawQty === "una" || rawQty === "uno"
-      ? 1
-      : Number(rawQty);
+  // Try word numbers at the start
+  for (const [word, num] of Object.entries(wordNums)) {
+    const regex = new RegExp(`^${escapeRegex(word)}\\s+(.+)$`, "i");
+    const match = fragment.match(regex);
+    if (match) {
+      return { quantity: num, text: match[1].trim() };
+    }
+  }
 
-  return {
-    quantity: Number.isNaN(quantity) ? 1 : quantity,
-    text: match[2].trim()
-  };
+  return { quantity: 1, text: fragment.trim() };
 }
 function similarity(a: string, b: string) {
   const longer = a.length > b.length ? a : b;
@@ -253,36 +258,21 @@ function escapeRegex(text: string) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function extractObservaciones(fragment: string) {
+function extractObservaciones(fragment: string): string | undefined {
+  const text = fragment.toLowerCase();
   const observaciones: string[] = [];
 
-  const reglas = [
-    "sin queso",
-    "sin crema",
-    "sin cebolla",
-    "sin tomate",
-    "sin lechuga",
-    "sin champiñones",
-    "sin champinones",
-    "sin champiñon",
-    "sin champinon",
-    "sin maiz",
-    "sin maíz",
-    "sin piña",
-    "sin pina",
-    "sin salsa",
-    "sin jalapeños",
-    "sin jalapenos",
-    "sin chile",
-    "sin frijol",
-    "sin parmesano"
-  ];
-
-  for (const regla of reglas) {
-    if (fragment.includes(regla)) {
-      observaciones.push(regla);
-    }
+  const sinRegex = /\bsin\s+(\w+(?:\s+\w+)?)/g;
+  let m: RegExpExecArray | null;
+  while ((m = sinRegex.exec(text)) !== null) {
+    observaciones.push(`sin ${m[1]}`);
   }
+
+  const pocoMatch = text.match(/\bpoco\s+(\w+)/);
+  if (pocoMatch) observaciones.push(`poco ${pocoMatch[1]}`);
+
+  const bienMatch = text.match(/\bbien\s+(\w+)/);
+  if (bienMatch) observaciones.push(`bien ${bienMatch[1]}`);
 
   return observaciones.length > 0 ? observaciones.join(", ") : undefined;
 }
@@ -425,7 +415,9 @@ function extractExtrasFromFragment(fragment: string, extrasProducts: any[]) {
         text.includes(`con extra ${normalizedAlias}`) ||
         text.includes(`mas ${normalizedAlias}`) ||
         text.includes(`más ${normalizedAlias}`) ||
-        text.includes(`adicional ${normalizedAlias}`);
+        text.includes(`adicional ${normalizedAlias}`) ||
+        text.includes(`con ${normalizedAlias}`) ||
+        text.includes(`agregar ${normalizedAlias}`);
 
       if (regex.test(text) && hasTrigger) {
         const existing = extrasFound.find((e) => e.id === extra.id);

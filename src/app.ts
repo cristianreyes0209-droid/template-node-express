@@ -1055,11 +1055,8 @@ if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length)
     `💳 Pago: ${formaPago.charAt(0).toUpperCase() + formaPago.slice(1)}`;
 
 } else if (currentOrder?.step === "esperando_ayuda") {
-  updateOrderStep(phone, "confirmado");
-  clearTimeout(inactivityTimers.get(phone));
-  inactivityTimers.delete(phone);
+  updateOrderStep(phone, "esperando_asesor");
   currentOrder = getOrder(phone)!;
-  currentOrder.confirmedAt = new Date().toISOString();
 
   const nombreCliente = currentOrder.nombre || customer?.name || phone;
   const mensajeAsesor =
@@ -1072,6 +1069,9 @@ if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length)
   } catch (e) { console.error("❌ ERROR reenviando mensaje a asesor:", e); }
 
   replyMessage = "Gracias por escribirnos. En breve un asesor te contactará 😊";
+
+} else if (currentOrder?.step === "esperando_asesor") {
+  replyMessage = "Con gusto 😊 Un asesor te atenderá pronto.";
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
     lower === "a" ||
@@ -1451,8 +1451,9 @@ return res.sendStatus(200);
     updateOrderStep(phone, "esperando_pago");
     currentOrder = getOrder(phone)!;
 
+    const totalsParaPago = calculateTotal(getOrder(phone)!);
    await sendWhatsAppButtons(phone,
-  "Perfecto 👌\n\n¿Cómo deseas pagar?",
+  `El total de tu pedido es $${totalsParaPago.total} 💰\n¿Cómo deseas pagar?`,
   [
     { id: "efectivo", title: "Efectivo 💵" },
     { id: "nequi", title: "Nequi/Daviplata 📱" },
@@ -1795,7 +1796,7 @@ return res.sendStatus(200);
     updateOrderStep(phone, "esperando_confirmacion");
     currentOrder = getOrder(phone)!;
     await sendWhatsAppButtons(phone,
-      "Observacion guardada. ¿Confirmamos el pedido?",
+      `Anotado ✅\n\n📝 ${text}\n\n¿Qué deseas hacer?`,
       [
         { id: "1", title: "Confirmar" },
         { id: "2", title: "Agregar mas" },
@@ -1988,8 +1989,9 @@ return res.sendStatus(200);
       "Cuando realices el pago envíame el comprobante 📸";
 
 } else {
+  const totalsElse = calculateTotal(getOrder(phone)!);
    await sendWhatsAppButtons(phone,
-  "Perfecto 👌\n\n¿Cómo deseas pagar?",
+  `El total de tu pedido es $${totalsElse.total} 💰\n¿Cómo deseas pagar?`,
   [
     { id: "efectivo", title: "Efectivo 💵" },
     { id: "nequi", title: "Nequi/Daviplata 📱" },
