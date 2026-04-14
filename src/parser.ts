@@ -156,13 +156,25 @@ function splitIntoFragments(text: string) {
     }
 
     // Partir por "y", "e", "más", "además", "también", "súmale", "agrégale"
-    const yParts = part
-      .split(/\s+(?:y|e|mas|tambien|ademas|sumale|agregale)\s+/i)
-      .map((p) => p.trim())
-      .filter(Boolean);
+    // PERO solo si lo que sigue NO es una observación ("sin ...", "poco ...", "bien ...")
+    const separatorRegex = /\s+(?:y|e|mas|tambien|ademas|sumale|agregale)\s+/gi;
+    const segments: string[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
 
-    for (const yPart of yParts) {
-      result.push(...splitByInlineNumbers(yPart));
+    while ((match = separatorRegex.exec(part)) !== null) {
+      const after = part.slice(match.index + match[0].length);
+      // Si lo que viene después del separador empieza con una observación, no separar
+      if (/^(sin|poco|bien|extra)\s+/i.test(after)) {
+        continue;
+      }
+      segments.push(part.slice(lastIndex, match.index).trim());
+      lastIndex = match.index + match[0].length;
+    }
+    segments.push(part.slice(lastIndex).trim());
+
+    for (const seg of segments.filter(Boolean)) {
+      result.push(...splitByInlineNumbers(seg));
     }
   }
 
@@ -427,7 +439,15 @@ function extractExtrasFromFragment(fragment: string, extrasProducts: any[], prod
         `con ${normalizedAlias}`,
         `agregar ${normalizedAlias}`,
       ];
-      const hasTrigger = triggers.some(t => text.includes(t) || text.includes(`${t}s`));
+      // Detectar también "con X y Z" o "con X, Z" donde el alias aparece
+      // después de "con" en cualquier posición dentro de la lista
+      const conListRegex = /\bcon\s+(.+)/i;
+      const conListMatch = text.match(conListRegex);
+      const inConList = conListMatch
+        ? new RegExp(`\\b${escapeRegex(normalizedAlias)}s?\\b`, "i").test(conListMatch[1])
+        : false;
+
+      const hasTrigger = inConList || triggers.some(t => text.includes(t) || text.includes(`${t}s`));
 
       // Match singular o plural del alias (ej: "fresa" / "fresas")
       const aliasRegex = new RegExp(`\\b${escapeRegex(normalizedAlias)}s?\\b`, "i");
