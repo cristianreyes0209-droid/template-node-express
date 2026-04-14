@@ -320,6 +320,43 @@ app.get('/whatsapp', (req, res) => {
 
   return res.status(400).send("Missing hub params");
 });
+    app.post('/whatsapp', async (req, res) => {
+  console.log("📩 MENSAJE ENTRANTE:");
+  console.log(JSON.stringify(req.body, null, 2));
+
+  try {
+    const entry = req.body.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const value = changes?.value;
+    const messages = value?.messages;
+
+    if (messages && messages.length > 0) {
+      const msg = messages[0];
+      const from = msg.from;
+
+      console.log("📱 Mensaje de:", from);
+
+      // 🔥 RESPUESTA SIMPLE DE PRUEBA
+      await fetch(`https://graph.facebook.com/v19.0/${process.env.PHONE_NUMBER_ID}/messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: from,
+          text: { body: "Hola 👋 ya estoy activo" },
+        }),
+      });
+    }
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("❌ ERROR:", error);
+    res.sendStatus(500);
+  }
+});
     function formatObservaciones(obs?: string) {
   if (!obs) return "";
 
