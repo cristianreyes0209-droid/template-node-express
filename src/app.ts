@@ -320,41 +320,51 @@ app.get('/whatsapp', (req, res) => {
 
   return res.status(400).send("Missing hub params");
 });
-    app.post('/whatsapp', async (req, res) => {
-  console.log("📩 MENSAJE ENTRANTE:");
+app.post('/whatsapp', async (req, res) => {
+  console.log("📩 WEBHOOK COMPLETO:");
   console.log(JSON.stringify(req.body, null, 2));
 
   try {
-    const entry = req.body.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const value = changes?.value;
-    const messages = value?.messages;
+    const value = req.body.entry?.[0]?.changes?.[0]?.value;
 
-    if (messages && messages.length > 0) {
-      const msg = messages[0];
-      const from = msg.from;
+    if (!value) return res.sendStatus(200);
 
-      console.log("📱 Mensaje de:", from);
-
-      // 🔥 RESPUESTA SIMPLE DE PRUEBA
-      await fetch(`https://graph.facebook.com/v19.0/${process.env.PHONE_NUMBER_ID}/messages`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: from,
-          text: { body: "Hola 👋 ya estoy activo" },
-        }),
-      });
+    // 🔴 IGNORAR STATUS (IMPORTANTE)
+    if (value.statuses) {
+      console.log("📊 STATUS IGNORADO");
+      return res.sendStatus(200);
     }
 
+    const messages = value.messages;
+
+    if (!messages || messages.length === 0) {
+      console.log("⚠️ SIN MENSAJES REALES");
+      return res.sendStatus(200);
+    }
+
+    const msg = messages[0];
+    const from = msg.from;
+
+    console.log("📱 MENSAJE REAL:", msg);
+
+    await fetch(`https://graph.facebook.com/v19.0/${process.env.PHONE_NUMBER_ID}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: from,
+        text: { body: "Hola 👋 ya estoy activo" },
+      }),
+    });
+
     res.sendStatus(200);
+
   } catch (error) {
     console.error("❌ ERROR:", error);
-    res.sendStatus(500);
+    res.sendStatus(200);
   }
 });
     function formatObservaciones(obs?: string) {
