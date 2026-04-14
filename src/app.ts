@@ -18,11 +18,12 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
-import { parseOrder } from './parser';
+import { parseOrder, normalizeText } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
   clearPendingClarification,
+  clearOrder,
   createOrUpdateOrder,
   getOrder,
   updateOrderName,
@@ -520,6 +521,32 @@ const parseResult = (
 ) ? { items: [], ambiguousChoice: undefined } : parseOrder(text);
 const parsedItems = parseResult.items;
 const lower = text.toLowerCase().trim();
+
+if (lower === "reset") {
+  clearOrder(phone);
+  await sendWhatsAppMessage(phone, "Sesión reiniciada ✅");
+  if (customer) {
+    await sendWhatsAppButtons(phone,
+      `Hola${customer.name ? ", " + customer.name : ""}. ¿Cómo te podemos servir?`,
+      [
+        { id: "a", title: "Lo mismo de siempre 🔄" },
+        { id: "b", title: "Pedir algo nuevo 🥞" },
+        { id: "3", title: "Otros 💬" }
+      ]
+    );
+  } else {
+    await sendWhatsAppButtons(phone,
+      "👋 Hola, Bienvenido/a a LAS CREPES! ¿Cómo te podemos servir?",
+      [
+        { id: "1", title: "Hacer un pedido 🥞" },
+        { id: "2", title: "Ver menu 📋" },
+        { id: "3", title: "Otros 💬" }
+      ]
+    );
+  }
+  return res.sendStatus(200);
+}
+
     console.log("=== DIAGNÓSTICO ===");
 console.log("CUSTOMER:", customer?.name);
 console.log("CURRENT ORDER:", currentOrder?.step);
@@ -620,7 +647,7 @@ return res.sendStatus(200);
   console.log("PHONE ID:", process.env.WHATSAPP_PHONE_NUMBER_ID);
   console.log("TOKEN:", process.env.WHATSAPP_TOKEN?.slice(0, 10));
 
-  if (parseResult.ambiguousChoice) {
+  if (parseResult.ambiguousChoice && currentOrder?.step !== "esperando_aclaracion_producto") {
     setPendingClarification(phone, parseResult.ambiguousChoice.opciones);
     updateOrderStep(phone, "esperando_aclaracion_producto");
     currentOrder = getOrder(phone)!;
@@ -691,17 +718,29 @@ if (!currentOrder) {
 if (currentOrder?.step === "esperando_aclaracion_producto") {
   const opciones = currentOrder.aclaracionPendiente?.opciones || [];
 
-const numSeleccion = parseInt(lower) - 1;
-if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length) {
-  const seleccion = opciones[numSeleccion];
+  // Intentar por número primero, luego por nombre parcial
+  const numSeleccion = parseInt(lower) - 1;
+  let seleccion: { nombre: string; productoId: string } | undefined;
+
+  if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length) {
+    seleccion = opciones[numSeleccion];
+  } else {
+    const lowerNorm = normalizeText(lower);
+    seleccion = opciones.find((op: any) => {
+      const opNorm = normalizeText(op.nombre);
+      return opNorm.includes(lowerNorm) ||
+        lowerNorm.split(/\s+/).some((w: string) => w.length >= 3 && opNorm.includes(w));
+    });
+  }
+
+  if (seleccion) {
     const allProducts = menu.categorias.flatMap((c: any) => c.productos);
-    const product = allProducts.find((p: any) => p.id === seleccion.productoId);
+    const product = allProducts.find((p: any) => p.id === seleccion!.productoId);
 
     if (product) {
       clearPendingClarification(phone);
 
       if (product.variantes && product.variantes.length > 0) {
-        // Guardar producto temporalmente y pedir variante
         currentOrder.pendingProduct = { id: product.id, nombre: product.nombre, precio: product.precio };
         updateOrderStep(phone, "esperando_variante_producto");
         currentOrder = getOrder(phone)!;
@@ -732,7 +771,7 @@ if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length)
 
       const resumen = currentOrder.items
         .map((item: any) => {
-          const observacionesTexto = item.observaciones ? ` (${item.observaciones})` : "";
+          const observacionesTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
           const extrasTexto = item.extras && item.extras.length > 0
             ? " +" + item.extras.map((extra: any) =>
                 extra.cantidad > 1 ? `${extra.cantidad} ${extra.nombre}` : extra.nombre
@@ -752,11 +791,16 @@ if (!isNaN(numSeleccion) && numSeleccion >= 0 && numSeleccion < opciones.length)
       );
       return res.sendStatus(200);
     } else {
-      replyMessage = "No pude encontrar esa opción. Inténtalo de nuevo 😊";
+      await sendWhatsAppMessage(phone, "No pude encontrar esa opción. Inténtalo de nuevo 😊");
+      return res.sendStatus(200);
     }
- } else {
-  replyMessage = `Por favor respóndeme con un número entre 1 y ${opciones.length} 😊`;
-}
+  } else {
+    await sendWhatsAppMessage(phone,
+      `Por favor respóndeme con el número o el nombre del producto:\n\n` +
+      opciones.map((op: any, i: number) => `${i + 1}. ${op.nombre}`).join("\n")
+    );
+    return res.sendStatus(200);
+  }
 
 } else if (currentOrder?.step === "esperando_variante_producto") {
   const pending = currentOrder.pendingProduct;
@@ -1780,9 +1824,15 @@ return res.sendStatus(200);
 } else if (parsedItems.length > 0) {
     const order = createOrUpdateOrder(phone, parsedItems);
     currentOrder = getOrder(phone)!;
-    const resumen2 = order.items.map((item: any) => `* ${item.cantidad} ${item.producto}`).join("\n");
+    const resumen2 = order.items.map((item: any) => {
+      const obsTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
+      const extrasTexto = item.extras && item.extras.length > 0
+        ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +")
+        : "";
+      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto}`;
+    }).join("\n");
     await sendWhatsAppButtons(phone,
-      "Perfecto, agregue:\n\n" + resumen2 + "\n\n📝 Si deseas una observacion escribela, o elige:",
+      "Perfecto, agregué:\n\n" + resumen2 + "\n\n📝 Si deseas una observacion escribela, o elige:",
       [
         { id: "1", title: "Confirmar" },
         { id: "2", title: "Agregar mas" },

@@ -118,7 +118,7 @@ function extractCantidad(fragment: string): number {
   return 1;
 }
 
-function normalizeText(text: string) {
+export function normalizeText(text: string) {
   return text
     .toLowerCase()
     .normalize("NFD")
@@ -155,9 +155,9 @@ function splitIntoFragments(text: string) {
       continue;
     }
 
-    // Partir por "y", "e", "más", "mas", "también", "tambien"
+    // Partir por "y", "e", "más", "además", "también", "súmale", "agrégale"
     const yParts = part
-      .split(/\s+(?:y|e|mas|más|también|tambien)\s+/i)
+      .split(/\s+(?:y|e|mas|tambien|ademas|sumale|agregale)\s+/i)
       .map((p) => p.trim())
       .filter(Boolean);
 
@@ -401,25 +401,37 @@ function findVariantInFragment(fragment: string, product: any) {
   return strongest[0].variante;
 }
 
-function extractExtrasFromFragment(fragment: string, extrasProducts: any[]) {
+function extractExtrasFromFragment(fragment: string, extrasProducts: any[], product?: any) {
   const text = normalizeText(fragment);
   const extrasFound: ParsedExtra[] = [];
 
   for (const extra of extrasProducts) {
+    // Si el producto tiene extrasDisponibles definidos, respetar esa lista
+    if (
+      product?.extrasDisponibles &&
+      product.extrasDisponibles.length > 0 &&
+      !product.extrasDisponibles.includes(extra.id)
+    ) {
+      continue;
+    }
+
     for (const alias of extra.aliases || []) {
       const normalizedAlias = normalizeText(alias);
       const regex = new RegExp(`\\b${escapeRegex(normalizedAlias)}\\b`, "i");
 
-      const hasTrigger =
-        text.includes(`extra ${normalizedAlias}`) ||
-        text.includes(`con extra ${normalizedAlias}`) ||
-        text.includes(`mas ${normalizedAlias}`) ||
-        text.includes(`más ${normalizedAlias}`) ||
-        text.includes(`adicional ${normalizedAlias}`) ||
-        text.includes(`con ${normalizedAlias}`) ||
-        text.includes(`agregar ${normalizedAlias}`);
+      const triggers = [
+        `extra ${normalizedAlias}`,
+        `con extra ${normalizedAlias}`,
+        `mas ${normalizedAlias}`,
+        `adicional ${normalizedAlias}`,
+        `con ${normalizedAlias}`,
+        `agregar ${normalizedAlias}`,
+      ];
+      const hasTrigger = triggers.some(t => text.includes(t) || text.includes(`${t}s`));
 
-      if (regex.test(text) && hasTrigger) {
+      // Match singular o plural del alias (ej: "fresa" / "fresas")
+      const aliasRegex = new RegExp(`\\b${escapeRegex(normalizedAlias)}s?\\b`, "i");
+      if (aliasRegex.test(text) && hasTrigger) {
         const existing = extrasFound.find((e) => e.id === extra.id);
 
         if (!existing) {
@@ -471,6 +483,10 @@ const textoLimpio = lower
   .replace(/\bquiero\b/g, " ")
   .replace(/\bme das\b/g, " ")
   .replace(/\bme regalas\b/g, " ")
+  .replace(/\bdame\b/g, " ")
+  .replace(/\benviame\b/g, " ")
+  .replace(/\bagregame\b/g, " ")
+  .replace(/\bagregarme\b/g, " ")
   .replace(/\bseria\b/g, " ")
   .replace(/\bsería\b/g, " ")
   .replace(/[.]/g, ",")
@@ -507,9 +523,15 @@ const fragments = splitIntoFragments(textoLimpio);
   // parsear cada fragmento
   // parsear cada fragmento
 for (const fragment of fragments) {
+  // Ignorar fragmentos que son solo observaciones (sin X, poco X, bien X)
+  if (/^(sin|poco|bien)\s+/i.test(fragment.trim())) continue;
+
   const fragmentLimpio = fragment
-    .replace(/^(\d+|una|uno|un)\s+/i, "")
+    .replace(/^(\d+|una|uno|un|dos|tres|cuatro|cinco)\s+/i, "")
     .replace(/\bcrepe\b/g, "")
+    .replace(/\bsin\s+\w+(?:\s+\w+)?\b/g, "")  // quitar "sin X" para buscar producto
+    .replace(/\bpoco\s+\w+\b/g, "")
+    .replace(/\bbien\s+\w+\b/g, "")
     .trim();
 
   const cantidad = extractCantidad(fragment);
@@ -521,7 +543,7 @@ for (const fragment of fragments) {
 
   const variant = findVariantInFragment(fragment, product);
   const observaciones = extractObservaciones(fragment);
-  const extras = extractExtrasFromFragment(fragment, extraProducts);
+  const extras = extractExtrasFromFragment(fragment, extraProducts, product);
 
   items.push({
     productoId: product.id,
