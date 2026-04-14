@@ -320,53 +320,7 @@ app.get('/whatsapp', (req, res) => {
 
   return res.status(400).send("Missing hub params");
 });
-app.post('/whatsapp', async (req, res) => {
-  console.log("📩 WEBHOOK COMPLETO:");
-  console.log(JSON.stringify(req.body, null, 2));
 
-  try {
-    const value = req.body.entry?.[0]?.changes?.[0]?.value;
-
-    if (!value) return res.sendStatus(200);
-
-    // 🔴 IGNORAR STATUS (IMPORTANTE)
-    if (value.statuses) {
-      console.log("📊 STATUS IGNORADO");
-      return res.sendStatus(200);
-    }
-
-    const messages = value.messages;
-
-    if (!messages || messages.length === 0) {
-      console.log("⚠️ SIN MENSAJES REALES");
-      return res.sendStatus(200);
-    }
-
-    const msg = messages[0];
-    const from = msg.from;
-
-    console.log("📱 MENSAJE REAL:", msg);
-
-    await fetch(`https://graph.facebook.com/v19.0/${process.env.PHONE_NUMBER_ID}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: from,
-        text: { body: "Hola 👋 ya estoy activo" },
-      }),
-    });
-
-    res.sendStatus(200);
-
-  } catch (error) {
-    console.error("❌ ERROR:", error);
-    res.sendStatus(200);
-  }
-});
     function formatObservaciones(obs?: string) {
   if (!obs) return "";
 
@@ -485,34 +439,39 @@ async function handleOperationalRouting(order: any, totals: any) {
   console.warn("⚠️ SUCURSAL NO RECONOCIDA EN ROUTING:", order.sucursal);
 }
 // 👇 DESPUÉS sigue tu endpoint
-app.post("/whatsapp", async (req: Request, res: Response) => { 
-    if (!req.body.entry?.[0]?.changes?.[0]?.value?.messages) {
-  return res.sendStatus(200);
-}
-
-  const message = req.body;
-
+app.post("/whatsapp", async (req: Request, res: Response) => {
   console.log("============== PAYLOAD ==============");
   console.log(JSON.stringify(req.body, null, 2));
   console.log("=====================================");
 
-  const messageData = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+  const entry = req.body.entry?.[0];
+  const changes = entry?.changes;
+  const value = changes?.[0]?.value;
+  const messages = value?.messages;
+
+  console.log("ENTRY ID:", entry?.id);
+  console.log("CHANGES:", JSON.stringify(changes));
+  console.log("VALUE:", JSON.stringify(value));
+  console.log("MESSAGES:", JSON.stringify(messages));
+
+  if (!messages || messages.length === 0) {
+    console.log("SIN MENSAJES");
+    return res.sendStatus(200);
+  }
+
+  const messageData = messages[0];
 
   if (!messageData) {
     console.log("No hay mensaje de usuario");
     return res.sendStatus(200);
   }
 
-  const phone = messageData.from;   
-    // Ignorar mensajes de grupos (tienen @ en el ID)
-if (phone.includes("@g.us")) {
-  return res.sendStatus(200);
-}
+  const phone = messageData.from;
 
-// Ignorar mensajes del número interno de circunvalar
-if (phone === "573217233342" || phone === process.env.CIRCUNVALAR_PHONE) {
-  return res.sendStatus(200);
-}
+  // Ignorar mensajes de grupos (tienen @ en el ID)
+  if (phone.includes("@g.us")) {
+    return res.sendStatus(200);
+  }
   const customer = await getCustomerByPhone(phone);
   const text = messageData.text?.body
   || messageData.interactive?.button_reply?.id
