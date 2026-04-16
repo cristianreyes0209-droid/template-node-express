@@ -797,6 +797,19 @@ if (!currentOrder) {
     );
     return res.sendStatus(200);
   }
+  if (lower === "1" || lower.includes("pedido") || lower.includes("pedir") || lower.includes("hacer un pedido")) {
+    createOrUpdateOrder(phone, []);
+    updateOrderStep(phone, "esperando_tipo_entrega");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      "¿Cómo deseas recibir tu pedido?",
+      [
+        { id: "domicilio", title: "Domicilio 🚚" },
+        { id: "recoger", title: "Recoger en tienda 🏪" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
   currentOrder = getOrder(phone)!;
