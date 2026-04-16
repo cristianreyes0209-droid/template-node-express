@@ -2222,7 +2222,7 @@ return res.sendStatus(200);
     try { await handleOperationalRouting(orderFact, totalsFact); } catch (e) { console.error(e); }
 
     if (orderFact.sucursal === "la_villa") {
-      await fetch("https://push-sons-elimination-contractors.trycloudflare.com/imprimir", {
+      await fetch("https://rural-donated-indicated-timber.trycloudflare.com/imprimir", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
