@@ -160,9 +160,14 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
     "circunvalar": "Avenida Circunvalar #8-94, Pereira, Colombia"
   };
 
-  const origen = encodeURIComponent(sucursales[sucursal] || sucursales["la_villa"]);
-  const destino = encodeURIComponent(direccionCliente + ", Pereira, Colombia");
+  const origenDecodificado = sucursales[sucursal] || sucursales["la_villa"];
+  const origen = encodeURIComponent(origenDecodificado);
+  const destinoDecodificado = direccionCliente + ", Pereira, Colombia";
+  const destino = encodeURIComponent(destinoDecodificado);
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+  console.log("📍 DOMICILIO - Origen:", origenDecodificado);
+  console.log("📍 DOMICILIO - Destino:", destinoDecodificado);
 
   const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origen}&destinations=${destino}&mode=driving&key=${apiKey}`;
 
@@ -174,11 +179,13 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
   const elemento = data.rows?.[0]?.elements?.[0];
 
   if (!elemento || elemento.status !== "OK") {
+    console.log("📍 DOMICILIO - Sin resultado OK, usando base $4500");
     return { distanciaKm: 0, valorDomicilio: 4500, descripcion: "Domicilio base" };
   }
 
-  const distanciaKm = elemento.distance.value / 1000;
- const MINIMO = 4500;
+  const distanciaMetros = elemento.distance.value;
+  const distanciaKm = distanciaMetros / 1000;
+  const MINIMO = 4500;
   const VALOR_POR_KM = 800;
   const KM_MINIMO = 3;
   let valorDomicilio = MINIMO;
@@ -187,6 +194,10 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
   }
 
   valorDomicilio = Math.ceil(valorDomicilio / 500) * 500;
+
+  console.log("📍 DOMICILIO - Distancia metros:", distanciaMetros);
+  console.log("📍 DOMICILIO - Distancia km:", Math.round(distanciaKm * 10) / 10);
+  console.log("📍 DOMICILIO - Valor calculado: $" + valorDomicilio);
 
   return {
     distanciaKm: Math.round(distanciaKm * 10) / 10,
@@ -321,6 +332,8 @@ app.get('/whatsapp', (req, res) => {
   return res.status(400).send("Missing hub params");
 });
 
+const CREBOT_SUFFIX = "\n\nSoy CreBot 🤖 y estoy en período de prueba. Si tienes alguna dificultad puedes comunicarte al 315 191 3928.";
+
     function formatObservaciones(obs?: string) {
   if (!obs) return "";
 
@@ -357,15 +370,24 @@ async function handleOperationalRouting(order: any, totals: any) {
   const resumenInterno =
     "🔥 NUEVO PEDIDO\n\n" +
     `🕐 Hora: ${horaTexto}\n` +
-    `👤 ${order.nombre || "Cliente"}\n` +
-    `📞 ${order.telefono}\n\n` +
-    "🧾 Pedido:\n" +
-    order.items.map((i: any) => `* ${i.cantidad} ${i.producto}`).join("\n") +
-    `\n\n💰 Total: $${totals.total}\n` +
-    `📍 ${order.direccion || "Recoger en tienda"}\n` +
-    `🏬 Sucursal: ${order.sucursal || "No definida"}\n` +
-    `🚚 Tipo: ${order.tipoEntrega || "No definido"}\n` +
-    `💳 Pago: ${order.formaPago || "No definido"}`;
+    `👤 Nombre: ${order.nombre || "Cliente"}\n` +
+    `📞 Tel: ${order.telefono}\n\n` +
+    "🧾 Productos:\n" +
+    order.items.map((i: any) => {
+      const obsTexto = i.observaciones ? ` (${i.observaciones})` : "";
+      const extrasTexto = i.extras && i.extras.length > 0
+        ? " +" + i.extras.map((e: any) => e.nombre).join(", +")
+        : "";
+      const precioLinea = ((i.precio || 0) + (i.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * i.cantidad;
+      return `* ${i.cantidad} ${i.producto}${i.variante ? " - " + i.variante : ""}${obsTexto}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
+    }).join("\n") +
+    `\n\n💰 Subtotal: $${totals.subtotal.toLocaleString("es-CO")}\n` +
+    `🛵 Domicilio: $${totals.domicilio.toLocaleString("es-CO")}\n` +
+    `💵 Total: $${totals.total.toLocaleString("es-CO")}\n` +
+    `📍 Dirección: ${order.tipoEntrega === "domicilio" ? (order.direccion || "Sin dirección") : "Recoger en tienda"}\n` +
+    `💳 Pago: ${order.formaPago || "No definido"}\n` +
+    `🏪 Sucursal: ${order.sucursal === "la_villa" ? "La Villa" : order.sucursal === "circunvalar" ? "Av. Circunvalar" : order.sucursal || "No definida"}` +
+    (order.factura ? `\n\n📄 Factura: ${order.factura}` : "");
 
   console.log("=== ROUTING OPERATIVO ===");
   console.log("SUCURSAL:", order.sucursal);
@@ -545,12 +567,70 @@ const parseResult = (
 const parsedItems = parseResult.items;
 const lower = text.toLowerCase().trim();
 
+const HORARIO_MSG =
+  "🕐 Nuestro horario es:\n\n" +
+  "📅 Domingo a jueves:\n" +
+  "🏪 Local: 3:30 PM - 10:30 PM\n" +
+  "🛵 Domicilios: 3:30 PM - 10:00 PM\n\n" +
+  "📅 Viernes y sábado:\n" +
+  "🏪 Local: 3:30 PM - 11:00 PM\n" +
+  "🛵 Domicilios: 3:30 PM - 10:30 PM\n\n" +
+  "📍 La Villa - Calle 83 #16a-22\n" +
+  "📍 Av. Circunvalar #8-94 local 1";
+
+const esConsultaHorario =
+  lower.includes("a qué hora") ||
+  lower.includes("a que hora") ||
+  lower.includes("que hora") ||
+  lower.includes("horario") ||
+  lower.includes("abren") ||
+  lower.includes("cierran") ||
+  lower.includes("hasta qué hora") ||
+  lower.includes("hasta que hora") ||
+  lower.includes("desde qué hora") ||
+  lower.includes("desde que hora") ||
+  lower.includes("abierto") ||
+  lower.includes("cerrado");
+
+if (esConsultaHorario) {
+  await sendWhatsAppMessage(phone, HORARIO_MSG);
+  return res.sendStatus(200);
+}
+
+const esConsultaUbicacion =
+  lower.includes("donde estan") ||
+  lower.includes("dónde están") ||
+  lower.includes("donde quedan") ||
+  lower.includes("dónde quedan") ||
+  lower.includes("donde queda") ||
+  lower.includes("dónde queda") ||
+  lower.includes("direccion") ||
+  lower.includes("dirección") ||
+  lower.includes("ubicacion") ||
+  lower.includes("ubicación") ||
+  lower.includes("como llegar") ||
+  lower.includes("cómo llegar");
+
+if (esConsultaUbicacion) {
+  await sendWhatsAppMessage(phone,
+    "📍 Nuestras sucursales:\n\n" +
+    "🏪 La Villa\n" +
+    "Calle 83 #16a-22, Pereira\n" +
+    "https://maps.app.goo.gl/KvWtZ9r2vQKdcmXU6\n\n" +
+    "🏪 Av. Circunvalar\n" +
+    "Circunvalar #8-94 local 1, Pereira\n" +
+    "https://maps.app.goo.gl/xRrJgWBGSNPdTnir9\n\n" +
+    "Elige la sucursal más cercana a tu destino para que tu domicilio sea más económico 🛵"
+  );
+  return res.sendStatus(200);
+}
+
 if (lower === "reset") {
   clearOrder(phone);
   await sendWhatsAppMessage(phone, "Sesión reiniciada ✅");
   if (customer) {
     await sendWhatsAppButtons(phone,
-      `Hola${customer.name ? ", " + customer.name : ""}. ¿Cómo te podemos servir?`,
+      `Hola${customer.name ? ", " + customer.name : ""}. ¿Cómo te podemos servir?` + CREBOT_SUFFIX,
       [
         { id: "a", title: "Lo mismo de siempre 🔄" },
         { id: "b", title: "Pedir algo nuevo 🥞" },
@@ -559,7 +639,7 @@ if (lower === "reset") {
     );
   } else {
     await sendWhatsAppButtons(phone,
-      "👋 Hola, Bienvenido/a a LAS CREPES! ¿Cómo te podemos servir?",
+      "👋 Hola, Bienvenido/a a LAS CREPES! ¿Cómo te podemos servir?" + CREBOT_SUFFIX,
       [
         { id: "1", title: "Hacer un pedido 🥞" },
         { id: "2", title: "Ver menu 📋" },
@@ -639,7 +719,7 @@ if (
 
 
 await sendWhatsAppButtons(phone,
-   nombreCliente ? `Hola${nombreCliente}, que bueno tenerte de vuelta. ¿Como te podemos servir hoy?` : "Que bueno tenerte de vuelta. ¿Como te podemos servir?",
+   (nombreCliente ? `Hola${nombreCliente}, que bueno tenerte de vuelta. ¿Como te podemos servir hoy?` : "Que bueno tenerte de vuelta. ¿Como te podemos servir?") + CREBOT_SUFFIX,
   [
     { id: "a", title: "Lo mismo de siempre" },
     { id: "b", title: "Pedir algo nuevo" },
@@ -649,7 +729,7 @@ await sendWhatsAppButtons(phone,
 return res.sendStatus(200);
   } else {
    await sendWhatsAppButtons(phone,
-  "Bienvenido a LAS CREPES. ¿Como te podemos servir?",
+  "Bienvenido a LAS CREPES. ¿Como te podemos servir?" + CREBOT_SUFFIX,
   [
     { id: "1", title: "Hacer un pedido" },
     { id: "2", title: "Ver menú" },
@@ -714,9 +794,9 @@ if (!currentOrder) {
     const nombreCliente = (customer?.name && customer.name.trim() !== "") 
       ? `, ${customer.name.trim()}` 
       : "";
-    const bodyMsg = nombreCliente
+    const bodyMsg = (nombreCliente
       ? `Hola${nombreCliente}. Que bueno tenerte de vuelta. ¿Como te podemos servir?`
-      : "Que bueno tenerte de vuelta. ¿Como te podemos servir?";
+      : "Que bueno tenerte de vuelta. ¿Como te podemos servir?") + CREBOT_SUFFIX;
     console.log("BODY IF CUSTOMER:", JSON.stringify(bodyMsg));
     await sendWhatsAppButtons(phone,
       bodyMsg,
@@ -729,7 +809,7 @@ if (!currentOrder) {
     return res.sendStatus(200);
   } else {
     await sendWhatsAppButtons(phone,
-      "👋 Hola, Bienvenido/a a LAS CREPES! Estamos aquí para asegurarnos de darte la mejor atención para que puedas realizar tu pedido sin complicaciones. ¿Como te podemos servir?",
+      "👋 Hola, Bienvenido/a a LAS CREPES! Estamos aquí para asegurarnos de darte la mejor atención para que puedas realizar tu pedido sin complicaciones. ¿Como te podemos servir?" + CREBOT_SUFFIX,
       [
         { id: "1", title: "Hacer un pedido 🥞" },
         { id: "2", title: "Ver menu 📋" },
@@ -802,7 +882,8 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
                 extra.cantidad > 1 ? `${extra.cantidad} ${extra.nombre}` : extra.nombre
               ).join(", +")
             : "";
-          return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+          const precioLinea = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
+          return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
         })
         .join("\n");
 
@@ -866,7 +947,8 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
           const extrasTexto = item.extras && item.extras.length > 0
             ? " +" + item.extras.map((e: any) => e.nombre).join(", +")
             : "";
-          return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${extrasTexto}`;
+          const precioLinea = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
+          return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
         })
         .join("\n");
 
@@ -977,7 +1059,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       replyMessage = "Con gusto te ayudo 😊\n\nCuéntame en qué puedo ayudarte.";
   } else {
       await sendWhatsAppButtons(phone,
-        (customer.name?.trim() ? `Hola, ${customer.name.trim()}. ` : "") + "Qué bueno tenerte de vuelta en LAS CREPES ¿Qué deseas hacer?",
+        (customer.name?.trim() ? `Hola, ${customer.name.trim()}. ` : "") + "Qué bueno tenerte de vuelta en LAS CREPES ¿Qué deseas hacer?" + CREBOT_SUFFIX,
         [
           { id: "a", title: "Lo mismo de siempre 🔄" },
           { id: "b", title: "Pedir algo nuevo 🥞" },
@@ -1001,7 +1083,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
 } else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
   await sendWhatsAppButtons(phone,
-    "Aquí puedes ver nuestro menú completo 📋\n\nhttps://wa.me/c/573137160625\n\n¿Deseas hacer un pedido?",
+    "Aquí puedes ver nuestro menú completo 📋\n\nhttps://linktr.ee/Lascrepescol?utm_source=linktree_profile_share&ltsid=6a246710-71a7-4a1c-9a32-0540e971388d\n\n¿Deseas hacer un pedido?",
     [
       { id: "1", title: "Sí, hacer un pedido 🥞" },
       { id: "3", title: "Otros 💬" }
@@ -1029,31 +1111,32 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 }
 
 } else if (currentOrder?.step === "esperando_sucursal_holaclick") {
+  const holaclickText = currentOrder.holaclick_order || "";
+  const totalMatch = holaclickText.match(/Total[:\s]*\$?([\d.,]+)/i);
+  const totalTexto = totalMatch ? `$${totalMatch[1]}` : "";
+  const bodyPago = totalTexto
+    ? `El total de tu pedido es ${totalTexto} 💰\n¿Cómo deseas pagar?`
+    : "¿Cómo deseas pagar?";
+
   if (lower === "la_villa" || lower.includes("villa")) {
     currentOrder.sucursal = "la_villa";
     updateOrderStep(phone, "esperando_pago_holaclick");
     currentOrder = getOrder(phone)!;
-    await sendWhatsAppButtons(phone,
-      "¿Cómo deseas pagar?",
-      [
-        { id: "efectivo", title: "Efectivo 💵" },
-        { id: "nequi", title: "Nequi/Daviplata 📱" },
-        { id: "bancolombia", title: "Bancolombia 🏦" }
-      ]
-    );
+    await sendWhatsAppButtons(phone, bodyPago, [
+      { id: "efectivo", title: "Efectivo 💵" },
+      { id: "nequi", title: "Nequi/Daviplata 📱" },
+      { id: "bancolombia", title: "Bancolombia 🏦" }
+    ]);
     return res.sendStatus(200);
   } else if (lower === "circunvalar" || lower.includes("circunvalar")) {
     currentOrder.sucursal = "circunvalar";
     updateOrderStep(phone, "esperando_pago_holaclick");
     currentOrder = getOrder(phone)!;
-    await sendWhatsAppButtons(phone,
-      "¿Cómo deseas pagar?",
-      [
-        { id: "efectivo", title: "Efectivo 💵" },
-        { id: "nequi", title: "Nequi/Daviplata 📱" },
-        { id: "bancolombia", title: "Bancolombia 🏦" }
-      ]
-    );
+    await sendWhatsAppButtons(phone, bodyPago, [
+      { id: "efectivo", title: "Efectivo 💵" },
+      { id: "nequi", title: "Nequi/Daviplata 📱" },
+      { id: "bancolombia", title: "Bancolombia 🏦" }
+    ]);
     return res.sendStatus(200);
   } else {
     await sendWhatsAppButtons(phone,
@@ -1088,40 +1171,83 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   }
 
   updateOrderPayment(phone, formaPago);
-  updateOrderStep(phone, "confirmado");
-  clearTimeout(inactivityTimers.get(phone));
-  inactivityTimers.delete(phone);
   currentOrder = getOrder(phone)!;
-  currentOrder.confirmedAt = new Date().toISOString();
 
-  const order = getOrder(phone)!;
-  const holaclickResumen = order.holaclick_order || "";
-  const sucursalTexto = order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar";
+  const holaclickTotalMatch = (currentOrder.holaclick_order || "").match(/Total[:\s]*\$?([\d.,]+)/i);
+  const holaclickTotalTexto = holaclickTotalMatch ? `$${holaclickTotalMatch[1]}` : "";
 
-  const resumenInterno =
-    "🔥 PEDIDO HOLACLICK\n\n" +
-    `👤 ${order.nombre || customer?.name || "Cliente"}\n` +
-    `📞 ${phone}\n\n` +
-    `📋 Pedido original:\n${holaclickResumen}\n\n` +
-    `🏬 Sucursal: ${sucursalTexto}\n` +
-    `💳 Pago: ${formaPago.charAt(0).toUpperCase() + formaPago.slice(1)}`;
-
-  try {
-    await handleOperationalRouting({ ...order, items: [] }, { subtotal: 0, domicilio: 0, total: 0 });
-    // Enviar resumen completo según sucursal
-    if (order.sucursal === "circunvalar" && process.env.CIRCUNVALAR_PHONE) {
-      await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE, resumenInterno);
-    } else if (order.sucursal === "la_villa" && process.env.VILLA_DOMICILIOS_DESTINO) {
-      await sendWhatsAppMessage(process.env.VILLA_DOMICILIOS_DESTINO, resumenInterno);
-    }
-  } catch (error) {
-    console.error("❌ ERROR enviando pedido HolaClick:", error);
+  if (formaPago === "nequi/daviplata") {
+    const nequiNum = currentOrder.sucursal === "circunvalar" ? "3205839477" : "3207218267";
+    updateOrderStep(phone, "esperando_comprobante_holaclick");
+    await sendWhatsAppButtons(phone,
+      `Perfecto 👌\n\n${holaclickTotalTexto ? `El total a pagar es: ${holaclickTotalTexto}\n\n` : ""}Pago por Nequi/Daviplata:\n📱 ${nequiNum}\n\nCuando realices el pago envíame el comprobante 📸`,
+      [{ id: "listo", title: "Listo, ya pagué ✅" }]
+    );
+    return res.sendStatus(200);
+  } else if (formaPago === "bancolombia") {
+    const bancoNum = currentOrder.sucursal === "circunvalar" ? "27000004514" : "27033825108";
+    updateOrderStep(phone, "esperando_comprobante_holaclick");
+    replyMessage =
+      "Perfecto 👌\n\n" +
+      (holaclickTotalTexto ? `El total a pagar es: ${holaclickTotalTexto}\n\n` : "") +
+      "Transferencia Bancolombia:\n" +
+      "🏦 Cuenta de ahorros\n" +
+      `💳 ${bancoNum}\n\n` +
+      "Cuando realices el pago envíame el comprobante 📸";
+  } else {
+    // Efectivo → flujo factura
+    updateOrderStep(phone, "esperando_factura");
+    await sendWhatsAppButtons(phone,
+      "¿Necesitas factura electrónica?",
+      [
+        { id: "factura_si", title: "Sí, necesito factura" },
+        { id: "factura_no", title: "No, gracias" }
+      ]
+    );
+    return res.sendStatus(200);
   }
 
-  replyMessage =
-    "Gracias por tu pedido 🔥 Ya está en proceso.\n\n" +
-    `🏬 Sucursal: ${sucursalTexto}\n` +
-    `💳 Pago: ${formaPago.charAt(0).toUpperCase() + formaPago.slice(1)}`;
+} else if (currentOrder?.step === "esperando_comprobante_holaclick") {
+
+  const imageId = messageData.image?.id;
+  const esListo = lower.includes("listo") || lower.includes("ya pague") || lower.includes("ya pagué");
+
+  if (imageId || esListo) {
+    updateOrderStep(phone, "confirmado");
+    clearTimeout(inactivityTimers.get(phone));
+    inactivityTimers.delete(phone);
+    currentOrder = getOrder(phone)!;
+    currentOrder.confirmedAt = new Date().toISOString();
+
+    const order = getOrder(phone)!;
+    const holaclickResumen = order.holaclick_order || "";
+    const sucursalTexto = order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar";
+
+    const resumenHolaclick =
+      "🔥 PEDIDO HOLACLICK\n\n" +
+      `👤 ${order.nombre || customer?.name || "Cliente"}\n` +
+      `📞 ${phone}\n\n` +
+      `📋 Pedido original:\n${holaclickResumen}\n\n` +
+      `🏬 Sucursal: ${sucursalTexto}\n` +
+      `💳 Pago: ${order.formaPago || ""}`;
+
+    const DESTINOS_HOLACLICK = ["573207218267", "573151913928"];
+
+    for (const destino of DESTINOS_HOLACLICK) {
+      try {
+        await sendWhatsAppMessage(destino, resumenHolaclick);
+        if (imageId) await sendWhatsAppImageById(destino, imageId);
+      } catch (e) { console.error(`❌ ERROR reenviando comprobante holaclick a ${destino}:`, e); }
+    }
+
+    replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
+  } else {
+    await sendWhatsAppButtons(phone,
+      "Cuando realices el pago envíame el comprobante 📸 o presiona el botón cuando hayas pagado.",
+      [{ id: "listo", title: "Listo, ya pagué ✅" }]
+    );
+    return res.sendStatus(200);
+  }
 
 } else if (currentOrder?.step === "esperando_ayuda") {
   updateOrderStep(phone, "esperando_asesor");
@@ -1140,6 +1266,16 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   replyMessage = "Gracias por escribirnos. En breve un asesor te contactará 😊";
 
 } else if (currentOrder?.step === "esperando_asesor") {
+  const nombreAsesor = currentOrder.nombre || customer?.name || phone;
+  const mensajeReenvio =
+    `💬 MENSAJE DE CLIENTE\n\n` +
+    `👤 Nombre: ${nombreAsesor}\n` +
+    `📞 Tel: ${phone}\n` +
+    `💬 Mensaje: ${text}`;
+  try {
+    await sendWhatsAppMessage("573151913928", mensajeReenvio);
+    console.log("✅ MENSAJE REENVIADO A ASESOR 573151913928 desde", phone);
+  } catch (e) { console.error("❌ ERROR reenviando a asesor:", e); }
   replyMessage = "Con gusto 😊 Un asesor te atenderá pronto.";
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
@@ -1289,7 +1425,8 @@ return res.sendStatus(200);
               .join(", +")
           : "";
 
-      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
+      const precioLinea = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
+      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
     })
     .join("\n");
 
@@ -1900,87 +2037,16 @@ return res.sendStatus(200);
 
   } else if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
-    updateOrderStep(phone, "confirmado");
-    clearTimeout(inactivityTimers.get(phone));
-    inactivityTimers.delete(phone);
+    updateOrderStep(phone, "esperando_factura");
     currentOrder = getOrder(phone)!;
-    currentOrder.confirmedAt = new Date().toISOString();
-
-    const order = getOrder(phone)!;
-    const totals = calculateTotal(order);
-
-   await upsertCustomer({
-  phone: phone,
-  name: order.nombre,
-  last_address: order.direccion,
-  last_order: order.items,
-  last_order_at: new Date().toISOString(),
-  last_sucursal: order.sucursal
-});
-
-   try {
-  await handleOperationalRouting(order, totals);
-} catch (error) {
-  console.error("❌ ERROR GENERAL EN handleOperationalRouting:", error);
-}
-
-    const orderJSON = buildOrderJSON(order);
-
-    const resumen = order.items
-      .map((item: any) => {
-        const observacionesTexto = item.observaciones
-          ? ` (${formatObservaciones(item.observaciones)})`
-          : "";
-
-        const extrasTexto =
-          item.extras && item.extras.length > 0
-            ? " +" +
-              item.extras
-                .map((extra: any) =>
-                  extra.cantidad > 1
-                    ? `${extra.cantidad} ${extra.nombre}`
-                    : extra.nombre
-                )
-                .join(", +")
-            : "";
-
-        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-      })
-      .join("\n");
-
-    const tiempoTexto =
-      order.tipoEntrega === "domicilio"
-        ? "50 min 🚚"
-        : "15 min 🏪";
-
-    if (!order.nombre && customer?.name) {
-      updateOrderName(phone, customer.name);
-    }
-
-    const resumenCliente =
-      "🔥 Pedido confirmado\n\n" +
-      "👤 Nombre: " + (order.nombre || customer?.name || "Cliente") + "\n" +
-      "📞 Tel: " + order.telefono + "\n\n" +
-      "🧾 Tu pedido:\n" +
-      resumen +
-      "\n\n" +
-      "💰 Subtotal: $" + totals.subtotal + "\n" +
-      (order.tipoEntrega === "domicilio" ? "🚚 Domicilio: $" + totals.domicilio + "\n" : "") +
-      "💵 Total: $" + totals.total + "\n" +
-      (order.observacionesGenerales?.trim() ? "📝 Observación: " + order.observacionesGenerales.trim() + "\n" : "") +
-      (order.tipoEntrega === "domicilio"
-        ? "📍 Dirección:\n" + (order.direccion || "No aplica")
-        : "🏪 Recoger en tienda") + "\n\n" +
-      "💳 Pago: Efectivo\n" +
-      "⏱ Tiempo estimado: " + tiempoTexto + "\n" +
-      "🕐 Hora del pedido: " + new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }) + "\n\n" +
-      "🏪 Sucursal: " + (order.sucursal === "la_villa" ? "La Villa" : order.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
-      "🙏 Gracias por tu pedido en LAS CREPES 🥞";
-
-    console.log("========== ORDEN FINAL JSON ==========");
-    console.log(JSON.stringify(orderJSON, null, 2));
-
-    replyMessage = resumenCliente;
+    await sendWhatsAppButtons(phone,
+      "¿Necesitas factura electrónica?",
+      [
+        { id: "factura_si", title: "Sí, la necesito 🧾" },
+        { id: "factura_no", title: "No, gracias" }
+      ]
+    );
+    return res.sendStatus(200);
 
   } else if (
     lower.includes("datafono") ||
@@ -2007,7 +2073,7 @@ return res.sendStatus(200);
 
     const nequiNum = orderNequi.sucursal === "circunvalar" ? "3205839477" : "3207218267";
     await sendWhatsAppButtons(phone,
-      `Perfecto 👌\n\nPago por Nequi/Daviplata:\n📱 ${nequiNum}\n\nCuando realices el pago envíame el comprobante 📸`,
+      `Perfecto 👌\n\nEl total a pagar es: $${totalsNequi.total.toLocaleString("es-CO")}\n\nPago por Nequi/Daviplata:\n📱 ${nequiNum}\n\nCuando realices el pago envíame el comprobante 📸`,
       [{ id: "listo", title: "Listo, ya pagué ✅" }]
     );
     return res.sendStatus(200);
@@ -2024,6 +2090,7 @@ return res.sendStatus(200);
     const bancoNum = orderBanco.sucursal === "circunvalar" ? "27000004514" : "27033825108";
     replyMessage =
       "Perfecto 👌\n\n" +
+      `El total a pagar es: $${totalsBanco.total.toLocaleString("es-CO")}\n\n` +
       "Transferencia Bancolombia:\n" +
       "🏦 Cuenta de ahorros\n" +
       `💳 ${bancoNum}\n\n` +
@@ -2041,6 +2108,92 @@ return res.sendStatus(200);
 );
 return res.sendStatus(200);
   }
+} else if (currentOrder?.step === "esperando_factura") {
+  if (lower === "factura_si" || lower.includes("factura_si")) {
+    updateOrderStep(phone, "esperando_datos_factura");
+    currentOrder = getOrder(phone)!;
+    replyMessage = "Por favor envíame tu NIT o cédula y razón social para la factura.";
+  } else {
+    // factura_no o cualquier otra respuesta → confirmar pedido directamente
+    updateOrderStep(phone, "confirmado");
+    clearTimeout(inactivityTimers.get(phone));
+    inactivityTimers.delete(phone);
+    currentOrder = getOrder(phone)!;
+    currentOrder.confirmedAt = new Date().toISOString();
+
+    const orderFact = getOrder(phone)!;
+    const totalsFact = calculateTotal(orderFact);
+
+    await upsertCustomer({ phone, name: orderFact.nombre, last_address: orderFact.direccion, last_order: orderFact.items, last_order_at: new Date().toISOString(), last_sucursal: orderFact.sucursal });
+    try { await handleOperationalRouting(orderFact, totalsFact); } catch (e) { console.error(e); }
+
+    const resumenFact = orderFact.items.map((item: any) => {
+      const obsTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
+      const extrasTexto = item.extras?.length > 0 ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +") : "";
+      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto}`;
+    }).join("\n");
+
+    const tiempoFact = orderFact.tipoEntrega === "domicilio" ? "50 min 🚚" : "15 min 🏪";
+    if (!orderFact.nombre && customer?.name) updateOrderName(phone, customer.name);
+
+    replyMessage =
+      "🔥 Pedido confirmado\n\n" +
+      "👤 Nombre: " + (orderFact.nombre || customer?.name || "Cliente") + "\n" +
+      "📞 Tel: " + orderFact.telefono + "\n\n" +
+      "🧾 Tu pedido:\n" + resumenFact + "\n\n" +
+      "💰 Subtotal: $" + totalsFact.subtotal + "\n" +
+      (orderFact.tipoEntrega === "domicilio" ? "🚚 Domicilio: $" + totalsFact.domicilio + "\n" : "") +
+      "💵 Total: $" + totalsFact.total + "\n" +
+      (orderFact.observacionesGenerales?.trim() ? "📝 Observación: " + orderFact.observacionesGenerales.trim() + "\n" : "") +
+      (orderFact.tipoEntrega === "domicilio" ? "📍 Dirección:\n" + (orderFact.direccion || "No aplica") : "🏪 Recoger en tienda") + "\n\n" +
+      "💳 Pago: Efectivo\n" +
+      "⏱ Tiempo estimado: " + tiempoFact + "\n" +
+      "🕐 Hora: " + new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }) + "\n\n" +
+      "🏪 Sucursal: " + (orderFact.sucursal === "la_villa" ? "La Villa" : orderFact.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
+      "🙏 Gracias por tu pedido en LAS CREPES 🥞";
+  }
+
+} else if (currentOrder?.step === "esperando_datos_factura") {
+  // Guardar los datos de factura y confirmar
+  const orderDf = getOrder(phone)!;
+  orderDf.factura = text;
+  updateOrderStep(phone, "confirmado");
+  clearTimeout(inactivityTimers.get(phone));
+  inactivityTimers.delete(phone);
+  currentOrder = getOrder(phone)!;
+  currentOrder.confirmedAt = new Date().toISOString();
+
+  const totalsDf = calculateTotal(orderDf);
+
+  await upsertCustomer({ phone, name: orderDf.nombre, last_address: orderDf.direccion, last_order: orderDf.items, last_order_at: new Date().toISOString(), last_sucursal: orderDf.sucursal });
+  try { await handleOperationalRouting(orderDf, totalsDf); } catch (e) { console.error(e); }
+
+  const resumenDf = orderDf.items.map((item: any) => {
+    const obsTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
+    const extrasTexto = item.extras?.length > 0 ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +") : "";
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto}`;
+  }).join("\n");
+
+  const tiempoDf = orderDf.tipoEntrega === "domicilio" ? "50 min 🚚" : "15 min 🏪";
+  if (!orderDf.nombre && customer?.name) updateOrderName(phone, customer.name);
+
+  replyMessage =
+    "🔥 Pedido confirmado\n\n" +
+    "👤 Nombre: " + (orderDf.nombre || customer?.name || "Cliente") + "\n" +
+    "📞 Tel: " + orderDf.telefono + "\n\n" +
+    "🧾 Tu pedido:\n" + resumenDf + "\n\n" +
+    "💰 Subtotal: $" + totalsDf.subtotal + "\n" +
+    (orderDf.tipoEntrega === "domicilio" ? "🚚 Domicilio: $" + totalsDf.domicilio + "\n" : "") +
+    "💵 Total: $" + totalsDf.total + "\n" +
+    (orderDf.observacionesGenerales?.trim() ? "📝 Observación: " + orderDf.observacionesGenerales.trim() + "\n" : "") +
+    (orderDf.tipoEntrega === "domicilio" ? "📍 Dirección:\n" + (orderDf.direccion || "No aplica") : "🏪 Recoger en tienda") + "\n\n" +
+    "💳 Pago: Efectivo\n" +
+    "📄 Factura electrónica: " + text + "\n" +
+    "⏱ Tiempo estimado: " + tiempoDf + "\n" +
+    "🕐 Hora: " + new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }) + "\n\n" +
+    "🏪 Sucursal: " + (orderDf.sucursal === "la_villa" ? "La Villa" : orderDf.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
+    "🙏 Gracias por tu pedido en LAS CREPES 🥞";
+
 } else if (currentOrder?.step === "esperando_comprobante") {
 
   const imageId = messageData.image?.id;
@@ -2069,15 +2222,29 @@ return res.sendStatus(200);
       "📸 COMPROBANTE DE PAGO\n\n" +
       `👤 ${order.nombre || customer?.name || "Cliente"}\n` +
       `📞 ${phone}\n\n` +
-      order.items.map((item: any) => `* ${item.cantidad} ${item.producto}`).join("\n") +
-      `\n\n💰 Total: $${totals.total}\n` +
+      "🧾 Productos:\n" +
+      order.items.map((item: any) => {
+        const obsTexto = item.observaciones ? ` (${item.observaciones})` : "";
+        const extrasTexto = item.extras && item.extras.length > 0
+          ? " +" + item.extras.map((e: any) => e.nombre).join(", +")
+          : "";
+        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto}`;
+      }).join("\n") +
+      `\n\n💰 Subtotal: $${totals.subtotal}` +
+      (order.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio}` : "") +
+      `\n💵 Total: $${totals.total}\n` +
       `💳 Pago: ${order.formaPago}\n` +
-      `🏬 Sucursal: ${order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar"}`;
+      `🏬 Sucursal: ${order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar"}\n` +
+      (order.tipoEntrega === "domicilio" && order.direccion ? `📍 Dirección: ${order.direccion}` : "🏪 Recoger en tienda");
 
-    try {
-      await sendWhatsAppMessage("573207218267", resumenParaSucursal);
-      await sendWhatsAppImageById("573207218267", imageId);
-    } catch (e) { console.error("❌ ERROR reenviando comprobante:", e); }
+    const DESTINOS_COMPROBANTE = ["573207218267", "573151913928"];
+
+    for (const destino of DESTINOS_COMPROBANTE) {
+      try {
+        await sendWhatsAppMessage(destino, resumenParaSucursal);
+        await sendWhatsAppImageById(destino, imageId);
+      } catch (e) { console.error(`❌ ERROR reenviando comprobante a ${destino}:`, e); }
+    }
 
     const resumenComprobante =
       "🔥 *Tu pedido fue confirmado*\n\n" +

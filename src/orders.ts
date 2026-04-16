@@ -38,6 +38,9 @@ export type OrderStep =
   | "esperando_asesor"
   | "esperando_sucursal_holaclick"
   | "esperando_pago_holaclick"
+  | "esperando_comprobante_holaclick"
+  | "esperando_factura"
+  | "esperando_datos_factura"
   | "confirmado";
 
 export type CustomerOrder = {
@@ -55,6 +58,7 @@ export type CustomerOrder = {
   observacionesGenerales?: string;
   holaclick_order?: string;
   confirmedAt?: string;
+  factura?: string;
   pendingProduct?: { id: string; nombre: string; precio: number };
   aclaracionPendiente?: {
     opciones: {
