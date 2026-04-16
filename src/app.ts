@@ -539,7 +539,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   // Verificar horario de atención solo si el cliente no está en medio de un pedido
   if (!currentOrder || currentOrder.step === "esperando_menu_principal") {
     const tipoEntrega = currentOrder?.tipoEntrega === "domicilio" ? "domicilio" : "recoger";
-    if (!isWithinBusinessHours(tipoEntrega)) {
+    if (!currentOrder?.testMode && !isWithinBusinessHours(tipoEntrega)) {
       await sendWhatsAppMessage(phone,
         "Gracias por escribirnos 😊\n\n" +
         "En este momento estamos fuera de horario de atención.\n\n" +
@@ -592,7 +592,9 @@ const esConsultaHorario =
   lower.includes("abierto") ||
   lower.includes("cerrado");
 
-if (esConsultaHorario) {
+const esMensajeLargo = text.length > 200 || text.includes("Vengo de https://las-crepes.ola.click");
+
+if (esConsultaHorario && !esMensajeLargo) {
   await sendWhatsAppMessage(phone, HORARIO_MSG);
   return res.sendStatus(200);
 }
@@ -611,7 +613,7 @@ const esConsultaUbicacion =
   lower.includes("como llegar") ||
   lower.includes("cómo llegar");
 
-if (esConsultaUbicacion) {
+if (esConsultaUbicacion && !esMensajeLargo) {
   await sendWhatsAppMessage(phone,
     "📍 Nuestras sucursales:\n\n" +
     "🏪 La Villa\n" +
@@ -622,6 +624,35 @@ if (esConsultaUbicacion) {
     "https://maps.app.goo.gl/xRrJgWBGSNPdTnir9\n\n" +
     "Elige la sucursal más cercana a tu destino para que tu domicilio sea más económico 🛵"
   );
+  return res.sendStatus(200);
+}
+
+if (lower === "test") {
+  clearOrder(phone);
+  createOrUpdateOrder(phone, []);
+  const testOrder = getOrder(phone)!;
+  testOrder.testMode = true;
+  currentOrder = testOrder;
+  await sendWhatsAppMessage(phone, "Modo test activado ✅ El horario de atención no aplica.");
+  if (customer) {
+    await sendWhatsAppButtons(phone,
+      `Hola${customer.name ? ", " + customer.name : ""}. ¿Cómo te podemos servir?` + CREBOT_SUFFIX,
+      [
+        { id: "a", title: "Lo mismo de siempre 🔄" },
+        { id: "b", title: "Pedir algo nuevo 🥞" },
+        { id: "3", title: "Otros 💬" }
+      ]
+    );
+  } else {
+    await sendWhatsAppButtons(phone,
+      "👋 Hola, Bienvenido/a a LAS CREPES! ¿Cómo te podemos servir?" + CREBOT_SUFFIX,
+      [
+        { id: "1", title: "Hacer un pedido 🥞" },
+        { id: "2", title: "Ver menu 📋" },
+        { id: "3", title: "Otros 💬" }
+      ]
+    );
+  }
   return res.sendStatus(200);
 }
 
@@ -2177,6 +2208,30 @@ return res.sendStatus(200);
     await upsertCustomer({ phone, name: orderFact.nombre, last_address: orderFact.direccion, last_order: orderFact.items, last_order_at: new Date().toISOString(), last_sucursal: orderFact.sucursal });
     try { await handleOperationalRouting(orderFact, totalsFact); } catch (e) { console.error(e); }
 
+    if (orderFact.sucursal === "la_villa") {
+      await fetch("https://push-sons-elimination-contractors.trycloudflare.com/imprimir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: orderFact.nombre || customer?.name || "Cliente",
+          telefono: orderFact.telefono,
+          pedidoTexto: orderFact.items.map((i: any) => {
+            const obs = i.observaciones ? ` (${i.observaciones})` : "";
+            const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
+            return `${i.cantidad} ${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs}`;
+          }),
+          subtotal: totalsFact.subtotal,
+          domicilio: totalsFact.domicilio,
+          total: totalsFact.total,
+          direccion: orderFact.direccion || "Recoger en tienda",
+          pago: orderFact.formaPago || "No definido",
+          tiempoEstimado: orderFact.tipoEntrega === "domicilio" ? "50 min" : "15 min",
+          horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
+          sucursal: "La Villa"
+        })
+      }).catch(err => console.error("❌ Error impresora La Villa:", err));
+    }
+
     const resumenFact = orderFact.items.map((item: any) => {
       const obsTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
       const extrasTexto = item.extras?.length > 0 ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +") : "";
@@ -2217,6 +2272,30 @@ return res.sendStatus(200);
 
   await upsertCustomer({ phone, name: orderDf.nombre, last_address: orderDf.direccion, last_order: orderDf.items, last_order_at: new Date().toISOString(), last_sucursal: orderDf.sucursal });
   try { await handleOperationalRouting(orderDf, totalsDf); } catch (e) { console.error(e); }
+
+  if (orderDf.sucursal === "la_villa") {
+    await fetch("https://push-sons-elimination-contractors.trycloudflare.com/imprimir", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nombre: orderDf.nombre || customer?.name || "Cliente",
+        telefono: orderDf.telefono,
+        pedidoTexto: orderDf.items.map((i: any) => {
+          const obs = i.observaciones ? ` (${i.observaciones})` : "";
+          const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
+          return `${i.cantidad} ${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs}`;
+        }),
+        subtotal: totalsDf.subtotal,
+        domicilio: totalsDf.domicilio,
+        total: totalsDf.total,
+        direccion: orderDf.direccion || "Recoger en tienda",
+        pago: orderDf.formaPago || "No definido",
+        tiempoEstimado: orderDf.tipoEntrega === "domicilio" ? "50 min" : "15 min",
+        horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
+        sucursal: "La Villa"
+      })
+    }).catch(err => console.error("❌ Error impresora La Villa:", err));
+  }
 
   const resumenDf = orderDf.items.map((item: any) => {
     const obsTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
@@ -2294,6 +2373,30 @@ return res.sendStatus(200);
         await sendWhatsAppMessage(destino, resumenParaSucursal);
         await sendWhatsAppImageById(destino, imageId);
       } catch (e) { console.error(`❌ ERROR reenviando comprobante a ${destino}:`, e); }
+    }
+
+    if (order.sucursal === "la_villa") {
+      await fetch("https://push-sons-elimination-contractors.trycloudflare.com/imprimir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: order.nombre || customer?.name || "Cliente",
+          telefono: order.telefono,
+          pedidoTexto: order.items.map((i: any) => {
+            const obs = i.observaciones ? ` (${i.observaciones})` : "";
+            const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
+            return `${i.cantidad} ${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs}`;
+          }),
+          subtotal: totals.subtotal,
+          domicilio: totals.domicilio,
+          total: totals.total,
+          direccion: order.direccion || "Recoger en tienda",
+          pago: order.formaPago || "No definido",
+          tiempoEstimado: order.tipoEntrega === "domicilio" ? "50 min" : "15 min",
+          horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
+          sucursal: "La Villa"
+        })
+      }).catch(err => console.error("❌ Error impresora La Villa:", err));
     }
 
     const resumenComprobante =

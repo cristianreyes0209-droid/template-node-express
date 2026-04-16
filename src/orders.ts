@@ -59,6 +59,7 @@ export type CustomerOrder = {
   holaclick_order?: string;
   confirmedAt?: string;
   factura?: string;
+  testMode?: boolean;
   pendingProduct?: { id: string; nombre: string; precio: number };
   aclaracionPendiente?: {
     opciones: {
