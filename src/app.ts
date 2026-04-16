@@ -787,6 +787,16 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
 }
 
 if (!currentOrder) {
+  if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("ver menu") || lower.includes("carta")) {
+    await sendWhatsAppButtons(phone,
+      "Aquí puedes ver nuestro menú completo 📋\n\nhttps://linktr.ee/Lascrepescol?utm_source=linktree_profile_share&ltsid=6a246710-71a7-4a1c-9a32-0540e971388d\n\n¿Deseas hacer un pedido?",
+      [
+        { id: "1", title: "Sí, hacer un pedido" },
+        { id: "3", title: "Otros" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
   currentOrder = getOrder(phone)!;
