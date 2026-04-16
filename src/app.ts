@@ -665,6 +665,21 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
       { id: "circunvalar", title: "Av. Circunvalar 🏪" }
     ]
   );
+ return res.sendStatus(200);
+}
+
+if (text.includes("Vengo de https://las-crepes.ola.click")) {
+  const order = getOrder(phone) || createOrUpdateOrder(phone, []);
+  updateOrderStep(phone, "esperando_sucursal_holaclick");
+  currentOrder = getOrder(phone)!;
+  currentOrder.holaclick_order = text;
+  await sendWhatsAppButtons(phone,
+    "Gracias por tu pedido en HolaClick ✅ Vamos a procesarlo.\n\n¿Para cuál sucursal es tu pedido?",
+    [
+      { id: "a", title: "La Villa" },
+      { id: "b", title: "Av. Circunvalar" }
+    ]
+  );
   return res.sendStatus(200);
 }
 
