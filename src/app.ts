@@ -540,13 +540,17 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   if (!currentOrder || currentOrder.step === "esperando_menu_principal") {
     const tipoEntrega = currentOrder?.tipoEntrega === "domicilio" ? "domicilio" : "recoger";
     if (!currentOrder?.testMode && !isWithinBusinessHours(tipoEntrega)) {
+      createOrUpdateOrder(phone, []);
+      updateOrderStep(phone, "esperando_mensaje_fuera_horario");
+      currentOrder = getOrder(phone)!;
       await sendWhatsAppMessage(phone,
         "Gracias por escribirnos 😊\n\n" +
         "En este momento estamos fuera de horario de atención.\n\n" +
         "🕐 Nuestro horario es:\n" +
         "• Domingo a jueves: 4:00pm – 10:00pm\n" +
         "• Viernes y sábado: 4:00pm – 10:30pm\n\n" +
-        "¡Te esperamos pronto! 🥞"
+        "¡Te esperamos pronto! 🥞\n\n" +
+        "Si necesitas atención urgente, déjanos tu mensaje y nos pondremos en contacto contigo 📩"
       );
       return res.sendStatus(200);
     }
@@ -1329,6 +1333,15 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   } else {
     replyMessage = "Cuando realices el pago envíame el comprobante 📸";
   }
+
+} else if (currentOrder?.step === "esperando_mensaje_fuera_horario") {
+  try {
+    await sendWhatsAppMessage("573151913928",
+      `🔔 Mensaje fuera de horario\n👤 Tel: ${phone}\n💬 Mensaje: ${text}\n⚠️ Atiende esta solicitud`
+    );
+  } catch (e) { console.error("❌ ERROR reenviando mensaje fuera de horario:", e); }
+  updateOrderStep(phone, "esperando_asesor");
+  replyMessage = "Gracias por tu mensaje ✅ Un asesor se pondrá en contacto contigo pronto 😊";
 
 } else if (currentOrder?.step === "esperando_ayuda") {
   updateOrderStep(phone, "esperando_asesor");

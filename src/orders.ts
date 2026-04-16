@@ -36,6 +36,7 @@ export type OrderStep =
   | "esperando_aclaracion_producto"
   | "esperando_variante_producto"
   | "esperando_asesor"
+  | "esperando_mensaje_fuera_horario"
   | "esperando_sucursal_holaclick"
   | "esperando_pago_holaclick"
   | "esperando_comprobante_holaclick"
