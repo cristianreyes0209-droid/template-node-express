@@ -650,6 +650,24 @@ if (lower === "reset") {
   return res.sendStatus(200);
 }
 
+if (text.includes("Vengo de https://las-crepes.ola.click")) {
+  createOrUpdateOrder(phone, []);
+  const order = getOrder(phone)!;
+  order.holaclick_order = text;
+  if (customer?.name) updateOrderName(phone, customer.name);
+  updateOrderStep(phone, "esperando_sucursal_holaclick");
+  currentOrder = getOrder(phone)!;
+  await sendWhatsAppMessage(phone, "Gracias por tu pedido en HolaClick ✅ Vamos a procesarlo.");
+  await sendWhatsAppButtons(phone,
+    "¿En qué sucursal deseas recoger o desde dónde te enviamos el domicilio?",
+    [
+      { id: "la_villa", title: "La Villa 🏪" },
+      { id: "circunvalar", title: "Av. Circunvalar 🏪" }
+    ]
+  );
+  return res.sendStatus(200);
+}
+
     console.log("=== DIAGNÓSTICO ===");
 console.log("CUSTOMER:", customer?.name);
 console.log("CURRENT ORDER:", currentOrder?.step);
@@ -768,23 +786,6 @@ return res.sendStatus(200);
     await sendWhatsAppMessage(phone, replyMessage);
     return res.sendStatus(200);
   }
-
-if (text.includes("Vengo de https://las-crepes.ola.click")) {
-  createOrUpdateOrder(phone, []);
-  const order = getOrder(phone)!;
-  order.holaclick_order = text;
-  if (customer?.name) updateOrderName(phone, customer.name);
-  updateOrderStep(phone, "esperando_sucursal_holaclick");
-  await sendWhatsAppMessage(phone, "Gracias por tu pedido en HolaClick ✅ Vamos a procesarlo.");
-  await sendWhatsAppButtons(phone,
-    "¿En qué sucursal deseas recoger o desde dónde te enviamos el domicilio?",
-    [
-      { id: "la_villa", title: "La Villa 🏪" },
-      { id: "circunvalar", title: "Av. Circunvalar 🏪" }
-    ]
-  );
-  return res.sendStatus(200);
-}
 
 if (!currentOrder) {
   if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("ver menu") || lower.includes("carta")) {
