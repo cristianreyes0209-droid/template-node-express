@@ -775,9 +775,9 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
   order.holaclick_order = text;
   if (customer?.name) updateOrderName(phone, customer.name);
   updateOrderStep(phone, "esperando_sucursal_holaclick");
-  await sendWhatsAppMessage(phone, "Tu pedido fue recibido ✅ Vamos a procesarlo.");
+  await sendWhatsAppMessage(phone, "Gracias por tu pedido en HolaClick ✅ Vamos a procesarlo.");
   await sendWhatsAppButtons(phone,
-    "Elige la sucursal más cercana a tu destino. Esto hace tu domicilio más económico 🛵",
+    "¿En qué sucursal deseas recoger o desde dónde te enviamos el domicilio?",
     [
       { id: "la_villa", title: "La Villa 🏪" },
       { id: "circunvalar", title: "Av. Circunvalar 🏪" }
@@ -1111,36 +1111,13 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 }
 
 } else if (currentOrder?.step === "esperando_sucursal_holaclick") {
-  const holaclickText = currentOrder.holaclick_order || "";
-  const totalMatch = holaclickText.match(/Total[:\s]*\$?([\d.,]+)/i);
-  const totalTexto = totalMatch ? `$${totalMatch[1]}` : "";
-  const bodyPago = totalTexto
-    ? `El total de tu pedido es ${totalTexto} 💰\n¿Cómo deseas pagar?`
-    : "¿Cómo deseas pagar?";
-
   if (lower === "la_villa" || lower.includes("villa")) {
     currentOrder.sucursal = "la_villa";
-    updateOrderStep(phone, "esperando_pago_holaclick");
-    currentOrder = getOrder(phone)!;
-    await sendWhatsAppButtons(phone, bodyPago, [
-      { id: "efectivo", title: "Efectivo 💵" },
-      { id: "nequi", title: "Nequi/Daviplata 📱" },
-      { id: "bancolombia", title: "Bancolombia 🏦" }
-    ]);
-    return res.sendStatus(200);
   } else if (lower === "circunvalar" || lower.includes("circunvalar")) {
     currentOrder.sucursal = "circunvalar";
-    updateOrderStep(phone, "esperando_pago_holaclick");
-    currentOrder = getOrder(phone)!;
-    await sendWhatsAppButtons(phone, bodyPago, [
-      { id: "efectivo", title: "Efectivo 💵" },
-      { id: "nequi", title: "Nequi/Daviplata 📱" },
-      { id: "bancolombia", title: "Bancolombia 🏦" }
-    ]);
-    return res.sendStatus(200);
   } else {
     await sendWhatsAppButtons(phone,
-      "Elige la sucursal más cercana a tu destino. Esto hace tu domicilio más económico 🛵",
+      "¿En qué sucursal deseas recoger o desde dónde te enviamos el domicilio?",
       [
         { id: "la_villa", title: "La Villa 🏪" },
         { id: "circunvalar", title: "Av. Circunvalar 🏪" }
@@ -1148,6 +1125,21 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     );
     return res.sendStatus(200);
   }
+
+  const holaclickText = currentOrder.holaclick_order || "";
+  const totalMatch = holaclickText.match(/Total[:\s]*\$?([\d.,]+)/i);
+  const totalTexto = totalMatch ? `$${totalMatch[1]}` : "";
+  const bodyPago = totalTexto
+    ? `El total de tu pedido es ${totalTexto} 💰\n¿Cómo deseas pagar?`
+    : "¿Cómo deseas pagar?";
+
+  updateOrderStep(phone, "esperando_pago_holaclick");
+  await sendWhatsAppButtons(phone, bodyPago, [
+    { id: "efectivo", title: "Efectivo 💵" },
+    { id: "nequi", title: "Nequi/Daviplata 📱" },
+    { id: "bancolombia", title: "Bancolombia 🏦" }
+  ]);
+  return res.sendStatus(200);
 } else if (currentOrder?.step === "esperando_pago_holaclick") {
   let formaPago = "";
   if (lower.includes("efectivo")) {
@@ -1159,14 +1151,16 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   }
 
   if (!formaPago) {
-    await sendWhatsAppButtons(phone,
-      "¿Cómo deseas pagar?",
-      [
-        { id: "efectivo", title: "Efectivo 💵" },
-        { id: "nequi", title: "Nequi/Daviplata 📱" },
-        { id: "bancolombia", title: "Bancolombia 🏦" }
-      ]
-    );
+    const holaclickText2 = currentOrder.holaclick_order || "";
+    const totalMatch2 = holaclickText2.match(/Total[:\s]*\$?([\d.,]+)/i);
+    const bodyPago2 = totalMatch2
+      ? `El total de tu pedido es $${totalMatch2[1]} 💰\n¿Cómo deseas pagar?`
+      : "¿Cómo deseas pagar?";
+    await sendWhatsAppButtons(phone, bodyPago2, [
+      { id: "efectivo", title: "Efectivo 💵" },
+      { id: "nequi", title: "Nequi/Daviplata 📱" },
+      { id: "bancolombia", title: "Bancolombia 🏦" }
+    ]);
     return res.sendStatus(200);
   }
 
@@ -1175,6 +1169,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
   const holaclickTotalMatch = (currentOrder.holaclick_order || "").match(/Total[:\s]*\$?([\d.,]+)/i);
   const holaclickTotalTexto = holaclickTotalMatch ? `$${holaclickTotalMatch[1]}` : "";
+  const sucursalTextoHC = currentOrder.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar";
 
   if (formaPago === "nequi/daviplata") {
     const nequiNum = currentOrder.sucursal === "circunvalar" ? "3205839477" : "3207218267";
@@ -1195,16 +1190,34 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       `💳 ${bancoNum}\n\n` +
       "Cuando realices el pago envíame el comprobante 📸";
   } else {
-    // Efectivo → flujo factura
-    updateOrderStep(phone, "esperando_factura");
-    await sendWhatsAppButtons(phone,
-      "¿Necesitas factura electrónica?",
-      [
-        { id: "factura_si", title: "Sí, necesito factura" },
-        { id: "factura_no", title: "No, gracias" }
-      ]
-    );
-    return res.sendStatus(200);
+    // Efectivo → confirmar pedido directamente
+    updateOrderStep(phone, "confirmado");
+    clearTimeout(inactivityTimers.get(phone));
+    inactivityTimers.delete(phone);
+    currentOrder = getOrder(phone)!;
+    currentOrder.confirmedAt = new Date().toISOString();
+
+    const orderEfHC = getOrder(phone)!;
+    const holaclickResumenEf = orderEfHC.holaclick_order || "";
+    const resumenInternoEfHC =
+      "🔥 PEDIDO HOLACLICK\n\n" +
+      `👤 ${orderEfHC.nombre || customer?.name || "Cliente"}\n` +
+      `📞 ${phone}\n\n` +
+      `📋 Pedido original:\n${holaclickResumenEf}\n\n` +
+      `🏬 Sucursal: ${sucursalTextoHC}\n` +
+      `💳 Pago: Efectivo`;
+
+    const DESTINOS_EF_HC = ["573207218267", "573151913928"];
+    for (const destino of DESTINOS_EF_HC) {
+      try { await sendWhatsAppMessage(destino, resumenInternoEfHC); }
+      catch (e) { console.error(`❌ ERROR enviando pedido holaclick efectivo a ${destino}:`, e); }
+    }
+
+    replyMessage =
+      "¡Tu pedido fue confirmado! 🔥\n\n" +
+      `🏬 Sucursal: ${sucursalTextoHC}\n` +
+      `💳 Pago: Efectivo\n\n` +
+      "Pronto estará listo 🥞";
   }
 
 } else if (currentOrder?.step === "esperando_comprobante_holaclick") {
@@ -1212,7 +1225,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   const imageId = messageData.image?.id;
   const esListo = lower.includes("listo") || lower.includes("ya pague") || lower.includes("ya pagué");
 
-  if (imageId || esListo) {
+  if (imageId) {
     updateOrderStep(phone, "confirmado");
     clearTimeout(inactivityTimers.get(phone));
     inactivityTimers.delete(phone);
@@ -1236,17 +1249,15 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     for (const destino of DESTINOS_HOLACLICK) {
       try {
         await sendWhatsAppMessage(destino, resumenHolaclick);
-        if (imageId) await sendWhatsAppImageById(destino, imageId);
+        await sendWhatsAppImageById(destino, imageId);
       } catch (e) { console.error(`❌ ERROR reenviando comprobante holaclick a ${destino}:`, e); }
     }
 
     replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
+  } else if (esListo) {
+    replyMessage = "Estamos esperando tu comprobante de pago 📸";
   } else {
-    await sendWhatsAppButtons(phone,
-      "Cuando realices el pago envíame el comprobante 📸 o presiona el botón cuando hayas pagado.",
-      [{ id: "listo", title: "Listo, ya pagué ✅" }]
-    );
-    return res.sendStatus(200);
+    replyMessage = "Cuando realices el pago envíame el comprobante 📸";
   }
 
 } else if (currentOrder?.step === "esperando_ayuda") {
