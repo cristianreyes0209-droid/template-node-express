@@ -18,7 +18,7 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
-import { parseOrder, normalizeText } from './parser';
+import { parseOrder, parseWithAI, normalizeText } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
@@ -562,12 +562,30 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   console.log("TEXT:", text);
 
 let replyMessage = "";
-const parseResult = (
+const skipParsing =
   currentOrder?.step === "post_agregar_producto" ||
   currentOrder?.step === "esperando_observacion_general" ||
   currentOrder?.step === "esperando_nombre" ||
-  currentOrder?.step === "esperando_direccion"
-) ? { items: [], ambiguousChoice: undefined } : parseOrder(text);
+  currentOrder?.step === "esperando_direccion";
+
+let parseResult = skipParsing
+  ? { items: [] as any[], ambiguousChoice: undefined }
+  : parseOrder(text);
+
+// Fallback a IA cuando el parser no encontró nada y el texto tiene >3 palabras
+if (
+  !skipParsing &&
+  parseResult.items.length === 0 &&
+  !parseResult.ambiguousChoice &&
+  text.trim().split(/\s+/).length > 3 &&
+  currentOrder?.step === "armando_pedido"
+) {
+  const aiResult = await parseWithAI(text);
+  if (aiResult.items.length > 0) {
+    parseResult = aiResult;
+  }
+}
+
 const parsedItems = parseResult.items;
 const lower = text.toLowerCase().trim();
 
@@ -840,7 +858,7 @@ return res.sendStatus(200);
 if (!currentOrder) {
   if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("ver menu") || lower.includes("carta")) {
     await sendWhatsAppButtons(phone,
-      "Aquí puedes ver nuestro menú completo 📋\n\nhttps://linktr.ee/Lascrepescol?utm_source=linktree_profile_share&ltsid=6a246710-71a7-4a1c-9a32-0540e971388d\n\n¿Deseas hacer un pedido?",
+      "Aquí puedes ver nuestro menú completo 📋\n\nhttps://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n\n¿Deseas hacer un pedido?",
       [
         { id: "1", title: "Sí, hacer un pedido" },
         { id: "3", title: "Otros" }
@@ -1157,7 +1175,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
 } else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
   await sendWhatsAppButtons(phone,
-    "Aquí puedes ver nuestro menú completo 📋\n\nhttps://linktr.ee/Lascrepescol?utm_source=linktree_profile_share&ltsid=6a246710-71a7-4a1c-9a32-0540e971388d\n\n¿Deseas hacer un pedido?",
+    "Aquí puedes ver nuestro menú completo 📋\n\nhttps://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n\n¿Deseas hacer un pedido?",
     [
       { id: "1", title: "Sí, hacer un pedido 🥞" },
       { id: "3", title: "Otros 💬" }
@@ -1438,7 +1456,7 @@ return res.sendStatus(200);
 
       replyMessage =
         "Perfecto 👍\n\n" +
-        "¿Me compartes tu dirección por favor?";
+        "Envíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
     }
 
   } else {
@@ -1497,6 +1515,30 @@ return res.sendStatus(200);
   parsedItems.length > 0 &&
   currentOrder?.step === "armando_pedido"
 ) {
+  // Si algún jugo fue detectado sin variante, preguntar agua o leche primero
+  const allMenuProducts = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+  const itemNeedingVariant = parsedItems.find(item => {
+    if (item.variante) return false;
+    const prod = allMenuProducts.find((p: any) => p.id === item.productoId);
+    return prod?.tipo === "jugo";
+  });
+
+  if (itemNeedingVariant) {
+    const prod = allMenuProducts.find((p: any) => p.id === itemNeedingVariant.productoId)!;
+    currentOrder.pendingProduct = { id: prod.id, nombre: prod.nombre, precio: prod.precio };
+    updateOrderStep(phone, "esperando_variante_producto");
+    currentOrder = getOrder(phone)!;
+    const botonesVariantes = prod.variantes.slice(0, 3).map((v: any) => ({
+      id: `variante_${v.id}`,
+      title: `${v.nombre} $${v.precio.toLocaleString("es-CO")}`
+    }));
+    await sendWhatsAppButtons(phone,
+      `¿Cómo deseas tu ${prod.nombre}?`,
+      botonesVariantes
+    );
+    return res.sendStatus(200);
+  }
+
   const order = createOrUpdateOrder(phone, parsedItems);
   updateOrderStep(phone, "post_agregar_producto");
   currentOrder = getOrder(phone)!;
@@ -1555,7 +1597,7 @@ return res.sendStatus(200);
     if (currentOrder.tipoEntrega === "domicilio") {
       updateOrderStep(phone, "esperando_direccion");
       currentOrder = getOrder(phone)!;
-      replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+      replyMessage = "Perfecto 👍\n\nEnvíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
     } else {
       updateOrderStep(phone, "esperando_confirmacion");
       currentOrder = getOrder(phone)!;
@@ -1640,7 +1682,30 @@ return res.sendStatus(200);
     return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "esperando_direccion") {
-  updateOrderAddress(phone, text);
+  // Detectar mensaje de ubicación (location pin de WhatsApp)
+  if (messageData.type === "location" && messageData.location?.latitude && messageData.location?.longitude) {
+    const { latitude, longitude } = messageData.location;
+    let direccionGeocoded = `${latitude},${longitude}`;
+
+    const mapsKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (mapsKey) {
+      try {
+        const geoRes = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${mapsKey}`
+        );
+        const geoData = await geoRes.json() as any;
+        if (geoData.results?.[0]?.formatted_address) {
+          direccionGeocoded = geoData.results[0].formatted_address;
+        }
+      } catch (e) {
+        console.error("❌ Error geocoding location:", e);
+      }
+    }
+
+    updateOrderAddress(phone, direccionGeocoded);
+  } else {
+    updateOrderAddress(phone, text);
+  }
 
   const order = getOrder(phone)!;
 
@@ -1724,7 +1789,7 @@ return res.sendStatus(200);
       } else {
         updateOrderStep(phone, "esperando_direccion");
         currentOrder = getOrder(phone)!;
-        replyMessage = "¿Me compartes tu direccion por favor?";
+        replyMessage = "Envíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
         await sendWhatsAppMessage(phone, replyMessage);
         return res.sendStatus(200);
       }
@@ -1964,7 +2029,7 @@ return res.sendStatus(200);
 
   updateOrderStep(phone, "esperando_direccion");
   replyMessage =
-    "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+    "Perfecto 👍\n\nEnvíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
   await sendWhatsAppMessage(phone, replyMessage);
   return res.sendStatus(200);
 }
@@ -2540,7 +2605,7 @@ return res.sendStatus(200);
         } else {
           updateOrderStep(phone, "esperando_direccion");
           currentOrder = getOrder(phone)!;
-          replyMessage = "Perfecto 👍\n\n¿Me compartes tu dirección por favor?";
+          replyMessage = "Perfecto 👍\n\nEnvíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
         }
       } else {
         updateOrderStep(phone, "esperando_confirmacion");
@@ -2660,7 +2725,7 @@ return res.sendStatus(200);
     updateOrderStep(phone, "esperando_direccion");
     currentOrder = getOrder(phone)!;
     replyMessage =
-      "Perfecto 👍\n\n¿Me compartes la nueva dirección por favor?";
+      "Perfecto 👍\n\nEnvíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
   } else {
    await sendWhatsAppButtons(phone,
   `Perfecto 👍\n\n¿Deseas usar la misma dirección de siempre?\n\n📍 ${customer.last_address}`,

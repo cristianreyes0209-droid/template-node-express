@@ -494,6 +494,85 @@ function mergeParsedItems(items: ParsedItem[]) {
 
   return merged;
 }
+export async function parseWithAI(text: string): Promise<ParseResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return { items: [] };
+
+  const allProducts = (menu.categorias as any[])
+    .filter((c: any) => c.id !== "extras")
+    .flatMap((c: any) => c.productos as any[]);
+
+  const menuResumen = allProducts
+    .map((p: any) =>
+      `- ${p.nombre}${p.aliases?.length ? ` (también: ${(p.aliases as string[]).slice(0, 4).join(", ")})` : ""}`
+    )
+    .join("\n");
+
+  const prompt =
+    `Eres un parser de pedidos para Las Crepes de París, un restaurante en Pereira Colombia. Tu tarea es identificar productos del menú en el mensaje del cliente y retornar un JSON. Solo responde con JSON válido, sin texto adicional. El JSON debe tener este formato: {"items": [{"producto": string, "cantidad": number, "observaciones": string, "extras": []}], "observacionGeneral": string}\n\n` +
+    `Menú disponible:\n${menuResumen}\n\n` +
+    `Mensaje del cliente: "${text}"\n\n` +
+    `Identifica los productos pedidos. Usa el nombre exacto del menú en el campo "producto".`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1 }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      console.error("❌ parseWithAI HTTP error:", response.status);
+      return { items: [] };
+    }
+
+    const data = await response.json() as any;
+    const rawText: string = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { items: [] };
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!parsed.items || !Array.isArray(parsed.items)) return { items: [] };
+
+    const mappedItems: ParsedItem[] = [];
+
+    for (const aiItem of parsed.items) {
+      const aiNorm = normalizeText(aiItem.producto || "");
+      const matchedProduct = allProducts.find((p: any) => {
+        const norm = normalizeText(p.nombre);
+        return norm === aiNorm || norm.includes(aiNorm) || aiNorm.includes(norm);
+      });
+
+      if (!matchedProduct) continue;
+
+      mappedItems.push({
+        productoId: matchedProduct.id,
+        producto: matchedProduct.nombre,
+        cantidad: Math.max(1, Number(aiItem.cantidad) || 1),
+        precio: matchedProduct.precio,
+        variante: undefined,
+        observaciones: aiItem.observaciones || undefined,
+        extras: []
+      });
+    }
+
+    console.log("✅ parseWithAI mapped items:", mappedItems.length);
+    return { items: mergeParsedItems(mappedItems) };
+  } catch (err) {
+    console.error("❌ parseWithAI error:", err);
+    return { items: [] };
+  }
+}
+
 export function parseOrder(text: string): ParseResult {
   const lower = normalizeText(text);
  // Primero limpiar palabras de cortesía, luego dividir

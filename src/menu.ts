@@ -239,6 +239,9 @@ export const menu = {
           aliases: [
             "paris",
             "pari",
+            "la paris",
+            "una paris",
+            "crepe paris",
             "crepa de paris",
             "crepe de pari",
             "crepe de paris"
@@ -404,6 +407,7 @@ export const menu = {
       precio: 24500,
       aliases: [
         "vegetales",
+        "vegetal",
         "vegetales mixta",
         "crepe vegetales",
         "mixta vegetales"
@@ -1309,60 +1313,66 @@ aliases: [
           id: "jugo_mora",
           nombre: "Jugo de Mora",
           precio: 9900,
+          tipo: "jugo",
           aliases: ["mora", "jugo mora", "jugo de mora", "jugo", "jugo natural"],
           variantes: [
-            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
-            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
+            { id: "agua", nombre: "En agua", precio: 9900, aliases: ["en agua", "agua"] },
+            { id: "leche", nombre: "En leche", precio: 11500, aliases: ["en leche", "leche"] }
           ]
         },
         {
           id: "jugo_lulo",
           nombre: "Jugo de Lulo",
           precio: 9900,
+          tipo: "jugo",
           aliases: ["lulo", "jugo lulo", "jugo de lulo", "jugo", "jugo natural"],
           variantes: [
-            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
-            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
+            { id: "agua", nombre: "En agua", precio: 9900, aliases: ["en agua", "agua"] },
+            { id: "leche", nombre: "En leche", precio: 11500, aliases: ["en leche", "leche"] }
           ]
         },
         {
           id: "jugo_guanabana",
           nombre: "Jugo de Guanábana",
           precio: 9900,
+          tipo: "jugo",
           aliases: ["guanabana", "guanábana", "jugo guanabana", "jugo", "jugo natural"],
           variantes: [
-            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
-            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
+            { id: "agua", nombre: "En agua", precio: 9900, aliases: ["en agua", "agua"] },
+            { id: "leche", nombre: "En leche", precio: 11500, aliases: ["en leche", "leche"] }
           ]
         },
         {
           id: "jugo_maracuya",
           nombre: "Jugo de Maracuyá",
           precio: 9900,
+          tipo: "jugo",
           aliases: ["maracuya", "maracuyá", "jugo maracuya", "jugo", "jugo natural"],
           variantes: [
-            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
-            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
+            { id: "agua", nombre: "En agua", precio: 9900, aliases: ["en agua", "agua"] },
+            { id: "leche", nombre: "En leche", precio: 11500, aliases: ["en leche", "leche"] }
           ]
         },
         {
           id: "jugo_fresa",
           nombre: "Jugo de Fresa",
           precio: 9900,
+          tipo: "jugo",
           aliases: ["fresa", "jugo fresa", "jugo de fresa", "jugo", "jugo natural"],
           variantes: [
-            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
-            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
+            { id: "agua", nombre: "En agua", precio: 9900, aliases: ["en agua", "agua"] },
+            { id: "leche", nombre: "En leche", precio: 11500, aliases: ["en leche", "leche"] }
           ]
         },
         {
           id: "jugo_mango",
           nombre: "Jugo de Mango",
           precio: 9900,
+          tipo: "jugo",
           aliases: ["mango", "jugo mango", "jugo de mango", "jugo", "jugo natural"],
           variantes: [
-            { id: "en_agua", nombre: "En agua", precio: 9900, aliases: ["en agua"] },
-            { id: "en_leche", nombre: "En leche", precio: 11500, aliases: ["en leche"] }
+            { id: "agua", nombre: "En agua", precio: 9900, aliases: ["en agua", "agua"] },
+            { id: "leche", nombre: "En leche", precio: 11500, aliases: ["en leche", "leche"] }
           ]
         },
         {
