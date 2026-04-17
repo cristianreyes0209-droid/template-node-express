@@ -209,7 +209,7 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
   const distanciaMetros = elemento.distance.value;
   const distanciaKm = distanciaMetros / 1000;
   const MINIMO = 4500;
-  const VALOR_POR_KM = 1000;
+  const VALOR_POR_KM = 1200;
   const KM_MINIMO = 3;
   let valorDomicilio = MINIMO;
   if (distanciaKm > KM_MINIMO) {
@@ -1167,7 +1167,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         updateOrderStep(phone, "esperando_jalapenos");
         currentOrder = getOrder(phone)!;
         await sendWhatsAppButtons(phone,
-          "¿La deseas con jalapeños?",
+          `¿Deseas tu ${pending.nombre} con jalapeños o sin jalapeños?`,
           [{ id: "con_jalapenos", title: "Con jalapeños 🌶️" }, { id: "sin_jalapenos", title: "Sin jalapeños" }]
         );
         return res.sendStatus(200);
@@ -1176,7 +1176,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         updateOrderStep(phone, "esperando_queso_dulce");
         currentOrder = getOrder(phone)!;
         await sendWhatsAppButtons(phone,
-          "¿La deseas con queso doble crema?",
+          `¿Deseas tu ${pending.nombre} con queso doble crema o sin queso?`,
           [{ id: "con_queso_dulce", title: "Con queso 🧀" }, { id: "sin_queso_dulce", title: "Sin queso" }]
         );
         return res.sendStatus(200);
@@ -1710,7 +1710,7 @@ return res.sendStatus(200);
     updateOrderStep(phone, "esperando_jalapenos");
     currentOrder = getOrder(phone)!;
     await sendWhatsAppButtons(phone,
-      "¿La deseas con jalapeños?",
+      `¿Deseas tu ${lastItem.producto} con jalapeños o sin jalapeños?`,
       [{ id: "con_jalapenos", title: "Con jalapeños 🌶️" }, { id: "sin_jalapenos", title: "Sin jalapeños" }]
     );
     return res.sendStatus(200);
@@ -1719,7 +1719,7 @@ return res.sendStatus(200);
     updateOrderStep(phone, "esperando_queso_dulce");
     currentOrder = getOrder(phone)!;
     await sendWhatsAppButtons(phone,
-      "¿La deseas con queso doble crema?",
+      `¿Deseas tu ${lastItem.producto} con queso doble crema o sin queso?`,
       [{ id: "con_queso_dulce", title: "Con queso 🧀" }, { id: "sin_queso_dulce", title: "Sin queso" }]
     );
     return res.sendStatus(200);
@@ -2049,19 +2049,16 @@ return res.sendStatus(200);
       }
     }
 
-    updateOrderStep(phone, "esperando_pago");
+    updateOrderStep(phone, "esperando_factura");
     currentOrder = getOrder(phone)!;
-
-    const totalsParaPago = calculateTotal(getOrder(phone)!);
-   await sendWhatsAppButtons(phone,
-  `El total de tu pedido es $${totalsParaPago.total} 💰\n¿Cómo deseas pagar?`,
-  [
-    { id: "efectivo", title: "Efectivo 💵" },
-    { id: "nequi", title: "Nequi/Daviplata 📱" },
-    { id: "bancolombia", title: "Bancolombia 🏦" }
-  ]
-);
-return res.sendStatus(200);
+    await sendWhatsAppButtons(phone,
+      "¿Necesitas factura electrónica?",
+      [
+        { id: "factura_si", title: "Sí, la necesito 🧾" },
+        { id: "factura_no", title: "No, gracias" }
+      ]
+    );
+    return res.sendStatus(200);
 
   } else if (
     lower === "eliminar" ||
@@ -2516,16 +2513,73 @@ return res.sendStatus(200);
 
   } else if (lower.includes("efectivo")) {
     updateOrderPayment(phone, "efectivo");
-    updateOrderStep(phone, "esperando_factura");
+    updateOrderStep(phone, "confirmado");
+    clearTimeout(inactivityTimers.get(phone));
+    inactivityTimers.delete(phone);
     currentOrder = getOrder(phone)!;
-    await sendWhatsAppButtons(phone,
-      "¿Necesitas factura electrónica?",
-      [
-        { id: "factura_si", title: "Sí, la necesito 🧾" },
-        { id: "factura_no", title: "No, gracias" }
-      ]
-    );
-    return res.sendStatus(200);
+    currentOrder.confirmedAt = new Date().toISOString();
+
+    const orderEf = getOrder(phone)!;
+    const totalsEf = calculateTotal(orderEf);
+
+    await upsertCustomer({ phone, name: orderEf.nombre, last_address: orderEf.direccion, last_order: orderEf.items, last_order_at: new Date().toISOString(), last_sucursal: orderEf.sucursal });
+    try { await handleOperationalRouting(orderEf, totalsEf); } catch (e) { console.error(e); }
+
+    if (orderEf.sucursal === "la_villa" && orderEf.locationCoords) {
+      try {
+        await sendWhatsAppLocation("573151913928", orderEf.locationCoords.latitude, orderEf.locationCoords.longitude, orderEf.nombre || "Cliente");
+      } catch (e) { console.error("❌ Error enviando ubicación a domiciliarios:", e); }
+    }
+
+    if (orderEf.sucursal === "la_villa") {
+      await fetch("https://towns-cheats-resulting-same.trycloudflare.com/imprimir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: orderEf.nombre || customer?.name || "Cliente",
+          telefono: orderEf.telefono,
+          pedidoTexto: orderEf.items.map((i: any) => {
+            const obs = i.observaciones ? ` (${i.observaciones})` : "";
+            const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
+            return `${i.cantidad} ${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs}`;
+          }),
+          subtotal: totalsEf.subtotal,
+          domicilio: totalsEf.domicilio,
+          total: totalsEf.total,
+          direccion: orderEf.direccion || "Recoger en tienda",
+          pago: orderEf.formaPago || "No definido",
+          tiempoEstimado: orderEf.tipoEntrega === "domicilio" ? "50 min" : "15 min",
+          horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
+          sucursal: "La Villa"
+        })
+      }).catch(err => console.error("❌ Error impresora La Villa:", err));
+    }
+
+    const resumenEf = orderEf.items.map((item: any) => {
+      const obsTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
+      const extrasTexto = item.extras?.length > 0 ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +") : "";
+      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto}`;
+    }).join("\n");
+
+    const tiempoEf = orderEf.tipoEntrega === "domicilio" ? "50 min 🚚" : "15 min 🏪";
+    if (!orderEf.nombre && customer?.name) updateOrderName(phone, customer.name);
+
+    replyMessage =
+      "🔥 Pedido confirmado\n\n" +
+      "👤 Nombre: " + (orderEf.nombre || customer?.name || "Cliente") + "\n" +
+      "📞 Tel: " + orderEf.telefono + "\n\n" +
+      "🧾 Tu pedido:\n" + resumenEf + "\n\n" +
+      "💰 Subtotal: $" + totalsEf.subtotal + "\n" +
+      (orderEf.tipoEntrega === "domicilio" ? "🚚 Domicilio: $" + totalsEf.domicilio + "\n" : "") +
+      "💵 Total: $" + totalsEf.total + "\n" +
+      (orderEf.observacionesGenerales?.trim() ? "📝 Observación: " + orderEf.observacionesGenerales.trim() + "\n" : "") +
+      (orderEf.tipoEntrega === "domicilio" ? "📍 Dirección:\n" + (orderEf.direccion || "No aplica") : "🏪 Recoger en tienda") + "\n\n" +
+      "💳 Pago: Efectivo\n" +
+      (orderEf.factura ? "📄 Factura: " + orderEf.factura + "\n" : "") +
+      "⏱ Tiempo estimado: " + tiempoEf + "\n" +
+      "🕐 Hora: " + new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }) + "\n\n" +
+      "🏪 Sucursal: " + (orderEf.sucursal === "la_villa" ? "La Villa" : orderEf.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
+      "🙏 Gracias por tu pedido en LAS CREPES 🥞";
 
   } else if (
     lower.includes("datafono") ||
@@ -2593,145 +2647,37 @@ return res.sendStatus(200);
     currentOrder = getOrder(phone)!;
     replyMessage = "Por favor envíame tu NIT o cédula y razón social para la factura.";
   } else {
-    // factura_no o cualquier otra respuesta → confirmar pedido directamente
-    updateOrderStep(phone, "confirmado");
-    clearTimeout(inactivityTimers.get(phone));
-    inactivityTimers.delete(phone);
+    // factura_no → ir a selección de pago
+    updateOrderStep(phone, "esperando_pago");
     currentOrder = getOrder(phone)!;
-    currentOrder.confirmedAt = new Date().toISOString();
-
-    const orderFact = getOrder(phone)!;
-    const totalsFact = calculateTotal(orderFact);
-
-    await upsertCustomer({ phone, name: orderFact.nombre, last_address: orderFact.direccion, last_order: orderFact.items, last_order_at: new Date().toISOString(), last_sucursal: orderFact.sucursal });
-    try { await handleOperationalRouting(orderFact, totalsFact); } catch (e) { console.error(e); }
-
-    if (orderFact.sucursal === "la_villa" && orderFact.locationCoords) {
-      try {
-        await sendWhatsAppLocation("573151913928", orderFact.locationCoords.latitude, orderFact.locationCoords.longitude, orderFact.nombre || "Cliente");
-      } catch (e) { console.error("❌ Error enviando ubicación a domiciliarios:", e); }
-    }
-
-    if (orderFact.sucursal === "la_villa") {
-      await fetch("https://rural-donated-indicated-timber.trycloudflare.com/imprimir", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre: orderFact.nombre || customer?.name || "Cliente",
-          telefono: orderFact.telefono,
-          pedidoTexto: orderFact.items.map((i: any) => {
-            const obs = i.observaciones ? ` (${i.observaciones})` : "";
-            const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
-            return `${i.cantidad} ${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs}`;
-          }),
-          subtotal: totalsFact.subtotal,
-          domicilio: totalsFact.domicilio,
-          total: totalsFact.total,
-          direccion: orderFact.direccion || "Recoger en tienda",
-          pago: orderFact.formaPago || "No definido",
-          tiempoEstimado: orderFact.tipoEntrega === "domicilio" ? "50 min" : "15 min",
-          horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
-          sucursal: "La Villa"
-        })
-      }).catch(err => console.error("❌ Error impresora La Villa:", err));
-    }
-
-    const resumenFact = orderFact.items.map((item: any) => {
-      const obsTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
-      const extrasTexto = item.extras?.length > 0 ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +") : "";
-      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto}`;
-    }).join("\n");
-
-    const tiempoFact = orderFact.tipoEntrega === "domicilio" ? "50 min 🚚" : "15 min 🏪";
-    if (!orderFact.nombre && customer?.name) updateOrderName(phone, customer.name);
-
-    replyMessage =
-      "🔥 Pedido confirmado\n\n" +
-      "👤 Nombre: " + (orderFact.nombre || customer?.name || "Cliente") + "\n" +
-      "📞 Tel: " + orderFact.telefono + "\n\n" +
-      "🧾 Tu pedido:\n" + resumenFact + "\n\n" +
-      "💰 Subtotal: $" + totalsFact.subtotal + "\n" +
-      (orderFact.tipoEntrega === "domicilio" ? "🚚 Domicilio: $" + totalsFact.domicilio + "\n" : "") +
-      "💵 Total: $" + totalsFact.total + "\n" +
-      (orderFact.observacionesGenerales?.trim() ? "📝 Observación: " + orderFact.observacionesGenerales.trim() + "\n" : "") +
-      (orderFact.tipoEntrega === "domicilio" ? "📍 Dirección:\n" + (orderFact.direccion || "No aplica") : "🏪 Recoger en tienda") + "\n\n" +
-      "💳 Pago: Efectivo\n" +
-      "⏱ Tiempo estimado: " + tiempoFact + "\n" +
-      "🕐 Hora: " + new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }) + "\n\n" +
-      "🏪 Sucursal: " + (orderFact.sucursal === "la_villa" ? "La Villa" : orderFact.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
-      "🙏 Gracias por tu pedido en LAS CREPES 🥞";
+    const totalsParaPago = calculateTotal(getOrder(phone)!);
+    await sendWhatsAppButtons(phone,
+      `El total de tu pedido es $${totalsParaPago.total} 💰\n¿Cómo deseas pagar?`,
+      [
+        { id: "efectivo", title: "Efectivo 💵" },
+        { id: "nequi", title: "Nequi/Daviplata 📱" },
+        { id: "bancolombia", title: "Bancolombia 🏦" }
+      ]
+    );
+    return res.sendStatus(200);
   }
 
 } else if (currentOrder?.step === "esperando_datos_factura") {
-  // Guardar los datos de factura y confirmar
+  // Guardar los datos de factura e ir a selección de pago
   const orderDf = getOrder(phone)!;
   orderDf.factura = text;
-  updateOrderStep(phone, "confirmado");
-  clearTimeout(inactivityTimers.get(phone));
-  inactivityTimers.delete(phone);
+  updateOrderStep(phone, "esperando_pago");
   currentOrder = getOrder(phone)!;
-  currentOrder.confirmedAt = new Date().toISOString();
-
   const totalsDf = calculateTotal(orderDf);
-
-  await upsertCustomer({ phone, name: orderDf.nombre, last_address: orderDf.direccion, last_order: orderDf.items, last_order_at: new Date().toISOString(), last_sucursal: orderDf.sucursal });
-  try { await handleOperationalRouting(orderDf, totalsDf); } catch (e) { console.error(e); }
-
-  if (orderDf.sucursal === "la_villa" && orderDf.locationCoords) {
-    try {
-      await sendWhatsAppLocation("573151913928", orderDf.locationCoords.latitude, orderDf.locationCoords.longitude, orderDf.nombre || "Cliente");
-    } catch (e) { console.error("❌ Error enviando ubicación a domiciliarios:", e); }
-  }
-
-  if (orderDf.sucursal === "la_villa") {
-    await fetch("https://towns-cheats-resulting-same.trycloudflare.com/imprimir", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nombre: orderDf.nombre || customer?.name || "Cliente",
-        telefono: orderDf.telefono,
-        pedidoTexto: orderDf.items.map((i: any) => {
-          const obs = i.observaciones ? ` (${i.observaciones})` : "";
-          const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
-          return `${i.cantidad} ${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs}`;
-        }),
-        subtotal: totalsDf.subtotal,
-        domicilio: totalsDf.domicilio,
-        total: totalsDf.total,
-        direccion: orderDf.direccion || "Recoger en tienda",
-        pago: orderDf.formaPago || "No definido",
-        tiempoEstimado: orderDf.tipoEntrega === "domicilio" ? "50 min" : "15 min",
-        horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
-        sucursal: "La Villa"
-      })
-    }).catch(err => console.error("❌ Error impresora La Villa:", err));
-  }
-
-  const resumenDf = orderDf.items.map((item: any) => {
-    const obsTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
-    const extrasTexto = item.extras?.length > 0 ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +") : "";
-    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto}`;
-  }).join("\n");
-
-  const tiempoDf = orderDf.tipoEntrega === "domicilio" ? "50 min 🚚" : "15 min 🏪";
-  if (!orderDf.nombre && customer?.name) updateOrderName(phone, customer.name);
-
-  replyMessage =
-    "🔥 Pedido confirmado\n\n" +
-    "👤 Nombre: " + (orderDf.nombre || customer?.name || "Cliente") + "\n" +
-    "📞 Tel: " + orderDf.telefono + "\n\n" +
-    "🧾 Tu pedido:\n" + resumenDf + "\n\n" +
-    "💰 Subtotal: $" + totalsDf.subtotal + "\n" +
-    (orderDf.tipoEntrega === "domicilio" ? "🚚 Domicilio: $" + totalsDf.domicilio + "\n" : "") +
-    "💵 Total: $" + totalsDf.total + "\n" +
-    (orderDf.observacionesGenerales?.trim() ? "📝 Observación: " + orderDf.observacionesGenerales.trim() + "\n" : "") +
-    (orderDf.tipoEntrega === "domicilio" ? "📍 Dirección:\n" + (orderDf.direccion || "No aplica") : "🏪 Recoger en tienda") + "\n\n" +
-    "💳 Pago: Efectivo\n" +
-    "📄 Factura electrónica: " + text + "\n" +
-    "⏱ Tiempo estimado: " + tiempoDf + "\n" +
-    "🕐 Hora: " + new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }) + "\n\n" +
-    "🏪 Sucursal: " + (orderDf.sucursal === "la_villa" ? "La Villa" : orderDf.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
-    "🙏 Gracias por tu pedido en LAS CREPES 🥞";
+  await sendWhatsAppButtons(phone,
+    `El total de tu pedido es $${totalsDf.total} 💰\n¿Cómo deseas pagar?`,
+    [
+      { id: "efectivo", title: "Efectivo 💵" },
+      { id: "nequi", title: "Nequi/Daviplata 📱" },
+      { id: "bancolombia", title: "Bancolombia 🏦" }
+    ]
+  );
+  return res.sendStatus(200);
 
 } else if (currentOrder?.step === "esperando_comprobante") {
 
