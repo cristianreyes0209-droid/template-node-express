@@ -422,19 +422,19 @@ export const menu = {
       variantes: [
         {
           id: "mixta",
-          nombre: "Mixta",
+          nombre: "Mixta (Pollo y Carne)",
           precio: 24500,
           aliases: ["mixta", "pollo y carne", "carne y pollo"]
         },
         {
           id: "solo_pollo",
-          nombre: "Solo pollo",
+          nombre: "Solo Pollo",
           precio: 21000,
           aliases: ["solo pollo", "con pollo", "de pollo"]
         },
         {
           id: "solo_carne",
-          nombre: "Solo carne",
+          nombre: "Solo Carne",
           precio: 24500,
           aliases: ["solo carne", "con carne", "de carne"]
         }
@@ -1197,16 +1197,22 @@ aliases: [
           aliases: ["vegetariana", "crepe vegetariana"],
           variantes: [
             {
+              id: "sin_salsa",
+              nombre: "Sin salsa",
+              precio: 13900,
+              aliases: ["sin salsa"]
+            },
+            {
               id: "con_salsa_paris",
-              nombre: "Con salsa París",
+              nombre: "Salsa París",
               precio: 15900,
-              aliases: ["con salsa paris", "con paris"]
+              aliases: ["con salsa paris", "con paris", "salsa paris"]
             },
             {
               id: "con_salsa_italiana",
-              nombre: "Con salsa italiana",
+              nombre: "Salsa italiana",
               precio: 14500,
-              aliases: ["con salsa italiana", "con italiana"]
+              aliases: ["con salsa italiana", "con italiana", "salsa italiana"]
             }
           ]
         },

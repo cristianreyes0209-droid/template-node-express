@@ -8,8 +8,19 @@ export const pool = new Pool({
 });
 
 pool.connect()
-  .then(() => {
+  .then(async (client) => {
     console.log("✅ Conectado a PostgreSQL");
+    await client.query(`
+      ALTER TABLE clientes ADD COLUMN IF NOT EXISTS test_mode boolean DEFAULT false
+    `).catch(err => console.error("❌ Error agregando columna test_mode:", err));
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS config (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `).catch(err => console.error("❌ Error creando tabla config:", err));
+    client.release();
   })
   .catch((err) => {
     console.error("❌ Error conectando a PostgreSQL:", err);
@@ -32,6 +43,39 @@ export async function getCustomerByPhone(phone: string) {
   } catch (error) {
     console.error("❌ Error buscando cliente:", error);
     return null;
+  }
+}
+
+export async function getNextOrderNumber(): Promise<number> {
+  try {
+    const result = await pool.query(`
+      INSERT INTO config (key, value)
+      VALUES ('ultimo_pedido', '1')
+      ON CONFLICT (key) DO UPDATE
+        SET value = (config.value::int + 1)::text,
+            updated_at = NOW()
+      RETURNING value::int AS num
+    `);
+    return result.rows[0]?.num ?? 1;
+  } catch (error) {
+    console.error("❌ Error obteniendo número de pedido:", error);
+    return 0;
+  }
+}
+
+export async function setTestMode(phone: string, value: boolean) {
+  try {
+    const normalizedPhone = normalizePhone(phone);
+    await pool.query(
+      `INSERT INTO clientes (phone, test_mode)
+       VALUES ($1, $2)
+       ON CONFLICT (phone)
+       DO UPDATE SET test_mode = EXCLUDED.test_mode, updated_at = NOW()`,
+      [normalizedPhone, value]
+    );
+    console.log(`✅ test_mode=${value} guardado para ${normalizedPhone}`);
+  } catch (error) {
+    console.error("❌ Error guardando test_mode:", error);
   }
 }
 

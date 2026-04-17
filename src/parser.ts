@@ -19,6 +19,7 @@ type ParsedItem = {
 
 type ParseResult = {
   items: ParsedItem[];
+  upselling?: string;
   ambiguousChoice?: {
     opciones: {
       nombre: string;
@@ -303,41 +304,41 @@ function findBestProductMatches(fragment: string, products: any[]) {
   const text = normalizeText(fragment);
   const aliasEntries = buildAliasEntries(products);
 
-  const matches: { product: any; alias: string }[] = [];
+  const matches: { product: any; alias: string; score: number }[] = [];
 
-for (const entry of aliasEntries) {
-  const cleanAlias = escapeRegex(entry.alias);
-  const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
+  for (const entry of aliasEntries) {
+    const cleanAlias = escapeRegex(entry.alias);
+    const aliasRegex = new RegExp(`\\b${cleanAlias}\\b`, "i");
 
-  if (
-    aliasRegex.test(text) ||
-    text.includes(entry.alias) ||
-    entry.alias.includes(text) ||
-    similarity(text, entry.alias) > 0.78
-  ) {
-    matches.push({
-      product: entry.product,
-      alias: entry.alias
-    });
+    let score = 0;
+    if (entry.alias === text) {
+      score = 3; // coincidencia exacta con el alias
+    } else if (aliasRegex.test(text) || text.includes(entry.alias)) {
+      score = 2; // alias completo encontrado en el texto
+    } else if (entry.alias.includes(text) && text.length >= entry.alias.length * 0.6) {
+      score = 1; // texto es parte significativa del alias
+    } else if (similarity(text, entry.alias) > 0.78) {
+      score = 1; // similitud difusa
+    }
+
+    if (score > 0) {
+      matches.push({ product: entry.product, alias: entry.alias, score });
+    }
   }
-}
 
   if (matches.length === 0) {
     return [];
   }
 
-  const maxAliasLength = Math.max(...matches.map((m) => m.alias.length));
+  const maxScore = Math.max(...matches.map((m) => m.score));
+  const bestMatches = matches.filter((m) => m.score === maxScore);
 
-  const strongestMatches = matches.filter(
-    (m) => m.alias.length === maxAliasLength
-  );
+  const maxAliasLength = Math.max(...bestMatches.map((m) => m.alias.length));
+  const strongestMatches = bestMatches.filter((m) => m.alias.length === maxAliasLength);
 
-  const uniqueProducts = strongestMatches.filter(
-    (match, index, arr) =>
-      arr.findIndex((m) => m.product.id === match.product.id) === index
-  );
-
-  return uniqueProducts.map((m) => m.product);
+  return strongestMatches
+    .filter((match, index, arr) => arr.findIndex((m) => m.product.id === match.product.id) === index)
+    .map((m) => m.product);
 }
 function detectGenericAmbiguity(fragment: string, products: any[]) {
   const tokens = getMeaningfulTokens(fragment);
@@ -361,6 +362,13 @@ function detectGenericAmbiguity(fragment: string, products: any[]) {
   if (uniqueMatches.length <= 1) {
     return null;
   }
+
+  // Si un producto tiene el token como alias exacto, no es ambiguo — se resuelve solo
+  const exactAliasMatch = uniqueMatches.find((p: any) =>
+    (p.aliases || []).some((alias: string) => normalizeText(alias) === token) ||
+    normalizeText(p.nombre) === token
+  );
+  if (exactAliasMatch) return null;
 
   return {
     opciones: uniqueMatches.map((p: any) => ({
@@ -494,6 +502,182 @@ function mergeParsedItems(items: ParsedItem[]) {
 
   return merged;
 }
+export function isQuestion(text: string): boolean {
+  if (text.includes("?")) return true;
+  const norm = normalizeText(text);
+  return /^(que|que|como|cual|cuanto|cuanta|tiene|trae|incluye|lleva|hay)\b/.test(norm);
+}
+
+export function isAmbiguousText(text: string): boolean {
+  const norm = normalizeText(text);
+  const allProducts = (menu.categorias as any[])
+    .filter((c: any) => c.id !== "extras")
+    .flatMap((c: any) => c.productos as any[]);
+
+  const allAliases = allProducts.flatMap((p: any) =>
+    ([p.nombre, ...(p.aliases || [])] as string[]).map(normalizeText)
+  );
+
+  const words = norm.split(/\s+/).filter(w => w.length > 2);
+  const recognized = words.filter(w =>
+    allAliases.some(alias => alias.includes(w) || w.includes(alias))
+  );
+
+  return recognized.length < 3;
+}
+
+export type AIClassification =
+  | { intent: "producto"; items: ParsedItem[]; upselling?: string }
+  | { intent: "observacion"; texto: string; productoIndex?: number }
+  | { intent: "pregunta"; respuesta: string }
+  | { intent: "extra"; nombre: string; precio: number }
+  | { intent: "ambiguo"; opciones: { nombre: string; productoId: string }[] };
+
+export async function classifyWithAI(
+  text: string,
+  currentItems: { producto: string; precio: number; variante?: string }[],
+  step: string
+): Promise<AIClassification | null> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  const allProducts = (menu.categorias as any[])
+    .filter((c: any) => c.id !== "extras")
+    .flatMap((c: any) => c.productos as any[]);
+
+  const extrasProducts = (menu.categorias.find((c: any) => c.id === "extras") as any)?.productos || [];
+
+  const menuResumen = allProducts
+    .map((p: any) =>
+      `- id:${p.id} | ${p.nombre} $${p.precio}${p.aliases?.length ? ` (aliases: ${(p.aliases as string[]).slice(0, 3).join(", ")})` : ""}${p.variantes ? ` [variantes: ${(p.variantes as any[]).map((v: any) => `${v.nombre} $${v.precio}`).join(" / ")}]` : ""}`
+    )
+    .join("\n");
+
+  const extrasResumen = extrasProducts
+    .map((e: any) => `- ${e.nombre} $${e.precio} (id:${e.id})`)
+    .join("\n");
+
+  const pedidoActual = currentItems.length > 0
+    ? currentItems.map((i, idx) => `${idx + 1}. ${i.producto}${i.variante ? " - " + i.variante : ""} $${i.precio}`).join("\n")
+    : "(vacío)";
+
+  const prompt =
+    `Eres el asistente de pedidos de Las Crepes de París, Pereira Colombia. Step actual: "${step}".\n\n` +
+    `PEDIDO ACTUAL DEL CLIENTE:\n${pedidoActual}\n\n` +
+    `MENÚ PRINCIPAL:\n${menuResumen}\n\n` +
+    `EXTRAS DISPONIBLES:\n${extrasResumen}\n\n` +
+    `MENSAJE DEL CLIENTE: "${text}"\n\n` +
+    `Analiza el mensaje y responde SOLO con JSON válido, sin texto extra. El JSON debe tener este formato:\n` +
+    `{\n` +
+    `  "intent": "producto" | "observacion" | "pregunta" | "extra" | "ambiguo",\n` +
+    `  "items": [{"productoId": string, "producto": string, "cantidad": number, "precio": number, "observaciones": string, "extras": []}],\n` +
+    `  "upselling": string,\n` +
+    `  "observacion": string,\n` +
+    `  "productoIndex": number,\n` +
+    `  "respuesta": string,\n` +
+    `  "extraNombre": string,\n` +
+    `  "extraPrecio": number,\n` +
+    `  "opciones": [{"nombre": string, "productoId": string}]\n` +
+    `}\n\n` +
+    `REGLAS:\n` +
+    `- intent "producto": el cliente pide algo del menú. Llena "items" con los productos identificados usando el id exacto del menú.\n` +
+    `- intent "observacion": el cliente hace una modificación (sin X, poco X, bien X) a un producto ya en el pedido. Llena "observacion" y "productoIndex" (0-based, -1 si aplica a todos).\n` +
+    `- intent "pregunta": el cliente pregunta algo. Llena "respuesta" con una respuesta corta y útil basada en el menú.\n` +
+    `- intent "extra": el cliente pide un extra para el último producto. Llena "extraNombre" y "extraPrecio".\n` +
+    `- intent "ambiguo": el mensaje coincide con varios productos. Llena "opciones" con los candidatos.\n` +
+    `- Upselling: solo si intent es "producto", sugiere UN adicional relevante en "upselling" (máx 1 oración).\n` +
+    `- Si el pedido no tiene bebida, sugiere jugo o limonada en upselling.\n` +
+    `- No inventes productos que no estén en el menú. Si no reconoces nada, usa intent "ambiguo" con opciones vacías.`;
+
+  try {
+    console.log(`🤖 LLAMANDO GEMINI (classifyWithAI) con texto: "${text}"`);
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 512 }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      console.error(`❌ ERROR GEMINI (classifyWithAI) HTTP ${response.status}:`, await response.text());
+      return null;
+    }
+
+    const data = await response.json() as any;
+    const rawText: string = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    console.log(`🤖 RESPUESTA GEMINI (classifyWithAI): ${rawText.slice(0, 300)}`);
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    const intent = parsed.intent;
+
+    if (intent === "producto") {
+      const mappedItems: ParsedItem[] = [];
+      for (const aiItem of (parsed.items || [])) {
+        const aiNorm = normalizeText(aiItem.producto || "");
+        const matched = allProducts.find((p: any) => {
+          if (aiItem.productoId && p.id === aiItem.productoId) return true;
+          const norm = normalizeText(p.nombre);
+          return norm === aiNorm || norm.includes(aiNorm) || aiNorm.includes(norm);
+        });
+        if (!matched) continue;
+        mappedItems.push({
+          productoId: matched.id,
+          producto: matched.nombre,
+          cantidad: Math.max(1, Number(aiItem.cantidad) || 1),
+          precio: Number(aiItem.precio) || matched.precio,
+          variante: undefined,
+          observaciones: aiItem.observaciones || undefined,
+          extras: []
+        });
+      }
+      if (mappedItems.length === 0) return null;
+      const upselling = typeof parsed.upselling === "string" ? parsed.upselling.trim() : "";
+      console.log("✅ classifyWithAI → producto:", mappedItems.map(i => i.producto).join(", "));
+      return { intent: "producto", items: mergeParsedItems(mappedItems), upselling: upselling || undefined };
+    }
+
+    if (intent === "observacion") {
+      const obs = typeof parsed.observacion === "string" ? parsed.observacion.trim() : "";
+      if (!obs) return null;
+      console.log("✅ classifyWithAI → observacion:", obs);
+      return { intent: "observacion", texto: obs, productoIndex: typeof parsed.productoIndex === "number" ? parsed.productoIndex : -1 };
+    }
+
+    if (intent === "pregunta") {
+      const respuesta = typeof parsed.respuesta === "string" ? parsed.respuesta.trim() : "";
+      if (!respuesta) return null;
+      console.log("✅ classifyWithAI → pregunta");
+      return { intent: "pregunta", respuesta };
+    }
+
+    if (intent === "extra") {
+      const nombre = typeof parsed.extraNombre === "string" ? parsed.extraNombre.trim() : "";
+      const precio = Number(parsed.extraPrecio) || 0;
+      if (!nombre) return null;
+      console.log("✅ classifyWithAI → extra:", nombre);
+      return { intent: "extra", nombre, precio };
+    }
+
+    if (intent === "ambiguo") {
+      const opciones = Array.isArray(parsed.opciones) ? parsed.opciones : [];
+      console.log("✅ classifyWithAI → ambiguo:", opciones.length, "opciones");
+      return { intent: "ambiguo", opciones };
+    }
+
+    return null;
+  } catch (err) {
+    console.error(`❌ ERROR GEMINI (classifyWithAI):`, err);
+    return null;
+  }
+}
+
 export async function parseWithAI(text: string): Promise<ParseResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return { items: [] };
@@ -509,12 +693,28 @@ export async function parseWithAI(text: string): Promise<ParseResult> {
     .join("\n");
 
   const prompt =
-    `Eres un parser de pedidos para Las Crepes de París, un restaurante en Pereira Colombia. Tu tarea es identificar productos del menú en el mensaje del cliente y retornar un JSON. Solo responde con JSON válido, sin texto adicional. El JSON debe tener este formato: {"items": [{"producto": string, "cantidad": number, "observaciones": string, "extras": []}], "observacionGeneral": string}\n\n` +
+    `Eres un asistente de pedidos para Las Crepes de París, Pereira Colombia. Tu trabajo tiene DOS partes:\n\n` +
+    `PARTE 1 - PARSEAR EL PEDIDO:\n` +
+    `Identifica productos del menú en el mensaje del cliente aunque estén mal escritos. Retorna JSON con este formato exacto:\n` +
+    `{\n  "items": [{\n    "producto": string,\n    "productoId": string,\n    "cantidad": number,\n    "precio": number,\n    "observaciones": string,\n    "extras": [{"nombre": string, "precio": number}]\n  }],\n  "observacionGeneral": string,\n  "upselling": string\n}\n\n` +
+    `PARTE 2 - UPSELLING (solo si encontraste productos):\n` +
+    `En el campo 'upselling' sugiere UN SOLO adicional relevante siguiendo estas reglas:\n` +
+    `- Crepes saladas: ofrece máximo 1 topping que NO esté en la crepe (tocineta $5.500, maíz $3.500, piña $2.000, champiñones $4.500)\n` +
+    `- Crepes dulces: ofrece fruta o helado\n` +
+    `- Si el pedido no tiene bebida: ofrece jugos, limonadas o malteadas\n` +
+    `- Si el cliente ya rechazó upselling antes: campo upselling vacío\n` +
+    `- Tono natural y breve, máximo una oración\n` +
+    `- Si no hay upselling relevante: campo upselling vacío\n\n` +
+    `REGLAS:\n` +
+    `- Detecta observaciones como 'sin cebolla', 'bien tostada', 'poco queso'\n` +
+    `- No inventes productos que no estén en el menú\n` +
+    `- Si no reconoces el producto retorna items vacío\n` +
+    `- Solo responde con JSON válido, sin texto adicional\n\n` +
     `Menú disponible:\n${menuResumen}\n\n` +
-    `Mensaje del cliente: "${text}"\n\n` +
-    `Identifica los productos pedidos. Usa el nombre exacto del menú en el campo "producto".`;
+    `Mensaje del cliente: "${text}"`;
 
   try {
+    console.log(`🤖 LLAMANDO GEMINI (parseWithAI) con texto: "${text}"`);
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
@@ -530,12 +730,13 @@ export async function parseWithAI(text: string): Promise<ParseResult> {
     );
 
     if (!response.ok) {
-      console.error("❌ parseWithAI HTTP error:", response.status);
+      console.error(`❌ ERROR GEMINI (parseWithAI) HTTP ${response.status}:`, await response.text());
       return { items: [] };
     }
 
     const data = await response.json() as any;
     const rawText: string = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    console.log(`🤖 RESPUESTA GEMINI (parseWithAI): ${rawText.slice(0, 300)}`);
 
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return { items: [] };
@@ -565,10 +766,11 @@ export async function parseWithAI(text: string): Promise<ParseResult> {
       });
     }
 
-    console.log("✅ parseWithAI mapped items:", mappedItems.length);
-    return { items: mergeParsedItems(mappedItems) };
+    const upselling: string = typeof parsed.upselling === "string" ? parsed.upselling.trim() : "";
+    console.log("✅ parseWithAI mapped items:", mappedItems.length, "upselling:", upselling || "(none)");
+    return { items: mergeParsedItems(mappedItems), upselling: upselling || undefined };
   } catch (err) {
-    console.error("❌ parseWithAI error:", err);
+    console.error(`❌ ERROR GEMINI (parseWithAI):`, err);
     return { items: [] };
   }
 }

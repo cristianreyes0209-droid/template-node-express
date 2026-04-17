@@ -1,6 +1,7 @@
 import "dotenv/config";
 import "./db";
-import { upsertCustomer, getCustomerByPhone } from "./db";
+import cron from "node-cron";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber } from "./db";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { RequestListener } from 'node:http';
@@ -18,7 +19,7 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
-import { parseOrder, parseWithAI, normalizeText } from './parser';
+import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, isAmbiguousText } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
@@ -150,6 +151,27 @@ async function sendWhatsAppImageById(phone: string, mediaId: string) {
   console.log("RESPUESTA IMAGEN META:", data);
 }
 
+async function sendWhatsAppLocation(phone: string, latitude: number, longitude: number, name?: string) {
+  const response = await fetch(
+    `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${(process.env.WHATSAPP_TOKEN || "").trim()}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: phone,
+        type: "location",
+        location: { latitude, longitude, name: name || "Ubicación del cliente", address: "" }
+      })
+    }
+  );
+  const data = await response.json();
+  console.log("RESPUESTA LOCATION META:", data);
+}
+
 async function calcularDomicilio(direccionCliente: string, sucursal: string): Promise<{
   distanciaKm: number;
   valorDomicilio: number;
@@ -195,9 +217,12 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
 
   valorDomicilio = Math.ceil(valorDomicilio / 500) * 500;
 
-  console.log("📍 DOMICILIO - Distancia metros:", distanciaMetros);
-  console.log("📍 DOMICILIO - Distancia km:", Math.round(distanciaKm * 10) / 10);
-  console.log("📍 DOMICILIO - Valor calculado: $" + valorDomicilio);
+  // Aplicar mínimo si la distancia es <1km o el valor calculado es <$4.500
+  if (distanciaKm < 1 || valorDomicilio < 4500) {
+    valorDomicilio = 4500;
+  }
+
+  console.log(`DISTANCIA CALCULADA: ${Math.round(distanciaKm * 10) / 10}km, VALOR: $${valorDomicilio}, ORIGEN: ${origenDecodificado}, DESTINO: ${destinoDecodificado}`);
 
   return {
     distanciaKm: Math.round(distanciaKm * 10) / 10,
@@ -359,35 +384,35 @@ function buildResumenFooter(order: any, totals: { subtotal: number; domicilio: n
 }
    // 🔥 AQUÍ PEGAS LA FUNCIÓN
 async function handleOperationalRouting(order: any, totals: any) {
-  const ahora = new Date();
-  const horaTexto = ahora.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-    timeZone: "America/Bogota"
-  });
+  const numeroOrden = await getNextOrderNumber();
+  order.numeroOrden = numeroOrden;
 
-  const resumenInterno =
-    "🔥 NUEVO PEDIDO\n\n" +
-    `🕐 Hora: ${horaTexto}\n` +
+  const sucursalTexto = order.sucursal === "la_villa" ? "La Villa" : order.sucursal === "circunvalar" ? "Av. Circunvalar" : order.sucursal || "No definida";
+
+  const listaProductos = order.items.map((i: any) => {
+    const obsTexto = i.observaciones ? ` (${i.observaciones})` : "";
+    const extrasTexto = i.extras && i.extras.length > 0
+      ? " +" + i.extras.map((e: any) => e.nombre).join(", +")
+      : "";
+    const precioLinea = ((i.precio || 0) + (i.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * i.cantidad;
+    return `* ${i.cantidad} ${i.producto}${i.variante ? " - " + i.variante : ""}${obsTexto}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
+  }).join("\n");
+
+  const resumenDomiciliarios =
+    `🔔 Pedido #${numeroOrden} - Listo para recoger en 20 minutos\n\n` +
     `👤 Nombre: ${order.nombre || "Cliente"}\n` +
     `📞 Tel: ${order.telefono}\n\n` +
-    "🧾 Productos:\n" +
-    order.items.map((i: any) => {
-      const obsTexto = i.observaciones ? ` (${i.observaciones})` : "";
-      const extrasTexto = i.extras && i.extras.length > 0
-        ? " +" + i.extras.map((e: any) => e.nombre).join(", +")
-        : "";
-      const precioLinea = ((i.precio || 0) + (i.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * i.cantidad;
-      return `* ${i.cantidad} ${i.producto}${i.variante ? " - " + i.variante : ""}${obsTexto}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
-    }).join("\n") +
-    `\n\n💰 Subtotal: $${totals.subtotal.toLocaleString("es-CO")}\n` +
+    `🧾 Productos:\n${listaProductos}\n\n` +
+    `💰 Subtotal: $${totals.subtotal.toLocaleString("es-CO")}\n` +
     `🛵 Domicilio: $${totals.domicilio.toLocaleString("es-CO")}\n` +
-    `💵 Total: $${totals.total.toLocaleString("es-CO")}\n` +
+    `💵 Total: $${totals.total.toLocaleString("es-CO")}\n\n` +
     `📍 Dirección: ${order.tipoEntrega === "domicilio" ? (order.direccion || "Sin dirección") : "Recoger en tienda"}\n` +
     `💳 Pago: ${order.formaPago || "No definido"}\n` +
-    `🏪 Sucursal: ${order.sucursal === "la_villa" ? "La Villa" : order.sucursal === "circunvalar" ? "Av. Circunvalar" : order.sucursal || "No definida"}` +
+    `🏪 Sucursal: ${sucursalTexto}` +
     (order.factura ? `\n\n📄 Factura: ${order.factura}` : "");
+
+  // Mantener resumenInterno para circunvalar y logs
+  const resumenInterno = resumenDomiciliarios;
 
   console.log("=== ROUTING OPERATIVO ===");
   console.log("SUCURSAL:", order.sucursal);
@@ -446,15 +471,18 @@ async function handleOperationalRouting(order: any, totals: any) {
       }
     }
 
-    try {
-      await sendWhatsAppMessage("573151913928", resumenInterno);
-      console.log("✅ RESUMEN ENVIADO A 3151913928");
-    } catch (error) {
-      console.error("❌ ERROR ENVIANDO A 3151913928:", error);
+    const DESTINOS_VILLA = ["573217233342", "573151913928"];
+    for (const destino of DESTINOS_VILLA) {
+      try {
+        await sendWhatsAppMessage(destino, resumenDomiciliarios);
+        console.log(`✅ RESUMEN ENVIADO A ${destino}`);
+      } catch (error) {
+        console.error(`❌ ERROR ENVIANDO A ${destino}:`, error);
+      }
     }
 
     console.log("🖨️ IMPRIMIR COMANDA VILLA:");
-    console.log(resumenInterno);
+    console.log(resumenDomiciliarios);
     return;
   }
 
@@ -522,8 +550,9 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     inactivityTimers.delete(phone);
   }
 
-  // Reiniciar timer si hay un pedido en curso (no confirmado)
-  if (currentOrder && currentOrder.step !== "confirmado") {
+  // Reiniciar timer si hay un pedido en curso (no confirmado, no esperando asesor)
+  const noTimer = currentOrder?.step === "esperando_asesor" || currentOrder?.step === "esperando_mensaje_fuera_horario";
+  if (currentOrder && currentOrder.step !== "confirmado" && !noTimer) {
     const timer = setTimeout(async () => {
       const order = getOrder(phone);
       if (order && order.step !== "confirmado") {
@@ -539,7 +568,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   // Verificar horario de atención solo si el cliente no está en medio de un pedido
   if (!currentOrder || currentOrder.step === "esperando_menu_principal") {
     const tipoEntrega = currentOrder?.tipoEntrega === "domicilio" ? "domicilio" : "recoger";
-    if (!currentOrder?.testMode && !isWithinBusinessHours(tipoEntrega)) {
+    if (!currentOrder?.testMode && !customer?.test_mode && !isWithinBusinessHours(tipoEntrega)) {
       createOrUpdateOrder(phone, []);
       updateOrderStep(phone, "esperando_mensaje_fuera_horario");
       currentOrder = getOrder(phone)!;
@@ -562,31 +591,64 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   console.log("TEXT:", text);
 
 let replyMessage = "";
+// Steps donde el parser de reglas NO debe correr (respuestas a botones, datos personales, etc.)
 const skipParsing =
-  currentOrder?.step === "post_agregar_producto" ||
   currentOrder?.step === "esperando_observacion_general" ||
   currentOrder?.step === "esperando_nombre" ||
-  currentOrder?.step === "esperando_direccion";
+  currentOrder?.step === "esperando_direccion" ||
+  currentOrder?.step === "esperando_jalapenos" ||
+  currentOrder?.step === "esperando_queso_dulce";
 
-let parseResult = skipParsing
-  ? { items: [] as any[], ambiguousChoice: undefined }
-  : parseOrder(text);
+// Steps donde se intenta el parser de reglas primero, y la IA solo si no detecta producto
+const useRulesThenAI =
+  !skipParsing && (
+    currentOrder?.step === "armando_pedido" ||
+    currentOrder?.step === "post_agregar_producto"
+  );
 
-// Fallback a IA cuando el parser no encontró nada y el texto tiene >3 palabras
-if (
-  !skipParsing &&
-  parseResult.items.length === 0 &&
-  !parseResult.ambiguousChoice &&
-  text.trim().split(/\s+/).length > 3 &&
-  currentOrder?.step === "armando_pedido"
-) {
-  const aiResult = await parseWithAI(text);
-  if (aiResult.items.length > 0) {
-    parseResult = aiResult;
+let parseResult: { items: any[]; ambiguousChoice?: any; upselling?: string } =
+  { items: [], ambiguousChoice: undefined, upselling: undefined };
+
+// Resultado de la IA para uso posterior en los handlers
+let aiClassification: import('./parser').AIClassification | null = null;
+
+if (skipParsing) {
+  // No parsear nada — el handler sabe qué esperar
+} else if (useRulesThenAI) {
+  // 1. Parser de reglas primero
+  if (!isQuestion(text)) {
+    parseResult = parseOrder(text);
+  }
+  // 2. Solo si no detectó productos → llamar a Gemini para clasificar
+  if (parseResult.items.length === 0 && !parseResult.ambiguousChoice) {
+    const currentItems = currentOrder?.items.map((i: any) => ({
+      producto: i.producto,
+      precio: i.precio,
+      variante: i.variante
+    })) || [];
+    aiClassification = await classifyWithAI(text, currentItems, currentOrder?.step || "");
+    if (aiClassification?.intent === "producto") {
+      parseResult = { items: aiClassification.items, upselling: aiClassification.upselling };
+      aiClassification = null; // Manejado como producto, no como otro intent
+    }
+  }
+} else {
+  // Resto de steps: parser de reglas normal con fallback a IA legacy
+  if (!isQuestion(text)) {
+    parseResult = parseOrder(text);
+    if (
+      parseResult.items.length === 0 &&
+      !parseResult.ambiguousChoice &&
+      text.trim().split(/\s+/).length > 3
+    ) {
+      const aiResult = await parseWithAI(text);
+      if (aiResult.items.length > 0) parseResult = aiResult;
+    }
   }
 }
 
 const parsedItems = parseResult.items;
+const aiUpselling: string = parseResult.upselling || "";
 const lower = text.toLowerCase().trim();
 
 const HORARIO_MSG =
@@ -655,6 +717,7 @@ if (lower === "test") {
   const testOrder = getOrder(phone)!;
   testOrder.testMode = true;
   currentOrder = testOrder;
+  await setTestMode(phone, true);
   await sendWhatsAppMessage(phone, "Modo test activado ✅ El horario de atención no aplica.");
   if (customer) {
     await sendWhatsAppButtons(phone,
@@ -680,6 +743,7 @@ if (lower === "test") {
 
 if (lower === "reset") {
   clearOrder(phone);
+  await setTestMode(phone, false);
   await sendWhatsAppMessage(phone, "Sesión reiniciada ✅");
   if (customer) {
     await sendWhatsAppButtons(phone,
@@ -747,6 +811,51 @@ if (
   parsedItems.length === 0 &&
   !parseResult.ambiguousChoice
 ) {
+  // Manejar intents de IA que no son "producto"
+  if (aiClassification) {
+    if (aiClassification.intent === "pregunta") {
+      await sendWhatsAppMessage(phone, aiClassification.respuesta);
+      return res.sendStatus(200);
+    }
+    if (aiClassification.intent === "observacion" && currentOrder.items.length > 0) {
+      const idx = (aiClassification.productoIndex ?? -1) >= 0
+        ? aiClassification.productoIndex!
+        : currentOrder.items.length - 1;
+      const targetItem = currentOrder.items[idx] || currentOrder.items[currentOrder.items.length - 1];
+      if (targetItem) {
+        targetItem.observaciones = targetItem.observaciones
+          ? `${targetItem.observaciones}, ${aiClassification.texto}`
+          : aiClassification.texto;
+      }
+      await sendWhatsAppButtons(phone,
+        `Anotado ✅ "${aiClassification.texto}"\n\n¿Algo más?`,
+        [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+      );
+      return res.sendStatus(200);
+    }
+    if (aiClassification.intent === "extra" && currentOrder.items.length > 0) {
+      const lastItem = currentOrder.items[currentOrder.items.length - 1];
+      lastItem.extras = lastItem.extras || [];
+      lastItem.extras.push({ nombre: aiClassification.nombre, precio: aiClassification.precio, cantidad: 1 });
+      await sendWhatsAppButtons(phone,
+        `Agregado ✅ ${aiClassification.nombre} (+$${aiClassification.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
+        [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+      );
+      return res.sendStatus(200);
+    }
+    if (aiClassification.intent === "ambiguo" && aiClassification.opciones.length > 0) {
+      setPendingClarification(phone, aiClassification.opciones);
+      updateOrderStep(phone, "esperando_aclaracion_producto");
+      currentOrder = getOrder(phone)!;
+      replyMessage = "¿Te refieres a:\n\n" +
+        aiClassification.opciones.map((op, i) => `${i + 1}. ${op.nombre}`).join("\n") +
+        "\n\nRespóndeme con el número 😊";
+      await sendWhatsAppMessage(phone, replyMessage);
+      return res.sendStatus(200);
+    }
+  }
+
+  // Sin clasificación IA ni parser — respuesta de fallback
   if (
     lower.includes("ayuda") ||
     lower.includes("como pedir") ||
@@ -1031,6 +1140,27 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         }
       ]);
       currentOrder.pendingProduct = undefined;
+
+      // Preguntas post-variante
+      if (pending.id === "mexicana") {
+        updateOrderStep(phone, "esperando_jalapenos");
+        currentOrder = getOrder(phone)!;
+        await sendWhatsAppButtons(phone,
+          "¿La deseas con jalapeños?",
+          [{ id: "con_jalapenos", title: "Con jalapeños 🌶️" }, { id: "sin_jalapenos", title: "Sin jalapeños" }]
+        );
+        return res.sendStatus(200);
+      }
+      if (["nutella_crepe", "chocolate_crepe", "arequipe_crepe"].includes(pending.id)) {
+        updateOrderStep(phone, "esperando_queso_dulce");
+        currentOrder = getOrder(phone)!;
+        await sendWhatsAppButtons(phone,
+          "¿La deseas con queso doble crema?",
+          [{ id: "con_queso_dulce", title: "Con queso 🧀" }, { id: "sin_queso_dulce", title: "Sin queso" }]
+        );
+        return res.sendStatus(200);
+      }
+
       updateOrderStep(phone, "post_agregar_producto");
       currentOrder = getOrder(phone)!;
 
@@ -1539,7 +1669,31 @@ return res.sendStatus(200);
     return res.sendStatus(200);
   }
 
-  const order = createOrUpdateOrder(phone, parsedItems);
+  createOrUpdateOrder(phone, parsedItems);
+  currentOrder = getOrder(phone)!;
+
+  // Preguntas post-producto
+  const lastItem = parsedItems[parsedItems.length - 1];
+  if (lastItem?.productoId === "mexicana") {
+    updateOrderStep(phone, "esperando_jalapenos");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      "¿La deseas con jalapeños?",
+      [{ id: "con_jalapenos", title: "Con jalapeños 🌶️" }, { id: "sin_jalapenos", title: "Sin jalapeños" }]
+    );
+    return res.sendStatus(200);
+  }
+  if (["nutella_crepe", "chocolate_crepe", "arequipe_crepe"].includes(lastItem?.productoId)) {
+    updateOrderStep(phone, "esperando_queso_dulce");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      "¿La deseas con queso doble crema?",
+      [{ id: "con_queso_dulce", title: "Con queso 🧀" }, { id: "sin_queso_dulce", title: "Sin queso" }]
+    );
+    return res.sendStatus(200);
+  }
+
+  const order = getOrder(phone)!;
   updateOrderStep(phone, "post_agregar_producto");
   currentOrder = getOrder(phone)!;
 
@@ -1569,6 +1723,7 @@ return res.sendStatus(200);
  await sendWhatsAppButtons(phone,
   "Perfecto 👌\n\nEstoy registrando:\n\n" +
   resumen +
+  (aiUpselling ? `\n\n💡 ${aiUpselling}` : "") +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
   [
     { id: "1", title: "Confirmar ✅" },
@@ -1577,6 +1732,51 @@ return res.sendStatus(200);
   ]
 );
 return res.sendStatus(200);
+} else if (currentOrder?.step === "esperando_jalapenos") {
+  const withJalapenos = lower === "con_jalapenos" || lower.includes("con") || lower.includes("jalap");
+  // Actualizar la observación del último item (la Mexicana)
+  const orderJal = getOrder(phone)!;
+  const lastItemJal = orderJal.items[orderJal.items.length - 1];
+  if (lastItemJal) {
+    const obsActual = lastItemJal.observaciones ? lastItemJal.observaciones + ", " : "";
+    lastItemJal.observaciones = withJalapenos ? obsActual + "con jalapeños" : obsActual + "sin jalapeños";
+  }
+  updateOrderStep(phone, "post_agregar_producto");
+  currentOrder = getOrder(phone)!;
+  const resumenJal = currentOrder.items.map((item: any) => {
+    const obs = item.observaciones ? ` (${item.observaciones})` : "";
+    const ext = item.extras?.length > 0 ? " +" + item.extras.map((e: any) => e.nombre).join(", +") : "";
+    const precio = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obs}${ext} - $${precio.toLocaleString("es-CO")}`;
+  }).join("\n");
+  await sendWhatsAppButtons(phone,
+    "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenJal + "\n\n📝 Si deseas una observación escríbela, o elige:",
+    [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+  );
+  return res.sendStatus(200);
+
+} else if (currentOrder?.step === "esperando_queso_dulce") {
+  const withQueso = lower === "con_queso_dulce" || lower.includes("con") || lower.includes("queso");
+  const orderQD = getOrder(phone)!;
+  const lastItemQD = orderQD.items[orderQD.items.length - 1];
+  if (lastItemQD) {
+    const obsActual = lastItemQD.observaciones ? lastItemQD.observaciones + ", " : "";
+    lastItemQD.observaciones = withQueso ? obsActual + "con queso doble crema" : obsActual + "sin queso";
+  }
+  updateOrderStep(phone, "post_agregar_producto");
+  currentOrder = getOrder(phone)!;
+  const resumenQD = currentOrder.items.map((item: any) => {
+    const obs = item.observaciones ? ` (${item.observaciones})` : "";
+    const ext = item.extras?.length > 0 ? " +" + item.extras.map((e: any) => e.nombre).join(", +") : "";
+    const precio = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
+    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obs}${ext} - $${precio.toLocaleString("es-CO")}`;
+  }).join("\n");
+  await sendWhatsAppButtons(phone,
+    "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenQD + "\n\n📝 Si deseas una observación escríbela, o elige:",
+    [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+  );
+  return res.sendStatus(200);
+
 } else if (currentOrder?.step === "esperando_nombre") {
   if (
     lower === "si" ||
@@ -1591,8 +1791,13 @@ return res.sendStatus(200);
   ) {
     replyMessage = "Por favor dime tu nombre para continuar 😊";
   } else {
-    updateOrderName(phone, text);
+    const nombreRecibido = text.trim();
+    updateOrderName(phone, nombreRecibido);
     currentOrder = getOrder(phone)!;
+    // Persistir nombre en Supabase inmediatamente
+    await upsertCustomer({ phone, name: nombreRecibido }).catch(err =>
+      console.error("❌ Error guardando nombre en Supabase:", err)
+    );
 
     if (currentOrder.tipoEntrega === "domicilio") {
       updateOrderStep(phone, "esperando_direccion");
@@ -1703,6 +1908,8 @@ return res.sendStatus(200);
     }
 
     updateOrderAddress(phone, direccionGeocoded);
+    const orderForCoords = getOrder(phone);
+    if (orderForCoords) orderForCoords.locationCoords = { latitude, longitude };
   } else {
     updateOrderAddress(phone, text);
   }
@@ -1774,6 +1981,20 @@ return res.sendStatus(200);
   lower.includes("va")
 
  ) {
+    // Guardar nombre del perfil si el pedido no tiene nombre aún
+    if (customer?.name && !currentOrder.nombre) {
+      updateOrderName(phone, customer.name);
+      currentOrder = getOrder(phone)!;
+    }
+
+    // Nunca avanzar si no hay nombre
+    if (!currentOrder.nombre) {
+      updateOrderStep(phone, "esperando_nombre");
+      currentOrder = getOrder(phone)!;
+      await sendWhatsAppMessage(phone, "Antes de continuar, ¿cuál es tu nombre?");
+      return res.sendStatus(200);
+    }
+
     if (currentOrder.tipoEntrega === "domicilio" && !currentOrder.direccion) {
       if (customer?.last_address) {
         updateOrderStep(phone, "esperando_confirmacion_direccion");
@@ -2128,6 +2349,49 @@ return res.sendStatus(200);
     );
     return res.sendStatus(200);
 
+} else if (aiClassification) {
+  // IA respondió un intent no-producto en post_agregar_producto
+  if (aiClassification.intent === "pregunta") {
+    await sendWhatsAppMessage(phone, aiClassification.respuesta);
+    return res.sendStatus(200);
+  }
+  if (aiClassification.intent === "observacion" && currentOrder.items.length > 0) {
+    const idx = (aiClassification.productoIndex ?? -1) >= 0
+      ? aiClassification.productoIndex!
+      : currentOrder.items.length - 1;
+    const targetItem = currentOrder.items[idx] || currentOrder.items[currentOrder.items.length - 1];
+    if (targetItem) {
+      targetItem.observaciones = targetItem.observaciones
+        ? `${targetItem.observaciones}, ${aiClassification.texto}`
+        : aiClassification.texto;
+    }
+    await sendWhatsAppButtons(phone,
+      `Anotado ✅ "${aiClassification.texto}"\n\n¿Algo más?`,
+      [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+    );
+    return res.sendStatus(200);
+  }
+  if (aiClassification.intent === "extra" && currentOrder.items.length > 0) {
+    const lastItem = currentOrder.items[currentOrder.items.length - 1];
+    lastItem.extras = lastItem.extras || [];
+    lastItem.extras.push({ nombre: aiClassification.nombre, precio: aiClassification.precio, cantidad: 1 });
+    await sendWhatsAppButtons(phone,
+      `Agregado ✅ ${aiClassification.nombre} (+$${aiClassification.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
+      [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+    );
+    return res.sendStatus(200);
+  }
+  // Ambiguo o sin match — guardar como observación general
+  if (text.length > 3) {
+    updateOrderGeneralNotes(phone, text);
+    updateOrderStep(phone, "esperando_confirmacion");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      `Anotado ✅\n\n📝 ${text}\n\n¿Qué deseas hacer?`,
+      [{ id: "1", title: "Confirmar" }, { id: "2", title: "Agregar mas" }, { id: "3", title: "Eliminar" }]
+    );
+    return res.sendStatus(200);
+  }
 } else if (text.length > 3 && !["hola", "ok", "dale", "bien", "listo"].includes(lower)) {
     updateOrderGeneralNotes(phone, text);
     updateOrderStep(phone, "esperando_confirmacion");
@@ -2286,6 +2550,12 @@ return res.sendStatus(200);
     await upsertCustomer({ phone, name: orderFact.nombre, last_address: orderFact.direccion, last_order: orderFact.items, last_order_at: new Date().toISOString(), last_sucursal: orderFact.sucursal });
     try { await handleOperationalRouting(orderFact, totalsFact); } catch (e) { console.error(e); }
 
+    if (orderFact.sucursal === "la_villa" && orderFact.locationCoords) {
+      try {
+        await sendWhatsAppLocation("573151913928", orderFact.locationCoords.latitude, orderFact.locationCoords.longitude, orderFact.nombre || "Cliente");
+      } catch (e) { console.error("❌ Error enviando ubicación a domiciliarios:", e); }
+    }
+
     if (orderFact.sucursal === "la_villa") {
       await fetch("https://rural-donated-indicated-timber.trycloudflare.com/imprimir", {
         method: "POST",
@@ -2350,6 +2620,12 @@ return res.sendStatus(200);
 
   await upsertCustomer({ phone, name: orderDf.nombre, last_address: orderDf.direccion, last_order: orderDf.items, last_order_at: new Date().toISOString(), last_sucursal: orderDf.sucursal });
   try { await handleOperationalRouting(orderDf, totalsDf); } catch (e) { console.error(e); }
+
+  if (orderDf.sucursal === "la_villa" && orderDf.locationCoords) {
+    try {
+      await sendWhatsAppLocation("573151913928", orderDf.locationCoords.latitude, orderDf.locationCoords.longitude, orderDf.nombre || "Cliente");
+    } catch (e) { console.error("❌ Error enviando ubicación a domiciliarios:", e); }
+  }
 
   if (orderDf.sucursal === "la_villa") {
     await fetch("https://push-sons-elimination-contractors.trycloudflare.com/imprimir", {
@@ -2780,11 +3056,25 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   res.json({ msg: 'Something went wrong' });
 });
 
+// 🌅 Job diario: aviso de bot activo a las 9:00 AM hora Colombia
+cron.schedule("0 9 * * *", async () => {
+  const msg = "🌅 Buenos días! El bot de Las Crepes está activo y listo para recibir pedidos hoy.";
+  const destinatarios = ["573207218267", "573151913928", "573217233342"];
+  for (const numero of destinatarios) {
+    try {
+      await sendWhatsAppMessage(numero, msg);
+      console.log(`✅ Mensaje de buenos días enviado a ${numero}`);
+    } catch (e) {
+      console.error(`❌ Error enviando buenos días a ${numero}:`, e);
+    }
+  }
+}, { timezone: "America/Bogota" });
+
 return {
   requestListener: app,
   shutdown: async () => {
     // add any cleanup code here including database/redis disconnecting and background job shutdown
-  }, 
+  },
 };
 };
 type Store = {
