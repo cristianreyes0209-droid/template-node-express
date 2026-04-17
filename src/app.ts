@@ -179,8 +179,8 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
   descripcion: string;
 }> {
   const sucursales: Record<string, string> = {
-    "la_villa": "Calle 83 #16a-22, Barrio La Villa, Pereira, Colombia",
-    "circunvalar": "Avenida Circunvalar #8-94, Pereira, Colombia"
+    "la_villa": "Calle 83 #16a-22, Pereira, Risaralda, Colombia",
+    "circunvalar": "Avenida Circunvalar #8-94, Pereira, Risaralda, Colombia"
   };
 
   const origenDecodificado = sucursales[sucursal] || sucursales["la_villa"];
@@ -189,20 +189,23 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
   const destino = encodeURIComponent(destinoDecodificado);
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
-  console.log("📍 DOMICILIO - Origen:", origenDecodificado);
-  console.log("📍 DOMICILIO - Destino:", destinoDecodificado);
-
   const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origen}&destinations=${destino}&mode=driving&key=${apiKey}`;
 
   const response = await fetch(url);
   const data = await response.json();
 
-  console.log("GOOGLE MAPS RESPONSE:", JSON.stringify(data, null, 2));
+  console.log("=== CÁLCULO DOMICILIO ===");
+  console.log("SUCURSAL:", sucursal);
+  console.log("ORIGEN:", origenDecodificado);
+  console.log("DESTINO:", direccionCliente);
+  console.log("GOOGLE MAPS KEY:", apiKey ? "PRESENTE" : "AUSENTE");
+  console.log("RESPUESTA GOOGLE:", JSON.stringify(data));
 
   const elemento = data.rows?.[0]?.elements?.[0];
 
   if (!elemento || elemento.status !== "OK") {
     console.log("📍 DOMICILIO - Sin resultado OK, usando base $4500");
+    console.log("========================");
     return { distanciaKm: 0, valorDomicilio: 4500, descripcion: "Domicilio base" };
   }
 
@@ -223,7 +226,9 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
     valorDomicilio = 4500;
   }
 
-  console.log(`DISTANCIA CALCULADA: ${Math.round(distanciaKm * 10) / 10}km, VALOR: $${valorDomicilio}, ORIGEN: ${origenDecodificado}, DESTINO: ${destinoDecodificado}`);
+  console.log("DISTANCIA KM:", distanciaKm);
+  console.log("VALOR DOMICILIO:", valorDomicilio);
+  console.log("========================");
 
   return {
     distanciaKm: Math.round(distanciaKm * 10) / 10,
