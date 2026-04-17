@@ -33,6 +33,7 @@ import {
   updateOrderDeliveryType,
   updateOrderPayment,
   updateOrderGeneralNotes, // 👈 ESTA LÍNEA
+  updateOrderDireccionNotes,
   calculateTotal,
   buildOrderJSON
 } from "./orders";
@@ -367,18 +368,27 @@ const CREBOT_SUFFIX = "\n\nSoy CreBot 🤖 y estoy en período de prueba. Si tie
     .map(o => o.trim())
     .join(" • ");
 }
-    function getObservacionGeneralTexto(order: any) {
+function getObservacionGeneralTexto(order: any) {
   return order.observacionesGenerales?.trim()
     ? "\n📝 Observación: " + order.observacionesGenerales.trim()
     : "";
 }
+
+const PALABRAS_DIRECCION = ["timbre", "porteria", "portería", "puerta", "piso", "apto", "apartamento", "casa", "edificio", "llamar", "tocar", "interior", "torre", "bloque", "local"];
+
+function esObservacionDireccion(text: string): boolean {
+  const norm = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return PALABRAS_DIRECCION.some(p => norm.includes(p));
+}
+
 function buildResumenFooter(order: any, totals: { subtotal: number; domicilio: number; total: number }, descripcionDomicilio?: string) {
   const domicilioLinea = order.tipoEntrega === "domicilio"
     ? "\n🛵 Domicilio: $" + totals.domicilio + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "")
     : "";
   const obsLinea = getObservacionGeneralTexto(order);
+  const obsDir = order.observacionDireccion?.trim() ? "\n📋 Obs. dirección: " + order.observacionDireccion.trim() : "";
   const entregaLinea = order.tipoEntrega === "domicilio"
-    ? "\n📍 Dirección: " + (order.direccion || "No aplica")
+    ? "\n📍 Dirección: " + (order.direccion || "No aplica") + obsDir
     : "\n🏪 Recoger en tienda";
   return "\n\nSubtotal: $" + totals.subtotal + domicilioLinea + "\nTotal: $" + totals.total + (obsLinea ? "\n" + obsLinea : "") + entregaLinea;
 }
@@ -398,6 +408,10 @@ async function handleOperationalRouting(order: any, totals: any) {
     return `* ${i.cantidad} ${i.producto}${i.variante ? " - " + i.variante : ""}${obsTexto}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
   }).join("\n");
 
+  const direccionLinea = order.tipoEntrega === "domicilio"
+    ? (order.direccion || "Sin dirección") + (order.observacionDireccion?.trim() ? `\n📋 Obs. dirección: ${order.observacionDireccion.trim()}` : "")
+    : "Recoger en tienda";
+
   const resumenDomiciliarios =
     `🔔 Pedido #${numeroOrden} - Listo para recoger en 20 minutos\n\n` +
     `👤 Nombre: ${order.nombre || "Cliente"}\n` +
@@ -406,9 +420,10 @@ async function handleOperationalRouting(order: any, totals: any) {
     `💰 Subtotal: $${totals.subtotal.toLocaleString("es-CO")}\n` +
     `🛵 Domicilio: $${totals.domicilio.toLocaleString("es-CO")}\n` +
     `💵 Total: $${totals.total.toLocaleString("es-CO")}\n\n` +
-    `📍 Dirección: ${order.tipoEntrega === "domicilio" ? (order.direccion || "Sin dirección") : "Recoger en tienda"}\n` +
+    `📍 Dirección: ${direccionLinea}\n` +
     `💳 Pago: ${order.formaPago || "No definido"}\n` +
     `🏪 Sucursal: ${sucursalTexto}` +
+    (order.observacionesGenerales?.trim() ? `\n📝 Observación: ${order.observacionesGenerales.trim()}` : "") +
     (order.factura ? `\n\n📄 Factura: ${order.factura}` : "");
 
   // Mantener resumenInterno para circunvalar y logs
@@ -461,9 +476,7 @@ async function handleOperationalRouting(order: any, totals: any) {
         console.error("❌ VILLA_DOMICILIOS_DESTINO no está definida");
       } else {
         try {
-          await sendWhatsAppButtons(process.env.VILLA_DOMICILIOS_DESTINO, domicilioMsg, [
-            { id: "aceptar", title: "Aceptar ✅" }
-          ]);
+          await sendWhatsAppMessage(process.env.VILLA_DOMICILIOS_DESTINO, domicilioMsg);
           console.log("✅ MENSAJE ENVIADO A DOMICILIOS VILLA");
         } catch (error) {
           console.error("❌ ERROR ENVIANDO A DOMICILIOS VILLA:", error);
@@ -829,7 +842,7 @@ if (
       }
       await sendWhatsAppButtons(phone,
         `Anotado ✅ "${aiClassification.texto}"\n\n¿Algo más?`,
-        [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+        [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
       );
       return res.sendStatus(200);
     }
@@ -839,7 +852,7 @@ if (
       lastItem.extras.push({ nombre: aiClassification.nombre, precio: aiClassification.precio, cantidad: 1 });
       await sendWhatsAppButtons(phone,
         `Agregado ✅ ${aiClassification.nombre} (+$${aiClassification.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
-        [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+        [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
       );
       return res.sendStatus(200);
     }
@@ -853,6 +866,14 @@ if (
       await sendWhatsAppMessage(phone, replyMessage);
       return res.sendStatus(200);
     }
+  }
+
+  // Solicitud de ver menú en medio del pedido
+  if (lower.includes("menu") || lower.includes("menú") || lower.includes("carta") || lower === "ver menu") {
+    await sendWhatsAppMessage(phone,
+      "Aquí tienes el menú completo 📋\n\nhttps://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n\nCuando estés listo, escríbeme qué deseas pedir 😊"
+    );
+    return res.sendStatus(200);
   }
 
   // Sin clasificación IA ni parser — respuesta de fallback
@@ -1091,9 +1112,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       await sendWhatsAppButtons(phone,
         "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n📝 Si deseas una observacion escribela, o elige:",
         [
-          { id: "1", title: "Confirmar" },
-          { id: "2", title: "Agregar mas" },
-          { id: "3", title: "Eliminar" }
+          { id: "confirmar", title: "Confirmar" },
+          { id: "agregar_mas", title: "Agregar mas" },
+          { id: "eliminar", title: "Eliminar" }
         ]
       );
       return res.sendStatus(200);
@@ -1177,9 +1198,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       await sendWhatsAppButtons(phone,
         "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n📝 Si deseas una observacion escribela, o elige:",
         [
-          { id: "1", title: "Confirmar" },
-          { id: "2", title: "Agregar mas" },
-          { id: "3", title: "Eliminar" }
+          { id: "confirmar", title: "Confirmar" },
+          { id: "agregar_mas", title: "Agregar mas" },
+          { id: "eliminar", title: "Eliminar" }
         ]
       );
       return res.sendStatus(200);
@@ -1556,9 +1577,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     buildResumenFooter(order, totals) +
     "\n\n📝 Si deseas hacer una observación escríbela ahora, o elige una opción:",
     [
-      { id: "1", title: "Confirmar" },
-      { id: "2", title: "Agregar mas" },
-      { id: "3", title: "Eliminar" }
+      { id: "confirmar", title: "Confirmar" },
+      { id: "agregar_mas", title: "Agregar mas" },
+      { id: "eliminar", title: "Eliminar" }
     ]
   );
   return res.sendStatus(200);
@@ -1737,9 +1758,9 @@ return res.sendStatus(200);
   (aiUpselling ? `\n\n💡 ${aiUpselling}` : "") +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
   [
-    { id: "1", title: "Confirmar ✅" },
-    { id: "2", title: "Agregar más ➕" },
-    { id: "3", title: "Eliminar ➖" }
+    { id: "confirmar", title: "Confirmar ✅" },
+    { id: "agregar_mas", title: "Agregar más ➕" },
+    { id: "eliminar", title: "Eliminar ➖" }
   ]
 );
 return res.sendStatus(200);
@@ -1762,7 +1783,7 @@ return res.sendStatus(200);
   }).join("\n");
   await sendWhatsAppButtons(phone,
     "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenJal + "\n\n📝 Si deseas una observación escríbela, o elige:",
-    [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+    [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
   );
   return res.sendStatus(200);
 
@@ -1784,7 +1805,7 @@ return res.sendStatus(200);
   }).join("\n");
   await sendWhatsAppButtons(phone,
     "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenQD + "\n\n📝 Si deseas una observación escríbela, o elige:",
-    [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+    [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
   );
   return res.sendStatus(200);
 
@@ -1849,9 +1870,9 @@ await sendWhatsAppButtons(phone,
   buildResumenFooter(order, totals) +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
   [
-    { id: "1", title: "Confirmar" },
-    { id: "2", title: "Agregar mas" },
-    { id: "3", title: "Eliminar" }
+    { id: "confirmar", title: "Confirmar" },
+    { id: "agregar_mas", title: "Agregar mas" },
+    { id: "eliminar", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
@@ -1972,14 +1993,15 @@ await sendWhatsAppButtons(phone,
   buildResumenFooter(order, totals) +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
   [
-    { id: "a", title: "Confirmar ✅" },
-    { id: "b", title: "Eliminar ➖" },
-    { id: "c", title: "Agregar más ➕" }
+    { id: "confirmar", title: "Confirmar ✅" },
+    { id: "eliminar", title: "Eliminar ➖" },
+    { id: "agregar_mas", title: "Agregar más ➕" }
   ]
 );
 return res.sendStatus(200);
 } else if (currentOrder?.step === "esperando_confirmacion") {
  if (
+  lower === "confirmar" ||
   lower === "a" ||
   lower === "1" ||
   lower === "si" ||
@@ -2042,6 +2064,7 @@ return res.sendStatus(200);
 return res.sendStatus(200);
 
   } else if (
+    lower === "eliminar" ||
     lower === "b" ||
     lower === "3" ||
     lower.includes("retirar") ||
@@ -2064,8 +2087,9 @@ return res.sendStatus(200);
       "\n\nRespóndeme con el número del producto.";
 
   } else if (
+    lower === "agregar_mas" ||
     lower === "c" ||
-     lower === "2" ||
+    lower === "2" ||
     lower.includes("agregar") ||
     lower.includes("más") ||
     lower.includes("mas")
@@ -2094,9 +2118,9 @@ return res.sendStatus(200);
   await sendWhatsAppButtons(phone,
   "¿Qué deseas hacer?",
   [
-    { id: "1", title: "Confirmar ✅" },
-    { id: "2", title: "Agregar más ➕" },
-    { id: "3", title: "Eliminar ➖" }
+    { id: "confirmar", title: "Confirmar ✅" },
+    { id: "agregar_mas", title: "Agregar más ➕" },
+    { id: "eliminar", title: "Eliminar ➖" }
   ]
 );
 return res.sendStatus(200);
@@ -2153,9 +2177,9 @@ return res.sendStatus(200);
   buildResumenFooter(order, totals) +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
  [
-    { id: "1", title: "Confirmar" },
-    { id: "2", title: "Agregar mas" },
-    { id: "3", title: "Eliminar" }
+    { id: "confirmar", title: "Confirmar" },
+    { id: "agregar_mas", title: "Agregar mas" },
+    { id: "eliminar", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
@@ -2188,7 +2212,11 @@ return res.sendStatus(200);
 }
   }
 
-  updateOrderGeneralNotes(phone, text);
+  if (esObservacionDireccion(text)) {
+    updateOrderDireccionNotes(phone, text);
+  } else {
+    updateOrderGeneralNotes(phone, text);
+  }
   updateOrderStep(phone, "esperando_confirmacion");
   currentOrder = getOrder(phone)!;
 
@@ -2223,15 +2251,23 @@ await sendWhatsAppButtons(phone,
   buildResumenFooter(order, totals) +
   "\n\n📝 Si deseas una observación escríbela ahora, o elige una opción:",
  [
-    { id: "1", title: "Confirmar" },
-    { id: "2", title: "Agregar mas" },
-    { id: "3", title: "Eliminar" }
+    { id: "confirmar", title: "Confirmar" },
+    { id: "agregar_mas", title: "Agregar mas" },
+    { id: "eliminar", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
     } else if (currentOrder?.step === "post_agregar_producto") {
 
-  if (lower === "1") {
+  // Ver menú en medio del pedido
+  if (lower.includes("menu") || lower.includes("menú") || lower.includes("carta") || lower === "ver menu") {
+    await sendWhatsAppMessage(phone,
+      "Aquí tienes el menú completo 📋\n\nhttps://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n\nCuando estés listo, elige una opción 😊"
+    );
+    return res.sendStatus(200);
+  }
+
+  if (lower === "confirmar" || lower === "1") {
     if (!currentOrder.nombre && !customer?.name) {
       updateOrderStep(phone, "esperando_nombre");
       replyMessage =
@@ -2300,13 +2336,13 @@ return res.sendStatus(200);
   buildResumenFooter(order, totals) +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
  [
-    { id: "1", title: "Confirmar" },
-    { id: "2", title: "Agregar mas" },
-    { id: "3", title: "Eliminar" }
+    { id: "confirmar", title: "Confirmar" },
+    { id: "agregar_mas", title: "Agregar mas" },
+    { id: "eliminar", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
-  } else if (lower === "2") {
+  } else if (lower === "agregar_mas" || lower === "2" || lower.includes("agregar")) {
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
 
@@ -2315,7 +2351,7 @@ return res.sendStatus(200);
       "¿Qué deseas agregar?\n\n" +
       "Recuerda: un producto por mensaje 😊";
 
-  } else if (lower === "3") {
+  } else if (lower === "eliminar" || lower === "3") {
     updateOrderStep(phone, "retirando_productos");
     currentOrder = getOrder(phone)!;
 
@@ -2348,14 +2384,15 @@ return res.sendStatus(200);
       const extrasTexto = item.extras && item.extras.length > 0
         ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +")
         : "";
-      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto}`;
+      const precioLinea = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
+      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
     }).join("\n");
     await sendWhatsAppButtons(phone,
       "Perfecto, agregué:\n\n" + resumen2 + "\n\n📝 Si deseas una observacion escribela, o elige:",
       [
-        { id: "1", title: "Confirmar" },
-        { id: "2", title: "Agregar mas" },
-        { id: "3", title: "Eliminar" }
+        { id: "confirmar", title: "Confirmar" },
+        { id: "agregar_mas", title: "Agregar mas" },
+        { id: "eliminar", title: "Eliminar" }
       ]
     );
     return res.sendStatus(200);
@@ -2378,7 +2415,7 @@ return res.sendStatus(200);
     }
     await sendWhatsAppButtons(phone,
       `Anotado ✅ "${aiClassification.texto}"\n\n¿Algo más?`,
-      [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
     );
     return res.sendStatus(200);
   }
@@ -2388,31 +2425,39 @@ return res.sendStatus(200);
     lastItem.extras.push({ nombre: aiClassification.nombre, precio: aiClassification.precio, cantidad: 1 });
     await sendWhatsAppButtons(phone,
       `Agregado ✅ ${aiClassification.nombre} (+$${aiClassification.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
-      [{ id: "1", title: "Confirmar ✅" }, { id: "2", title: "Agregar más ➕" }, { id: "3", title: "Eliminar ➖" }]
+      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
     );
     return res.sendStatus(200);
   }
-  // Ambiguo o sin match — guardar como observación general
+  // Ambiguo o sin match — guardar como observación
   if (text.length > 3) {
-    updateOrderGeneralNotes(phone, text);
+    if (esObservacionDireccion(text)) {
+      updateOrderDireccionNotes(phone, text);
+    } else {
+      updateOrderGeneralNotes(phone, text);
+    }
     updateOrderStep(phone, "esperando_confirmacion");
     currentOrder = getOrder(phone)!;
     await sendWhatsAppButtons(phone,
       `Anotado ✅\n\n📝 ${text}\n\n¿Qué deseas hacer?`,
-      [{ id: "1", title: "Confirmar" }, { id: "2", title: "Agregar mas" }, { id: "3", title: "Eliminar" }]
+      [{ id: "confirmar", title: "Confirmar" }, { id: "agregar_mas", title: "Agregar mas" }, { id: "eliminar", title: "Eliminar" }]
     );
     return res.sendStatus(200);
   }
 } else if (text.length > 3 && !["hola", "ok", "dale", "bien", "listo"].includes(lower)) {
-    updateOrderGeneralNotes(phone, text);
+    if (esObservacionDireccion(text)) {
+      updateOrderDireccionNotes(phone, text);
+    } else {
+      updateOrderGeneralNotes(phone, text);
+    }
     updateOrderStep(phone, "esperando_confirmacion");
     currentOrder = getOrder(phone)!;
     await sendWhatsAppButtons(phone,
       `Anotado ✅\n\n📝 ${text}\n\n¿Qué deseas hacer?`,
       [
-        { id: "1", title: "Confirmar" },
-        { id: "2", title: "Agregar mas" },
-        { id: "3", title: "Eliminar" }
+        { id: "confirmar", title: "Confirmar" },
+        { id: "agregar_mas", title: "Agregar mas" },
+        { id: "eliminar", title: "Eliminar" }
       ]
     );
     return res.sendStatus(200);
@@ -2420,9 +2465,9 @@ return res.sendStatus(200);
   await sendWhatsAppButtons(phone,
     "¿Que deseas hacer?",
     [
-      { id: "1", title: "Confirmar" },
-      { id: "2", title: "Agregar mas" },
-      { id: "3", title: "Eliminar" }
+      { id: "confirmar", title: "Confirmar" },
+      { id: "agregar_mas", title: "Agregar mas" },
+      { id: "eliminar", title: "Eliminar" }
     ]
   );
   return res.sendStatus(200);
@@ -2639,7 +2684,7 @@ return res.sendStatus(200);
   }
 
   if (orderDf.sucursal === "la_villa") {
-    await fetch("https://push-sons-elimination-contractors.trycloudflare.com/imprimir", {
+    await fetch("https://towns-cheats-resulting-same.trycloudflare.com/imprimir", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2741,7 +2786,7 @@ return res.sendStatus(200);
     }
 
     if (order.sucursal === "la_villa") {
-      await fetch("https://push-sons-elimination-contractors.trycloudflare.com/imprimir", {
+      await fetch("https://towns-cheats-resulting-same.trycloudflare.com/imprimir", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2929,9 +2974,9 @@ return res.sendStatus(200);
   buildResumenFooter(order, totals) +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
  [
-    { id: "1", title: "Confirmar" },
-    { id: "2", title: "Agregar mas" },
-    { id: "3", title: "Eliminar" }
+    { id: "confirmar", title: "Confirmar" },
+    { id: "agregar_mas", title: "Agregar mas" },
+    { id: "eliminar", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);
@@ -2998,9 +3043,9 @@ return res.sendStatus(200);
   buildResumenFooter(order, totals, descripcionDomicilio) +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
 [
-    { id: "1", title: "Confirmar" },
-    { id: "2", title: "Agregar mas" },
-    { id: "3", title: "Eliminar" }
+    { id: "confirmar", title: "Confirmar" },
+    { id: "agregar_mas", title: "Agregar mas" },
+    { id: "eliminar", title: "Eliminar" }
   ]
 );
 return res.sendStatus(200);

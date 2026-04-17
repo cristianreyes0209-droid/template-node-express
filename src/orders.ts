@@ -59,6 +59,7 @@ export type CustomerOrder = {
   step: OrderStep;
   lastInteraction: number;
   observacionesGenerales?: string;
+  observacionDireccion?: string;
   holaclick_order?: string;
   confirmedAt?: string;
   factura?: string;
@@ -221,4 +222,11 @@ export function updateOrderGeneralNotes(phone: string, notes: string) {
   if (!order) return;
 
   order.observacionesGenerales = notes;
+}
+
+export function updateOrderDireccionNotes(phone: string, notes: string) {
+  const order = orders[phone];
+  if (!order) return;
+
+  order.observacionDireccion = notes;
 }

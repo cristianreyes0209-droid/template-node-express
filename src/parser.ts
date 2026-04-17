@@ -275,10 +275,13 @@ function extractObservaciones(fragment: string): string | undefined {
   const text = fragment.toLowerCase();
   const observaciones: string[] = [];
 
-  const sinRegex = /\bsin\s+(\w+(?:\s+\w+)?)/g;
+  // Captura "sin X" o "sin X Y" pero NO incluye palabras de unión como "con", "y", "de" en la obs
+  const sinRegex = /\bsin\s+(\w+(?:\s+(?!con\b|y\b|de\b|o\b)\w+)?)/g;
   let m: RegExpExecArray | null;
   while ((m = sinRegex.exec(text)) !== null) {
-    observaciones.push(`sin ${m[1]}`);
+    // Quitar trailing stop words que se hayan colado
+    const obs = m[1].replace(/\s+(con|y|de|o)$/i, "").trim();
+    observaciones.push(`sin ${obs}`);
   }
 
   const pocoMatch = text.match(/\bpoco\s+(\w+)/);
