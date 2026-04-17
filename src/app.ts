@@ -1568,6 +1568,12 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   ) {
     updateOrderDeliveryType(phone, "domicilio");
 
+    // Asegurar que el nombre esté en la orden antes de pedir dirección
+    if (customer?.name && !getOrder(phone)?.nombre) {
+      updateOrderName(phone, customer.name);
+    }
+    currentOrder = getOrder(phone)!;
+
     if (customer?.last_address) {
       updateOrderStep(phone, "esperando_confirmacion_direccion");
       currentOrder = getOrder(phone)!;
@@ -1580,6 +1586,11 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   ]
 );
 return res.sendStatus(200);
+    } else if (!currentOrder.nombre) {
+      // Cliente sin nombre ni dirección previa — pedir nombre primero
+      updateOrderStep(phone, "esperando_nombre");
+      currentOrder = getOrder(phone)!;
+      replyMessage = "Perfecto 👍\n\nAntes de continuar, ¿cuál es tu nombre?";
     } else {
       updateOrderStep(phone, "esperando_direccion");
       currentOrder = getOrder(phone)!;
