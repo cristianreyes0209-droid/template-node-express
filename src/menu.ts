@@ -1208,13 +1208,13 @@ aliases: [
             },
             {
               id: "con_salsa_italiana",
-              nombre: "Salsa italiana",
+              nombre: "Italiana",
               precio: 14500,
               aliases: ["con salsa italiana", "con italiana", "salsa italiana", "italiana"]
             },
             {
               id: "con_salsa_bechamel",
-              nombre: "Salsa bechamel",
+              nombre: "Bechamel",
               precio: 15900,
               aliases: ["con salsa bechamel", "con bechamel", "salsa bechamel", "bechamel"]
             }
