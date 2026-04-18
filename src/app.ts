@@ -3054,6 +3054,7 @@ app.get('/panel', (req, res) => {
   if (key !== process.env.PANEL_KEY) {
     return res.status(401).send('Acceso denegado');
   }
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';");
   res.sendFile(path.join(__dirname, '../public/panel.html'));
 });
 
