@@ -552,6 +552,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   || "mensaje";
 
   saveMessage(phone, "cliente", text).catch(() => {});
+  const lower = text.toLowerCase().trim();
 
   const tipoMensaje = messageData.type || "desconocido";
 
@@ -743,7 +744,6 @@ if (skipParsing) {
 
 const parsedItems = parseResult.items;
 const aiUpselling: string = parseResult.upselling || "";
-const lower = text.toLowerCase().trim();
 
 const HORARIO_MSG =
   "🕐 Nuestro horario es:\n\n" +
