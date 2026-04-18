@@ -89,13 +89,15 @@ export async function setTestMode(phone: string, value: boolean) {
 }
 
 export async function saveMessage(phone: string, rol: "cliente" | "bot", mensaje: string) {
+  console.log("💾 Intentando guardar:", phone, rol);
   try {
     await pool.query(
       `INSERT INTO conversaciones (phone, rol, mensaje) VALUES ($1, $2, $3)`,
       [normalizePhone(phone), rol, mensaje]
     );
+    console.log("✅ Mensaje guardado correctamente");
   } catch (error) {
-    console.error("❌ Error guardando mensaje en conversaciones:", error);
+    console.error("❌ Error saveMessage:", JSON.stringify(error));
   }
 }
 
