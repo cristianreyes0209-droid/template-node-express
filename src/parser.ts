@@ -20,6 +20,7 @@ type ParsedItem = {
 type ParseResult = {
   items: ParsedItem[];
   upselling?: string;
+  productoQuery?: string;
   ambiguousChoice?: {
     opciones: {
       nombre: string;
@@ -132,6 +133,7 @@ export function normalizeText(text: string) {
     .replace(/\bcamorones\b/g, "camarones")
     .replace(/\bmediteranea\b/g, "mediterranea")
     .replace(/\bmedterranea\b/g, "mediterranea")
+    .replace(/\bstroganoff\b/g, "strogonoff")
     .replace(/\bstroganof\b/g, "strogonoff")
     .replace(/\bstrogonof\b/g, "strogonoff")
     .replace(/\bpari\b/g, "paris")
@@ -786,6 +788,26 @@ export async function parseWithAI(text: string): Promise<ParseResult> {
 
 export function parseOrder(text: string): ParseResult {
   const lower = normalizeText(text);
+
+  // Detectar preguntas sobre ingredientes: "qué tiene/lleva/trae/incluye X", "ingredientes de X"
+  // También: "quiero saber qué tiene X", "me dices qué lleva X", etc.
+  const ingredientVerbs = "(?:tiene|lleva|trae|contiene|incluye|trae)";
+  const prefixOptional = "(?:(?:quiero saber|me (?:puedes?|puede) decir|dime|digame|sabeme decir)\\s+)?";
+  const queVerb = new RegExp(
+    `^${prefixOptional}(?:que|cual es la receta de)\\s+${ingredientVerbs}\\s+(?:la\\s+|el\\s+|una?\\s+)?(.+?)[\\?]?$`
+  );
+  const ingredientesPrefix = /^(?:ingredientes?)\s+(?:de\s+)?(?:la\s+|el\s+|una?\s+)?(.+?)[\?]?$/;
+  const sufixPattern = /^(?:la\s+|el\s+)?(.+?)\s+que\s+(?:tiene|lleva|trae|contiene|incluye)[\?]?$/;
+  const queryMatch = queVerb.exec(lower) || ingredientesPrefix.exec(lower) || sufixPattern.exec(lower);
+  if (queryMatch) {
+    const allProducts = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+    const queryTerm = queryMatch[1].trim();
+    const matches = findBestProductMatches(queryTerm, allProducts);
+    if (matches.length > 0) {
+      return { items: [], productoQuery: matches[0].id };
+    }
+  }
+
  // Primero limpiar palabras de cortesía, luego dividir
 const textoLimpio = lower
   .replace(/\bpor favor\b/g, " ")

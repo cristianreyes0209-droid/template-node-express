@@ -20,6 +20,15 @@ pool.connect()
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `).catch(err => console.error("❌ Error creando tabla config:", err));
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS conversaciones (
+        id BIGSERIAL PRIMARY KEY,
+        phone TEXT NOT NULL,
+        rol TEXT NOT NULL,
+        mensaje TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `).catch(err => console.error("❌ Error creando tabla conversaciones:", err));
     client.release();
   })
   .catch((err) => {
@@ -76,6 +85,51 @@ export async function setTestMode(phone: string, value: boolean) {
     console.log(`✅ test_mode=${value} guardado para ${normalizedPhone}`);
   } catch (error) {
     console.error("❌ Error guardando test_mode:", error);
+  }
+}
+
+export async function saveMessage(phone: string, rol: "cliente" | "bot", mensaje: string) {
+  try {
+    await pool.query(
+      `INSERT INTO conversaciones (phone, rol, mensaje) VALUES ($1, $2, $3)`,
+      [normalizePhone(phone), rol, mensaje]
+    );
+  } catch (error) {
+    console.error("❌ Error guardando mensaje en conversaciones:", error);
+  }
+}
+
+export async function getConversaciones() {
+  try {
+    const result = await pool.query(`
+      SELECT phone,
+        COUNT(*) AS total_mensajes,
+        MAX(created_at) AS ultimo_mensaje
+      FROM conversaciones
+      GROUP BY phone
+      ORDER BY ultimo_mensaje DESC
+    `);
+    return result.rows;
+  } catch (error) {
+    console.error("❌ Error obteniendo conversaciones:", error);
+    return [];
+  }
+}
+
+export async function getConversacion(phone: string) {
+  try {
+    const normalizedPhone = normalizePhone(phone);
+    const result = await pool.query(
+      `SELECT id, phone, rol, mensaje, created_at
+       FROM conversaciones
+       WHERE phone = $1
+       ORDER BY created_at ASC`,
+      [normalizedPhone]
+    );
+    return result.rows;
+  } catch (error) {
+    console.error("❌ Error obteniendo conversación:", error);
+    return [];
   }
 }
 

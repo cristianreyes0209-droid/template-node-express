@@ -937,9 +937,13 @@ export const menu = {
           aliases: [
             "strogonoff de carne",
             "strogonoff carne",
+            "strogonoff res",
             "carne strogonoff",
             "estrogonof de carne",
-            "estrogonoff de carne"
+            "estrogonoff de carne",
+            "stroganoff de carne",
+            "stroganoff carne",
+            "stroganoff res"
           ],
           modificadoresComunes: [
             "sin carne",
@@ -1203,16 +1207,16 @@ aliases: [
               aliases: ["sin salsa"]
             },
             {
-              id: "con_salsa_paris",
-              nombre: "Salsa París",
-              precio: 15900,
-              aliases: ["con salsa paris", "con paris", "salsa paris"]
-            },
-            {
               id: "con_salsa_italiana",
               nombre: "Salsa italiana",
               precio: 14500,
-              aliases: ["con salsa italiana", "con italiana", "salsa italiana"]
+              aliases: ["con salsa italiana", "con italiana", "salsa italiana", "italiana"]
+            },
+            {
+              id: "con_salsa_bechamel",
+              nombre: "Salsa bechamel",
+              precio: 15900,
+              aliases: ["con salsa bechamel", "con bechamel", "salsa bechamel", "bechamel"]
             }
           ]
         },
@@ -1388,22 +1392,15 @@ aliases: [
           aliases: ["batido", "batido de frutas"]
         },
         {
-          id: "limonada_natural",
-          nombre: "Limonada natural",
+          id: "limonada",
+          nombre: "Limonada",
           precio: 5000,
-          aliases: ["limonada", "limonada natural"]
-        },
-        {
-          id: "limonada_coco",
-          nombre: "Limonada de coco",
-          precio: 10500,
-          aliases: ["limonada de coco", "limonada coco"]
-        },
-        {
-          id: "limonada_cereza",
-          nombre: "Limonada de cereza",
-          precio: 12500,
-          aliases: ["limonada de cereza", "limonada cereza"]
+          aliases: ["limonada"],
+          variantes: [
+            { id: "natural", nombre: "Natural", precio: 5000, aliases: ["natural", "limonada natural", "limonada"] },
+            { id: "coco", nombre: "De coco", precio: 10500, aliases: ["de coco", "coco", "limonada de coco", "limonada coco"] },
+            { id: "cereza", nombre: "De cereza", precio: 12500, aliases: ["de cereza", "cereza", "limonada de cereza", "limonada cereza"] }
+          ]
         },
         {
           id: "malteada",
@@ -1411,8 +1408,8 @@ aliases: [
           precio: 17900,
           aliases: ["malteada"],
           variantes: [
+            { id: "vainilla_brownie", nombre: "Vainilla brownie", precio: 17900, aliases: ["vainilla brownie", "brownie vainilla", "brownie"] },
             { id: "vainilla", nombre: "Vainilla", precio: 17900, aliases: ["vainilla"] },
-            { id: "brownie_vainilla", nombre: "Brownie vainilla", precio: 17900, aliases: ["brownie vainilla", "brownie"] },
             { id: "fresa", nombre: "Fresa", precio: 17900, aliases: ["fresa"] }
           ]
         },
