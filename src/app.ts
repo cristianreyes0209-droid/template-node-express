@@ -20,7 +20,7 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
-import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, isAmbiguousText } from './parser';
+import { parseOrder, normalizeText, isQuestion } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
@@ -689,17 +689,6 @@ const skipParsing =
   currentOrder?.step === "esperando_queso_dulce";
 
 // Palabras clave simples y mensajes de botones que NO deben llamar a Gemini
-const SIMPLE_KEYWORDS = new Set([
-  "confirmar", "agregar_mas", "agregar_más", "eliminar", "reset",
-  "si", "sí", "no", "ok", "dale", "listo", "hola", "test",
-  "a", "b", "c", "1", "2", "3", "4",
-  "domicilio", "recoger", "nequi", "bancolombia", "efectivo",
-  "ayuda", "ayudarme", "menu", "menú", "carta",
-  "factura_si", "factura_no", "la_villa", "circunvalar",
-  "con_jalapenos", "sin_jalapenos", "con_queso_dulce", "sin_queso_dulce",
-  "ya pague", "ya pagué", "pedirlo", "quiero", "ver menu"
-]);
-const skipAI = tipoMensaje === "interactive" || SIMPLE_KEYWORDS.has(lower);
 
 // Steps donde se intenta el parser de reglas primero, y la IA solo si no detecta producto
 const useRulesThenAI =
@@ -711,8 +700,8 @@ const useRulesThenAI =
 let parseResult: { items: any[]; ambiguousChoice?: any; upselling?: string; productoQuery?: string } =
   { items: [], ambiguousChoice: undefined, upselling: undefined };
 
-// Resultado de la IA para uso posterior en los handlers
-let aiClassification: import('./parser').AIClassification | null = null;
+// Resultado de la IA para uso posterior en los handlers (Gemini desactivado temporalmente)
+let aiClassification: any = null;
 
 if (skipParsing) {
   // No parsear nada — el handler sabe qué esperar
@@ -724,39 +713,16 @@ if (skipParsing) {
   } else if (!isQuestion(text)) {
     parseResult = ruleResult1;
   }
-  // 2. Solo si no detectó productos Y el texto no es un keyword simple → llamar a Gemini
-  if (parseResult.items.length === 0 && !parseResult.ambiguousChoice && !parseResult.productoQuery && !skipAI) {
-    const currentItems = currentOrder?.items.map((i: any) => ({
-      producto: i.producto,
-      precio: i.precio,
-      variante: i.variante
-    })) || [];
-    aiClassification = await classifyWithAI(text, currentItems, currentOrder?.step || "");
-    if (aiClassification?.intent === "producto") {
-      parseResult = { items: aiClassification.items, upselling: aiClassification.upselling };
-      aiClassification = null; // Manejado como producto, no como otro intent
-    }
-  } else if (skipAI && parseResult.items.length === 0) {
-    console.log("⏭️ Gemini omitido: mensaje interactivo o keyword simple");
-  }
+  // 2. Gemini desactivado temporalmente — continuar con items vacío
+  // TODO: reactivar cuando se resuelva la cuota de Gemini
 } else {
-  // Resto de steps: parser de reglas normal con fallback a IA legacy
+  // Resto de steps: parser de reglas normal (sin fallback a IA)
   const ruleResult2 = parseOrder(text);
   if (ruleResult2.productoQuery) {
     parseResult = { items: [], productoQuery: ruleResult2.productoQuery };
   } else if (!isQuestion(text)) {
     parseResult = ruleResult2;
-    if (
-      parseResult.items.length === 0 &&
-      !parseResult.ambiguousChoice &&
-      !skipAI &&
-      text.trim().split(/\s+/).length > 3
-    ) {
-      const aiResult = await parseWithAI(text);
-      if (aiResult.items.length > 0) parseResult = aiResult;
-    } else if (skipAI) {
-      console.log("⏭️ Gemini omitido: mensaje interactivo o keyword simple");
-    }
+    // TODO: reactivar parseWithAI cuando se resuelva la cuota de Gemini
   }
 }
 
@@ -2572,7 +2538,7 @@ return res.sendStatus(200);
     }
 
     if (orderEf.sucursal === "la_villa") {
-      await fetch("https://towns-cheats-resulting-same.trycloudflare.com/imprimir", {
+      await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://towns-cheats-resulting-same.trycloudflare.com/imprimir"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2770,7 +2736,7 @@ return res.sendStatus(200);
     }
 
     if (order.sucursal === "la_villa") {
-      await fetch("https://towns-cheats-resulting-same.trycloudflare.com/imprimir", {
+      await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://towns-cheats-resulting-same.trycloudflare.com/imprimir"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
