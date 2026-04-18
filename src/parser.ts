@@ -603,7 +603,7 @@ export async function classifyWithAI(
   try {
     console.log(`🤖 LLAMANDO GEMINI (classifyWithAI) con texto: "${text}"`);
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -727,7 +727,7 @@ export async function parseWithAI(text: string): Promise<ParseResult> {
   try {
     console.log(`🤖 LLAMANDO GEMINI (parseWithAI) con texto: "${text}"`);
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {

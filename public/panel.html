@@ -224,11 +224,13 @@
   async function loadContacts() {
     try {
       const res = await fetch(apiUrl('/api/conversaciones'));
-      if (!res.ok) { console.error('Error cargando contactos'); return; }
+      if (!res.ok) { console.error('Error cargando contactos, status:', res.status); return; }
       contacts = await res.json();
+      console.log("Datos recibidos:", contacts);
+      console.log("Cantidad:", contacts.length);
       renderContacts();
     } catch (e) {
-      console.error(e);
+      console.error("Error fetch:", e);
     }
   }
 
