@@ -688,6 +688,19 @@ const skipParsing =
   currentOrder?.step === "esperando_jalapenos" ||
   currentOrder?.step === "esperando_queso_dulce";
 
+// Palabras clave simples y mensajes de botones que NO deben llamar a Gemini
+const SIMPLE_KEYWORDS = new Set([
+  "confirmar", "agregar_mas", "agregar_más", "eliminar", "reset",
+  "si", "sí", "no", "ok", "dale", "listo", "hola", "test",
+  "a", "b", "c", "1", "2", "3", "4",
+  "domicilio", "recoger", "nequi", "bancolombia", "efectivo",
+  "ayuda", "ayudarme", "menu", "menú", "carta",
+  "factura_si", "factura_no", "la_villa", "circunvalar",
+  "con_jalapenos", "sin_jalapenos", "con_queso_dulce", "sin_queso_dulce",
+  "ya pague", "ya pagué", "pedirlo", "quiero", "ver menu"
+]);
+const skipAI = tipoMensaje === "interactive" || SIMPLE_KEYWORDS.has(lower);
+
 // Steps donde se intenta el parser de reglas primero, y la IA solo si no detecta producto
 const useRulesThenAI =
   !skipParsing && (
@@ -711,8 +724,8 @@ if (skipParsing) {
   } else if (!isQuestion(text)) {
     parseResult = ruleResult1;
   }
-  // 2. Solo si no detectó productos → llamar a Gemini para clasificar
-  if (parseResult.items.length === 0 && !parseResult.ambiguousChoice && !parseResult.productoQuery) {
+  // 2. Solo si no detectó productos Y el texto no es un keyword simple → llamar a Gemini
+  if (parseResult.items.length === 0 && !parseResult.ambiguousChoice && !parseResult.productoQuery && !skipAI) {
     const currentItems = currentOrder?.items.map((i: any) => ({
       producto: i.producto,
       precio: i.precio,
@@ -723,6 +736,8 @@ if (skipParsing) {
       parseResult = { items: aiClassification.items, upselling: aiClassification.upselling };
       aiClassification = null; // Manejado como producto, no como otro intent
     }
+  } else if (skipAI && parseResult.items.length === 0) {
+    console.log("⏭️ Gemini omitido: mensaje interactivo o keyword simple");
   }
 } else {
   // Resto de steps: parser de reglas normal con fallback a IA legacy
@@ -734,10 +749,13 @@ if (skipParsing) {
     if (
       parseResult.items.length === 0 &&
       !parseResult.ambiguousChoice &&
+      !skipAI &&
       text.trim().split(/\s+/).length > 3
     ) {
       const aiResult = await parseWithAI(text);
       if (aiResult.items.length > 0) parseResult = aiResult;
+    } else if (skipAI) {
+      console.log("⏭️ Gemini omitido: mensaje interactivo o keyword simple");
     }
   }
 }
@@ -3054,7 +3072,7 @@ app.get('/panel', (req, res) => {
   if (key !== process.env.PANEL_KEY) {
     return res.status(401).send('Acceso denegado');
   }
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';");
+  res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
   res.sendFile(path.join(__dirname, '../public/panel.html'));
 });
 

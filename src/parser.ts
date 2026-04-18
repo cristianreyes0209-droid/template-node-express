@@ -615,7 +615,11 @@ export async function classifyWithAI(
     );
 
     if (!response.ok) {
-      console.error(`❌ ERROR GEMINI (classifyWithAI) HTTP ${response.status}:`, await response.text());
+      if (response.status === 429) {
+        console.warn("⚠️ Gemini 429 (classifyWithAI): cuota agotada, continuando con parser de reglas");
+      } else {
+        console.error(`❌ ERROR GEMINI (classifyWithAI) HTTP ${response.status}:`, await response.text());
+      }
       return null;
     }
 
@@ -741,7 +745,11 @@ export async function parseWithAI(text: string): Promise<ParseResult> {
     );
 
     if (!response.ok) {
-      console.error(`❌ ERROR GEMINI (parseWithAI) HTTP ${response.status}:`, await response.text());
+      if (response.status === 429) {
+        console.warn("⚠️ Gemini 429 (parseWithAI): cuota agotada, continuando con parser de reglas");
+      } else {
+        console.error(`❌ ERROR GEMINI (parseWithAI) HTTP ${response.status}:`, await response.text());
+      }
       return { items: [] };
     }
 
