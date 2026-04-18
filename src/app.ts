@@ -2979,11 +2979,11 @@ cron.schedule("0 9 * * *", async () => {
 
 // ── Panel web de conversaciones ──────────────────────────────────────────────
 app.get('/panel', (req, res) => {
-  const key = req.query.key as string | undefined;
-  if (!key || key !== process.env.PANEL_KEY) {
-    return res.status(401).send("Acceso no autorizado");
+  const key = req.query.key;
+  if (key !== process.env.PANEL_KEY) {
+    return res.status(401).send('Acceso denegado');
   }
-  res.sendFile(path.join(process.cwd(), 'public', 'panel.html'));
+  res.sendFile(path.join(__dirname, '../public/panel.html'));
 });
 
 app.get('/api/conversaciones', async (req, res) => {
