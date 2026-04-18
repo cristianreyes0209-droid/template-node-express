@@ -373,6 +373,17 @@ const CREBOT_SUFFIX = "\n\nSoy CreBot 🤖 y estoy en período de prueba. Si tie
     .map(o => o.trim())
     .join(" • ");
 }
+function formatLineaItem(item: any, withPrice = false): string {
+  const extrasTexto = item.extras && item.extras.length > 0
+    ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +")
+    : "";
+  const precioLinea = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
+  const precioTexto = withPrice ? ` - $${precioLinea.toLocaleString("es-CO")}` : "";
+  const linea = `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${extrasTexto}${precioTexto}`;
+  const obsLinea = item.observaciones ? `\n  📝 ${formatObservaciones(item.observaciones)}` : "";
+  return linea + obsLinea;
+}
+
 function getObservacionGeneralTexto(order: any) {
   return order.observacionesGenerales?.trim()
     ? "\n📝 Observación: " + order.observacionesGenerales.trim()
@@ -387,11 +398,12 @@ function esObservacionDireccion(text: string): boolean {
 }
 
 function buildResumenFooter(order: any, totals: { subtotal: number; domicilio: number; total: number }, descripcionDomicilio?: string) {
+  const notaDomicilio = "\n⚠️ _El costo del domicilio es calculado por Google Maps y puede estar sujeto a ajustes._";
   const domicilioLinea = order.tipoEntrega === "domicilio"
-    ? "\n🛵 Domicilio: $" + totals.domicilio + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "")
+    ? "\n🛵 Domicilio: $" + totals.domicilio + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "") + notaDomicilio
     : "";
   const obsLinea = getObservacionGeneralTexto(order);
-  const obsDir = order.observacionDireccion?.trim() ? "\n📋 Obs. dirección: " + order.observacionDireccion.trim() : "";
+  const obsDir = order.observacionDireccion?.trim() ? "\n📌 " + order.observacionDireccion.trim() : "";
   const entregaLinea = order.tipoEntrega === "domicilio"
     ? "\n📍 Dirección: " + (order.direccion || "No aplica") + obsDir
     : "\n🏪 Recoger en tienda";
@@ -445,19 +457,12 @@ async function handleOperationalRouting(order: any, totals: any) {
 
   if (sucursal === "circunvalar") {
     console.log("✅ ENTRÓ A RUTA CIRCUNVALAR");
-
-    if (!process.env.CIRCUNVALAR_PHONE) {
-      console.error("❌ CIRCUNVALAR_PHONE no está definida");
-      return;
-    }
-
     try {
-      await sendWhatsAppMessage(process.env.CIRCUNVALAR_PHONE, resumenInterno);
-      console.log("✅ MENSAJE ENVIADO A CIRCUNVALAR");
+      await sendWhatsAppMessage("573217233342", resumenInterno);
+      console.log("✅ RESUMEN PEDIDO ENVIADO A CIRCUNVALAR (573217233342)");
     } catch (error) {
       console.error("❌ ERROR ENVIANDO A CIRCUNVALAR:", error);
     }
-
     return;
   }
 
@@ -489,14 +494,11 @@ async function handleOperationalRouting(order: any, totals: any) {
       }
     }
 
-    const DESTINOS_VILLA = ["573217233342", "573151913928"];
-    for (const destino of DESTINOS_VILLA) {
-      try {
-        await sendWhatsAppMessage(destino, resumenDomiciliarios);
-        console.log(`✅ RESUMEN ENVIADO A ${destino}`);
-      } catch (error) {
-        console.error(`❌ ERROR ENVIANDO A ${destino}:`, error);
-      }
+    try {
+      await sendWhatsAppMessage("573151913928", resumenDomiciliarios);
+      console.log("✅ RESUMEN PEDIDO ENVIADO A LA VILLA (573151913928)");
+    } catch (error) {
+      console.error("❌ ERROR ENVIANDO A LA VILLA:", error);
     }
 
     console.log("🖨️ IMPRIMIR COMANDA VILLA:");
@@ -1101,18 +1103,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       updateOrderStep(phone, "post_agregar_producto");
       currentOrder = getOrder(phone)!;
 
-      const resumen = currentOrder.items
-        .map((item: any) => {
-          const observacionesTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
-          const extrasTexto = item.extras && item.extras.length > 0
-            ? " +" + item.extras.map((extra: any) =>
-                extra.cantidad > 1 ? `${extra.cantidad} ${extra.nombre}` : extra.nombre
-              ).join(", +")
-            : "";
-          const precioLinea = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
-          return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
-        })
-        .join("\n");
+      const resumen = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
 
       await sendWhatsAppButtons(phone,
         "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n📝 Si deseas una observacion escribela, o elige:",
@@ -1190,15 +1181,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       updateOrderStep(phone, "post_agregar_producto");
       currentOrder = getOrder(phone)!;
 
-      const resumen = currentOrder.items
-        .map((item: any) => {
-          const extrasTexto = item.extras && item.extras.length > 0
-            ? " +" + item.extras.map((e: any) => e.nombre).join(", +")
-            : "";
-          const precioLinea = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
-          return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
-        })
-        .join("\n");
+      const resumen = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
 
       await sendWhatsAppButtons(phone,
         "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n📝 Si deseas una observacion escribela, o elige:",
@@ -1245,20 +1228,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         updateOrderStep(phone, "esperando_tipo_entrega_repetido");
         currentOrder = getOrder(phone)!;
 
-        const resumen = order.items.map((item: any) => {
-          const observacionesTexto = item.observaciones
-            ? ` (${formatObservaciones(item.observaciones)})`
-            : "";
-          const extrasTexto =
-            item.extras && item.extras.length > 0
-              ? " +" + item.extras.map((extra: any) =>
-                  extra.cantidad > 1
-                    ? `${extra.cantidad} ${extra.nombre}`
-                    : extra.nombre
-                ).join(", +")
-              : "";
-          return `* ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
-        }).join("\n");
+        const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
 
         const observacionGeneralTexto = getObservacionGeneralTexto(order);
 
@@ -1455,11 +1425,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       `🏬 Sucursal: ${sucursalTextoHC}\n` +
       `💳 Pago: Efectivo`;
 
-    const DESTINOS_EF_HC = ["573207218267", "573151913928"];
-    for (const destino of DESTINOS_EF_HC) {
-      try { await sendWhatsAppMessage(destino, resumenInternoEfHC); }
-      catch (e) { console.error(`❌ ERROR enviando pedido holaclick efectivo a ${destino}:`, e); }
-    }
+    const destinoEfHC = orderEfHC.sucursal === "circunvalar" ? "573217233342" : "573151913928";
+    try { await sendWhatsAppMessage(destinoEfHC, resumenInternoEfHC); }
+    catch (e) { console.error(`❌ ERROR enviando pedido holaclick efectivo a ${destinoEfHC}:`, e); }
 
     replyMessage =
       "¡Tu pedido fue confirmado! 🔥\n\n" +
@@ -1492,7 +1460,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       `🏬 Sucursal: ${sucursalTexto}\n` +
       `💳 Pago: ${order.formaPago || ""}`;
 
-    const DESTINOS_HOLACLICK = ["573207218267", "573151913928"];
+    const DESTINOS_HOLACLICK = order.sucursal === "circunvalar"
+      ? ["573217233342", "573187105601"]
+      : ["573151913928", "573207218267"];
 
     for (const destino of DESTINOS_HOLACLICK) {
       try {
@@ -1558,23 +1528,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
-    const resumen = order.items.map((item: any) => {
-      const observacionesTexto = item.observaciones
-        ? ` (${formatObservaciones(item.observaciones)})`
-        : "";
-
-      const extrasTexto =
-        item.extras && item.extras.length > 0
-          ? " +" +
-            item.extras.map((extra: any) =>
-              extra.cantidad > 1
-                ? `${extra.cantidad} ${extra.nombre}`
-                : extra.nombre
-            ).join(", +")
-          : "";
-
-      return `* ${item.cantidad} ${item.producto}${observacionesTexto}${extrasTexto}`;
-    }).join("\n");
+    const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
 
   await sendWhatsAppButtons(phone,
     "Perfecto 👌\n\nTu pedido es:\n" +
@@ -1734,28 +1688,7 @@ return res.sendStatus(200);
   updateOrderStep(phone, "post_agregar_producto");
   currentOrder = getOrder(phone)!;
 
-  const resumen = order.items
-    .map((item: any) => {
-      const observacionesTexto = item.observaciones
-        ? ` (${item.observaciones})`
-        : "";
-
-      const extrasTexto =
-        item.extras && item.extras.length > 0
-          ? " +" +
-            item.extras
-              .map((extra: any) =>
-                extra.cantidad > 1
-                  ? `${extra.cantidad} ${extra.nombre}`
-                  : extra.nombre
-              )
-              .join(", +")
-          : "";
-
-      const precioLinea = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
-      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
-    })
-    .join("\n");
+  const resumen = order.items.map((item: any) => formatLineaItem(item, true)).join("\n");
 
  await sendWhatsAppButtons(phone,
   "Perfecto 👌\n\nEstoy registrando:\n\n" +
@@ -1780,12 +1713,7 @@ return res.sendStatus(200);
   }
   updateOrderStep(phone, "post_agregar_producto");
   currentOrder = getOrder(phone)!;
-  const resumenJal = currentOrder.items.map((item: any) => {
-    const obs = item.observaciones ? ` (${item.observaciones})` : "";
-    const ext = item.extras?.length > 0 ? " +" + item.extras.map((e: any) => e.nombre).join(", +") : "";
-    const precio = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
-    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obs}${ext} - $${precio.toLocaleString("es-CO")}`;
-  }).join("\n");
+  const resumenJal = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
   await sendWhatsAppButtons(phone,
     "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenJal + "\n\n📝 Si deseas una observación escríbela, o elige:",
     [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
@@ -1802,12 +1730,7 @@ return res.sendStatus(200);
   }
   updateOrderStep(phone, "post_agregar_producto");
   currentOrder = getOrder(phone)!;
-  const resumenQD = currentOrder.items.map((item: any) => {
-    const obs = item.observaciones ? ` (${item.observaciones})` : "";
-    const ext = item.extras?.length > 0 ? " +" + item.extras.map((e: any) => e.nombre).join(", +") : "";
-    const precio = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
-    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obs}${ext} - $${precio.toLocaleString("es-CO")}`;
-  }).join("\n");
+  const resumenQD = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
   await sendWhatsAppButtons(phone,
     "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenQD + "\n\n📝 Si deseas una observación escríbela, o elige:",
     [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
@@ -1847,27 +1770,7 @@ return res.sendStatus(200);
    const order = getOrder(phone)!;
 const totals = calculateTotal(order);
 
-const resumen = order.items
-  .map((item: any) => {
-    const observacionesTexto = item.observaciones
-      ? ` (${formatObservaciones(item.observaciones)})`
-      : "";
-
-    const extrasTexto =
-      item.extras && item.extras.length > 0
-        ? " +" +
-          item.extras
-            .map((extra: any) =>
-              extra.cantidad > 1
-                ? `${extra.cantidad} ${extra.nombre}`
-                : extra.nombre
-            )
-            .join(", +")
-        : "";
-
-    return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-  })
-  .join("\n");
+const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
 
 await sendWhatsAppButtons(phone,
   "Perfecto 👌\n\nTu pedido es:\n" +
@@ -1968,27 +1871,7 @@ return res.sendStatus(200);
  
  
 
-  const resumen = order.items
-    .map((item: any) => {
-      const observacionesTexto = item.observaciones
-        ? ` (${item.observaciones})`
-        : "";
-
-      const extrasTexto =
-        item.extras && item.extras.length > 0
-          ? " +" +
-            item.extras
-              .map((extra: any) =>
-                extra.cantidad > 1
-                  ? `${extra.cantidad} ${extra.nombre}`
-                  : extra.nombre
-              )
-              .join(", +")
-          : "";
-
-      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-    })
-    .join("\n");
+  const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
   updateOrderStep(phone, "esperando_confirmacion");
   currentOrder = getOrder(phone)!;
 
@@ -2149,27 +2032,7 @@ return res.sendStatus(200);
     } else {
       const totals = calculateTotal(order);
 
-      const resumen = order.items
-        .map((item: any) => {
-          const observacionesTexto = item.observaciones
-            ? ` (${formatObservaciones(item.observaciones)})`
-            : "";
-
-          const extrasTexto =
-            item.extras && item.extras.length > 0
-              ? " +" +
-                item.extras
-                  .map((extra: any) =>
-                    extra.cantidad > 1
-                      ? `${extra.cantidad} ${extra.nombre}`
-                      : extra.nombre
-                  )
-                  .join(", +")
-              : "";
-
-          return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-        })
-        .join("\n");
+      const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
       updateOrderStep(phone, "esperando_confirmacion");
       currentOrder = getOrder(phone)!;
 
@@ -2222,37 +2085,9 @@ return res.sendStatus(200);
   updateOrderStep(phone, "esperando_confirmacion");
   currentOrder = getOrder(phone)!;
 
-  const order = getOrder(phone)!;
-  const totals = calculateTotal(order);
-
-  const resumen = order.items
-    .map((item: any) => {
-      const observacionesTexto = item.observaciones
-        ? ` (${formatObservaciones(item.observaciones)})`
-        : "";
-
-      const extrasTexto =
-        item.extras && item.extras.length > 0
-          ? " +" +
-            item.extras
-              .map((extra: any) =>
-                extra.cantidad > 1
-                  ? `${extra.cantidad} ${extra.nombre}`
-                  : extra.nombre
-              )
-              .join(", +")
-          : "";
-
-      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-    })
-    .join("\n");
-
 await sendWhatsAppButtons(phone,
-  "Perfecto 👌\n\nTu pedido es:\n" +
-  resumen +
-  buildResumenFooter(order, totals) +
-  "\n\n📝 Si deseas una observación escríbela ahora, o elige una opción:",
- [
+  `Anotado ✅ "${text}"\n\n¿Qué deseas hacer?`,
+  [
     { id: "confirmar", title: "Confirmar" },
     { id: "agregar_mas", title: "Agregar mas" },
     { id: "eliminar", title: "Eliminar" }
@@ -2310,27 +2145,7 @@ return res.sendStatus(200);
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
-    const resumen = order.items
-      .map((item: any) => {
-        const observacionesTexto = item.observaciones
-          ? ` (${formatObservaciones(item.observaciones)})`
-          : "";
-
-        const extrasTexto =
-          item.extras && item.extras.length > 0
-            ? " +" +
-              item.extras
-                .map((extra: any) =>
-                  extra.cantidad > 1
-                    ? `${extra.cantidad} ${extra.nombre}`
-                    : extra.nombre
-                )
-                .join(", +")
-            : "";
-
-        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-      })
-      .join("\n");
+    const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
 
    await sendWhatsAppButtons(phone,
   "Perfecto 👌\n\nTu pedido es:\n" +
@@ -2381,14 +2196,7 @@ return res.sendStatus(200);
 } else if (parsedItems.length > 0) {
     const order = createOrUpdateOrder(phone, parsedItems);
     currentOrder = getOrder(phone)!;
-    const resumen2 = order.items.map((item: any) => {
-      const obsTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
-      const extrasTexto = item.extras && item.extras.length > 0
-        ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +")
-        : "";
-      const precioLinea = ((item.precio || 0) + (item.extras || []).reduce((s: number, e: any) => s + (e.precio || 0), 0)) * item.cantidad;
-      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto} - $${precioLinea.toLocaleString("es-CO")}`;
-    }).join("\n");
+    const resumen2 = order.items.map((item: any) => formatLineaItem(item, true)).join("\n");
     await sendWhatsAppButtons(phone,
       "Perfecto, agregué:\n\n" + resumen2 + "\n\n📝 Si deseas una observacion escribela, o elige:",
       [
@@ -2560,11 +2368,7 @@ return res.sendStatus(200);
       }).catch(err => console.error("❌ Error impresora La Villa:", err));
     }
 
-    const resumenEf = orderEf.items.map((item: any) => {
-      const obsTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
-      const extrasTexto = item.extras?.length > 0 ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +") : "";
-      return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto}`;
-    }).join("\n");
+    const resumenEf = orderEf.items.map((item: any) => formatLineaItem(item)).join("\n");
 
     const tiempoEf = orderEf.tipoEntrega === "domicilio" ? "50 min 🚚" : "15 min 🏪";
     if (!orderEf.nombre && customer?.name) updateOrderName(phone, customer.name);
@@ -2575,7 +2379,7 @@ return res.sendStatus(200);
       "📞 Tel: " + orderEf.telefono + "\n\n" +
       "🧾 Tu pedido:\n" + resumenEf + "\n\n" +
       "💰 Subtotal: $" + totalsEf.subtotal + "\n" +
-      (orderEf.tipoEntrega === "domicilio" ? "🚚 Domicilio: $" + totalsEf.domicilio + "\n" : "") +
+      (orderEf.tipoEntrega === "domicilio" ? "🚚 Domicilio: $" + totalsEf.domicilio + "\n⚠️ _El costo del domicilio es calculado por Google Maps y puede estar sujeto a ajustes._\n" : "") +
       "💵 Total: $" + totalsEf.total + "\n" +
       (orderEf.observacionesGenerales?.trim() ? "📝 Observación: " + orderEf.observacionesGenerales.trim() + "\n" : "") +
       (orderEf.tipoEntrega === "domicilio" ? "📍 Dirección:\n" + (orderEf.direccion || "No aplica") : "🏪 Recoger en tienda") + "\n\n" +
@@ -2727,7 +2531,9 @@ return res.sendStatus(200);
       `🏬 Sucursal: ${order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar"}\n` +
       (order.tipoEntrega === "domicilio" && order.direccion ? `📍 Dirección: ${order.direccion}` : "🏪 Recoger en tienda");
 
-    const DESTINOS_COMPROBANTE = ["573207218267", "573151913928"];
+    const DESTINOS_COMPROBANTE = order.sucursal === "circunvalar"
+      ? ["573217233342", "573187105601"]
+      : ["573151913928", "573207218267"];
 
     for (const destino of DESTINOS_COMPROBANTE) {
       try {
@@ -2763,15 +2569,9 @@ return res.sendStatus(200);
     const resumenComprobante =
       "🔥 *Tu pedido fue confirmado*\n\n" +
       "🧾 Tu pedido:\n" +
-      order.items.map((item: any) => {
-        const obsTexto = item.observaciones ? ` (${formatObservaciones(item.observaciones)})` : "";
-        const extrasTexto = item.extras && item.extras.length > 0
-          ? " +" + item.extras.map((e: any) => e.cantidad > 1 ? `${e.cantidad} ${e.nombre}` : e.nombre).join(", +")
-          : "";
-        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${obsTexto}${extrasTexto}`;
-      }).join("\n") +
+      order.items.map((item: any) => formatLineaItem(item)).join("\n") +
       `\n\n💰 Subtotal: $${totals.subtotal}` +
-      (order.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio}` : "") +
+      (order.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio}\n⚠️ _El costo del domicilio es calculado por Google Maps y puede estar sujeto a ajustes._` : "") +
       `\n💵 Total: $${totals.total}` +
       (order.direccion ? `\n📍 Dirección: ${order.direccion}` : "") +
       `\n💳 Pago: ${order.formaPago}`;
@@ -2898,27 +2698,7 @@ return res.sendStatus(200);
         const totals = calculateTotal(order);
     
 
-        const resumen = order.items
-          .map((item: any) => {
-            const observacionesTexto = item.observaciones
-              ? ` (${formatObservaciones(item.observaciones)})`
-              : "";
-
-            const extrasTexto =
-              item.extras && item.extras.length > 0
-                ? " +" +
-                  item.extras
-                    .map((extra: any) =>
-                      extra.cantidad > 1
-                        ? `${extra.cantidad} ${extra.nombre}`
-                        : extra.nombre
-                    )
-                    .join(", +")
-                : "";
-
-            return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-          })
-          .join("\n");
+        const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
       await sendWhatsAppButtons(phone,
   "Perfecto 👌\n\nTu pedido es:\n" +
   resumen +
@@ -2966,27 +2746,7 @@ return res.sendStatus(200);
 
   const totals = calculateTotal(order, valorDomicilio);
 
-    const resumen = order.items
-      .map((item: any) => {
-        const observacionesTexto = item.observaciones
-          ? ` (${formatObservaciones(item.observaciones)})`
-          : "";
-
-        const extrasTexto =
-          item.extras && item.extras.length > 0
-            ? " +" +
-              item.extras
-                .map((extra: any) =>
-                  extra.cantidad > 1
-                    ? `${extra.cantidad} ${extra.nombre}`
-                    : extra.nombre
-                )
-                .join(", +")
-            : "";
-
-        return `* ${item.cantidad} ${item.producto}${item.variante ? " - " + item.variante : ""}${observacionesTexto}${extrasTexto}`;
-      })
-      .join("\n");
+    const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
 
   await sendWhatsAppButtons(phone,
   "Perfecto 👌\n\nTu pedido es:\n" +

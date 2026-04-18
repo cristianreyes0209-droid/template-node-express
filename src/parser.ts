@@ -164,12 +164,18 @@ function splitIntoFragments(text: string) {
     let match: RegExpExecArray | null;
 
     while ((match = separatorRegex.exec(part)) !== null) {
+      const before = part.slice(lastIndex, match.index);
       const after = part.slice(match.index + match[0].length);
       // Si lo que viene después del separador empieza con una observación, no separar
       if (/^(sin|poco|bien|extra)\s+/i.test(after)) {
         continue;
       }
-      segments.push(part.slice(lastIndex, match.index).trim());
+      // Si estamos dentro de una cláusula de extras "con X y Z", no partir
+      // (a menos que lo que sigue sea una cantidad nueva como "2 hawaiana")
+      if (/\bcon\s+\w/i.test(before) && !/^(\d+|un|una|dos|tres|cuatro|cinco)\s+/i.test(after)) {
+        continue;
+      }
+      segments.push(before.trim());
       lastIndex = match.index + match[0].length;
     }
     segments.push(part.slice(lastIndex).trim());
@@ -859,7 +865,19 @@ for (const fragment of fragments) {
     extras
   });
 }
+  // Upselling básico: si no hay bebida en el pedido, sugerir una
+  let upselling: string | undefined;
+  if (items.length > 0) {
+    const bebidasCat = (menu.categorias as any[]).find((c: any) => c.id === "bebidas");
+    const bebidasIds: string[] = bebidasCat ? (bebidasCat.productos as any[]).map((p: any) => p.id) : [];
+    const hasBebida = items.some(i => bebidasIds.includes(i.productoId));
+    if (!hasBebida) {
+      upselling = "¿Deseas agregar una bebida? Tenemos jugos, limonadas y malteadas 🥤";
+    }
+  }
+
   return {
-    items: mergeParsedItems(items)
+    items: mergeParsedItems(items),
+    upselling
   };
 }
