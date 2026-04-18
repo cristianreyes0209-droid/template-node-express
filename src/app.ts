@@ -799,7 +799,7 @@ if (lower === "test") {
     await sendWhatsAppButtons(phone,
       `Hola${customer.name ? ", " + customer.name : ""}. ¿Cómo te podemos servir?` + CREBOT_SUFFIX,
       [
-        { id: "a", title: "Lo mismo de siempre 🔄" },
+        { id: "a", title: "Lo de siempre 🔄" },
         { id: "b", title: "Pedir algo nuevo 🥞" },
         { id: "3", title: "Otros 💬" }
       ]
@@ -825,7 +825,7 @@ if (lower === "reset") {
     await sendWhatsAppButtons(phone,
       `Hola${customer.name ? ", " + customer.name : ""}. ¿Cómo te podemos servir?` + CREBOT_SUFFIX,
       [
-        { id: "a", title: "Lo mismo de siempre 🔄" },
+        { id: "a", title: "Lo de siempre 🔄" },
         { id: "b", title: "Pedir algo nuevo 🥞" },
         { id: "3", title: "Otros 💬" }
       ]
@@ -1363,7 +1363,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       await sendWhatsAppButtons(phone,
         (customer.name?.trim() ? `Hola, ${customer.name.trim()}. ` : "") + "Qué bueno tenerte de vuelta en LAS CREPES ¿Qué deseas hacer?" + CREBOT_SUFFIX,
         [
-          { id: "a", title: "Lo mismo de siempre 🔄" },
+          { id: "a", title: "Lo de siempre 🔄" },
           { id: "b", title: "Pedir algo nuevo 🥞" },
           { id: "3", title: "Otros 💬" }
         ]
@@ -1387,7 +1387,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   await sendWhatsAppButtons(phone,
     "Aquí puedes ver nuestro menú completo 📋\n\nhttps://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n\n¿Deseas hacer un pedido?",
     [
-      { id: "1", title: "Sí, hacer un pedido 🥞" },
+      { id: "1", title: "Hacer un pedido 🥞" },
       { id: "3", title: "Otros 💬" }
     ]
   );
