@@ -575,12 +575,75 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     inactivityTimers.delete(phone);
   }
 
+  // Si el cliente confirma tras ver ingredientes de un producto, agregarlo al pedido
+  if (
+    currentOrder?.pendingProductQuery &&
+    (lower === "si" || lower === "sí" || lower === "dale" || lower === "sí quiero" ||
+     lower === "si quiero" || lower === "quiero" || lower === "sí, pedirlo" || lower === "pedirlo")
+  ) {
+    const ppq = currentOrder.pendingProductQuery;
+    currentOrder.pendingProductQuery = undefined;
+    const allProdsPPQ = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+    const prodPPQ = allProdsPPQ.find((p: any) => p.id === ppq.id);
+    // Si tiene variantes, flujo normal de variante
+    if (prodPPQ?.variantes && prodPPQ.variantes.length > 0) {
+      currentOrder.pendingProduct = { id: ppq.id, nombre: ppq.nombre, precio: ppq.precio };
+      updateOrderStep(phone, "esperando_variante_producto");
+      currentOrder = getOrder(phone)!;
+      const botonesVar = prodPPQ.variantes.slice(0, 3).map((v: any) => ({
+        id: `variante_${v.id}`,
+        title: `${v.nombre} $${v.precio.toLocaleString("es-CO")}`
+      }));
+      await sendWhatsAppButtons(phone, `¿Cómo lo deseas?\n\n${ppq.nombre}`, botonesVar);
+    } else {
+      createOrUpdateOrder(phone, [{ producto: ppq.nombre, cantidad: 1, precio: ppq.precio, extras: [] }]);
+      updateOrderStep(phone, "post_agregar_producto");
+      currentOrder = getOrder(phone)!;
+      const resumenPPQ = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+      await sendWhatsAppButtons(phone,
+        "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenPPQ + "\n\n📝 Si deseas una observación escríbela, o elige:",
+        [
+          { id: "confirmar", title: "Confirmar ✅" },
+          { id: "agregar_mas", title: "Agregar más ➕" },
+          { id: "eliminar", title: "Eliminar ➖" }
+        ]
+      );
+    }
+    return res.sendStatus(200);
+  }
+
+  // Si el cliente responde tras el mensaje de inactividad, re-mostrar estado actual sin procesar el texto
+  if (currentOrder?.inactivityPending && lower !== "reset") {
+    currentOrder.inactivityPending = false;
+    const stepActual = currentOrder.step;
+    const resumenActual = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+    if (
+      stepActual === "post_agregar_producto" ||
+      stepActual === "esperando_confirmacion" ||
+      stepActual === "armando_pedido"
+    ) {
+      const totals = calculateTotal(currentOrder);
+      await sendWhatsAppButtons(phone,
+        "Tu pedido sigue aquí 😊\n\n" + resumenActual + (currentOrder.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio}` : "") + `\n💵 Total: $${totals.total}\n\n¿Qué deseas hacer?`,
+        [
+          { id: "confirmar", title: "Confirmar ✅" },
+          { id: "agregar_mas", title: "Agregar más ➕" },
+          { id: "eliminar", title: "Eliminar ➖" }
+        ]
+      );
+    } else {
+      await sendWhatsAppMessage(phone, "Aquí estoy 😊 ¿En qué te ayudo?");
+    }
+    return res.sendStatus(200);
+  }
+
   // Reiniciar timer si hay un pedido en curso (no confirmado, no esperando asesor)
   const noTimer = currentOrder?.step === "esperando_asesor" || currentOrder?.step === "esperando_mensaje_fuera_horario";
   if (currentOrder && currentOrder.step !== "confirmado" && !noTimer) {
     const timer = setTimeout(async () => {
       const order = getOrder(phone);
       if (order && order.step !== "confirmado") {
+        order.inactivityPending = true;
         await sendWhatsAppMessage(phone,
           "¿Sigues ahí? 😊 Tu pedido está guardado. Escríbeme cuando quieras continuar."
         );
@@ -780,6 +843,12 @@ if (ingredientQueryM && !esMensajeLargo) {
     const ingredientesTexto = tieneIngredientes
       ? bestProd.ingredientes.map((i: string) => `• ${i}`).join("\n")
       : "No tengo información detallada de ingredientes para este producto.";
+    // Guardar el producto consultado para cuando el cliente confirme con "sí"
+    if (!currentOrder) {
+      createOrUpdateOrder(phone, []);
+      currentOrder = getOrder(phone)!;
+    }
+    currentOrder.pendingProductQuery = { id: bestProd.id, nombre: bestProd.nombre, precio: bestProd.precio };
     await sendWhatsAppMessage(phone,
       `*${bestProd.nombre}* lleva:\n\n${ingredientesTexto}\n\n¿Deseas pedirlo? 😊`
     );
