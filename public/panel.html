@@ -178,37 +178,6 @@
     }
 
     .empty-state { text-align: center; color: #aaa; padding: 40px 16px; font-size: 14px; }
-
-    /* Compose bar */
-    .compose-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 16px;
-      background: #f0f0f0;
-      border-top: 1px solid #ddd;
-      flex-shrink: 0;
-    }
-    .compose-bar input {
-      flex: 1;
-      padding: 9px 14px;
-      border-radius: 20px;
-      border: none;
-      font-size: 14px;
-      outline: none;
-      box-shadow: 0 1px 3px rgba(0,0,0,.1);
-    }
-    .compose-bar button {
-      padding: 9px 18px;
-      background: #075e54;
-      color: #fff;
-      border: none;
-      border-radius: 20px;
-      font-size: 14px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .compose-bar button:disabled { opacity: 0.5; cursor: default; }
   </style>
 </head>
 <body>
@@ -235,14 +204,38 @@
 
   <!-- Chat -->
   <div class="chat-area" id="chatArea">
-    <div class="chat-placeholder">Selecciona una conversación</div>
+    <!-- Header -->
+    <div class="chat-header" id="chatHeader" style="display:none;">
+      <div class="avatar" style="width:38px;height:38px;font-size:16px;">👤</div>
+      <div class="chat-header-info">
+        <div class="phone" id="chatHeaderPhone"></div>
+        <div class="sub" id="chatHeaderSub"></div>
+      </div>
+    </div>
+
+    <!-- Placeholder cuando no hay chat seleccionado -->
+    <div class="chat-placeholder" id="chatPlaceholder">Selecciona una conversación</div>
+
+    <!-- Mensajes -->
+    <div class="messages" id="messagesContainer" style="display:none;"></div>
+
+    <!-- Barra de envío (siempre en el DOM, oculta hasta seleccionar chat) -->
+    <div id="composeBar" style="display:none; padding: 10px; border-top: 1px solid #ddd; display:none; gap: 8px; background: white; flex-shrink:0;">
+      <input type="text" id="mensajeInput" placeholder="Escribe un mensaje..."
+        style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size:14px;"
+        onkeypress="if(event.key==='Enter') enviarMensaje()">
+      <button onclick="enviarMensaje()"
+        style="padding: 10px 20px; background: #075e54; color: white; border: none; border-radius: 20px; cursor: pointer; font-size:14px;">
+        Enviar
+      </button>
+    </div>
   </div>
 </div>
 
 <script>
   const KEY = new URLSearchParams(location.search).get('key') || '';
   let contacts = [];
-  let activePhone = null;
+  let phoneSeleccionado = null;
 
   function apiUrl(path) {
     return `${path}?key=${encodeURIComponent(KEY)}`;
@@ -263,8 +256,6 @@
       const res = await fetch(apiUrl('/api/conversaciones'));
       if (!res.ok) { console.error('Error cargando contactos, status:', res.status); return; }
       contacts = await res.json();
-      console.log("Datos recibidos:", contacts);
-      console.log("Cantidad:", contacts.length);
       renderContacts();
     } catch (e) {
       console.error("Error fetch:", e);
@@ -282,7 +273,7 @@
     }
 
     list.innerHTML = filtered.map(c => `
-      <div class="contact-item${c.phone === activePhone ? ' active' : ''}" onclick="selectPhone('${c.phone}')">
+      <div class="contact-item${c.phone === phoneSeleccionado ? ' active' : ''}" onclick="selectPhone('${c.phone}')">
         <div class="avatar">👤</div>
         <div class="contact-info">
           <div class="contact-phone">+${c.phone}</div>
@@ -297,97 +288,72 @@
   }
 
   async function selectPhone(phone) {
-    activePhone = phone;
+    phoneSeleccionado = phone;
     renderContacts();
-    await loadChat(phone);
+    // Mostrar secciones del chat
+    document.getElementById('chatPlaceholder').style.display = 'none';
+    document.getElementById('chatHeader').style.display = 'flex';
+    document.getElementById('messagesContainer').style.display = 'flex';
+    document.getElementById('composeBar').style.display = 'flex';
+    document.getElementById('chatHeaderPhone').textContent = '+' + phone;
+    document.getElementById('chatHeaderSub').textContent = 'Cargando mensajes...';
+    await refreshMessages(phone);
+    document.getElementById('mensajeInput').focus();
   }
 
-  function bubbleRow(m) {
-    // cliente → left, bot/asesor → right
-    const side = m.rol === 'cliente' ? 'cliente' : m.rol;
-    return `
-      <div class="msg-row ${m.rol === 'cliente' ? '' : 'bot'}">
-        <div class="bubble ${side}">
-          ${escapeHtml(m.mensaje)}
-          <div class="time">${m.rol === 'asesor' ? '🧑‍💼 ' : ''}${formatTime(m.created_at)}</div>
-        </div>
-      </div>`;
-  }
-
-  async function loadChat(phone) {
-    const chatArea = document.getElementById('chatArea');
-    chatArea.innerHTML = `
-      <div class="chat-header">
-        <div class="avatar">👤</div>
-        <div class="chat-header-info">
-          <div class="phone">+${phone}</div>
-          <div class="sub">Cargando mensajes...</div>
-        </div>
-      </div>
-      <div class="messages" id="messagesContainer"></div>
-    `;
-
+  async function refreshMessages(phone) {
     try {
       const res = await fetch(apiUrl(`/api/conversacion/${phone}`));
       if (!res.ok) { console.error('Error cargando mensajes'); return; }
       const msgs = await res.json();
 
-      chatArea.innerHTML = `
-        <div class="chat-header">
-          <div class="avatar">👤</div>
-          <div class="chat-header-info">
-            <div class="phone">+${phone}</div>
-            <div class="sub">${msgs.length} mensajes</div>
-          </div>
-        </div>
-        <div class="messages" id="messagesContainer">
-          ${msgs.length === 0
-            ? '<div class="empty-state">Sin mensajes</div>'
-            : msgs.map(bubbleRow).join('')}
-        </div>
-        <div class="compose-bar">
-          <input type="text" id="composeInput" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter')sendPanelMessage()" />
-          <button id="sendBtn" onclick="sendPanelMessage()">Enviar</button>
-        </div>
-      `;
+      document.getElementById('chatHeaderSub').textContent = msgs.length + ' mensajes';
 
       const container = document.getElementById('messagesContainer');
-      if (container) container.scrollTop = container.scrollHeight;
+      const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
 
+      container.innerHTML = msgs.length === 0
+        ? '<div class="empty-state">Sin mensajes</div>'
+        : msgs.map(bubbleRow).join('');
+
+      if (atBottom) container.scrollTop = container.scrollHeight;
     } catch (e) {
       console.error(e);
     }
   }
 
-  async function sendPanelMessage() {
-    const input = document.getElementById('composeInput');
-    const btn = document.getElementById('sendBtn');
-    const mensaje = input?.value.trim();
-    if (!mensaje || !activePhone) return;
+  function bubbleRow(m) {
+    const side = m.rol === 'cliente' ? 'cliente' : m.rol;
+    const rowClass = m.rol === 'cliente' ? '' : 'bot';
+    const prefix = m.rol === 'asesor' ? '🧑‍💼 ' : '';
+    return `
+      <div class="msg-row ${rowClass}">
+        <div class="bubble ${side}">
+          ${escapeHtml(m.mensaje)}
+          <div class="time">${prefix}${formatTime(m.created_at)}</div>
+        </div>
+      </div>`;
+  }
 
-    btn.disabled = true;
-    input.value = '';
-
-    try {
-      const res = await fetch('/api/enviar-mensaje', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: activePhone, mensaje, key: KEY })
-      });
-      const data = await res.json();
-      if (!data.ok) {
-        console.error('Error enviando:', data.error);
-        input.value = mensaje; // restaurar si falló
+  function enviarMensaje() {
+    const mensaje = document.getElementById('mensajeInput').value.trim();
+    if (!mensaje || !phoneSeleccionado) return;
+    document.getElementById('mensajeInput').value = '';
+    fetch('/api/enviar-mensaje', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: phoneSeleccionado, mensaje, key: KEY })
+    }).then(r => r.json()).then(data => {
+      if (data.ok) {
+        refreshMessages(phoneSeleccionado);
       } else {
-        await loadChat(activePhone);
+        console.error('Error enviando:', data.error);
+        document.getElementById('mensajeInput').value = mensaje;
       }
-    } catch (e) {
+    }).catch(e => {
       console.error(e);
-      input.value = mensaje;
-    } finally {
-      if (btn) btn.disabled = false;
-      document.getElementById('composeInput')?.focus();
-    }
+      document.getElementById('mensajeInput').value = mensaje;
+    });
   }
 
   function escapeHtml(text) {
@@ -398,13 +364,13 @@
       .replace(/"/g, '&quot;');
   }
 
-  // Auto-refresh
+  // Auto-refresh: solo mensajes, sin tocar la barra de envío
   setInterval(async () => {
     await loadContacts();
-    if (activePhone) await loadChat(activePhone);
+    if (phoneSeleccionado) await refreshMessages(phoneSeleccionado);
   }, 10000);
 
-  // Initial load
+  // Carga inicial
   loadContacts();
 </script>
 
