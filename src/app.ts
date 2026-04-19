@@ -1696,17 +1696,63 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     );
     return res.sendStatus(200);
   }
-  const nombreAsesor = currentOrder.nombre || customer?.name || phone;
-  const mensajeReenvio =
-    `💬 MENSAJE DE CLIENTE\n\n` +
-    `👤 Nombre: ${nombreAsesor}\n` +
-    `📞 Tel: ${phone}\n` +
-    `💬 Mensaje: ${text}`;
-  try {
-    await sendWhatsAppMessage("573151913928", mensajeReenvio);
-    console.log("✅ MENSAJE REENVIADO A ASESOR 573151913928 desde", phone);
-  } catch (e) { console.error("❌ ERROR reenviando a asesor:", e); }
-  replyMessage = "Con gusto 😊 Un asesor te atenderá pronto.";
+  // Intentar responder automáticamente con Gemini antes de escalar al asesor
+  let escaladoAsesor = false;
+  const geminiKeyAsesor = process.env.GEMINI_API_KEY;
+  if (geminiKeyAsesor) {
+    try {
+      const promptAsesor =
+        `Eres el asistente de Las Crepes de París en Pereira. Responde preguntas frecuentes de forma breve y amable. Si puedes responder, hazlo. Si no puedes, responde exactamente la palabra ESCALAR.\n\n` +
+        `Información del restaurante:\n` +
+        `- Horario: 3:00 PM a 10:15 PM todos los días\n` +
+        `- Sucursales: La Villa (Calle 83 #16a-22) y Av. Circunvalar (#8-94 local 1)\n` +
+        `- Hacemos domicilios a toda Pereira y Dosquebradas\n` +
+        `- Domicilio mínimo $4.500, calculado por distancia\n` +
+        `- Medios de pago: Efectivo, Nequi, Daviplata, Bancolombia\n` +
+        `- Ver menú: https://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n` +
+        `- Para pedidos escribir al bot directamente\n\n` +
+        `Pregunta del cliente: ${text}`;
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKeyAsesor}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: promptAsesor }] }] })
+        }
+      );
+      if (geminiRes.ok) {
+        const geminiData = await geminiRes.json();
+        const respuestaGemini = (geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "ESCALAR").trim();
+        if (respuestaGemini.toUpperCase() !== "ESCALAR") {
+          replyMessage = respuestaGemini;
+          console.log("🤖 Gemini respondió FAQ en esperando_asesor:", respuestaGemini.slice(0, 80));
+        } else {
+          escaladoAsesor = true;
+        }
+      } else {
+        escaladoAsesor = true;
+      }
+    } catch (e) {
+      console.error("❌ Error Gemini en esperando_asesor:", e);
+      escaladoAsesor = true;
+    }
+  } else {
+    escaladoAsesor = true;
+  }
+
+  if (escaladoAsesor) {
+    const nombreAsesor = currentOrder.nombre || customer?.name || phone;
+    const mensajeReenvio =
+      `💬 MENSAJE DE CLIENTE\n\n` +
+      `👤 Nombre: ${nombreAsesor}\n` +
+      `📞 Tel: ${phone}\n` +
+      `💬 Mensaje: ${text}`;
+    try {
+      await sendWhatsAppMessage("573151913928", mensajeReenvio);
+      console.log("✅ MENSAJE REENVIADO A ASESOR 573151913928 desde", phone);
+    } catch (e) { console.error("❌ ERROR reenviando a asesor:", e); }
+    replyMessage = "Con gusto 😊 Un asesor te atenderá pronto.";
+  }
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
     lower === "a" ||
