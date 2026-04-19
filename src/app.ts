@@ -654,6 +654,19 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     inactivityTimers.set(phone, timer);
   }
 
+  // Observación de entrega interceptada en cualquier step cuando hay dirección guardada
+  const STEPS_NO_INTERCEPTAR = new Set(["esperando_direccion", "esperando_nombre", "esperando_observacion_general", "esperando_datos_factura"]);
+  if (
+    currentOrder?.direccion &&
+    currentOrder.step !== "confirmado" &&
+    !STEPS_NO_INTERCEPTAR.has(currentOrder.step || "") &&
+    esObservacionDireccion(text)
+  ) {
+    updateOrderDireccionNotes(phone, text.trim());
+    await sendWhatsAppMessage(phone, `Anotado ✅ "${text.trim()}"`);
+    return res.sendStatus(200);
+  }
+
   // Verificar horario de atención solo si el cliente no está en medio de un pedido
   if (!currentOrder || currentOrder.step === "esperando_menu_principal") {
     const tipoEntrega = currentOrder?.tipoEntrega === "domicilio" ? "domicilio" : "recoger";
@@ -929,28 +942,13 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
   currentOrder = getOrder(phone)!;
   await sendWhatsAppMessage(phone, "Gracias por tu pedido en HolaClick ✅ Vamos a procesarlo.");
   await sendWhatsAppButtons(phone,
-    "¿En qué sucursal deseas recoger o desde dónde te enviamos el domicilio?",
+    "¿Desde qué sucursal deseas tu domicilio?",
     [
       { id: "la_villa", title: "La Villa 🏪" },
       { id: "circunvalar", title: "Av. Circunvalar 🏪" }
     ]
   );
  return res.sendStatus(200);
-}
-
-if (text.includes("Vengo de https://las-crepes.ola.click")) {
-  const order = getOrder(phone) || createOrUpdateOrder(phone, []);
-  updateOrderStep(phone, "esperando_sucursal_holaclick");
-  currentOrder = getOrder(phone)!;
-  currentOrder.holaclick_order = text;
-  await sendWhatsAppButtons(phone,
-    "Gracias por tu pedido en HolaClick ✅ Vamos a procesarlo.\n\n¿Para cuál sucursal es tu pedido?",
-    [
-      { id: "a", title: "La Villa" },
-      { id: "b", title: "Av. Circunvalar" }
-    ]
-  );
-  return res.sendStatus(200);
 }
 
     console.log("=== DIAGNÓSTICO ===");
@@ -1020,6 +1018,31 @@ if (
       await sendWhatsAppMessage(phone, replyMessage);
       return res.sendStatus(200);
     }
+  }
+
+  // Consulta de precio/domicilio durante el armado del pedido
+  if (
+    lower.includes("cuánto") || lower.includes("cuanto") ||
+    lower.includes("precio") || lower.includes("cuesta") ||
+    lower.includes("domicilio") && (lower.includes("cuánto") || lower.includes("cuanto") || lower.includes("costo") || lower.includes("valor"))
+  ) {
+    const orderActual = getOrder(phone)!;
+    if (orderActual.items.length > 0) {
+      const totals = calculateTotal(orderActual);
+      const domicilioTexto = orderActual.tipoEntrega === "domicilio"
+        ? `\n🚚 Domicilio estimado: $${(orderActual.valorDomicilio ?? 4500).toLocaleString("es-CO")} (puede variar según dirección)`
+        : "";
+      await sendWhatsAppMessage(phone,
+        `💰 Tu pedido hasta ahora:\n\n` +
+        orderActual.items.map((item: any) => formatLineaItem(item, true)).join("\n") +
+        `\n\n💵 Subtotal: $${totals.subtotal.toLocaleString("es-CO")}` +
+        domicilioTexto +
+        `\n\n¿Deseas agregar algo más o confirmamos? 😊`
+      );
+    } else {
+      await sendWhatsAppMessage(phone, "Aún no tienes productos en tu pedido 😊 ¿Qué deseas pedir?");
+    }
+    return res.sendStatus(200);
   }
 
   // Solicitud de ver menú en medio del pedido
@@ -1498,7 +1521,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   } else if (!currentOrder.sucursal) {
     // Solo preguntar de nuevo si no se tiene sucursal guardada
     await sendWhatsAppButtons(phone,
-      "¿En qué sucursal deseas recoger o desde dónde te enviamos el domicilio?",
+      "¿Desde qué sucursal deseas tu domicilio?",
       [
         { id: "la_villa", title: "La Villa 🏪" },
         { id: "circunvalar", title: "Av. Circunvalar 🏪" }
@@ -1509,7 +1532,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   // Si ya había sucursal guardada, la usamos sin preguntar
 
   const holaclickText = currentOrder.holaclick_order || "";
-  const totalMatch = holaclickText.match(/Total(?:\s+a\s+pagar)?\s*:?\s*\$\s*([\d.,]+)/i);
+  const totalMatch = holaclickText.match(/Total(?:\s+a\s+pagar)?\s*:\s*\$\s*([\d.,]+)/i);
   const totalTexto = totalMatch ? `$${totalMatch[1]}` : "";
   const bodyPago = totalTexto
     ? `El total de tu pedido es ${totalTexto} 💰\n¿Cómo deseas pagar?`
@@ -1532,7 +1555,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     formaPago = "bancolombia";
   }
 
-  const TOTAL_REGEX_HC = /Total(?:\s+a\s+pagar)?\s*:?\s*\$\s*([\d.,]+)/i;
+  const TOTAL_REGEX_HC = /Total(?:\s+a\s+pagar)?\s*:\s*\$\s*([\d.,]+)/i;
 
   if (!formaPago) {
     const holaclickText2 = currentOrder.holaclick_order || "";
@@ -1608,7 +1631,6 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 } else if (currentOrder?.step === "esperando_comprobante_holaclick") {
 
   const imageId = messageData.image?.id;
-  const esListo = lower.includes("listo") || lower.includes("ya pague") || lower.includes("ya pagué");
 
   if (imageId) {
     updateOrderStep(phone, "confirmado");
@@ -1641,10 +1663,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     }
 
     replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
-  } else if (esListo) {
-    replyMessage = "Estamos esperando tu comprobante de pago 📸";
   } else {
-    replyMessage = "Cuando realices el pago envíame el comprobante 📸";
+    // Llegó texto (incluyendo "listo") en lugar de imagen — pedir foto
+    replyMessage = "Por favor envía una foto del comprobante 📸";
   }
 
 } else if (currentOrder?.step === "esperando_mensaje_fuera_horario") {
@@ -1673,6 +1694,24 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   replyMessage = "Gracias por escribirnos. En breve un asesor te contactará 😊";
 
 } else if (currentOrder?.step === "esperando_asesor") {
+  // Si el cliente quiere pagar, retomar flujo de pago
+  const quierePagar = lower.includes("pagar") || lower.includes("quiero pagar") ||
+    lower.includes("transferencia") || lower.includes("nequi") ||
+    lower.includes("bancolombia") || lower.includes("efectivo");
+  if (quierePagar && currentOrder.items.length > 0) {
+    updateOrderStep(phone, "esperando_pago");
+    currentOrder = getOrder(phone)!;
+    const totalsAsesor = calculateTotal(currentOrder);
+    await sendWhatsAppButtons(phone,
+      `El total de tu pedido es $${totalsAsesor.total.toLocaleString("es-CO")} 💰\n¿Cómo deseas pagar?`,
+      [
+        { id: "efectivo", title: "Efectivo 💵" },
+        { id: "nequi", title: "Nequi/Daviplata 📱" },
+        { id: "bancolombia", title: "Bancolombia 🏦" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
   const nombreAsesor = currentOrder.nombre || customer?.name || phone;
   const mensajeReenvio =
     `💬 MENSAJE DE CLIENTE\n\n` +
@@ -1928,53 +1967,36 @@ return res.sendStatus(200);
   return res.sendStatus(200);
 
 } else if (currentOrder?.step === "esperando_nombre") {
-  if (
-    lower === "si" ||
-    lower === "sí" ||
-    lower === "no" ||
-    lower === "ok" ||
-    lower === "ya" ||
-    lower === "vale" ||
-    lower === "listo" ||
-    lower === "domicilio" ||
-    lower === "recoger"
-  ) {
-    replyMessage = "Por favor dime tu nombre para continuar 😊";
-  } else {
-    const nombreRecibido = text.trim();
-    updateOrderName(phone, nombreRecibido);
+  // Cualquier texto se toma como nombre — nunca rechazar ni mostrar menú de bienvenida
+  const nombreRecibido = text.trim();
+  updateOrderName(phone, nombreRecibido);
+  currentOrder = getOrder(phone)!;
+  await upsertCustomer({ phone, name: nombreRecibido }).catch(err =>
+    console.error("❌ Error guardando nombre en Supabase:", err)
+  );
+
+  if (currentOrder.tipoEntrega === "domicilio") {
+    updateOrderStep(phone, "esperando_direccion");
     currentOrder = getOrder(phone)!;
-    // Persistir nombre en Supabase inmediatamente
-    await upsertCustomer({ phone, name: nombreRecibido }).catch(err =>
-      console.error("❌ Error guardando nombre en Supabase:", err)
+    replyMessage = "Perfecto 👍\n\nEnvíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
+  } else {
+    updateOrderStep(phone, "esperando_confirmacion");
+    currentOrder = getOrder(phone)!;
+    const order = getOrder(phone)!;
+    const totals = calculateTotal(order);
+    const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
+    await sendWhatsAppButtons(phone,
+      "Perfecto 👌\n\nTu pedido es:\n" +
+      resumen +
+      buildResumenFooter(order, totals) +
+      "\n\n📝 Si deseas una observación escríbela, o elige:",
+      [
+        { id: "confirmar", title: "Confirmar" },
+        { id: "agregar_mas", title: "Agregar mas" },
+        { id: "eliminar", title: "Eliminar" }
+      ]
     );
-
-    if (currentOrder.tipoEntrega === "domicilio") {
-      updateOrderStep(phone, "esperando_direccion");
-      currentOrder = getOrder(phone)!;
-      replyMessage = "Perfecto 👍\n\nEnvíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
-    } else {
-      updateOrderStep(phone, "esperando_confirmacion");
-      currentOrder = getOrder(phone)!;
-
-   const order = getOrder(phone)!;
-const totals = calculateTotal(order);
-
-const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
-
-await sendWhatsAppButtons(phone,
-  "Perfecto 👌\n\nTu pedido es:\n" +
-  resumen +
-  buildResumenFooter(order, totals) +
-  "\n\n📝 Si deseas una observación escríbela, o elige:",
-  [
-    { id: "confirmar", title: "Confirmar" },
-    { id: "agregar_mas", title: "Agregar mas" },
-    { id: "eliminar", title: "Eliminar" }
-  ]
-);
-return res.sendStatus(200);
-    }
+    return res.sendStatus(200);
   }
 
 } else if (currentOrder?.step === "esperando_tipo_entrega") {
@@ -2668,17 +2690,26 @@ return res.sendStatus(200);
 return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "esperando_factura") {
-  if (lower === "factura_si" || lower.includes("factura_si")) {
+  const quiereFact = lower === "factura_si" || lower.includes("factura_si") ||
+    lower.includes("sí, la necesito") || lower.includes("si, la necesito") ||
+    lower.includes("necesito factura") || lower.includes("sí necesito");
+  const noQuiereFact = lower === "factura_no" || lower.includes("factura_no") ||
+    lower.includes("no, gracias") || lower.includes("no gracias") || lower === "no";
+
+  if (quiereFact) {
     updateOrderStep(phone, "esperando_datos_factura");
     currentOrder = getOrder(phone)!;
     replyMessage = "Por favor envíame tu NIT o cédula y razón social para la factura.";
   } else {
-    // factura_no → ir a selección de pago
+    // factura_no o texto libre → guardar como observación y continuar al pago
+    if (!noQuiereFact && text.trim().length > 1) {
+      updateOrderGeneralNotes(phone, text.trim());
+    }
     updateOrderStep(phone, "esperando_pago");
     currentOrder = getOrder(phone)!;
     const totalsParaPago = calculateTotal(getOrder(phone)!);
     await sendWhatsAppButtons(phone,
-      `El total de tu pedido es $${totalsParaPago.total} 💰\n¿Cómo deseas pagar?`,
+      `El total de tu pedido es $${totalsParaPago.total.toLocaleString("es-CO")} 💰\n¿Cómo deseas pagar?`,
       [
         { id: "efectivo", title: "Efectivo 💵" },
         { id: "nequi", title: "Nequi/Daviplata 📱" },
@@ -2816,6 +2847,24 @@ return res.sendStatus(200);
   }
 
 } else if (currentOrder?.step === "confirmado") {
+  // Retomar flujo de pago si el cliente quiere pagar desde step confirmado
+  const quierePagarConf = lower.includes("pagar") || lower.includes("quiero pagar") ||
+    lower.includes("transferencia") || lower.includes("nequi") ||
+    lower.includes("bancolombia") || lower.includes("efectivo");
+  if (quierePagarConf && currentOrder.items.length > 0 && !currentOrder.formaPago) {
+    updateOrderStep(phone, "esperando_pago");
+    currentOrder = getOrder(phone)!;
+    const totalsConf = calculateTotal(currentOrder);
+    await sendWhatsAppButtons(phone,
+      `El total de tu pedido es $${totalsConf.total.toLocaleString("es-CO")} 💰\n¿Cómo deseas pagar?`,
+      [
+        { id: "efectivo", title: "Efectivo 💵" },
+        { id: "nequi", title: "Nequi/Daviplata 📱" },
+        { id: "bancolombia", title: "Bancolombia 🏦" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
   if (
     lower.includes("como va") ||
     lower.includes("cómo va") ||
