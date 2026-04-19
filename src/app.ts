@@ -113,24 +113,12 @@ async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: st
   console.log("RESPUESTA BOTONES META:", data);
   saveMessage(phone, "bot", safeBody).catch(() => {});
 }
-function isWithinBusinessHours(tipoEntrega: "domicilio" | "recoger"): boolean {
-  // Obtenemos la hora actual en Bogotá usando toLocaleString
+function isWithinBusinessHours(_tipoEntrega: "domicilio" | "recoger"): boolean {
   const bogotaStr = new Date().toLocaleString("en-US", { timeZone: "America/Bogota" });
   const bogotaDate = new Date(bogotaStr);
-
-  const day = bogotaDate.getDay(); // 0=domingo, 5=viernes, 6=sábado
   const totalMinutes = bogotaDate.getHours() * 60 + bogotaDate.getMinutes();
-
-  const open = 15 * 60 + 30; // 3:30pm
-  const isWeekend = day === 5 || day === 6; // viernes o sábado
-
-  let close: number;
-  if (tipoEntrega === "recoger") {
-    close = isWeekend ? 23 * 60 : 22 * 60 + 30; // 11pm / 10:30pm
-  } else {
-    close = isWeekend ? 22 * 60 + 30 : 22 * 60; // 10:30pm / 10pm
-  }
-
+  const open = 15 * 60;       // 3:00 PM
+  const close = 22 * 60 + 15; // 10:15 PM
   return totalMinutes >= open && totalMinutes < close;
 }
 
@@ -677,9 +665,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
       await sendWhatsAppMessage(phone,
         "Gracias por escribirnos 😊\n\n" +
         "En este momento estamos fuera de horario de atención.\n\n" +
-        "🕐 Nuestro horario es:\n" +
-        "• Domingo a jueves: 4:00pm – 10:00pm\n" +
-        "• Viernes y sábado: 4:00pm – 10:30pm\n\n" +
+        "Nuestro horario de atención es de 3:00 PM a 10:15 PM todos los días 🕐\n\n" +
         "¡Te esperamos pronto! 🥞\n\n" +
         "Si necesitas atención urgente, déjanos tu mensaje y nos pondremos en contacto contigo 📩"
       );
@@ -767,13 +753,7 @@ const parsedItems = parseResult.items;
 const aiUpselling: string = parseResult.upselling || "";
 
 const HORARIO_MSG =
-  "🕐 Nuestro horario es:\n\n" +
-  "📅 Domingo a jueves:\n" +
-  "🏪 Local: 3:30 PM - 10:30 PM\n" +
-  "🛵 Domicilios: 3:30 PM - 10:00 PM\n\n" +
-  "📅 Viernes y sábado:\n" +
-  "🏪 Local: 3:30 PM - 11:00 PM\n" +
-  "🛵 Domicilios: 3:30 PM - 10:30 PM\n\n" +
+  "🕐 Nuestro horario de atención es de 3:00 PM a 10:15 PM todos los días\n\n" +
   "📍 La Villa - Calle 83 #16a-22\n" +
   "📍 Av. Circunvalar #8-94 local 1";
 
@@ -1532,7 +1512,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   // Si ya había sucursal guardada, la usamos sin preguntar
 
   const holaclickText = currentOrder.holaclick_order || "";
-  const totalMatch = holaclickText.match(/Total(?:\s+a\s+pagar)?\s*:\s*\$\s*([\d.,]+)/i);
+  const totalMatch =
+    holaclickText.match(/Total\s+a\s+pagar\s*:\s*\$\s*([\d.,]+)/i) ||
+    holaclickText.match(/Total\s*:\s*\$\s*([\d.,]+)/i);
   const totalTexto = totalMatch ? `$${totalMatch[1]}` : "";
   const bodyPago = totalTexto
     ? `El total de tu pedido es ${totalTexto} 💰\n¿Cómo deseas pagar?`
@@ -1555,11 +1537,13 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     formaPago = "bancolombia";
   }
 
-  const TOTAL_REGEX_HC = /Total(?:\s+a\s+pagar)?\s*:\s*\$\s*([\d.,]+)/i;
+  const matchHCTotal = (t: string) =>
+    t.match(/Total\s+a\s+pagar\s*:\s*\$\s*([\d.,]+)/i) ||
+    t.match(/Total\s*:\s*\$\s*([\d.,]+)/i);
 
   if (!formaPago) {
     const holaclickText2 = currentOrder.holaclick_order || "";
-    const totalMatch2 = holaclickText2.match(TOTAL_REGEX_HC);
+    const totalMatch2 = matchHCTotal(holaclickText2);
     const bodyPago2 = totalMatch2
       ? `El total de tu pedido es $${totalMatch2[1]} 💰\n¿Cómo deseas pagar?`
       : "¿Cómo deseas pagar?";
@@ -1574,7 +1558,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   updateOrderPayment(phone, formaPago);
   currentOrder = getOrder(phone)!;
 
-  const holaclickTotalMatch = (currentOrder.holaclick_order || "").match(TOTAL_REGEX_HC);
+  const holaclickTotalMatch = matchHCTotal(currentOrder.holaclick_order || "");
   const holaclickTotalTexto = holaclickTotalMatch ? `$${holaclickTotalMatch[1]}` : "";
   const sucursalTextoHC = currentOrder.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar";
 
@@ -1894,7 +1878,7 @@ return res.sendStatus(200);
 
   // Preguntas post-producto
   const lastItem = parsedItems[parsedItems.length - 1];
-  if (lastItem?.productoId === "mexicana") {
+  if (lastItem?.productoId === "mexicana" || lastItem?.producto?.toLowerCase().includes("mexican")) {
     updateOrderStep(phone, "esperando_jalapenos");
     currentOrder = getOrder(phone)!;
     await sendWhatsAppButtons(phone,
@@ -2422,6 +2406,16 @@ return res.sendStatus(200);
       createOrUpdateOrder(phone, parsedItems);
     }
     currentOrder = getOrder(phone)!;
+    const lastItemPAP = parsedItems[parsedItems.length - 1];
+    if (lastItemPAP?.productoId === "mexicana" || lastItemPAP?.producto?.toLowerCase().includes("mexican")) {
+      updateOrderStep(phone, "esperando_jalapenos");
+      currentOrder = getOrder(phone)!;
+      await sendWhatsAppButtons(phone,
+        `¿Deseas tu ${lastItemPAP.producto} con jalapeños o sin jalapeños?`,
+        [{ id: "con_jalapenos", title: "Con jalapeños 🌶️" }, { id: "sin_jalapenos", title: "Sin jalapeños" }]
+      );
+      return res.sendStatus(200);
+    }
     const resumen2 = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
     await sendWhatsAppButtons(phone,
       "Perfecto, agregué:\n\n" + resumen2 + "\n\n📝 Si deseas una observacion escribela, o elige:",
@@ -3103,7 +3097,7 @@ cron.schedule("0 9 * * *", async () => {
     }
   }
 }, { timezone: "America/Bogota" });
-console.log("🕘 Cron job 9am configurado para timezone America/Bogota");
+console.log("🕘 Cron registrado – job 9am America/Bogota activo");
 
 // ── Panel web de conversaciones ──────────────────────────────────────────────
 app.get('/panel', (req, res) => {

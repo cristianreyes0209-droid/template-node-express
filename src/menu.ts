@@ -1215,7 +1215,7 @@ aliases: [
             {
               id: "con_salsa_bechamel",
               nombre: "Bechamel",
-              precio: 15900,
+              precio: 13900,
               aliases: ["con salsa bechamel", "con bechamel", "salsa bechamel", "bechamel"]
             }
           ]
