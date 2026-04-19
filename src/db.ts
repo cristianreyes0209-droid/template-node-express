@@ -88,7 +88,7 @@ export async function setTestMode(phone: string, value: boolean) {
   }
 }
 
-export async function saveMessage(phone: string, rol: "cliente" | "bot", mensaje: string) {
+export async function saveMessage(phone: string, rol: "cliente" | "bot" | "asesor", mensaje: string) {
   console.log("💾 Intentando guardar:", phone, rol);
   try {
     await pool.query(

@@ -144,6 +144,12 @@
       background: #dcf8c6;
       border-top-right-radius: 0;
     }
+    .bubble.asesor {
+      background: #1a5276;
+      color: #fff;
+      border-top-right-radius: 0;
+    }
+    .bubble.asesor .time { color: #a9cce3; }
     .bubble .time {
       font-size: 11px;
       color: #999;
@@ -172,6 +178,37 @@
     }
 
     .empty-state { text-align: center; color: #aaa; padding: 40px 16px; font-size: 14px; }
+
+    /* Compose bar */
+    .compose-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: #f0f0f0;
+      border-top: 1px solid #ddd;
+      flex-shrink: 0;
+    }
+    .compose-bar input {
+      flex: 1;
+      padding: 9px 14px;
+      border-radius: 20px;
+      border: none;
+      font-size: 14px;
+      outline: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+    .compose-bar button {
+      padding: 9px 18px;
+      background: #075e54;
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .compose-bar button:disabled { opacity: 0.5; cursor: default; }
   </style>
 </head>
 <body>
@@ -265,6 +302,18 @@
     await loadChat(phone);
   }
 
+  function bubbleRow(m) {
+    // cliente → left, bot/asesor → right
+    const side = m.rol === 'cliente' ? 'cliente' : m.rol;
+    return `
+      <div class="msg-row ${m.rol === 'cliente' ? '' : 'bot'}">
+        <div class="bubble ${side}">
+          ${escapeHtml(m.mensaje)}
+          <div class="time">${m.rol === 'asesor' ? '🧑‍💼 ' : ''}${formatTime(m.created_at)}</div>
+        </div>
+      </div>`;
+  }
+
   async function loadChat(phone) {
     const chatArea = document.getElementById('chatArea');
     chatArea.innerHTML = `
@@ -294,23 +343,50 @@
         <div class="messages" id="messagesContainer">
           ${msgs.length === 0
             ? '<div class="empty-state">Sin mensajes</div>'
-            : msgs.map(m => `
-              <div class="msg-row ${m.rol}">
-                <div class="bubble ${m.rol}">
-                  ${escapeHtml(m.mensaje)}
-                  <div class="time">${formatTime(m.created_at)}</div>
-                </div>
-              </div>
-            `).join('')}
+            : msgs.map(bubbleRow).join('')}
+        </div>
+        <div class="compose-bar">
+          <input type="text" id="composeInput" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter')sendPanelMessage()" />
+          <button id="sendBtn" onclick="sendPanelMessage()">Enviar</button>
         </div>
       `;
 
-      // Scroll to bottom
       const container = document.getElementById('messagesContainer');
       if (container) container.scrollTop = container.scrollHeight;
 
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  async function sendPanelMessage() {
+    const input = document.getElementById('composeInput');
+    const btn = document.getElementById('sendBtn');
+    const mensaje = input?.value.trim();
+    if (!mensaje || !activePhone) return;
+
+    btn.disabled = true;
+    input.value = '';
+
+    try {
+      const res = await fetch('/api/enviar-mensaje', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: activePhone, mensaje, key: KEY })
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        console.error('Error enviando:', data.error);
+        input.value = mensaje; // restaurar si falló
+      } else {
+        await loadChat(activePhone);
+      }
+    } catch (e) {
+      console.error(e);
+      input.value = mensaje;
+    } finally {
+      if (btn) btn.disabled = false;
+      document.getElementById('composeInput')?.focus();
     }
   }
 

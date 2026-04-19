@@ -3132,6 +3132,24 @@ app.get('/api/conversacion/:phone', async (req, res) => {
   const rows = await getConversacion(req.params.phone);
   res.json(rows);
 });
+
+app.post('/api/enviar-mensaje', async (req, res) => {
+  const { phone, mensaje, key } = req.body || {};
+  if (!key || key !== process.env.PANEL_KEY) {
+    return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  }
+  if (!phone || !mensaje) {
+    return res.status(400).json({ ok: false, error: "Faltan parámetros" });
+  }
+  try {
+    await sendWhatsAppMessage(phone, mensaje);
+    await saveMessage(phone, "asesor", mensaje);
+    return res.json({ ok: true });
+  } catch (err: any) {
+    console.error("❌ Error enviando mensaje desde panel:", err);
+    return res.status(500).json({ ok: false, error: err?.message || "Error interno" });
+  }
+});
 // ─────────────────────────────────────────────────────────────────────────────
 
 return {
