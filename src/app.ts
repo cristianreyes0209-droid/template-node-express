@@ -991,7 +991,7 @@ if (
       updateOrderStep(phone, "esperando_aclaracion_producto");
       currentOrder = getOrder(phone)!;
       replyMessage = "¿Te refieres a:\n\n" +
-        aiClassification.opciones.map((op, i) => `${i + 1}. ${op.nombre}`).join("\n") +
+        aiClassification.opciones.map((op: any, i: number) => `${i + 1}. ${op.nombre}`).join("\n")
         "\n\nRespóndeme con el número 😊";
       await sendWhatsAppMessage(phone, replyMessage);
       return res.sendStatus(200);
