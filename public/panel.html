@@ -221,9 +221,9 @@
 
     <!-- Barra de envío (siempre en el DOM, oculta hasta seleccionar chat) -->
     <div id="composeBar" style="display:none; padding: 10px; border-top: 1px solid #ddd; display:none; gap: 8px; background: white; flex-shrink:0;">
-      <input type="text" id="mensajeInput" placeholder="Escribe un mensaje..."
-        style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size:14px;"
-        onkeypress="if(event.key==='Enter') enviarMensaje()">
+      <textarea id="mensajeInput" placeholder="Escribe un mensaje..."
+        style="flex:1; padding: 10px; border: 1px solid #ddd; border-radius: 10px; outline: none; resize: none; height: 40px; max-height: 120px; overflow-y: auto; font-family: inherit; font-size: 14px;"
+        onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); enviarMensaje(); }"></textarea>
       <button onclick="enviarMensaje()"
         style="padding: 10px 20px; background: #075e54; color: white; border: none; border-radius: 20px; cursor: pointer; font-size:14px;">
         Enviar
