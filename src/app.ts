@@ -20,7 +20,7 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
-import { parseOrder, normalizeText, isQuestion } from './parser';
+import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
@@ -697,11 +697,21 @@ const useRulesThenAI =
     currentOrder?.step === "post_agregar_producto"
   );
 
+// Gemini solo se llama si: mensaje tipo "text", más de 3 palabras, y no es keyword simple
+const SKIP_AI_KEYWORDS = new Set([
+  "si", "sí", "no", "hola", "reset", "confirmar", "agregar", "eliminar",
+  "ok", "dale", "listo", "menu", "menú", "ayuda", "ayudarme"
+]);
+const shouldCallAI =
+  tipoMensaje === "text" &&
+  text.trim().split(/\s+/).length > 3 &&
+  !SKIP_AI_KEYWORDS.has(lower);
+
 let parseResult: { items: any[]; ambiguousChoice?: any; upselling?: string; productoQuery?: string } =
   { items: [], ambiguousChoice: undefined, upselling: undefined };
 
-// Resultado de la IA para uso posterior en los handlers (Gemini desactivado temporalmente)
-let aiClassification: any = null;
+// Resultado de la IA para uso posterior en los handlers
+let aiClassification: import('./parser').AIClassification | null = null;
 
 if (skipParsing) {
   // No parsear nada — el handler sabe qué esperar
@@ -713,16 +723,30 @@ if (skipParsing) {
   } else if (!isQuestion(text)) {
     parseResult = ruleResult1;
   }
-  // 2. Gemini desactivado temporalmente — continuar con items vacío
-  // TODO: reactivar cuando se resuelva la cuota de Gemini
+  // 2. Solo si no detectó productos y el texto califica → llamar a Gemini para clasificar
+  if (parseResult.items.length === 0 && !parseResult.ambiguousChoice && !parseResult.productoQuery && shouldCallAI) {
+    const currentItems = currentOrder?.items.map((i: any) => ({
+      producto: i.producto,
+      precio: i.precio,
+      variante: i.variante
+    })) || [];
+    aiClassification = await classifyWithAI(text, currentItems, currentOrder?.step || "");
+    if (aiClassification?.intent === "producto") {
+      parseResult = { items: aiClassification.items, upselling: aiClassification.upselling };
+      aiClassification = null; // Manejado como producto, no como otro intent
+    }
+  }
 } else {
-  // Resto de steps: parser de reglas normal (sin fallback a IA)
+  // Resto de steps: parser de reglas normal con fallback a IA legacy
   const ruleResult2 = parseOrder(text);
   if (ruleResult2.productoQuery) {
     parseResult = { items: [], productoQuery: ruleResult2.productoQuery };
   } else if (!isQuestion(text)) {
     parseResult = ruleResult2;
-    // TODO: reactivar parseWithAI cuando se resuelva la cuota de Gemini
+    if (parseResult.items.length === 0 && !parseResult.ambiguousChoice && shouldCallAI) {
+      const aiResult = await parseWithAI(text);
+      if (aiResult.items.length > 0) parseResult = aiResult;
+    }
   }
 }
 
