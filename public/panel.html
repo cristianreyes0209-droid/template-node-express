@@ -364,14 +364,58 @@
       .replace(/"/g, '&quot;');
   }
 
+  function reproducirAlerta() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function beep(freq, start, duration, volume) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'square';
+      gain.gain.setValueAtTime(volume, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + duration);
+    }
+
+    // Tres beeps fuertes tipo alerta
+    beep(880, 0, 0.15, 1.5);
+    beep(880, 0.2, 0.15, 1.5);
+    beep(880, 0.4, 0.3, 1.5);
+  }
+
+  // Registro del total de mensajes por contacto para detectar mensajes nuevos
+  let ultimosTotales = {};
+
   // Auto-refresh: solo mensajes, sin tocar la barra de envío
   setInterval(async () => {
+    const prevContacts = contacts.slice();
     await loadContacts();
+
+    // Detectar si algún contacto tiene más mensajes que antes
+    let hayNuevos = false;
+    for (const c of contacts) {
+      const prevTotal = ultimosTotales[c.phone];
+      if (prevTotal !== undefined && Number(c.total_mensajes) > Number(prevTotal)) {
+        hayNuevos = true;
+      }
+      ultimosTotales[c.phone] = c.total_mensajes;
+    }
+    // También detectar contactos nuevos (que no estaban antes)
+    if (contacts.length > prevContacts.length) hayNuevos = true;
+
+    if (hayNuevos) reproducirAlerta();
+
     if (phoneSeleccionado) await refreshMessages(phoneSeleccionado);
   }, 10000);
 
-  // Carga inicial
-  loadContacts();
+  // Inicializar totales en la carga inicial para no disparar alerta al abrir
+  loadContacts().then(() => {
+    for (const c of contacts) ultimosTotales[c.phone] = c.total_mensajes;
+  });
+
 </script>
 
 </body>

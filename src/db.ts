@@ -29,6 +29,28 @@ pool.connect()
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `).catch(err => console.error("❌ Error creando tabla conversaciones:", err));
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS pedidos (
+        id BIGSERIAL PRIMARY KEY,
+        numero_orden INTEGER,
+        phone TEXT NOT NULL,
+        nombre TEXT,
+        direccion TEXT,
+        items JSONB,
+        subtotal INTEGER,
+        domicilio INTEGER,
+        total INTEGER,
+        forma_pago TEXT,
+        sucursal TEXT,
+        tipo_entrega TEXT,
+        estado TEXT DEFAULT 'nuevo',
+        canal TEXT,
+        holaclick_order TEXT,
+        confirmed_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `).catch(err => console.error("❌ Error creando tabla pedidos:", err));
     client.release();
   })
   .catch((err) => {
@@ -131,6 +153,101 @@ export async function getConversacion(phone: string) {
     return result.rows;
   } catch (error) {
     console.error("❌ Error obteniendo conversación:", error);
+    return [];
+  }
+}
+
+export type PedidoData = {
+  numero_orden?: number;
+  phone: string;
+  nombre?: string;
+  direccion?: string;
+  items?: any[];
+  subtotal?: number;
+  domicilio?: number;
+  total?: number;
+  forma_pago?: string;
+  sucursal?: string;
+  tipo_entrega?: string;
+  canal?: string;
+  holaclick_order?: string;
+  confirmed_at?: string;
+};
+
+export async function savePedido(data: PedidoData): Promise<number | null> {
+  try {
+    const result = await pool.query(
+      `INSERT INTO pedidos
+        (numero_orden, phone, nombre, direccion, items, subtotal, domicilio, total,
+         forma_pago, sucursal, tipo_entrega, canal, holaclick_order, confirmed_at)
+       VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       RETURNING id`,
+      [
+        data.numero_orden || null,
+        normalizePhone(data.phone),
+        data.nombre || null,
+        data.direccion || null,
+        data.items ? JSON.stringify(data.items) : null,
+        data.subtotal ?? null,
+        data.domicilio ?? null,
+        data.total ?? null,
+        data.forma_pago || null,
+        data.sucursal || null,
+        data.tipo_entrega || null,
+        data.canal || null,
+        data.holaclick_order || null,
+        data.confirmed_at || null,
+      ]
+    );
+    console.log("✅ Pedido guardado id:", result.rows[0]?.id);
+    return result.rows[0]?.id ?? null;
+  } catch (error) {
+    console.error("❌ Error savePedido:", error);
+    return null;
+  }
+}
+
+export async function updatePedidoEstado(id: number, estado: string): Promise<void> {
+  try {
+    await pool.query(
+      `UPDATE pedidos SET estado = $1, updated_at = NOW() WHERE id = $2`,
+      [estado, id]
+    );
+  } catch (error) {
+    console.error("❌ Error updatePedidoEstado:", error);
+  }
+}
+
+export async function getPedidosActivos() {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM pedidos WHERE estado NOT IN ('finalizado') ORDER BY created_at DESC`
+    );
+    return result.rows;
+  } catch (error) {
+    console.error("❌ Error getPedidosActivos:", error);
+    return [];
+  }
+}
+
+export async function getPedidoById(id: number) {
+  try {
+    const result = await pool.query(`SELECT * FROM pedidos WHERE id = $1 LIMIT 1`, [id]);
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error("❌ Error getPedidoById:", error);
+    return null;
+  }
+}
+
+export async function getPedidosArchivados() {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM pedidos WHERE estado = 'finalizado' ORDER BY updated_at DESC LIMIT 100`
+    );
+    return result.rows;
+  } catch (error) {
+    console.error("❌ Error getPedidosArchivados:", error);
     return [];
   }
 }

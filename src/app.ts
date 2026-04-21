@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "./db";
 import cron from "node-cron";
-import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, saveMessage, getConversaciones, getConversacion } from "./db";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidosActivos, getPedidosArchivados } from "./db";
 import path from "path";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -308,6 +308,7 @@ export const initApp = async (
     });
     app.use(helmet());
     app.use(compression());
+    app.use(express.static(path.join(__dirname, '../public')));
 
     app.get(config.healthCheckEndpoint, (req, res) => {
         res.sendStatus(200);
@@ -626,12 +627,19 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     return res.sendStatus(200);
   }
 
-  // Reiniciar timer si hay un pedido en curso (no confirmado, no esperando asesor)
-  const noTimer = currentOrder?.step === "esperando_asesor" || currentOrder?.step === "esperando_mensaje_fuera_horario";
-  if (currentOrder && currentOrder.step !== "confirmado" && !noTimer) {
+  // Cancelar timer si el pedido ya está confirmado
+  const STEPS_SIN_TIMER = new Set(["confirmado", "esperando_asesor", "esperando_mensaje_fuera_horario"]);
+  if (STEPS_SIN_TIMER.has(currentOrder?.step || "")) {
+    const timerExistente = inactivityTimers.get(phone);
+    if (timerExistente) {
+      clearTimeout(timerExistente);
+      inactivityTimers.delete(phone);
+    }
+  } else if (currentOrder) {
+    // Iniciar timer solo en steps activos
     const timer = setTimeout(async () => {
       const order = getOrder(phone);
-      if (order && order.step !== "confirmado") {
+      if (order && !STEPS_SIN_TIMER.has(order.step)) {
         order.inactivityPending = true;
         await sendWhatsAppMessage(phone,
           "¿Sigues ahí? 😊 Tu pedido está guardado. Escríbeme cuando quieras continuar."
@@ -818,6 +826,61 @@ if (esConsultaUbicacion && !esMensajeLargo) {
   return res.sendStatus(200);
 }
 
+// Cancelar pedido — cualquier step excepto "confirmado"
+if (
+  currentOrder &&
+  currentOrder.step !== "confirmado" &&
+  (lower === "cancelar" || lower === "cancela" || lower === "cancelar pedido" || lower.includes("cancelar pedido"))
+) {
+  clearOrder(phone);
+  await sendWhatsAppMessage(phone,
+    "Tu pedido ha sido cancelado ✅. Cuando quieras hacer un nuevo pedido escríbenos.\nPara hablar con un asesor: 📱 315 191 3928"
+  );
+  return res.sendStatus(200);
+}
+
+// Queja de demora — respuesta inmediata en cualquier step
+const esQuejaDedemora =
+  lower.includes("no ha llegado") ||
+  lower.includes("no llega") ||
+  lower.includes("hace rato pedi") ||
+  lower.includes("hace rato pedí") ||
+  lower.includes("lleva mucho") ||
+  lower.includes("mucho tiempo") ||
+  lower.includes("tarda mucho") ||
+  lower.includes("una hora") ||
+  lower.includes("cuánto demora") ||
+  lower.includes("cuanto demora") ||
+  lower.includes("cuando llega") ||
+  lower.includes("cuándo llega");
+if (esQuejaDedemora && !esMensajeLargo) {
+  await sendWhatsAppMessage(phone,
+    "Entendemos tu preocupación 😊 Por favor comunícate directamente al 📱 315 191 3928 para que un asesor te ayude con el estado de tu pedido."
+  );
+  return res.sendStatus(200);
+}
+
+// Consulta de toppings/extras disponibles
+const esConsultaToppings =
+  lower.includes("topping") ||
+  lower.includes("adicional") ||
+  (lower.includes("extra") && (lower.includes("qu") || lower.includes("cu") || lower.includes("hay") || lower.includes("tiene")));
+if (esConsultaToppings && !esMensajeLargo) {
+  await sendWhatsAppMessage(phone,
+    "🍽️ Nuestros toppings y extras disponibles:\n\n" +
+    "🥓 Tocineta $5.500\n" +
+    "🍄 Champiñones $4.500\n" +
+    "🌽 Maíz tierno $3.500\n" +
+    "🍍 Piña $2.000\n" +
+    "🌶️ Jalapeños $2.000\n" +
+    "🍓 Fresa $3.000\n" +
+    "🍌 Banano $2.000\n" +
+    "🍑 Durazno $3.900\n" +
+    "🍎 Manzana $2.500"
+  );
+  return res.sendStatus(200);
+}
+
 // Consulta de ingredientes de un producto ("qué tiene", "qué lleva", "ingredientes de")
 const normTextIQ = normalizeText(text);
 const ingredientQueryM =
@@ -914,21 +977,47 @@ if (lower === "reset") {
 }
 
 if (text.includes("Vengo de https://las-crepes.ola.click")) {
+  // Guardar sucursal previa si existe antes de limpiar
+  const sucursalPrevia = currentOrder?.sucursal;
+
+  clearOrder(phone);
   createOrUpdateOrder(phone, []);
-  const order = getOrder(phone)!;
-  order.holaclick_order = text;
+  const orderHC = getOrder(phone)!;
+  orderHC.holaclick_order = text;
   if (customer?.name) updateOrderName(phone, customer.name);
-  updateOrderStep(phone, "esperando_sucursal_holaclick");
   currentOrder = getOrder(phone)!;
+
   await sendWhatsAppMessage(phone, "Gracias por tu pedido en HolaClick ✅ Vamos a procesarlo.");
-  await sendWhatsAppButtons(phone,
-    "¿Desde qué sucursal deseas tu domicilio?",
-    [
-      { id: "la_villa", title: "La Villa 🏪" },
-      { id: "circunvalar", title: "Av. Circunvalar 🏪" }
-    ]
-  );
- return res.sendStatus(200);
+
+  if (sucursalPrevia) {
+    // Ya sabemos la sucursal — ir directo al pago
+    currentOrder.sucursal = sucursalPrevia;
+    const hcText = text;
+    const hcTotalMatch = hcText.match(/Total\s+a\s+pagar\s*:\s*\$\s*([\d.,]+)/i);
+    const hcTotalTexto = hcTotalMatch ? `$${hcTotalMatch[1]}` : "";
+    const hcBodyPago = hcTotalTexto
+      ? `El total de tu pedido es ${hcTotalTexto} 💰\n¿Cómo deseas pagar?`
+      : "¿Cómo deseas pagar?";
+    updateOrderStep(phone, "esperando_pago_holaclick");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone, hcBodyPago, [
+      { id: "efectivo", title: "Efectivo 💵" },
+      { id: "nequi", title: "Nequi/Daviplata 📱" },
+      { id: "bancolombia", title: "Bancolombia 🏦" }
+    ]);
+  } else {
+    // Sin sucursal previa — preguntar normalmente
+    updateOrderStep(phone, "esperando_sucursal_holaclick");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      "¿Desde qué sucursal deseas tu domicilio?",
+      [
+        { id: "la_villa", title: "La Villa 🏪" },
+        { id: "circunvalar", title: "Av. Circunvalar 🏪" }
+      ]
+    );
+  }
+  return res.sendStatus(200);
 }
 
     console.log("=== DIAGNÓSTICO ===");
@@ -1046,11 +1135,86 @@ if (
     return res.sendStatus(200);
   }
 
-  // Sin clasificación IA ni parser — respuesta de fallback
-  if (
-    lower.includes("como pedir") ||
-    lower.includes("cómo pedir")
-  ) {
+  // ── Fallback inteligente: múltiples interpretaciones antes de rendirnos ──────
+
+  // 1. Botón enviado como texto plano
+  const esConfirmar = lower === "confirmar" || lower === "1" || lower === "listo" || lower === "confirmo";
+  const esAgregarMas = lower === "agregar_mas" || lower === "agregar más" || lower === "agregar mas" || lower === "agregar" || lower === "más" || lower === "mas";
+  const esEliminar = lower === "eliminar" || lower === "borrar" || lower === "quitar" || lower === "eliminar producto";
+
+  if (esConfirmar && currentOrder.items.length > 0) {
+    updateOrderStep(phone, "post_agregar_producto");
+    currentOrder = getOrder(phone)!;
+    const resumenFallback = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+    await sendWhatsAppButtons(phone,
+      "Tu pedido hasta ahora:\n\n" + resumenFallback + "\n\n¿Qué deseas hacer?",
+      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+    );
+    return res.sendStatus(200);
+  }
+
+  if (esAgregarMas) {
+    await sendWhatsAppMessage(phone, "¿Qué más deseas agregar? 😊 Escríbeme el producto.");
+    return res.sendStatus(200);
+  }
+
+  if (esEliminar && currentOrder.items.length > 0) {
+    updateOrderStep(phone, "retirando_productos");
+    currentOrder = getOrder(phone)!;
+    const listaEliminar = currentOrder.items.map((item: any, idx: number) =>
+      `${idx + 1}. ${item.cantidad}x ${item.producto}${item.variante ? " – " + item.variante : ""}`
+    ).join("\n");
+    await sendWhatsAppMessage(phone, "¿Cuál producto deseas eliminar?\n\n" + listaEliminar + "\n\nEscribe el número del producto.");
+    return res.sendStatus(200);
+  }
+
+  // 2. Detección de extra/adición por keyword
+  const EXTRAS_MAP: { keywords: string[]; nombre: string; precio: number }[] = [
+    { keywords: ["tocineta", "tocino", "bacon"],                       nombre: "Tocineta",     precio: 5500 },
+    { keywords: ["champiñon", "champinon", "champiñones", "hongos"],   nombre: "Champiñones",  precio: 4500 },
+    { keywords: ["maiz", "maíz", "elote"],                             nombre: "Maíz tierno",  precio: 3500 },
+    { keywords: ["piña", "pina", "anana"],                             nombre: "Piña",         precio: 2000 },
+    { keywords: ["jalapeño", "jalapeno", "jalapeños"],                 nombre: "Jalapeños",    precio: 2000 },
+    { keywords: ["fresa", "fresas", "frutilla"],                       nombre: "Fresa",        precio: 3000 },
+    { keywords: ["banano", "banana", "guineo", "cambur"],              nombre: "Banano",       precio: 2000 },
+    { keywords: ["durazno", "melocoton"],                              nombre: "Durazno",      precio: 3900 },
+    { keywords: ["manzana"],                                            nombre: "Manzana",      precio: 2500 },
+  ];
+  const esAdicion = lower.includes("con ") || lower.includes("adicion") || lower.includes("adición") ||
+    lower.includes("agregar ") || lower.includes("añadir") || lower.includes("añade") || lower.startsWith("extra ");
+  if (currentOrder.items.length > 0) {
+    const extraMatch = EXTRAS_MAP.find(e => e.keywords.some(k => lower.includes(k)));
+    if (extraMatch && (esAdicion || lower.split(" ").length <= 3)) {
+      const lastItem = currentOrder.items[currentOrder.items.length - 1];
+      lastItem.extras = lastItem.extras || [];
+      const yaExiste = lastItem.extras.find((e: any) => e.nombre === extraMatch.nombre);
+      if (!yaExiste) {
+        lastItem.extras.push({ nombre: extraMatch.nombre, precio: extraMatch.precio, cantidad: 1 });
+      }
+      await sendWhatsAppButtons(phone,
+        `Agregado ✅ ${extraMatch.nombre} (+$${extraMatch.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
+        [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+      );
+      return res.sendStatus(200);
+    }
+  }
+
+  // 3. Texto largo (≥4 palabras) → guardar como observación general
+  const palabrasFallback = text.trim().split(/\s+/);
+  if (palabrasFallback.length >= 4 && currentOrder.items.length > 0) {
+    const obsActual = currentOrder.observacionesGenerales;
+    currentOrder.observacionesGenerales = obsActual
+      ? `${obsActual}. ${text.trim()}`
+      : text.trim();
+    await sendWhatsAppButtons(phone,
+      `Anotado ✅ "${text.trim()}"\n\n¿Algo más?`,
+      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+    );
+    return res.sendStatus(200);
+  }
+
+  // 4. Cómo pedir
+  if (lower.includes("como pedir") || lower.includes("cómo pedir")) {
     replyMessage =
       "Claro 😊\n\n" +
       "Puedes escribir tu pedido así:\n" +
@@ -1059,17 +1223,19 @@ if (
       "• 2 Ranchera\n\n" +
       "Por ahora te recomiendo agregar un producto por mensaje para que salga perfecto.\n\n" +
       "Si necesitas hablar con un asesor puedes escribirnos al 📱 315 191 3928";
-  } else {
-    replyMessage =
-      "No logré entender bien tu pedido 😅\n\n" +
-      "Puedes escribirlo así:\n" +
-      "• 1 Hawaiana\n" +
-      "• 2 Ranchera\n" +
-      "• 1 Especial\n\n" +
-      "O escribe ayuda 😊\n\n" +
-      "Si necesitas hablar con un asesor puedes escribirnos al 📱 315 191 3928";
+    await sendWhatsAppMessage(phone, replyMessage);
+    return res.sendStatus(200);
   }
 
+  // 5. Último recurso
+  replyMessage =
+    "No logré entender bien tu pedido 😅\n\n" +
+    "Puedes escribirlo así:\n" +
+    "• 1 Hawaiana\n" +
+    "• 2 Ranchera\n" +
+    "• 1 Especial\n\n" +
+    "O escribe ayuda 😊\n\n" +
+    "Si necesitas hablar con un asesor puedes escribirnos al 📱 315 191 3928";
   await sendWhatsAppMessage(phone, replyMessage);
   return res.sendStatus(200);
 }
@@ -1513,8 +1679,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
   const holaclickText = currentOrder.holaclick_order || "";
   const totalMatch =
-    holaclickText.match(/Total\s+a\s+pagar\s*:\s*\$\s*([\d.,]+)/i) ||
-    holaclickText.match(/Total\s*:\s*\$\s*([\d.,]+)/i);
+    holaclickText.match(/Total\s+a\s+pagar\s*:\s*\$\s*([\d.,]+)/i);
   const totalTexto = totalMatch ? `$${totalMatch[1]}` : "";
   const bodyPago = totalTexto
     ? `El total de tu pedido es ${totalTexto} 💰\n¿Cómo deseas pagar?`
@@ -1538,8 +1703,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   }
 
   const matchHCTotal = (t: string) =>
-    t.match(/Total\s+a\s+pagar\s*:\s*\$\s*([\d.,]+)/i) ||
-    t.match(/Total\s*:\s*\$\s*([\d.,]+)/i);
+    t.match(/Total\s+a\s+pagar\s*:\s*\$\s*([\d.,]+)/i);
 
   if (!formaPago) {
     const holaclickText2 = currentOrder.holaclick_order || "";
@@ -1593,6 +1757,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
     const orderEfHC = getOrder(phone)!;
     const holaclickResumenEf = orderEfHC.holaclick_order || "";
+    savePedido({ phone, nombre: orderEfHC.nombre || customer?.name, sucursal: orderEfHC.sucursal, forma_pago: "efectivo", canal: "holaclick", holaclick_order: holaclickResumenEf, confirmed_at: orderEfHC.confirmedAt }).catch(e => console.error("❌ savePedido HC:", e));
     const resumenInternoEfHC =
       "🔥 PEDIDO HOLACLICK\n\n" +
       `👤 ${orderEfHC.nombre || customer?.name || "Cliente"}\n` +
@@ -1626,6 +1791,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     const order = getOrder(phone)!;
     const holaclickResumen = order.holaclick_order || "";
     const sucursalTexto = order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar";
+    savePedido({ phone, nombre: order.nombre || customer?.name, sucursal: order.sucursal, forma_pago: order.formaPago, canal: "holaclick", holaclick_order: holaclickResumen, confirmed_at: order.confirmedAt }).catch(e => console.error("❌ savePedido HC:", e));
 
     const resumenHolaclick =
       "🔥 PEDIDO HOLACLICK\n\n" +
@@ -1879,7 +2045,7 @@ return res.sendStatus(200);
   const itemNeedingVariant = parsedItems.find(item => {
     if (item.variante) return false;
     const prod = allMenuProducts.find((p: any) => p.id === item.productoId);
-    return prod?.tipo === "jugo" || prod?.id === "vegetariana" || prod?.id === "malteada" || prod?.id === "limonada";
+    return prod?.tipo === "jugo" || prod?.id === "vegetariana" || prod?.id === "malteada" || prod?.id === "limonada" || prod?.id === "vegetales_mixta" || prod?.id === "ranchera_mixta";
   });
 
   if (itemNeedingVariant) {
@@ -1949,10 +2115,30 @@ return res.sendStatus(200);
 
   const resumen = order.items.map((item: any) => formatLineaItem(item, true)).join("\n");
 
+  // Upselling contextual (una sola vez por tipo)
+  const DULCES_IDS_AP = new Set(["nutella_crepe", "chocolate_crepe", "arequipe_crepe", "tropinutella", "tropical", "crepostre"]);
+  let upsellingLine = aiUpselling ? `💡 ${aiUpselling}` : "";
+  if (!upsellingLine) {
+    const lastItemId_AP = lastItem?.productoId;
+    if (DULCES_IDS_AP.has(lastItemId_AP) && !currentOrder.upsellingFrutasMostrado) {
+      currentOrder.upsellingFrutasMostrado = true;
+      upsellingLine = "💡 ¿Deseas agregar alguna fruta a tu crepe? Tenemos fresa $3.000, banano $2.000, durazno $3.900 o manzana $2.500 🍓";
+    } else if (lastItemId_AP && !DULCES_IDS_AP.has(lastItemId_AP) && !currentOrder.upsellingTocinetaMostrado) {
+      const allProdsUps = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+      const prodUps = allProdsUps.find((p: any) => p.id === lastItemId_AP);
+      const ingredientesUps: string[] = prodUps?.ingredientes || [];
+      const tieneTocineta = ingredientesUps.some((i: string) => i.toLowerCase().includes("tocineta"));
+      if (!tieneTocineta) {
+        currentOrder.upsellingTocinetaMostrado = true;
+        upsellingLine = "💡 ¿Le agregas tocineta por solo $5.500? 🥓";
+      }
+    }
+  }
+
  await sendWhatsAppButtons(phone,
   "Perfecto 👌\n\nEstoy registrando:\n\n" +
   resumen +
-  (aiUpselling ? `\n\n💡 ${aiUpselling}` : "") +
+  (upsellingLine ? `\n\n${upsellingLine}` : "") +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
   [
     { id: "confirmar", title: "Confirmar ✅" },
@@ -2093,6 +2279,14 @@ return res.sendStatus(200);
     const orderForCoords = getOrder(phone);
     if (orderForCoords) orderForCoords.locationCoords = { latitude, longitude };
   } else {
+    // Validar que el texto parece una dirección real
+    const PALABRAS_INVALIDAS_DIR = new Set(["hola", "si", "sí", "ok", "espera", "espérame", "esperame", "bueno", "bien", "ya", "dale", "listo", "claro", "no", "momento", "ahorita", "ahora"]);
+    const textoDirLimpio = text.trim();
+    const esDirInvalida = textoDirLimpio.length < 5 || PALABRAS_INVALIDAS_DIR.has(textoDirLimpio.toLowerCase());
+    if (esDirInvalida) {
+      await sendWhatsAppMessage(phone, "Por favor escríbeme tu dirección completa 😊 (ejemplo: Calle 10 # 5-32, Barrio Centro)");
+      return res.sendStatus(200);
+    }
     updateOrderAddress(phone, text);
   }
 
@@ -2347,6 +2541,20 @@ return res.sendStatus(200);
   }
 
   if (lower === "confirmar" || lower === "1") {
+    // Toppings upsell final — mostrar solo una vez antes de pedir el nombre
+    if (!currentOrder.upsellingToppingsMostrado) {
+      currentOrder.upsellingToppingsMostrado = true;
+      await sendWhatsAppButtons(phone,
+        "🎯 ¿Deseas agregar algún topping extra a tu pedido?\n\n" +
+        "🥓 Tocineta $5.500 | 🍄 Champiñones $4.500 | 🌽 Maíz $3.500 | 🍍 Piña $2.000 | 🌶️ Jalapeños $2.000",
+        [
+          { id: "agregar_mas", title: "Sí, agregar ➕" },
+          { id: "confirmar", title: "No, continuar ✅" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
+
     if (!currentOrder.nombre && !customer?.name) {
       updateOrderStep(phone, "esperando_nombre");
       replyMessage =
@@ -2463,8 +2671,24 @@ return res.sendStatus(200);
       return res.sendStatus(200);
     }
     const resumen2 = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+    // Upselling contextual en post_agregar_producto
+    const DULCES_IDS_PAP = new Set(["nutella_crepe", "chocolate_crepe", "arequipe_crepe", "tropinutella", "tropical", "crepostre"]);
+    const lastItemId_PAP = lastItemPAP?.productoId;
+    let upsellingLine2 = "";
+    if (DULCES_IDS_PAP.has(lastItemId_PAP) && !currentOrder.upsellingFrutasMostrado) {
+      currentOrder.upsellingFrutasMostrado = true;
+      upsellingLine2 = "\n\n💡 ¿Deseas agregar alguna fruta a tu crepe? Tenemos fresa $3.000, banano $2.000, durazno $3.900 o manzana $2.500 🍓";
+    } else if (lastItemId_PAP && !DULCES_IDS_PAP.has(lastItemId_PAP) && !currentOrder.upsellingTocinetaMostrado) {
+      const allProdsPAP = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+      const prodPAP = allProdsPAP.find((p: any) => p.id === lastItemId_PAP);
+      const ingPAP: string[] = prodPAP?.ingredientes || [];
+      if (!ingPAP.some((i: string) => i.toLowerCase().includes("tocineta"))) {
+        currentOrder.upsellingTocinetaMostrado = true;
+        upsellingLine2 = "\n\n💡 ¿Le agregas tocineta por solo $5.500? 🥓";
+      }
+    }
     await sendWhatsAppButtons(phone,
-      "Perfecto, agregué:\n\n" + resumen2 + "\n\n📝 Si deseas una observacion escribela, o elige:",
+      "Perfecto, agregué:\n\n" + resumen2 + upsellingLine2 + "\n\n📝 Si deseas una observacion escribela, o elige:",
       [
         { id: "confirmar", title: "Confirmar" },
         { id: "agregar_mas", title: "Agregar mas" },
@@ -2615,6 +2839,14 @@ return res.sendStatus(200);
     const totalsEf = calculateTotal(orderEf);
 
     await upsertCustomer({ phone, name: orderEf.nombre, last_address: orderEf.direccion, last_order: orderEf.items, last_order_at: new Date().toISOString(), last_sucursal: orderEf.sucursal });
+    savePedido({ numero_orden: orderEf.numeroOrden, phone, nombre: orderEf.nombre, direccion: orderEf.direccion, items: orderEf.items, subtotal: totalsEf.subtotal, domicilio: totalsEf.domicilio, total: totalsEf.total, forma_pago: "efectivo", sucursal: orderEf.sucursal, tipo_entrega: orderEf.tipoEntrega, canal: orderEf.canal, confirmed_at: orderEf.confirmedAt }).catch(e => console.error("❌ savePedido:", e));
+    if (orderEf.tipoEntrega === "domicilio") {
+      const dirEf = (orderEf.direccion || "").trim();
+      const INVALIDAS_DIR = new Set(["hola", "si", "sí", "ok", "espera", "bueno", "bien", "ya", "dale", "listo", "claro", "no"]);
+      if (dirEf.length < 5 || INVALIDAS_DIR.has(dirEf.toLowerCase())) {
+        sendWhatsAppMessage("573151913928", `⚠️ PEDIDO SIN DIRECCIÓN VÁLIDA\n👤 ${orderEf.nombre || "Sin nombre"}\n📞 ${phone}\nPor favor contactar al cliente.`).catch(e => console.error("❌ Alerta dirección:", e));
+      }
+    }
     try { await handleOperationalRouting(orderEf, totalsEf); } catch (e) { console.error(e); }
 
     if (orderEf.sucursal === "la_villa" && orderEf.locationCoords) {
@@ -2799,6 +3031,14 @@ return res.sendStatus(200);
       last_order_at: new Date().toISOString(),
       last_sucursal: order.sucursal
     });
+    savePedido({ numero_orden: order.numeroOrden, phone, nombre: order.nombre, direccion: order.direccion, items: order.items, subtotal: totals.subtotal, domicilio: totals.domicilio, total: totals.total, forma_pago: order.formaPago, sucursal: order.sucursal, tipo_entrega: order.tipoEntrega, canal: order.canal, confirmed_at: order.confirmedAt }).catch(e => console.error("❌ savePedido:", e));
+    if (order.tipoEntrega === "domicilio") {
+      const dirComp = (order.direccion || "").trim();
+      const INVALIDAS_DIR_C = new Set(["hola", "si", "sí", "ok", "espera", "bueno", "bien", "ya", "dale", "listo", "claro", "no"]);
+      if (dirComp.length < 5 || INVALIDAS_DIR_C.has(dirComp.toLowerCase())) {
+        sendWhatsAppMessage("573151913928", `⚠️ PEDIDO SIN DIRECCIÓN VÁLIDA\n👤 ${order.nombre || "Sin nombre"}\n📞 ${phone}\nPor favor contactar al cliente.`).catch(e => console.error("❌ Alerta dirección:", e));
+      }
+    }
 
     const resumenParaSucursal =
       "📸 COMPROBANTE DE PAGO\n\n" +
@@ -2867,26 +3107,56 @@ return res.sendStatus(200);
     await sendWhatsAppMessage(phone, resumenComprobante);
     replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
 
-  } else if (lower.includes("listo") || lower.includes("ya")) {
-    replyMessage = "Estamos esperando tu comprobante de pago 📸";
-
-  } else if (
-    lower.includes("cuanto es") ||
-    lower.includes("cuánto es") ||
-    lower.includes("cuanto debo") ||
-    lower.includes("cuánto debo") ||
-    lower.includes("total") ||
-    lower.includes("precio")
-  ) {
-    const order = getOrder(phone)!;
-    const totals = calculateTotal(order);
-    replyMessage = `El total de tu pedido es: $${totals.total} 😊\n\nCuando realices el pago envíame el comprobante 📸`;
-
   } else {
-    replyMessage = "Cuando realices el pago envíame el comprobante 📸";
+    replyMessage = "Por favor envía una foto del comprobante 📸";
   }
 
 } else if (currentOrder?.step === "confirmado") {
+  // Verificar si han pasado más de 2 horas desde la confirmación
+  const confirmedAtMs = currentOrder.confirmedAt ? new Date(currentOrder.confirmedAt).getTime() : currentOrder.lastInteraction;
+  const dosHorasMs = 2 * 60 * 60 * 1000;
+  const pedidoVencido = (Date.now() - confirmedAtMs) > dosHorasMs;
+
+  if (pedidoVencido) {
+    // Más de 2 horas → limpiar y mostrar menú de bienvenida como cliente recurrente
+    clearOrder(phone);
+    if (customer) {
+      await sendWhatsAppButtons(phone,
+        (customer.name?.trim() ? `Hola, ${customer.name.trim()}. ` : "Hola. ") + "Qué bueno tenerte de vuelta en LAS CREPES 😊 ¿Qué deseas hacer?" + CREBOT_SUFFIX,
+        [
+          { id: "a", title: "Lo de siempre 🔄" },
+          { id: "b", title: "Pedir algo nuevo 🥞" },
+          { id: "3", title: "Otros 💬" }
+        ]
+      );
+    } else {
+      await sendWhatsAppButtons(phone,
+        "👋 Hola, Bienvenido/a a LAS CREPES! ¿Cómo te podemos servir?" + CREBOT_SUFFIX,
+        [
+          { id: "1", title: "Hacer un pedido 🥞" },
+          { id: "2", title: "Ver menu 📋" },
+          { id: "3", title: "Otros 💬" }
+        ]
+      );
+    }
+    return res.sendStatus(200);
+  }
+
+  // Menos de 2 horas → pedido todavía en proceso
+
+  // Quiere cancelar pedido ya confirmado
+  if (
+    lower === "cancelar" || lower === "cancela" ||
+    lower.includes("cancelar pedido") ||
+    lower.includes("ya no quiero") || lower.includes("ya no lo quiero") ||
+    lower.includes("ya no necesito") || lower.includes("ya no lo necesito") ||
+    lower.includes("quiero cancelar")
+  ) {
+    replyMessage = "Entendemos 😊 Para cancelar tu pedido por favor comunícate directamente al 📱 315 191 3928 ya que tu pedido está en preparación.";
+    await sendWhatsAppMessage(phone, replyMessage);
+    return res.sendStatus(200);
+  }
+
   // Retomar flujo de pago si el cliente quiere pagar desde step confirmado
   const quierePagarConf = lower.includes("pagar") || lower.includes("quiero pagar") ||
     lower.includes("transferencia") || lower.includes("nequi") ||
@@ -2927,24 +3197,7 @@ return res.sendStatus(200);
     replyMessage =
       "Con gusto 😊 Tu pedido ya está en proceso. Te avisaremos cualquier novedad.";
   } else {
-    const confirmedAt = currentOrder.confirmedAt ? new Date(currentOrder.confirmedAt).getTime() : 0;
-    const twoHoursMs = 2 * 60 * 60 * 1000;
-    if (Date.now() - confirmedAt < twoHoursMs) {
-      replyMessage = "Tu pedido ya fue confirmado ✅. Si necesitas algo más escríbenos.";
-    } else {
-      createOrUpdateOrder(phone, []);
-      updateOrderStep(phone, "esperando_menu_principal");
-      currentOrder = getOrder(phone)!;
-      await sendWhatsAppButtons(phone,
-        "👋 Hola, Bienvenido/a a LAS CREPES! ¿Como te podemos servir?",
-        [
-          { id: "1", title: "Hacer un pedido 🥞" },
-          { id: "2", title: "Ver menú 📋" },
-          { id: "3", title: "Otros 💬" }
-        ]
-      );
-      return res.sendStatus(200);
-    }
+    replyMessage = "Tu pedido ya está confirmado y en proceso 🔥 Si tienes alguna novedad puedes escribirnos al 📱 315 191 3928";
   }
 } else if (currentOrder?.step === "armando_pedido") {
   if (
@@ -3189,6 +3442,58 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     console.error("❌ Error enviando mensaje desde panel:", err);
     return res.status(500).json({ ok: false, error: err?.message || "Error interno" });
   }
+});
+
+// ── Panel de operaciones ──────────────────────────────────────────────────────
+app.get('/operaciones', (req, res) => {
+  const key = req.query.key;
+  if (key !== process.env.PANEL_KEY) {
+    return res.status(401).send('Acceso denegado');
+  }
+  res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
+  res.sendFile(path.join(__dirname, '../public/operaciones.html'));
+});
+
+app.get('/api/pedidos', async (req, res) => {
+  const key = req.query.key as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) {
+    return res.status(401).json({ error: "Acceso no autorizado" });
+  }
+  const rows = await getPedidosActivos();
+  res.json(rows);
+});
+
+app.get('/api/pedidos/archivados', async (req, res) => {
+  const key = req.query.key as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) {
+    return res.status(401).json({ error: "Acceso no autorizado" });
+  }
+  const rows = await getPedidosArchivados();
+  res.json(rows);
+});
+
+app.put('/api/pedidos/:id/estado', async (req, res) => {
+  const key = (req.query.key || req.body?.key) as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) {
+    return res.status(401).json({ error: "Acceso no autorizado" });
+  }
+  const id = parseInt(req.params.id);
+  const { estado } = req.body || {};
+  if (!estado || isNaN(id)) {
+    return res.status(400).json({ error: "Faltan parámetros" });
+  }
+  await updatePedidoEstado(id, estado);
+
+  const pedido = await getPedidoById(id);
+  if (pedido?.phone) {
+    if (estado === "en_camino") {
+      sendWhatsAppMessage(pedido.phone, "🛵 ¡Tu pedido está en camino! Pronto llegará a tu dirección. Gracias por tu preferencia 🥞").catch(e => console.error("❌ Notif en_camino:", e));
+    } else if (estado === "entregado") {
+      sendWhatsAppMessage(pedido.phone, "✅ Tu pedido fue entregado exitosamente. Si tienes alguna inquietud háznosla saber al 📱 315 191 3928. ¡Gracias por preferir Las Crepes de París! 🥞").catch(e => console.error("❌ Notif entregado:", e));
+    }
+  }
+
+  res.json({ ok: true });
 });
 // ─────────────────────────────────────────────────────────────────────────────
 

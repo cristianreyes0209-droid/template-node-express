@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Operaciones – CreBot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; height: 100vh; display: flex; flex-direction: column; overflow: hidden; color: #111; }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    }
+    header h1 { font-size: 17px; font-weight: 600; letter-spacing: .3px; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+    .refresh-badge { font-size: 12px; opacity: 0.75; display: flex; align-items: center; gap: 6px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    .tabs { display: flex; gap: 0; background: #16213e; }
+    .tab-btn {
+      padding: 10px 24px;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,.55);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: color .15s, border-color .15s;
+    }
+    .tab-btn.active { color: #fff; border-bottom-color: #e94560; }
+    .tab-btn:hover { color: #fff; }
+
+    .board-wrap { flex: 1; overflow-x: auto; overflow-y: hidden; padding: 18px 16px; display: flex; gap: 16px; background: #f5f5f5; }
+
+    .column {
+      min-width: 285px;
+      max-width: 315px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .col-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      color: #fff;
+      flex-shrink: 0;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+    .col-header .count {
+      margin-left: auto;
+      background: rgba(255,255,255,.28);
+      border-radius: 12px;
+      padding: 2px 9px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .col-nuevo     .col-header { background: #1565c0; }
+    .col-prep      .col-header { background: #e65100; }
+    .col-camino    .col-header { background: #2e7d32; }
+    .col-entregado .col-header { background: #546e7a; }
+
+    .cards-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; }
+
+    .card {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.10);
+      font-size: 13px;
+      line-height: 1.55;
+      border: 1px solid #e8e8e8;
+    }
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 7px; }
+    .card-num { font-weight: 700; font-size: 14px; color: #111; }
+    .card-time { font-size: 11px; color: #999; white-space: nowrap; margin-left: 6px; }
+    .card-name { font-weight: 700; font-size: 13px; color: #111; }
+    .card-phone { font-size: 12px; color: #555; margin-bottom: 5px; }
+    .card-items { background: #f7f7f7; border-radius: 6px; padding: 7px 9px; margin: 7px 0; font-size: 12px; color: #222; white-space: pre-wrap; max-height: 110px; overflow-y: auto; border: 1px solid #ececec; }
+    .card-holaclick { background: #e8f5e9; border-radius: 6px; padding: 7px 9px; margin: 7px 0; font-size: 11px; color: #1b5e20; max-height: 85px; overflow-y: auto; white-space: pre-wrap; border: 1px solid #c8e6c9; }
+    .card-meta { font-size: 12px; color: #444; margin: 3px 0; }
+    .card-meta span { font-weight: 700; color: #111; }
+    .card-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .btn-action {
+      flex: 1;
+      min-width: 82px;
+      padding: 7px 10px;
+      border: none;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn-action:hover { opacity: .88; transform: translateY(-1px); }
+    .btn-action:active { transform: translateY(0); opacity: 1; }
+    .btn-prep     { background: #ef6c00; color: #fff; }
+    .btn-camino   { background: #2e7d32; color: #fff; }
+    .btn-entregar { background: #455a64; color: #fff; }
+    .btn-final    { background: #c62828; color: #fff; }
+    .btn-revert   { background: #e0e0e0; color: #333; }
+
+    .badge-canal {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-left: 7px;
+      vertical-align: middle;
+      letter-spacing: .2px;
+    }
+    .badge-holaclick { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .badge-bot { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+
+    .empty-col { color: #bbb; font-size: 13px; text-align: center; padding: 28px 0; }
+
+    /* Archived tab */
+    .archived-wrap { flex: 1; overflow-y: auto; padding: 18px 16px; background: #f5f5f5; }
+    .archived-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,.10); font-size: 13px; border: 1px solid #e8e8e8; }
+    .archived-table th { background: #1a1a2e; color: #fff; padding: 11px 14px; text-align: left; font-weight: 600; font-size: 12px; letter-spacing: .4px; text-transform: uppercase; }
+    .archived-table td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; vertical-align: top; color: #222; }
+    .archived-table tr:last-child td { border-bottom: none; }
+    .archived-table tr:hover td { background: #fafafa; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="font-size:22px">🥞</div>
+  <h1>CreBot – Panel de Operaciones</h1>
+  <div class="header-right">
+    <div class="refresh-badge"><span class="dot"></span> Auto-actualiza 10s</div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('activos')">📋 Pedidos Activos</button>
+  <button class="tab-btn" onclick="switchTab('archivados')">🗂️ Archivados</button>
+</div>
+
+<!-- Kanban board -->
+<div class="board-wrap" id="boardWrap">
+  <div class="column col-nuevo">
+    <div class="col-header">🔵 Nuevos<span class="count" id="cnt-nuevo">0</span></div>
+    <div class="cards-area" id="col-nuevo"></div>
+  </div>
+  <div class="column col-prep">
+    <div class="col-header">🟠 Preparando<span class="count" id="cnt-preparando">0</span></div>
+    <div class="cards-area" id="col-preparando"></div>
+  </div>
+  <div class="column col-camino">
+    <div class="col-header">🟢 En Camino<span class="count" id="cnt-en_camino">0</span></div>
+    <div class="cards-area" id="col-en_camino"></div>
+  </div>
+  <div class="column col-entregado">
+    <div class="col-header">✅ Entregado<span class="count" id="cnt-entregado">0</span></div>
+    <div class="cards-area" id="col-entregado"></div>
+  </div>
+</div>
+
+<!-- Archived table -->
+<div class="archived-wrap" id="archivedWrap" style="display:none;">
+  <table class="archived-table">
+    <thead>
+      <tr>
+        <th>#</th><th>Fecha</th><th>Cliente</th><th>Teléfono</th><th>Sucursal</th><th>Total</th><th>Pago</th><th>Tipo</th><th>Canal</th>
+      </tr>
+    </thead>
+    <tbody id="archivedBody">
+      <tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px;">Cargando...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const KEY = new URLSearchParams(location.search).get('key') || '';
+  let currentTab = 'activos';
+  let pedidosAnteriores = {};
+
+  function apiUrl(path) {
+    return `${path}?key=${encodeURIComponent(KEY)}`;
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (i === 0 && tab === 'activos') || (i === 1 && tab === 'archivados'));
+    });
+    document.getElementById('boardWrap').style.display = tab === 'activos' ? 'flex' : 'none';
+    document.getElementById('archivedWrap').style.display = tab === 'archivados' ? 'block' : 'none';
+    if (tab === 'archivados') loadArchivados();
+  }
+
+  function formatDateTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleString('es-CO', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
+  function escapeHtml(t) {
+    if (!t) return '';
+    return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function itemsText(items) {
+    if (!items || items.length === 0) return '';
+    return items.map(i => {
+      const extras = i.extras && i.extras.length > 0 ? ' +' + i.extras.map(e => e.nombre).join(', +') : '';
+      const obs = i.observaciones ? ` (${i.observaciones})` : '';
+      return `${i.cantidad}x ${i.producto}${i.variante ? ' – ' + i.variante : ''}${extras}${obs}`;
+    }).join('\n');
+  }
+
+  function renderCard(p) {
+    const canalBadge = p.canal === 'holaclick'
+      ? '<span class="badge-canal badge-holaclick">HolaClick</span>'
+      : '<span class="badge-canal badge-bot">Bot</span>';
+
+    const itemsHtml = p.holaclick_order
+      ? `<div class="card-holaclick">${escapeHtml(p.holaclick_order)}</div>`
+      : (p.items && p.items.length > 0 ? `<div class="card-items">${escapeHtml(itemsText(p.items))}</div>` : '');
+
+    const totalHtml = p.total ? `<div class="card-meta">💵 Total: <span>$${Number(p.total).toLocaleString('es-CO')}</span>${p.domicilio ? ` (dom: $${Number(p.domicilio).toLocaleString('es-CO')})` : ''}</div>` : '';
+    const entregaHtml = p.tipo_entrega === 'domicilio'
+      ? `<div class="card-meta">🚚 Domicilio${p.direccion ? ': <span>' + escapeHtml(p.direccion) + '</span>' : ''}</div>`
+      : p.tipo_entrega === 'recoger' ? `<div class="card-meta">🏪 <span>Recoger en tienda</span></div>` : '';
+
+    const sucursalHtml = p.sucursal
+      ? `<div class="card-meta">🏬 <span>${p.sucursal === 'la_villa' ? 'La Villa' : p.sucursal === 'circunvalar' ? 'Av. Circunvalar' : escapeHtml(p.sucursal)}</span></div>` : '';
+
+    const pagoHtml = p.forma_pago ? `<div class="card-meta">💳 <span>${escapeHtml(p.forma_pago)}</span></div>` : '';
+
+    // Action buttons per state
+    let acciones = '';
+    if (p.estado === 'nuevo') {
+      acciones = `<button class="btn-action btn-prep" onclick="cambiarEstado(${p.id},'preparando')">➡️ Preparando</button>`;
+    } else if (p.estado === 'preparando') {
+      acciones = p.tipo_entrega === 'domicilio'
+        ? `<button class="btn-action btn-revert" onclick="cambiarEstado(${p.id},'nuevo')">↩️ Nuevo</button><button class="btn-action btn-camino" onclick="cambiarEstado(${p.id},'en_camino')">🚚 En Camino</button>`
+        : `<button class="btn-action btn-revert" onclick="cambiarEstado(${p.id},'nuevo')">↩️ Nuevo</button><button class="btn-action btn-entregar" onclick="cambiarEstado(${p.id},'entregado')">✅ Entregado</button>`;
+    } else if (p.estado === 'en_camino') {
+      acciones = `<button class="btn-action btn-revert" onclick="cambiarEstado(${p.id},'preparando')">↩️ Preparando</button><button class="btn-action btn-entregar" onclick="cambiarEstado(${p.id},'entregado')">✅ Entregado</button>`;
+    } else if (p.estado === 'entregado') {
+      acciones = `<button class="btn-action btn-revert" onclick="cambiarEstado(${p.id},'en_camino')">↩️ En Camino</button><button class="btn-action btn-final" onclick="cambiarEstado(${p.id},'finalizado')">🗂️ Finalizar</button>`;
+    }
+
+    const numStr = p.numero_orden ? `#${p.numero_orden}` : `ID ${p.id}`;
+
+    return `
+      <div class="card" id="card-${p.id}">
+        <div class="card-top">
+          <span class="card-num">${numStr}${canalBadge}</span>
+          <span class="card-time">${formatDateTime(p.created_at)}</span>
+        </div>
+        <div class="card-name">${escapeHtml(p.nombre || 'Sin nombre')}</div>
+        <div class="card-phone">📞 +${escapeHtml(p.phone)}</div>
+        ${itemsHtml}
+        ${sucursalHtml}
+        ${entregaHtml}
+        ${totalHtml}
+        ${pagoHtml}
+        <div class="card-actions">${acciones}</div>
+      </div>`;
+  }
+
+  async function cambiarEstado(id, estado) {
+    try {
+      await fetch(`/api/pedidos/${id}/estado?key=${encodeURIComponent(KEY)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado })
+      });
+      await loadPedidos();
+    } catch (e) { console.error(e); }
+  }
+
+  function reproducirAlertaOp() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      function beep(freq, start, dur, vol) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = freq; osc.type = 'square';
+        gain.gain.setValueAtTime(vol, ctx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + dur);
+      }
+      beep(880, 0, 0.15, 1.5);
+      beep(880, 0.2, 0.15, 1.5);
+      beep(880, 0.4, 0.3, 1.5);
+    } catch(e) {}
+  }
+
+  async function loadPedidos() {
+    try {
+      const res = await fetch(apiUrl('/api/pedidos'));
+      if (!res.ok) return;
+      const pedidos = await res.json();
+
+      // Detect new orders
+      const nuevosIds = new Set(pedidos.map(p => p.id));
+      let hayNuevos = false;
+      for (const id of nuevosIds) {
+        if (!pedidosAnteriores[id]) hayNuevos = true;
+      }
+      if (Object.keys(pedidosAnteriores).length > 0 && hayNuevos) reproducirAlertaOp();
+      pedidosAnteriores = {};
+      for (const p of pedidos) pedidosAnteriores[p.id] = p.estado;
+
+      const cols = { nuevo: [], preparando: [], en_camino: [], entregado: [] };
+      for (const p of pedidos) {
+        if (cols[p.estado]) cols[p.estado].push(p);
+      }
+
+      for (const [estado, lista] of Object.entries(cols)) {
+        const col = document.getElementById(`col-${estado}`);
+        const cnt = document.getElementById(`cnt-${estado}`);
+        cnt.textContent = lista.length;
+        col.innerHTML = lista.length === 0
+          ? '<div class="empty-col">Sin pedidos</div>'
+          : lista.map(renderCard).join('');
+      }
+    } catch (e) { console.error(e); }
+  }
+
+  async function loadArchivados() {
+    try {
+      const res = await fetch(apiUrl('/api/pedidos/archivados'));
+      if (!res.ok) return;
+      const rows = await res.json();
+      const tbody = document.getElementById('archivedBody');
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px;">Sin registros archivados</td></tr>';
+        return;
+      }
+      tbody.innerHTML = rows.map(p => `
+        <tr>
+          <td>${p.numero_orden ? '#' + p.numero_orden : p.id}</td>
+          <td>${formatDateTime(p.updated_at)}</td>
+          <td>${escapeHtml(p.nombre || '—')}</td>
+          <td>+${escapeHtml(p.phone)}</td>
+          <td>${p.sucursal === 'la_villa' ? 'La Villa' : p.sucursal === 'circunvalar' ? 'Av. Circunvalar' : escapeHtml(p.sucursal || '—')}</td>
+          <td>${p.total ? '$' + Number(p.total).toLocaleString('es-CO') : '—'}</td>
+          <td>${escapeHtml(p.forma_pago || '—')}</td>
+          <td>${escapeHtml(p.tipo_entrega || '—')}</td>
+          <td>${p.canal === 'holaclick' ? '<span class="badge-canal badge-holaclick">HolaClick</span>' : '<span class="badge-canal badge-bot">Bot</span>'}</td>
+        </tr>
+      `).join('');
+    } catch (e) { console.error(e); }
+  }
+
+  // Initial load
+  loadPedidos();
+
+  // Auto-refresh every 10s
+  setInterval(() => {
+    if (currentTab === 'activos') loadPedidos();
+    else loadArchivados();
+  }, 10000);
+</script>
+</body>
+</html>
