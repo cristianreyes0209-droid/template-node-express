@@ -574,7 +574,10 @@ export const menu = {
       aliases: [
         "pollo y piña",
         "pollo y pina",
-        "crepe pollo y piña"
+        "pollo piña",
+        "pollo pina",
+        "crepe pollo y piña",
+        "crepe pollo piña"
       ],
       modificadoresComunes: [
         "sin pollo",

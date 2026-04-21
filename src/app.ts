@@ -826,6 +826,20 @@ if (esConsultaUbicacion && !esMensajeLargo) {
   return res.sendStatus(200);
 }
 
+// Pregunta sobre formas de pago — respuesta inmediata en cualquier step
+const esPreguntaPago =
+  lower.includes("formas de pago") || lower.includes("forma de pago") ||
+  lower.includes("cómo pago") || lower.includes("como pago") ||
+  lower.includes("se puede pagar") || lower.includes("puedo pagar") ||
+  lower.includes("pago con nequi") || lower.includes("pago con bancolombia") ||
+  lower.includes("pago con efectivo") || lower.includes("aceptan nequi") ||
+  lower.includes("aceptan bancolombia") || lower.includes("métodos de pago") ||
+  lower.includes("metodos de pago") || lower.includes("medios de pago");
+if (esPreguntaPago) {
+  await sendWhatsAppMessage(phone, "Aceptamos Efectivo 💵, Nequi/Daviplata 📱 y Bancolombia 🏦 💳");
+  return res.sendStatus(200);
+}
+
 // Cancelar pedido — cualquier step excepto "confirmado"
 if (
   currentOrder &&
@@ -1138,7 +1152,19 @@ if (
   // ── Fallback inteligente: múltiples interpretaciones antes de rendirnos ──────
 
   // 1. Botón enviado como texto plano
-  const esConfirmar = lower === "confirmar" || lower === "1" || lower === "listo" || lower === "confirmo";
+  const esConfirmar = new Set(["confirmar", "1", "listo", "ok", "dale", "si", "sí", "okay", "perfecto", "confirmo", "vamos", "de una", "adelante", "va"]).has(lower);
+  const esNadaMas = lower === "no" || lower === "nada" || lower === "nada más" || lower === "nada mas" || lower === "eso es todo" || lower === "es todo" || lower === "con eso" || lower === "ya está" || lower === "ya esta" || lower === "eso" || lower === "suficiente";
+  if (esNadaMas && currentOrder.items.length > 0) {
+    // Tratar igual que Confirmar
+    updateOrderStep(phone, "post_agregar_producto");
+    currentOrder = getOrder(phone)!;
+    const resumenNada = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+    await sendWhatsAppButtons(phone,
+      "Tu pedido hasta ahora:\n\n" + resumenNada + "\n\n¿Qué deseas hacer?",
+      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+    );
+    return res.sendStatus(200);
+  }
   const esAgregarMas = lower === "agregar_mas" || lower === "agregar más" || lower === "agregar mas" || lower === "agregar" || lower === "más" || lower === "mas";
   const esEliminar = lower === "eliminar" || lower === "borrar" || lower === "quitar" || lower === "eliminar producto";
 
@@ -1321,6 +1347,20 @@ return res.sendStatus(200);
     await sendWhatsAppMessage(phone, replyMessage);
     return res.sendStatus(200);
   }
+
+// Safety net: si hay pedido activo con items, nunca mostrar menú de bienvenida
+if (currentOrder && currentOrder.items.length > 0 &&
+  (currentOrder.step === "esperando_menu_principal" || currentOrder.step === "esperando_menu_nuevo")
+) {
+  const resumenSN = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+  updateOrderStep(phone, "post_agregar_producto");
+  currentOrder = getOrder(phone)!;
+  await sendWhatsAppButtons(phone,
+    "Tu pedido hasta ahora:\n\n" + resumenSN + "\n\n¿Qué deseas hacer?",
+    [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+  );
+  return res.sendStatus(200);
+}
 
 if (!currentOrder) {
   if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("ver menu") || lower.includes("carta")) {
@@ -2166,7 +2206,7 @@ return res.sendStatus(200);
   return res.sendStatus(200);
 
 } else if (currentOrder?.step === "esperando_queso_dulce") {
-  const withQueso = lower === "con_queso_dulce" || lower.includes("con") || lower.includes("queso");
+  const withQueso = lower === "con_queso_dulce" || lower === "con queso" || (lower.includes("con") && !lower.includes("sin"));
   const orderQD = getOrder(phone)!;
   const lastItemQD = orderQD.items[orderQD.items.length - 1];
   if (lastItemQD) {
@@ -2540,7 +2580,8 @@ return res.sendStatus(200);
     return res.sendStatus(200);
   }
 
-  if (lower === "confirmar" || lower === "1") {
+  const CONFIRMAR_KEYWORDS = new Set(["confirmar", "1", "listo", "ok", "dale", "si", "sí", "okay", "perfecto", "confirmo", "vamos", "de una", "adelante", "va"]);
+  if (CONFIRMAR_KEYWORDS.has(lower)) {
     // Toppings upsell final — mostrar solo una vez antes de pedir el nombre
     if (!currentOrder.upsellingToppingsMostrado) {
       currentOrder.upsellingToppingsMostrado = true;
