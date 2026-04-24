@@ -558,6 +558,11 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
 
   let currentOrder = getOrder(phone);
 
+  // Limpiar flag de intervención del asesor al recibir el primer mensaje del cliente después
+  if (currentOrder?.asesorIntervenido) {
+    currentOrder.asesorIntervenido = false;
+  }
+
   // Limpiar timer de inactividad al recibir cualquier mensaje
   const existingTimer = inactivityTimers.get(phone);
   if (existingTimer) {
@@ -628,7 +633,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   }
 
   // Cancelar timer si el pedido ya está confirmado
-  const STEPS_SIN_TIMER = new Set(["confirmado", "esperando_asesor", "esperando_mensaje_fuera_horario"]);
+  const STEPS_SIN_TIMER = new Set(["confirmado", "esperando_asesor", "esperando_ayuda", "esperando_mensaje_fuera_horario"]);
   if (STEPS_SIN_TIMER.has(currentOrder?.step || "")) {
     const timerExistente = inactivityTimers.get(phone);
     if (timerExistente) {
@@ -1253,7 +1258,17 @@ if (
     return res.sendStatus(200);
   }
 
-  // 5. Último recurso
+  // 5. Solicitud genérica de crepe ("otra", "una más", "lo mismo", etc.)
+  const SOLICITUD_GENERICA_PATTERNS = ["otra", "otro", "una mas", "uno mas", "un mas", "una más", "uno más", "un más", "lo mismo", "igual", "quiero otra", "quiero otro", "quiero mas", "quiero más"];
+  const esGenerico = lower === "crepe" || SOLICITUD_GENERICA_PATTERNS.some(p => lower === p || lower.includes(p));
+  if (esGenerico) {
+    await sendWhatsAppMessage(phone,
+      "¿Qué crepe deseas agregar? 😊\n\nEj: Hawaiana, Ranchera, París, Pollo y Champiñones, Especial..."
+    );
+    return res.sendStatus(200);
+  }
+
+  // 6. Último recurso
   replyMessage =
     "No logré entender bien tu pedido 😅\n\n" +
     "Puedes escribirlo así:\n" +
@@ -2085,7 +2100,7 @@ return res.sendStatus(200);
   const itemNeedingVariant = parsedItems.find(item => {
     if (item.variante) return false;
     const prod = allMenuProducts.find((p: any) => p.id === item.productoId);
-    return prod?.tipo === "jugo" || prod?.id === "vegetariana" || prod?.id === "malteada" || prod?.id === "limonada" || prod?.id === "vegetales_mixta" || prod?.id === "ranchera_mixta";
+    return prod?.tipo === "jugo" || prod?.id === "vegetariana" || prod?.id === "malteada" || prod?.id === "limonada" || prod?.id === "vegetales_mixta" || prod?.id === "ranchera_mixta" || prod?.id === "desgranada_mixta";
   });
 
   if (itemNeedingVariant) {
@@ -2320,11 +2335,13 @@ return res.sendStatus(200);
     if (orderForCoords) orderForCoords.locationCoords = { latitude, longitude };
   } else {
     // Validar que el texto parece una dirección real
-    const PALABRAS_INVALIDAS_DIR = new Set(["hola", "si", "sí", "ok", "espera", "espérame", "esperame", "bueno", "bien", "ya", "dale", "listo", "claro", "no", "momento", "ahorita", "ahora"]);
+    const PALABRAS_INVALIDAS_DIR = new Set(["hola", "si", "sí", "ok", "espera", "espérame", "esperame", "bueno", "bien", "ya", "dale", "listo", "claro", "no", "momento", "ahorita", "ahora", "gracias", "ok gracias", "muchas gracias", "perfecto", "entendido"]);
     const textoDirLimpio = text.trim();
-    const esDirInvalida = textoDirLimpio.length < 5 || PALABRAS_INVALIDAS_DIR.has(textoDirLimpio.toLowerCase());
+    const tieneDigito = /\d/.test(textoDirLimpio);
+    const tieneKeywordDir = /\b(calle|carrera|carr|cll|cra|cr|av\b|avenida|diagonal|transversal|circular|autopista|variante|barrio|conjunto|urbanizacion|urbanización|manzana|km|kilómetro|kilómetros|#|nro|no\.)\b/i.test(textoDirLimpio);
+    const esDirInvalida = textoDirLimpio.length < 5 || PALABRAS_INVALIDAS_DIR.has(textoDirLimpio.toLowerCase()) || (!tieneDigito && !tieneKeywordDir);
     if (esDirInvalida) {
-      await sendWhatsAppMessage(phone, "Por favor escríbeme tu dirección completa 😊 (ejemplo: Calle 10 # 5-32, Barrio Centro)");
+      await sendWhatsAppMessage(phone, "No encontré una dirección válida 📍 Por favor escríbela así:\n\nCalle 12 #33-10, barrio Los Álamos");
       return res.sendStatus(200);
     }
     updateOrderAddress(phone, text);
@@ -3478,6 +3495,8 @@ app.post('/api/enviar-mensaje', async (req, res) => {
   try {
     await sendWhatsAppMessage(phone, mensaje);
     await saveMessage(phone, "asesor", mensaje);
+    const sessionOrder = getOrder(phone);
+    if (sessionOrder) sessionOrder.asesorIntervenido = true;
     return res.json({ ok: true });
   } catch (err: any) {
     console.error("❌ Error enviando mensaje desde panel:", err);

@@ -294,6 +294,26 @@ export const menu = {
             "Huevos de codorniz",
             "Salsa de ajo"
           ],
+          variantes: [
+            {
+              id: "mixta",
+              nombre: "Mixta (Pollo y Carne)",
+              precio: 27500,
+              aliases: ["mixta", "pollo y carne", "carne y pollo"]
+            },
+            {
+              id: "solo_pollo",
+              nombre: "Solo Pollo",
+              precio: 27500,
+              aliases: ["solo pollo", "con pollo", "de pollo"]
+            },
+            {
+              id: "solo_carne",
+              nombre: "Solo Carne",
+              precio: 27500,
+              aliases: ["solo carne", "con carne", "de carne"]
+            }
+          ],
           aliases: [
             "desgranada",
             "degranada",
@@ -545,9 +565,16 @@ export const menu = {
       aliases: [
         "pollo champiñon",
         "pollo champinon",
+        "pollo champiñones",
+        "pollo champinones",
+        "pollo y champiñones",
+        "pollo y champinones",
+        "pollo con champiñones",
         "pollo con champinon",
         "pollo con champinones",
-        "crepe pollo champiñon"
+        "crepe pollo champiñon",
+        "crepe de pollo y champiñones",
+        "crepe pollo champiñones"
       ],
       modificadoresComunes: [
         "sin pollo",
@@ -1177,6 +1204,8 @@ aliases: [
           id: "nachos_cheddar",
           nombre: "Nachos con Cheddar",
           precio: 18000,
+          ingredientes: ["Nachos", "Queso cheddar (incluido)"],
+          notas: "El queso cheddar ya está incluido en el precio. No cobrar cheddar como extra.",
           aliases: ["nachos cheddar", "nachos con queso", "nachos con cheddar"]
         }
       ]
