@@ -1304,7 +1304,7 @@ if (
   // Solicitud de ver menú en medio del pedido
   if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("carta") || lower === "ver menu") {
     await sendWhatsAppMessage(phone,
-      "Aquí tienes el menú completo 📋\n\nhttps://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n\nCuando estés listo, escríbeme qué deseas pedir 😊"
+      "Aquí tienes el menú completo 📋\n\nhttps://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n 😊"
     );
     return res.sendStatus(200);
   }
