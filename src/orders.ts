@@ -43,7 +43,6 @@ export type OrderStep =
   | "esperando_factura"
   | "esperando_datos_factura"
   | "esperando_jalapenos"
-  | "esperando_queso_dulce"
   | "confirmado";
 
 export type CustomerOrder = {
@@ -68,6 +67,7 @@ export type CustomerOrder = {
   locationCoords?: { latitude: number; longitude: number };
   pendingProduct?: { id: string; nombre: string; precio: number };
   pendingProductQuery?: { id: string; nombre: string; precio: number };
+  itemsPendientes?: { productoId: string; cantidad: number }[];
   inactivityPending?: boolean;
   asesorIntervenido?: boolean;
   upsellingFrutasMostrado?: boolean;
@@ -78,6 +78,7 @@ export type CustomerOrder = {
       nombre: string;
       productoId: string;
     }[];
+    cantidad?: number;
   };
 };
 
@@ -109,10 +110,11 @@ export function calculateTotal(order: CustomerOrder, valorDomicilioOverride?: nu
 
 export function setPendingClarification(
   phone: string,
-  opciones: { nombre: string; productoId: string }[]
+  opciones: { nombre: string; productoId: string }[],
+  cantidad?: number
 ) {
   if (orders[phone]) {
-    orders[phone].aclaracionPendiente = { opciones };
+    orders[phone].aclaracionPendiente = { opciones, cantidad };
   }
 }
 

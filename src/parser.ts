@@ -139,7 +139,23 @@ export function normalizeText(text: string) {
     .replace(/\bpari\b/g, "paris")
     .replace(/\bpaqris\b/g, "paris")
     .replace(/\buna de camarones\b/g, "camarones")
-    .replace(/\bde camarones\b/g, "camarones");
+    .replace(/\bde camarones\b/g, "camarones")
+    // Typos comunes de productos
+    .replace(/\branquera\b/g, "ranchera")
+    .replace(/\brancheras\b/g, "ranchera")
+    .replace(/\bhawaina\b/g, "hawaiana")
+    .replace(/\bhawaina\b/g, "hawaiana")
+    .replace(/\bhawainana\b/g, "hawaiana")
+    .replace(/\bhawaina\b/g, "hawaiana")
+    .replace(/\bhawayana\b/g, "hawaiana")
+    .replace(/\bmexicana\b/g, "mexicana")
+    .replace(/\bmejicana\b/g, "mexicana")
+    .replace(/\bdesgranado\b/g, "desgranada")
+    .replace(/\bmariscos\b/g, "mariscos")
+    .replace(/\bnutela\b/g, "nutella")
+    .replace(/\barequipe\b/g, "arequipe")
+    .replace(/\barrequipe\b/g, "arequipe")
+    .replace(/\btropinutela\b/g, "tropinutella");
 }
 
 function splitIntoFragments(text: string) {
@@ -156,6 +172,23 @@ function splitIntoFragments(text: string) {
     if (/sin\s+\w+.*\s+y\s+sin\s+\w+/i.test(part)) {
       result.push(...splitByInlineNumbers(part));
       continue;
+    }
+
+    // Si la parte completa es un alias de producto conocido, no partir por "y"
+    // (ej: "pollo y champiñones" no debe dividirse en ["pollo", "champiñones"])
+    {
+      const allMainProdsForSplit = (menu.categorias as any[])
+        .filter((c: any) => c.id !== "extras")
+        .flatMap((c: any) => c.productos as any[]);
+      const partNorm = normalizeText(part);
+      const isKnownProductPhrase = allMainProdsForSplit.some((p: any) =>
+        normalizeText(p.nombre) === partNorm ||
+        (p.aliases || []).some((a: string) => normalizeText(a) === partNorm)
+      );
+      if (isKnownProductPhrase) {
+        result.push(...splitByInlineNumbers(part));
+        continue;
+      }
     }
 
     // Partir por "y", "e", "más", "además", "también", "súmale", "agrégale"
@@ -330,6 +363,12 @@ function findBestProductMatches(fragment: string, products: any[]) {
       score = 1; // texto es parte significativa del alias
     } else if (similarity(text, entry.alias) > 0.78) {
       score = 1; // similitud difusa
+    } else if (
+      text.length >= 4 &&
+      entry.alias.length >= 4 &&
+      editDistance(text, entry.alias) <= 2
+    ) {
+      score = 1; // Levenshtein ≤ 2 (typos)
     }
 
     if (score > 0) {
@@ -582,7 +621,6 @@ export async function classifyWithAI(
     `{\n` +
     `  "intent": "producto" | "observacion" | "pregunta" | "extra" | "ambiguo",\n` +
     `  "items": [{"productoId": string, "producto": string, "cantidad": number, "precio": number, "observaciones": string, "extras": []}],\n` +
-    `  "upselling": string,\n` +
     `  "observacion": string,\n` +
     `  "productoIndex": number,\n` +
     `  "respuesta": string,\n` +
@@ -596,9 +634,8 @@ export async function classifyWithAI(
     `- intent "pregunta": el cliente pregunta algo. Llena "respuesta" con una respuesta corta y útil basada en el menú.\n` +
     `- intent "extra": el cliente pide un extra para el último producto. Llena "extraNombre" y "extraPrecio".\n` +
     `- intent "ambiguo": el mensaje coincide con varios productos. Llena "opciones" con los candidatos.\n` +
-    `- Upselling: solo si intent es "producto", sugiere UN adicional relevante en "upselling" (máx 1 oración).\n` +
-    `- Si el pedido no tiene bebida, sugiere jugo o limonada en upselling.\n` +
-    `- No inventes productos que no estén en el menú. Si no reconoces nada, usa intent "ambiguo" con opciones vacías.`;
+    `- Si el texto parece un pedido de comida o bebida pero el producto NO está en el menú, usa intent "pregunta" y en "respuesta" escribe: "Lo sentimos, en este momento no tenemos [nombre del producto] 😊 ¿Deseas agregar algo más?"\n` +
+    `- Si el texto no es reconocible como nada (ni producto, ni observacion, ni pregunta, ni extra), usa intent "ambiguo" con opciones vacías.`;
 
   try {
     console.log(`🤖 LLAMANDO GEMINI (classifyWithAI) con texto: "${text}"`);
@@ -711,15 +748,7 @@ export async function parseWithAI(text: string): Promise<ParseResult> {
     `Eres un asistente de pedidos para Las Crepes de París, Pereira Colombia. Tu trabajo tiene DOS partes:\n\n` +
     `PARTE 1 - PARSEAR EL PEDIDO:\n` +
     `Identifica productos del menú en el mensaje del cliente aunque estén mal escritos. Retorna JSON con este formato exacto:\n` +
-    `{\n  "items": [{\n    "producto": string,\n    "productoId": string,\n    "cantidad": number,\n    "precio": number,\n    "observaciones": string,\n    "extras": [{"nombre": string, "precio": number}]\n  }],\n  "observacionGeneral": string,\n  "upselling": string\n}\n\n` +
-    `PARTE 2 - UPSELLING (solo si encontraste productos):\n` +
-    `En el campo 'upselling' sugiere UN SOLO adicional relevante siguiendo estas reglas:\n` +
-    `- Crepes saladas: ofrece máximo 1 topping que NO esté en la crepe (tocineta $5.500, maíz $3.500, piña $2.000, champiñones $4.500)\n` +
-    `- Crepes dulces: ofrece fruta o helado\n` +
-    `- Si el pedido no tiene bebida: ofrece jugos, limonadas o malteadas\n` +
-    `- Si el cliente ya rechazó upselling antes: campo upselling vacío\n` +
-    `- Tono natural y breve, máximo una oración\n` +
-    `- Si no hay upselling relevante: campo upselling vacío\n\n` +
+    `{\n  "items": [{\n    "producto": string,\n    "productoId": string,\n    "cantidad": number,\n    "precio": number,\n    "observaciones": string,\n    "extras": [{"nombre": string, "precio": number}]\n  }],\n  "observacionGeneral": string\n}\n\n` +
     `REGLAS:\n` +
     `- Detecta observaciones como 'sin cebolla', 'bien tostada', 'poco queso'\n` +
     `- No inventes productos que no estén en el menú\n` +
@@ -868,10 +897,18 @@ for (const fragment of fragments) {
 
   const fragmentLimpio = fragment
     .replace(/^(\d+|una|uno|un|dos|tres|cuatro|cinco)\s+/i, "")
+    .replace(/\bcrepe\s+de\b/g, "")   // "crepe de X" → "X"
     .replace(/\bcrepe\b/g, "")
+    .replace(/\bun\s+/g, "")          // artículos
+    .replace(/\buna\s+/g, "")
+    .replace(/\bel\s+/g, "")
+    .replace(/\bla\s+/g, "")
+    .replace(/\blos\s+/g, "")
+    .replace(/\blas\s+/g, "")
     .replace(/\bsin\s+\w+(?:\s+\w+)?\b/g, "")  // quitar "sin X" para buscar producto
     .replace(/\bpoco\s+\w+\b/g, "")
     .replace(/\bbien\s+\w+\b/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 
   const cantidad = extractCantidad(fragment);
@@ -883,7 +920,13 @@ for (const fragment of fragments) {
 
   const variant = findVariantInFragment(fragment, product);
   const observaciones = extractObservaciones(fragment);
-  const extras = extractExtrasFromFragment(fragment, extraProducts, product);
+  // Si el fragmento completo es un alias del producto, no extraer extras
+  // (evita que "pollo con champiñones" agregue champiñones como extra)
+  const fragmentNorm = normalizeText(fragmentLimpio);
+  const isExactProductAlias =
+    normalizeText(product.nombre) === fragmentNorm ||
+    (product.aliases || []).some((a: string) => normalizeText(a) === fragmentNorm);
+  const extras = isExactProductAlias ? [] : extractExtrasFromFragment(fragment, extraProducts, product);
 
   items.push({
     productoId: product.id,

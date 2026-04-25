@@ -297,9 +297,9 @@ export const menu = {
           variantes: [
             {
               id: "mixta",
-              nombre: "Mixta (Pollo y Carne)",
+              nombre: "Mixta",
               precio: 27500,
-              aliases: ["mixta", "pollo y carne", "carne y pollo"]
+              aliases: ["mixta", "pollo y carne", "carne y pollo", "mixta pollo y carne"]
             },
             {
               id: "solo_pollo",
@@ -442,9 +442,9 @@ export const menu = {
       variantes: [
         {
           id: "mixta",
-          nombre: "Mixta (Pollo y Carne)",
+          nombre: "Mixta",
           precio: 24500,
-          aliases: ["mixta", "pollo y carne", "carne y pollo"]
+          aliases: ["mixta", "pollo y carne", "carne y pollo", "mixta pollo y carne"]
         },
         {
           id: "solo_pollo",
@@ -1440,7 +1440,7 @@ aliases: [
           precio: 17900,
           aliases: ["malteada"],
           variantes: [
-            { id: "vainilla_brownie", nombre: "Vainilla brownie", precio: 17900, aliases: ["vainilla brownie", "brownie vainilla", "brownie"] },
+            { id: "vainilla_brownie", nombre: "Brownie", precio: 17900, aliases: ["vainilla brownie", "brownie vainilla", "brownie", "vainilla brownie"] },
             { id: "vainilla", nombre: "Vainilla", precio: 17900, aliases: ["vainilla"] },
             { id: "fresa", nombre: "Fresa", precio: 17900, aliases: ["fresa"] }
           ]
