@@ -2383,7 +2383,7 @@ return res.sendStatus(200);
       "Perfecto 👍\n\n" +
       "Puedes hacer tu pedido aquí:\n" +
       "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
-      "O si prefieres, escríbeme lo que deseas pedir y yo te ayudo por aquí 😊";
+      "si tienes dificultad para hacer el pedido puedes llamarnos al 6063413020 😊";
 
   } else if (
     lower === "b" ||
@@ -2399,7 +2399,7 @@ return res.sendStatus(200);
       "Perfecto 👍\n\n" +
       "Puedes hacer tu pedido aquí:\n" +
       "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
-      "O si prefieres, escríbeme lo que deseas pedir y yo te ayudo por aquí 😊";
+      "si tienes dificulta para hacer el pedido nos puedes llamar al 6063413020";
 
   } else {
     await sendWhatsAppButtons(phone,
