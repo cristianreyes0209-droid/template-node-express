@@ -65,6 +65,8 @@ export type CustomerOrder = {
   testMode?: boolean;
   numeroOrden?: number;
   locationCoords?: { latitude: number; longitude: number };
+  distanciaKm?: number;
+  domicilioTexto?: string;
   pendingProduct?: { id: string; nombre: string; precio: number };
   pendingProductQuery?: { id: string; nombre: string; precio: number };
   itemsPendientes?: { productoId: string; cantidad: number }[];

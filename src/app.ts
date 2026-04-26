@@ -942,7 +942,12 @@ const esPreguntaPago =
   lower.includes("datos para transferir") || lower.includes("consignacion") || lower.includes("consignación") ||
   lower.includes("datafono") || lower.includes("datáfono") || lower.includes("tarjeta") ||
   lower.includes("cuenta bancaria") || lower.includes("datos de pago");
-if (esPreguntaPago) {
+const stepActualPago = currentOrder?.step;
+const enStepDePago = stepActualPago === "esperando_pago"
+  || stepActualPago === "esperando_comprobante"
+  || stepActualPago === "esperando_pago_holaclick"
+  || stepActualPago === "esperando_comprobante_holaclick";
+if (esPreguntaPago && !esMensajeLargo && !enStepDePago) {
   const sucursal = currentOrder?.sucursal;
   let msgPago = "Aceptamos Efectivo 💵, Nequi/Daviplata 📱 y Bancolombia 🏦\n\n";
   if (sucursal === "circunvalar") {
@@ -2312,7 +2317,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   await sendWhatsAppButtons(phone,
     "Perfecto 👌\n\nTu pedido es:\n" +
     resumen +
-    buildResumenFooter(order, totals) +
+    buildResumenFooter(order, totals, order.domicilioTexto) +
     "\n\n📝 Si deseas hacer una observación escríbela ahora, o elige una opción:",
     [
       { id: "confirmar", title: "Confirmar" },
@@ -2546,7 +2551,7 @@ return res.sendStatus(200);
     await sendWhatsAppButtons(phone,
       "Perfecto 👌\n\nTu pedido es:\n" +
       resumen +
-      buildResumenFooter(order, totals) +
+      buildResumenFooter(order, totals, order.domicilioTexto) +
       "\n\n📝 Si deseas una observación escríbela, o elige:",
       [
         { id: "confirmar", title: "Confirmar" },
@@ -2643,6 +2648,8 @@ return res.sendStatus(200);
     valorDomicilio = calculo.valorDomicilio;
     descripcionDomicilio = calculo.descripcion;
     order.valorDomicilio = valorDomicilio;
+    order.distanciaKm = calculo.distanciaKm;
+    order.domicilioTexto = calculo.descripcion;
   } catch (e) {
     console.log("Error calculando domicilio:", e);
   }
@@ -2816,7 +2823,7 @@ return res.sendStatus(200);
     await sendWhatsAppButtons(phone,
   "Perfecto 👌\n\nTu pedido actualizado es:\n" +
   resumen +
-  buildResumenFooter(order, totals) +
+  buildResumenFooter(order, totals, order.domicilioTexto) +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
  [
     { id: "confirmar", title: "Confirmar" },
@@ -2973,7 +2980,7 @@ return res.sendStatus(200);
    await sendWhatsAppButtons(phone,
   "Perfecto 👌\n\nTu pedido es:\n" +
   resumen +
-  buildResumenFooter(order, totals) +
+  buildResumenFooter(order, totals, order.domicilioTexto) +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
  [
     { id: "confirmar", title: "Confirmar" },
@@ -3668,7 +3675,7 @@ return res.sendStatus(200);
       await sendWhatsAppButtons(phone,
   "Perfecto 👌\n\nTu pedido es:\n" +
   resumen +
-  buildResumenFooter(order, totals) +
+  buildResumenFooter(order, totals, order.domicilioTexto) +
   "\n\n📝 Si deseas una observación escríbela, o elige:",
  [
     { id: "confirmar", title: "Confirmar" },
@@ -3706,6 +3713,8 @@ return res.sendStatus(200);
     valorDomicilio = calculo.valorDomicilio;
     descripcionDomicilio = calculo.descripcion;
     order.valorDomicilio = valorDomicilio;
+    order.distanciaKm = calculo.distanciaKm;
+    order.domicilioTexto = calculo.descripcion;
   } catch (e) {
     console.log("Error calculando domicilio:", e);
   }
