@@ -3403,6 +3403,16 @@ return res.sendStatus(200);
 
 } else if (currentOrder?.step === "esperando_comprobante") {
 
+  console.log("🔍 DEBUG COMPROBANTE:", JSON.stringify({
+    step: currentOrder?.step,
+    type: messageData?.type,
+    hasImage: !!messageData?.image,
+    imageId: messageData?.image?.id,
+    hasDocument: !!messageData?.document,
+    sucursal: currentOrder?.sucursal,
+    phone: phone
+  }));
+
   const imageId = messageData.image?.id;
 
   if (imageId) {
