@@ -176,7 +176,8 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
 
   const origenDecodificado = sucursales[sucursal] || sucursales["la_villa"];
   const origen = encodeURIComponent(origenDecodificado);
-  const destinoDecodificado = direccionCliente + ", Pereira, Colombia";
+  const isCoords = /^-?\d+\.?\d*,-?\d+\.?\d*$/.test(direccionCliente.trim());
+  const destinoDecodificado = isCoords ? direccionCliente.trim() : direccionCliente + ", Pereira, Colombia";
   const destino = encodeURIComponent(destinoDecodificado);
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
@@ -413,6 +414,7 @@ function parseOlaClickText(text: string) {
     text.match(/\*?Total:\s*\$\s*([\d.,]+)\*?/im);
   const propinaMatch   = text.match(/propina\s+([\d.,]+)/i);
   const tipoServMatch  = text.match(/Tipo de servicio:\s*(\w+)/i);
+  const coordMatch     = text.match(/query=([\d.-]+),([\d.-]+)/);
 
   // Dirección: quitar URL de Google Maps y limpiar
   let direccion = (direccionMatch?.[1] || "")
@@ -455,6 +457,8 @@ function parseOlaClickText(text: string) {
     totalAPagar:  toNum(totalMatch?.[1]),
     propina:      toNum(propinaMatch?.[1]),
     tipoServicio: (tipoServMatch?.[1] || "domicilio").toLowerCase(),
+    coordLat:     coordMatch?.[1] || null,
+    coordLng:     coordMatch?.[2] || null,
     items
   };
 }
@@ -1156,14 +1160,18 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
   orderHC.holaclick_order = text;
   orderHC.tipoEntrega = hcParsed.tipoServicio === "domicilio" ? "domicilio" : "recoger";
 
-  // Poblar nombre, dirección e ítems desde el parser
+  // Poblar nombre, dirección, ítems y coordenadas desde el parser
   const hcNombre = hcParsed.nombre || customer?.name || "";
   if (hcNombre) updateOrderName(phone, hcNombre);
   if (hcParsed.direccion) orderHC.direccion = hcParsed.direccion;
   if (orderHC.tipoEntrega === "recoger") {
     orderHC.valorDomicilio = 0;
-  } else if (hcParsed.entrega) {
-    orderHC.valorDomicilio = hcParsed.entrega;
+  }
+  if (hcParsed.coordLat && hcParsed.coordLng) {
+    orderHC.locationCoords = {
+      latitude: parseFloat(hcParsed.coordLat),
+      longitude: parseFloat(hcParsed.coordLng)
+    };
   }
   if (hcParsed.items.length > 0) {
     createOrUpdateOrder(phone, hcParsed.items.map(i => ({
@@ -1176,17 +1184,46 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
   }
   currentOrder = getOrder(phone)!;
 
-  const hcTotalTexto = hcParsed.totalAPagar > 0
-    ? `$${hcParsed.totalAPagar.toLocaleString("es-CO")}`
-    : "";
-
-  await sendWhatsAppMessage(phone, "Gracias por tu pedido en HolaClick ✅ Vamos a procesarlo.");
-
   if (sucursalPrevia) {
     currentOrder.sucursal = sucursalPrevia;
-    const hcBodyPago = hcTotalTexto
-      ? `El total de tu pedido es ${hcTotalTexto} 💰\n¿Cómo deseas pagar?`
-      : "¿Cómo deseas pagar?";
+
+    // Calcular domicilio con coordenadas GPS
+    if (orderHC.tipoEntrega === "domicilio" && orderHC.locationCoords) {
+      try {
+        const coordStr = `${orderHC.locationCoords.latitude},${orderHC.locationCoords.longitude}`;
+        const calculo = await calcularDomicilio(coordStr, sucursalPrevia);
+        orderHC.valorDomicilio = calculo.valorDomicilio;
+        orderHC.distanciaKm = calculo.distanciaKm;
+        orderHC.domicilioTexto = calculo.descripcion;
+      } catch (e) {
+        console.error("❌ Error calculando domicilio HC:", e);
+        orderHC.valorDomicilio = 4500;
+      }
+    }
+
+    const subtotalHC = hcParsed.totalAPagar;
+    const domicilioHC = orderHC.valorDomicilio ?? 0;
+    const totalHC = subtotalHC + domicilioHC;
+    const hcItemsList = hcParsed.items.map(i => {
+      const extrasTexto = i.extras.filter(e => e.nombre).map(e =>
+        `+${e.nombre}${e.precio > 0 ? ` $${e.precio.toLocaleString("es-CO")}` : ""}`
+      ).join(", ");
+      return `• ${i.cantidad}x ${i.producto} — $${i.precio.toLocaleString("es-CO")}` +
+        (extrasTexto ? `\n  ${extrasTexto}` : "") +
+        (i.observaciones ? `\n  📝 ${i.observaciones}` : "");
+    }).join("\n");
+
+    const hcBodyPago =
+      "Gracias por tu pedido en OlaClick ✅\n\n" +
+      (hcItemsList ? `🧾 Tu pedido:\n${hcItemsList}\n\n` : "") +
+      `💰 Subtotal: $${subtotalHC.toLocaleString("es-CO")}\n` +
+      (orderHC.tipoEntrega === "domicilio"
+        ? `🛵 Domicilio: $${domicilioHC.toLocaleString("es-CO")}` +
+          (orderHC.domicilioTexto ? ` (${orderHC.domicilioTexto})` : "") + "\n"
+        : "") +
+      `💵 Total: $${totalHC.toLocaleString("es-CO")}\n\n` +
+      "¿Cómo deseas pagar?";
+
     updateOrderStep(phone, "esperando_pago_holaclick");
     currentOrder = getOrder(phone)!;
     await sendWhatsAppButtons(phone, hcBodyPago, [
@@ -2011,17 +2048,48 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     return res.sendStatus(200);
   }
   // Si ya había sucursal guardada, la usamos sin preguntar
+  const orderHCSuc = getOrder(phone)!;
+  const hcParsedSuc = parseOlaClickText(orderHCSuc.holaclick_order || "");
 
-  const holaclickText = currentOrder.holaclick_order || "";
-  const totalMatch =
-    holaclickText.match(/Total\s+a\s+pagar\s*:\s*\$\s*([\d.,]+)/i);
-  const totalTexto = totalMatch ? `$${totalMatch[1]}` : "";
-  const bodyPago = totalTexto
-    ? `El total de tu pedido es ${totalTexto} 💰\n¿Cómo deseas pagar?`
-    : "¿Cómo deseas pagar?";
+  // Calcular domicilio con coordenadas GPS
+  if (orderHCSuc.tipoEntrega === "domicilio" && orderHCSuc.locationCoords) {
+    try {
+      const coordStr = `${orderHCSuc.locationCoords.latitude},${orderHCSuc.locationCoords.longitude}`;
+      const calculo = await calcularDomicilio(coordStr, orderHCSuc.sucursal || "la_villa");
+      orderHCSuc.valorDomicilio = calculo.valorDomicilio;
+      orderHCSuc.distanciaKm = calculo.distanciaKm;
+      orderHCSuc.domicilioTexto = calculo.descripcion;
+    } catch (e) {
+      console.error("❌ Error calculando domicilio HC sucursal:", e);
+      orderHCSuc.valorDomicilio = 4500;
+    }
+  }
+
+  const subtotalSuc = hcParsedSuc.totalAPagar;
+  const domicilioSuc = orderHCSuc.valorDomicilio ?? 0;
+  const totalSuc = subtotalSuc + domicilioSuc;
+  const hcItemsListSuc = hcParsedSuc.items.map(i => {
+    const extrasTexto = i.extras.filter(e => e.nombre).map(e =>
+      `+${e.nombre}${e.precio > 0 ? ` $${e.precio.toLocaleString("es-CO")}` : ""}`
+    ).join(", ");
+    return `• ${i.cantidad}x ${i.producto} — $${i.precio.toLocaleString("es-CO")}` +
+      (extrasTexto ? `\n  ${extrasTexto}` : "") +
+      (i.observaciones ? `\n  📝 ${i.observaciones}` : "");
+  }).join("\n");
+
+  const bodyPagoSuc =
+    "Gracias por tu pedido en OlaClick ✅\n\n" +
+    (hcItemsListSuc ? `🧾 Tu pedido:\n${hcItemsListSuc}\n\n` : "") +
+    `💰 Subtotal: $${subtotalSuc.toLocaleString("es-CO")}\n` +
+    (orderHCSuc.tipoEntrega === "domicilio"
+      ? `🛵 Domicilio: $${domicilioSuc.toLocaleString("es-CO")}` +
+        (orderHCSuc.domicilioTexto ? ` (${orderHCSuc.domicilioTexto})` : "") + "\n"
+      : "") +
+    `💵 Total: $${totalSuc.toLocaleString("es-CO")}\n\n` +
+    "¿Cómo deseas pagar?";
 
   updateOrderStep(phone, "esperando_pago_holaclick");
-  await sendWhatsAppButtons(phone, bodyPago, [
+  await sendWhatsAppButtons(phone, bodyPagoSuc, [
     { id: "efectivo", title: "Efectivo 💵" },
     { id: "nequi", title: "Nequi/Daviplata 📱" },
     { id: "bancolombia", title: "Bancolombia 🏦" }
@@ -2037,15 +2105,10 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     formaPago = "bancolombia";
   }
 
-  const matchHCTotal = (t: string) =>
-    t.match(/Total\s+a\s+pagar\s*:\s*\$\s*([\d.,]+)/i) ||
-    t.match(/Total\s*:\s*\$\s*([\d.,]+)/i);
-
   if (!formaPago) {
-    const holaclickText2 = currentOrder.holaclick_order || "";
-    const totalMatch2 = matchHCTotal(holaclickText2);
-    const bodyPago2 = totalMatch2
-      ? `El total de tu pedido es $${totalMatch2[1]} 💰\n¿Cómo deseas pagar?`
+    const hcTotalHC = parseOlaClickText(currentOrder.holaclick_order || "").totalAPagar + (currentOrder.valorDomicilio ?? 0);
+    const bodyPago2 = hcTotalHC > 0
+      ? `El total de tu pedido es $${hcTotalHC.toLocaleString("es-CO")} 💰\n¿Cómo deseas pagar?`
       : "¿Cómo deseas pagar?";
     await sendWhatsAppButtons(phone, bodyPago2, [
       { id: "efectivo", title: "Efectivo 💵" },
@@ -2058,8 +2121,8 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   updateOrderPayment(phone, formaPago);
   currentOrder = getOrder(phone)!;
 
-  const holaclickTotalMatch = matchHCTotal(currentOrder.holaclick_order || "");
-  const holaclickTotalTexto = holaclickTotalMatch ? `$${holaclickTotalMatch[1]}` : "";
+  const hcTotalFinal = parseOlaClickText(currentOrder.holaclick_order || "").totalAPagar + (currentOrder.valorDomicilio ?? 0);
+  const holaclickTotalTexto = hcTotalFinal > 0 ? `$${hcTotalFinal.toLocaleString("es-CO")}` : "";
   const sucursalTextoHC = currentOrder.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar";
 
   if (formaPago === "nequi/daviplata") {
