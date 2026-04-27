@@ -462,6 +462,70 @@ function parseOlaClickText(text: string) {
     items
   };
 }
+function parseCartaDigitalText(text: string) {
+  const toNum = (s: string) => parseInt(s.replace(/\./g, "").replace(",", ""), 10) || 0;
+
+  type CDItem = {
+    producto: string;
+    variante?: string;
+    cantidad: number;
+    precio: number;
+    observaciones?: string;
+    extras: { nombre: string; precio: number; cantidad: number }[];
+  };
+
+  const items: CDItem[] = [];
+  let cur: CDItem | null = null;
+
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+
+    // Producto: *1. Crepe de Paris (Solo Pollo)* ×2
+    const prod = trimmed.match(/^\*\d+\.\s+(.+?)(?:\s+\((.+?)\))?\*\s*[×x](\d+)/);
+    if (prod) {
+      if (cur) items.push(cur);
+      cur = {
+        producto: prod[1].trim(),
+        variante: prod[2]?.trim(),
+        cantidad: parseInt(prod[3]),
+        precio: 0,
+        extras: []
+      };
+      continue;
+    }
+    if (!cur) continue;
+
+    // Extras: ➕ Carne desmechada, Tocineta
+    if (trimmed.startsWith("➕")) {
+      const extrasStr = trimmed.replace(/^➕\s*/, "");
+      for (const ex of extrasStr.split(",")) {
+        const nombre = ex.trim();
+        if (nombre) cur.extras.push({ nombre, precio: 0, cantidad: 1 });
+      }
+      continue;
+    }
+
+    // Observación: 📝 Sin salsas por favor
+    if (trimmed.startsWith("📝")) {
+      cur.observaciones = trimmed.replace(/^📝\s*/, "").trim();
+      continue;
+    }
+
+    // Precio: 💰 $42.500
+    const precioMatch = trimmed.match(/^💰\s*\$\s*([\d.,]+)/);
+    if (precioMatch) {
+      cur.precio = toNum(precioMatch[1]);
+      continue;
+    }
+  }
+  if (cur) items.push(cur);
+
+  const totalMatch = text.match(/\*TOTAL:\s*\$\s*([\d.,]+)\*/);
+  return {
+    items,
+    total: toNum(totalMatch?.[1] || "0")
+  };
+}
 async function handleOperationalRouting(order: any, totals: any) {
   const numeroOrden = await getNextOrderNumber();
   order.numeroOrden = numeroOrden;
@@ -1248,6 +1312,40 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
   return res.sendStatus(200);
 }
 
+if (text.includes("🥞 *PEDIDO - LAS CREPES*")) {
+  const cdParsed = parseCartaDigitalText(text);
+
+  clearOrder(phone);
+  createOrUpdateOrder(phone, []);
+  const orderCD = getOrder(phone)!;
+
+  if (cdParsed.items.length > 0) {
+    createOrUpdateOrder(phone, cdParsed.items.map(i => ({
+      producto:      i.producto,
+      variante:      i.variante,
+      cantidad:      i.cantidad,
+      precio:        i.precio,
+      observaciones: i.observaciones,
+      extras:        i.extras
+    })));
+  }
+
+  currentOrder = getOrder(phone)!;
+  updateOrderStep(phone, "post_agregar_producto");
+  currentOrder = getOrder(phone)!;
+
+  const resumenCD = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+  await sendWhatsAppButtons(phone,
+    `🥞 *Tu pedido de la carta digital:*\n\n${resumenCD}\n\n¿Qué deseas hacer?`,
+    [
+      { id: "confirmar",   title: "Confirmar ✅" },
+      { id: "agregar_mas", title: "Agregar más ➕" },
+      { id: "eliminar",    title: "Eliminar ➖" }
+    ]
+  );
+  return res.sendStatus(200);
+}
+
     console.log("=== DIAGNÓSTICO ===");
 console.log("CUSTOMER:", customer?.name);
 console.log("CURRENT ORDER:", currentOrder?.step);
@@ -1346,7 +1444,7 @@ if (
   // Solicitud de ver menú en medio del pedido
   if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("carta") || lower === "ver menu") {
     await sendWhatsAppMessage(phone,
-      "Aquí tienes el menú completo 📋\n\nhttps://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n 😊"
+      "Aquí tienes el menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\n 😊"
     );
     return res.sendStatus(200);
   }
@@ -1611,7 +1709,7 @@ if (currentOrder && currentOrder.items.length > 0 &&
 if (!currentOrder) {
   if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("ver menu") || lower.includes("carta")) {
     await sendWhatsAppButtons(phone,
-      "Aquí puedes ver nuestro menú completo 📋\n\nhttps://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n\n¿Deseas hacer un pedido?",
+      "Aquí puedes ver nuestro menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\n¿Deseas hacer un pedido?",
       [
         { id: "1", title: "Sí, hacer un pedido" },
         { id: "3", title: "Otros" }
@@ -2003,7 +2101,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
 } else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
   await sendWhatsAppButtons(phone,
-    "Aquí puedes ver nuestro menú completo 📋\n\nhttps://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n\n¿Deseas hacer un pedido?",
+    "Aquí puedes ver nuestro menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\n¿Deseas hacer un pedido?",
     [
       { id: "1", title: "Hacer un pedido 🥞" },
       { id: "3", title: "Otros 💬" }
@@ -2261,7 +2359,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     lower === "ver menu" || lower === "ver menú"
   ) {
     await sendWhatsAppMessage(phone,
-      "Aquí tienes el menú completo 📋\n\nhttps://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n\nCuando estés listo, escríbeme qué deseas pedir 😊"
+      "Aquí tienes el menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\nCuando estés listo, escríbeme qué deseas pedir 😊"
     );
     return res.sendStatus(200);
   }
@@ -2318,7 +2416,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         `- Hacemos domicilios a toda Pereira y Dosquebradas\n` +
         `- Domicilio mínimo $4.500, calculado por distancia\n` +
         `- Medios de pago: Efectivo, Nequi, Daviplata, Bancolombia\n` +
-        `- Ver menú: https://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n` +
+        `- Ver menú: https://crepes-bot.onrender.com/carta\n` +
         `- Para pedidos escribir al bot directamente\n\n` +
         `Pregunta del cliente: ${text}`;
       const geminiRes = await fetch(
@@ -2450,7 +2548,7 @@ return res.sendStatus(200);
     replyMessage =
       "Perfecto 👍\n\n" +
       "Puedes hacer tu pedido aquí:\n" +
-      "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
+      "https://crepes-bot.onrender.com/carta\n\n" +
       "si tienes dificultad para hacer el pedido puedes llamarnos al 6063413020 😊";
 
   } else if (
@@ -2466,7 +2564,7 @@ return res.sendStatus(200);
     replyMessage =
       "Perfecto 👍\n\n" +
       "Puedes hacer tu pedido aquí:\n" +
-      "https://las-crepes.ola.click/products?utm_source=Chatbot&utm_campaign=place_an_order\n\n" +
+      "https://crepes-bot.onrender.com/carta\n\n" +
       "si tienes dificulta para hacer el pedido nos puedes llamar al 6063413020";
 
   } else {
@@ -2953,7 +3051,7 @@ return res.sendStatus(200);
   // Ver menú en medio del pedido
   if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("carta") || lower === "ver menu") {
     await sendWhatsAppMessage(phone,
-      "Aquí tienes el menú completo 📋\n\nhttps://linktr.ee/qr/b0379e47-8522-4dd8-b3ed-aa1d5f4a8f8a?utm_source=qr_code\n\nCuando estés listo, elige una opción 😊"
+      "Aquí tienes el menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\nCuando estés listo, elige una opción 😊"
     );
     return res.sendStatus(200);
   }
