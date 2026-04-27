@@ -2750,7 +2750,18 @@ return res.sendStatus(200);
     console.error("❌ Error guardando nombre en Supabase:", err)
   );
 
-  if (currentOrder.tipoEntrega === "domicilio") {
+  if (!currentOrder.tipoEntrega) {
+    updateOrderStep(phone, "esperando_tipo_entrega");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      "¿Cómo deseas recibir tu pedido?",
+      [
+        { id: "domicilio", title: "Domicilio 🛵" },
+        { id: "recoger",   title: "Recoger en tienda 🏪" }
+      ]
+    );
+    return res.sendStatus(200);
+  } else if (currentOrder.tipoEntrega === "domicilio") {
     updateOrderStep(phone, "esperando_direccion");
     currentOrder = getOrder(phone)!;
     replyMessage = "Perfecto 👍\n\nEnvíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
