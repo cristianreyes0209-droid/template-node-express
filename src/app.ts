@@ -1331,6 +1331,7 @@ if (text.includes("🥞 *PEDIDO - LAS CREPES*")) {
   }
 
   currentOrder = getOrder(phone)!;
+  currentOrder.vieneDeCarta = true;
   updateOrderStep(phone, "post_agregar_producto");
   currentOrder = getOrder(phone)!;
 
@@ -3058,8 +3059,8 @@ return res.sendStatus(200);
 
   const CONFIRMAR_KEYWORDS = new Set(["confirmar", "1", "listo", "ok", "dale", "si", "sí", "okay", "perfecto", "confirmo", "vamos", "de una", "adelante", "va"]);
   if (CONFIRMAR_KEYWORDS.has(lower)) {
-    // Upselling al confirmar — una sola vez, solo si aplica
-    if (!currentOrder.upsellingToppingsMostrado) {
+    // Upselling al confirmar — una sola vez, solo si aplica. Omitir pedidos de carta digital.
+    if (!currentOrder.vieneDeCarta && !currentOrder.upsellingToppingsMostrado) {
       currentOrder.upsellingToppingsMostrado = true;
       const bebidasCatUps = (menu.categorias as any[]).find((c: any) => c.id === "bebidas");
       const bebidasIdsUps: string[] = bebidasCatUps ? (bebidasCatUps.productos as any[]).map((p: any) => p.id) : [];
@@ -3106,6 +3107,18 @@ return res.sendStatus(200);
 
     if (customer?.name && !currentOrder.nombre) {
       updateOrderName(phone, customer.name);
+    }
+
+    if (!currentOrder.tipoEntrega) {
+      updateOrderStep(phone, "esperando_tipo_entrega");
+      await sendWhatsAppButtons(phone,
+        "¿Cómo deseas recibir tu pedido?",
+        [
+          { id: "domicilio", title: "Domicilio 🛵" },
+          { id: "recoger",   title: "Recoger en tienda 🏪" }
+        ]
+      );
+      return res.sendStatus(200);
     }
 
    if (currentOrder.tipoEntrega === "domicilio" && !currentOrder.direccion) {

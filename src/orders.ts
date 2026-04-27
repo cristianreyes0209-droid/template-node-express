@@ -71,6 +71,7 @@ export type CustomerOrder = {
   pendingProductQuery?: { id: string; nombre: string; precio: number };
   itemsPendientes?: { productoId: string; cantidad: number }[];
   inactivityPending?: boolean;
+  vieneDeCarta?: boolean;
   asesorIntervenido?: boolean;
   upsellingFrutasMostrado?: boolean;
   upsellingTocinetaMostrado?: boolean;
