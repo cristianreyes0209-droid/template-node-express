@@ -3905,6 +3905,11 @@ app.get('/panel', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/panel.html'));
 });
 
+app.get('/carta', (req, res) => {
+  res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
+  res.sendFile(path.join(__dirname, '../public/carta.html'));
+});
+
 app.get('/api/conversaciones', async (req, res) => {
   const key = req.query.key as string | undefined;
   if (!key || key !== process.env.PANEL_KEY) {

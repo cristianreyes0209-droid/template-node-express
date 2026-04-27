@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Las Crepes 🥞</title>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{background:#FFF5D0;font-family:'Nunito',sans-serif;color:#3B1A0A;min-height:100vh;overflow-x:hidden;}
+
+    /* HEADER */
+    .hdr{background:#fff;color:#3B1A0A;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 3px 14px rgba(0,0,0,.12);border-bottom:4px solid #C41E3A;}
+    .hdr-logo{font-family:'Anton',sans-serif;font-size:26px;letter-spacing:2px;color:#C41E3A;line-height:1.1;}
+    .hdr-sub{font-size:9px;color:#8B5E3C;margin-top:1px;letter-spacing:1.5px;text-transform:uppercase;font-weight:800;}
+    .cart-btn{background:#C41E3A;border:none;border-radius:50px;padding:10px 18px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:6px;transition:transform .15s;box-shadow:0 2px 8px rgba(196,30,58,.3);}
+    .cart-btn:active{transform:scale(.93);}
+    .cart-count{background:#F4C430;color:#2C1810;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;}
+    @keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+    .cbounce{animation:bounce .35s ease;}
+
+    /* HERO BANNER */
+    .hero{background:linear-gradient(135deg,#C41E3A 0%,#E8872A 100%);color:#fff;padding:18px 20px 16px;text-align:center;}
+    .hero-title{font-family:'Anton',sans-serif;font-size:36px;letter-spacing:2px;text-shadow:2px 2px 0 rgba(0,0,0,.2);}
+    .hero-sub{font-size:13px;opacity:.85;margin-top:2px;}
+
+    /* CATEGORY TABS */
+    .cats{background:#fff;overflow-x:auto;padding:10px 12px;display:flex;gap:8px;position:sticky;top:78px;z-index:90;scrollbar-width:none;box-shadow:0 2px 10px rgba(0,0,0,.08);}
+    .cats::-webkit-scrollbar{display:none;}
+    .cat-tab{flex-shrink:0;padding:8px 16px;border-radius:50px;border:2px solid #E8C89A;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;background:#FFF5D0;color:#8B5E3C;transition:all .2s;white-space:nowrap;}
+    .cat-tab.on{color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(196,30,58,.25);}
+
+    /* GRID */
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:14px 12px 110px;}
+
+    /* CARD */
+    .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 3px 12px rgba(59,26,10,.1);cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative;border:1.5px solid #F0DEB4;}
+    .card:active{transform:scale(.96);}
+    .card-img{height:130px;display:flex;align-items:center;justify-content:center;font-size:62px;position:relative;overflow:hidden;}
+    .card-badge{position:absolute;top:8px;left:8px;background:#C41E3A;color:#fff;font-size:9px;font-weight:900;padding:3px 8px;border-radius:50px;}
+    .card-body{padding:10px 12px 12px;border-top:2px solid #FFF0C0;}
+    .card-name{font-weight:800;font-size:13px;line-height:1.3;color:#3B1A0A;}
+    .card-price{font-family:'Anton',sans-serif;font-size:20px;color:#C41E3A;letter-spacing:1px;margin-top:2px;}
+    .card-tap{font-size:10px;color:#C8A96A;margin-top:3px;font-weight:700;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+    .card-tap{animation:pulse 2s infinite;}
+
+    /* MODAL OVERLAY */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-end;}
+    .modal{background:#fff;border-radius:28px 28px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding-bottom:32px;position:relative;}
+    @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .modal{animation:slideUp .32s cubic-bezier(.34,1.3,.64,1);}
+    .modal-handle{width:40px;height:4px;background:#e0e0e0;border-radius:2px;margin:12px auto 0;}
+    .close-x{position:absolute;top:14px;right:14px;width:44px;height:44px;background:#C41E3A;border:none;border-radius:50px;font-size:13px;font-weight:800;font-family:'Nunito',sans-serif;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;}
+
+    /* PHOTO ZONE */
+    .photo-zone{width:calc(100% - 32px);height:190px;border-radius:20px;margin:14px 16px 0;display:flex;align-items:center;justify-content:center;font-size:88px;cursor:pointer;position:relative;overflow:hidden;transition:transform .12s;user-select:none;}
+    .photo-zone:active{transform:scale(.97);}
+    .tap-hint{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.88);backdrop-filter:blur(4px);padding:5px 14px;border-radius:50px;font-size:11px;font-weight:800;color:#2C1810;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.1);}
+
+    /* EXPLOSION */
+    /* EXPLOSION BUBBLES - circular ingredient cards */
+    @keyframes flyOut{
+      0%{transform:translate(-50%,-50%) scale(0) rotate(0deg);opacity:0;}
+      35%{opacity:1;}
+      100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1) rotate(var(--rot));opacity:1;}
+    }
+    .ing-bubble{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+      width:68px;height:68px;border-radius:50%;
+      background:#fff;border:3px solid #F4C430;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      box-shadow:0 6px 20px rgba(0,0,0,.18);
+      animation:flyOut .75s cubic-bezier(.34,1.56,.64,1) both;
+      pointer-events:none;z-index:10;
+      padding:4px;
+    }
+    .ing-emoji{font-size:30px;line-height:1;}
+    .ing-label{font-size:8px;font-weight:800;text-align:center;color:#2C1810;line-height:1.2;margin-top:2px;max-width:60px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+    @keyframes shake{0%,100%{transform:scale(1) rotate(0)}20%{transform:scale(1.1) rotate(-5deg)}40%{transform:scale(1.1) rotate(5deg)}60%{transform:scale(1.05) rotate(-3deg)}80%{transform:scale(1.05) rotate(3deg)}}
+    .boom{animation:shake .45s ease;}
+    .expl-wrap{position:relative;height:190px;display:flex;align-items:center;justify-content:center;overflow:visible;margin:14px 16px 0;border-radius:20px;}
+
+    /* INGREDIENTS GRID */
+    .ing-grid{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px;margin-top:10px;}
+    .ing-pill{background:#FFF5D0;border:1.5px solid #C41E3A;border-radius:50px;padding:5px 12px;font-size:13px;font-weight:600;}
+    @keyframes popIn{0%{transform:scale(0);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+    .ing-pill{animation:popIn .35s cubic-bezier(.34,1.56,.64,1) both;}
+
+    /* MODAL BODY */
+    .mbody{padding:0 16px;}
+    .mname{font-family:'Anton',sans-serif;font-size:30px;letter-spacing:1px;color:#C41E3A;margin-top:14px;}
+    .mprice{font-family:'Anton',sans-serif;font-size:26px;color:#C41E3A;font-weight:900;}
+    .mdesc{font-size:13px;color:#8B5E3C;line-height:1.55;margin-top:4px;}
+    .sec-title{font-weight:900;font-size:14px;color:#C41E3A;margin:18px 0 8px;display:flex;align-items:center;gap:6px;text-transform:uppercase;letter-spacing:1px;}
+
+    /* QTY */
+    .qty-row{display:flex;align-items:center;gap:16px;}
+    .qty-btn{width:38px;height:38px;border-radius:50%;border:2.5px solid #C41E3A;background:#fff;color:#C41E3A;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+    .qty-btn:active{background:#C41E3A;color:#fff;}
+    .qty-num{font-size:26px;font-weight:900;min-width:32px;text-align:center;}
+
+    /* ADICIONALES */
+    .ad-group-title{font-size:12px;font-weight:800;color:#999;text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px;}
+    .ad-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#FFF5D0;border-radius:12px;margin-bottom:6px;border:2px solid transparent;gap:8px;}
+    .ad-item.on{background:#FDECC0;border-color:#C41E3A;}
+    .ad-left{flex:1;}
+    .ad-name{font-weight:700;font-size:14px;}
+    .ad-price{font-weight:600;color:#E8872A;font-size:12px;}
+    .ad-qty-row{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+    .ad-qty-btn{width:28px;height:28px;border-radius:50%;border:2px solid #C41E3A;background:#fff;color:#C41E3A;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1;}
+    .ad-qty-btn:active{background:#C41E3A;color:#fff;}
+    .ad-qty-num{font-size:15px;font-weight:900;min-width:18px;text-align:center;}
+
+    /* TEXTAREA */
+    .obs{width:100%;padding:12px;border:2px solid #eee;border-radius:12px;font-family:'Nunito',sans-serif;font-size:14px;resize:none;outline:none;transition:border-color .2s;}
+    .obs:focus{border-color:#C41E3A;}
+
+    /* ADD BTN */
+    .add-btn{width:100%;padding:16px;background:linear-gradient(135deg,#C41E3A,#A01530);color:#fff;border:none;border-radius:16px;font-family:'Anton',sans-serif;font-size:22px;letter-spacing:1px;cursor:pointer;margin-top:18px;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s;box-shadow:0 4px 14px rgba(196,30,58,.4);}
+    .add-btn:active{transform:scale(.97);}
+
+    /* CART BAR */
+    .cbar{position:fixed;bottom:0;left:0;right:0;padding:10px 14px;background:#fff;box-shadow:0 -4px 20px rgba(0,0,0,.12);z-index:150;border-top:3px solid #C41E3A;}
+    .cbar-btn{width:100%;padding:14px 18px;background:linear-gradient(135deg,#C41E3A,#A01530);color:#fff;border:none;border-radius:16px;font-family:'Anton',sans-serif;font-size:20px;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 14px rgba(196,30,58,.4);}
+
+    /* CART DRAWER */
+    .cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:flex;align-items:flex-end;}
+    .cart-draw{background:#fff;border-radius:28px 28px 0 0;width:100%;max-height:85vh;overflow-y:auto;padding:0 16px 32px;animation:slideUp .3s ease-out;}
+    .cart-title{font-family:'Anton',sans-serif;font-size:28px;color:#C41E3A;margin:18px 0 14px;letter-spacing:1px;}
+    .ci-row{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid #f2f2f2;align-items:flex-start;}
+    .ci-emoji{font-size:30px;flex-shrink:0;}
+    .ci-info{flex:1;}
+    .ci-name{font-weight:800;font-size:14px;}
+    .ci-detail{font-size:11px;color:#999;margin-top:2px;}
+    .ci-price{font-weight:800;color:#C41E3A;font-size:15px;flex-shrink:0;}
+    .ci-del{background:none;border:none;color:#ff5555;cursor:pointer;font-size:12px;margin-top:4px;font-weight:700;}
+    .total-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:2.5px solid #eee;margin-top:6px;}
+    .total-label{font-weight:900;font-size:18px;}
+    .total-price{font-family:'Anton',sans-serif;font-size:30px;color:#C41E3A;}
+    .wa-btn{width:100%;padding:16px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;border-radius:16px;font-family:'Anton',sans-serif;font-size:22px;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;box-shadow:0 4px 14px rgba(37,211,102,.4);transition:transform .15s;}
+    .wa-btn:active{transform:scale(.97);}
+    .empty-cart{text-align:center;padding:40px 20px;color:#bbb;}
+
+    /* ARMA TU CREPE */
+    .arma-wrap{padding:14px 12px 120px;}
+    .arma-hero{background:linear-gradient(135deg,#C41E3A22,#E8872A33);border-radius:20px;padding:16px;margin-bottom:16px;}
+    .arma-title{font-family:'Anton',sans-serif;font-size:28px;color:#C41E3A;letter-spacing:1px;}
+    .pill-sel{display:inline-flex;align-items:center;gap:4px;padding:8px 13px;border-radius:50px;border:2px solid #ddd;background:#fff;color:#555;cursor:pointer;margin:0 6px 6px 0;font-weight:700;font-size:13px;transition:all .2s;}
+    .pill-sel.on{background:#C41E3A;border-color:#C41E3A;color:#fff;}
+    .arma-summary{background:#FFF5D0;border-radius:16px;padding:14px;margin:14px 0;}
+
+    /* BEBIDAS */
+    .beb-wrap{padding:14px 12px 120px;}
+    .beb-item{display:flex;justify-content:space-between;align-items:center;padding:13px;background:#fff;border-radius:14px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer;transition:transform .15s;}
+    .beb-item:active{transform:scale(.97);}
+    .beb-name{font-weight:800;font-size:14px;}
+    .beb-desc{font-size:11px;color:#999;margin-top:2px;}
+
+    /* SEARCH BAR */
+    .search-wrap{background:#fff;padding:8px 12px;border-bottom:2px solid #F0DEB4;position:sticky;top:130px;z-index:85;}
+    .search-inner{position:relative;}
+    .search-input{width:100%;padding:10px 36px 10px 40px;border:2px solid #E8C89A;border-radius:50px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;color:#3B1A0A;background:#FFF5D0;outline:none;transition:border-color .2s;}
+    .search-input:focus{border-color:#C41E3A;background:#fff;}
+    .search-input::placeholder{color:#C8A96A;font-weight:600;}
+    .search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none;}
+    .search-clear{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:16px;cursor:pointer;color:#aaa;padding:4px;}
+    .no-results{text-align:center;padding:48px 20px;color:#C8A96A;}
+    .plus-circle{background:#C41E3A;color:#fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+
+    /* SPLASH SCREEN */
+    .splash{position:fixed;inset:0;background:#fff;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;overflow:hidden;}
+    @keyframes splashFadeOut{0%{opacity:1;transform:scale(1)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
+    .splash.out{animation:splashFadeOut .5s ease forwards;pointer-events:none;}
+    @keyframes logoIn{0%{opacity:0;transform:translateY(-20px)}100%{opacity:1;transform:translateY(0)}}
+    .splash-logo{animation:logoIn .6s .2s ease both;text-align:center;}
+    @keyframes videoIn{0%{opacity:0;transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
+    .splash-video-wrap{width:calc(100vw - 32px);max-width:380px;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.4);animation:videoIn .7s .5s ease both;background:#000;position:relative;}
+    .splash-video-wrap video{width:100%;display:block;max-height:55vh;object-fit:cover;}
+    .splash-video-wrap iframe{width:100%;border:none;aspect-ratio:9/16;display:block;max-height:55vh;}
+    @keyframes btnIn{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
+    .splash-btn{animation:btnIn .5s 1s ease both;background:#F4C430;border:none;border-radius:50px;padding:14px 36px;font-family:'Anton',sans-serif;font-size:22px;letter-spacing:1px;color:#2C1810;cursor:pointer;margin-top:20px;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:transform .15s;}
+    .splash-btn:active{transform:scale(.95);}
+    .splash-tagline{font-size:11px;color:rgba(255,255,255,.7);letter-spacing:2px;text-transform:uppercase;margin-top:6px;font-weight:700;animation:logoIn .6s .4s ease both;}
+  </style>
+  <meta name="ext-resource-dependency" content="uploads/CREPE DE PARIS.jpeg" data-resource-id="crepdeparis" />
+  <meta name="ext-resource-dependency" content="uploads/DESGRANADA MIXTA.jpeg" data-resource-id="desgranada" />
+  <meta name="ext-resource-dependency" content="uploads/MEXICANA.jpeg" data-resource-id="mexicana" />
+  <meta name="ext-resource-dependency" content="uploads/ESPECIAL.jpg" data-resource-id="especial" />
+  <meta name="ext-resource-dependency" content="uploads/Crepe vegetales mixta (1).jpg" data-resource-id="vegmixta" />
+  <meta name="ext-resource-dependency" content="uploads/DSC09947 (2).jpg" data-resource-id="rancheramixta" />
+  <meta name="ext-resource-dependency" content="uploads/BOLOGNESA.jpeg" data-resource-id="bolognesa" />
+  <meta name="ext-resource-dependency" content="uploads/Crepe vegetales pollo.jpg" data-resource-id="vegpollo" />
+  <meta name="ext-resource-dependency" content="uploads/POLLO Y PIÑA.jpg" data-resource-id="pollopina" />
+  <meta name="ext-resource-dependency" content="uploads/DSC09943.jpg" data-resource-id="pollocarne" />
+  <meta name="ext-resource-dependency" content="uploads/pollo.jpg" data-resource-id="pollo" />
+  <meta name="ext-resource-dependency" content="uploads/CARNE.jpg" data-resource-id="carne" />
+  <meta name="ext-resource-dependency" content="uploads/HAWAIANA.jpg" data-resource-id="hawaiana" />
+  <meta name="ext-resource-dependency" content="uploads/RANCHERA.jpeg" data-resource-id="ranchera" />
+  <meta name="ext-resource-dependency" content="uploads/BBQ.jpg" data-resource-id="bbq" />
+  <meta name="ext-resource-dependency" content="uploads/AMERICANA.jpeg" data-resource-id="americana" />
+  <meta name="ext-resource-dependency" content="uploads/BURGUESA.jpeg" data-resource-id="burguesa" />
+  <meta name="ext-resource-dependency" content="uploads/ITALIANA.jpeg" data-resource-id="italiana" />
+  <meta name="ext-resource-dependency" content="uploads/MEDITERRANEA DE CAMARON.jpg" data-resource-id="medcamaron" />
+  <meta name="ext-resource-dependency" content="uploads/MEDITERRANEA MIXTA.jpeg" data-resource-id="medmixta" />
+  <meta name="ext-resource-dependency" content="uploads/ATUN.jpeg" data-resource-id="atun" />
+  <meta name="ext-resource-dependency" content="uploads/STROGANOFF DE POLLO.jpeg" data-resource-id="strogpollo" />
+  <meta name="ext-resource-dependency" content="uploads/STROGANOFF CARNE.jpg" data-resource-id="strogcarne" />
+  <meta name="ext-resource-dependency" content="uploads/CREPE MIGNON.jpg" data-resource-id="mignon" />
+  <meta name="ext-resource-dependency" content="uploads/MARINERA.jpeg" data-resource-id="marinera" />
+  <meta name="ext-resource-dependency" content="uploads/Crepe GOURMET CAMARONES.jpg" data-resource-id="gourmetcamar" />
+  <meta name="ext-resource-dependency" content="uploads/STROGANOFF VEGGI.jpg" data-resource-id="strogveggi" />
+  <meta name="ext-resource-dependency" content="uploads/VEGETARIANA.jpeg" data-resource-id="vegetariana" />
+  <meta name="ext-resource-dependency" content="uploads/burguesa veggi.jpg" data-resource-id="burgveggi" />
+  <meta name="ext-resource-dependency" content="uploads/DSC09992.jpg" data-resource-id="tropinutella" />
+  <meta name="ext-resource-dependency" content="uploads/Crepe tropical.jpg" data-resource-id="tropical" />
+  <meta name="ext-resource-dependency" content="uploads/CREPOSTRE.jpeg" data-resource-id="crepostre" />
+  <meta name="ext-resource-dependency" content="uploads/NUTELLA.jpg" data-resource-id="nutella" />
+  <meta name="ext-resource-dependency" content="uploads/Crepe de chocolate (1).jpg" data-resource-id="chocolate" />
+  <meta name="ext-resource-dependency" content="uploads/Crepe arequipe.jpg" data-resource-id="arequipe" />
+  <meta name="ext-resource-dependency" content="uploads/OBLEA.jpg" data-resource-id="oblea" />
+  <meta name="ext-resource-dependency" content="uploads/NACHOS_CHEDDAR.jpeg" data-resource-id="nachosCheddar" />
+  <meta name="ext-resource-dependency" content="uploads/JUGOS NATURALES.jpeg" data-resource-id="jugosnat" />
+  <meta name="ext-resource-dependency" content="uploads/LIMONADA NATURAL.jpg" data-resource-id="limonat" />
+  <meta name="ext-resource-dependency" content="uploads/LIMONADA DE COCO.jpg" data-resource-id="limococo" />
+  <meta name="ext-resource-dependency" content="uploads/LIMONADA DE CEREZA.jpg" data-resource-id="limocereza" />
+  <meta name="ext-resource-dependency" content="uploads/MALTEADA DE FRESA.jpg" data-resource-id="malteada" />
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef} = React;
+
+// ============================================================
+// DATA
+// ============================================================
+const CATEGORIES = [
+  {id:'favoritas', name:'Favoritas',     emoji:'⭐', color:'#C41E3A'},
+  {id:'clasicas',  name:'Clásicas',      emoji:'🥞', color:'#E8872A'},
+  {id:'fastfood',  name:'Fast Food',     emoji:'🍔', color:'#D4622A'},
+  {id:'delmar',    name:'Del Mar',       emoji:'🦐', color:'#0284C7'},
+  {id:'gourmet',   name:'Gourmet',       emoji:'🍽️', color:'#7C3AED'},
+  {id:'veggie',    name:'Vegetarianas',  emoji:'🥦', color:'#16A34A'},
+  {id:'frutas',    name:'Con Frutas',    emoji:'🍓', color:'#DB2777'},
+  {id:'dulces',    name:'Dulces',        emoji:'🍫', color:'#92400E'},
+  {id:'entradas',  name:'Entradas',      emoji:'🧀', color:'#D97706'},
+  {id:'armatu',    name:'Arma Tu Crepe', emoji:'🛠️', color:'#475569'},
+  {id:'bebidas',   name:'Bebidas',       emoji:'🥤', color:'#0891B2'},
+];
+
+const ITEMS = [
+  // FAVORITAS
+  {id:1,cat:'favoritas',name:'Crepe de Paris',photo:(window.__resources&&window.__resources['crepdeparis'])||'uploads/CREPE DE PARIS.jpeg',price:29500,badge:'⭐ FAVORITA',
+   desc:'Pollo y carne desmechados, champiñones, jamón premium, extra queso doble crema, salsa paris (bechamel), maíz y salchicha ranchera.',
+   ingredients:['🍗 Pollo','🥩 Carne','🍄 Champiñones','🥓 Jamón premium','🧀 Doble crema','🌽 Maíz','🌭 Salchicha','🫙 Salsa Paris']},
+  {id:2,cat:'favoritas',name:'Desgranada Mixta',photo:(window.__resources&&window.__resources['desgranada'])||'uploads/DESGRANADA MIXTA.jpeg',price:27500,badge:'⭐ FAVORITA',
+   modifiers:[{name:'Proteína',options:['Mixta (res y pollo)','Solo Pollo','Solo Carne'],default:'Mixta (res y pollo)'}],
+   desc:'Trozos de res y pollo salteados, maíz tierno, lechuga, tocineta, queso cuajada, doble crema, fosforitos, huevos de codorniz y salsa de ajo.',
+   ingredients:['🥩 Res','🍗 Pollo','🌽 Maíz','🥬 Lechuga','🥓 Tocineta','🧀 Cuajada','🥚 Codorniz','🧄 Salsa ajo']},
+  {id:3,cat:'favoritas',name:'Mexicana',photo:(window.__resources&&window.__resources['mexicana'])||'uploads/MEXICANA.jpeg',price:27900,badge:'⭐ FAVORITA',
+   modifiers:[{name:'Jalapeños',options:['Con Jalapeños','Sin Jalapeños'],default:'Con Jalapeños'}],
+   desc:'Carne desmechada, frijol, chile, pico de gallo, nachos, queso doble crema.',
+   ingredients:['🥩 Carne','🫘 Frijol','🌶️ Chile','🍅 Pico de gallo','🌮 Nachos','🧀 Doble crema']},
+  // CLÁSICAS
+  {id:4,cat:'clasicas',name:'Especial',photo:(window.__resources&&window.__resources['especial'])||'uploads/ESPECIAL.jpg',price:26500,
+   desc:'Pollo y carne desmechados, champiñones, jamón premium, extra queso doble crema, salsa paris (bechamel).',
+   ingredients:['🍗 Pollo','🥩 Carne','🍄 Champiñones','🥓 Jamón','🧀 Doble crema','🫙 Salsa Paris']},
+  {id:5,cat:'clasicas',name:'Vegetales Mixta',photo:(window.__resources&&window.__resources['vegmixta'])||'uploads/Crepe vegetales mixta (1).jpg',price:24500,
+   variants:[{name:'Mixta (pollo y carne)',price:24500},{name:'Solo Pollo',price:21000},{name:'Solo Carne',price:24500}],
+   desc:'Carne desmechada y/o pollo desmechado, champiñones, pico de gallo, maíz, salsa paris.',
+   ingredients:['🥩 Carne/Pollo','🍄 Champiñones','🍅 Pico de gallo','🌽 Maíz','🫙 Salsa Paris']},
+  {id:6,cat:'clasicas',name:'Ranchera Mixta',photo:(window.__resources&&window.__resources['rancheramixta'])||'uploads/DSC09947 (2).jpg',price:24500,
+   variants:[{name:'Mixta (pollo y carne)',price:24500},{name:'Solo Pollo',price:21000},{name:'Solo Carne',price:24500}],
+   desc:'Carne desmechada y/o pollo desmechado, maíz, jamón premium, salsa paris y queso doble crema.',
+   ingredients:['🥩 Carne/Pollo','🌽 Maíz','🥓 Jamón','🫙 Salsa Paris','🧀 Doble crema']},
+  {id:7,cat:'clasicas',name:'Bolognesa',photo:(window.__resources&&window.__resources['bolognesa'])||'uploads/BOLOGNESA.jpeg',price:26500,
+   desc:'Exquisitas albóndigas mixtas de res y cerdo en espectacular salsa bolognesa con queso parmesano y doble crema.',
+   ingredients:['🥩 Albóndigas res','🐷 Albóndigas cerdo','🫙 Salsa bolognesa','🧀 Parmesano','🧀 Doble crema']},
+  {id:8,cat:'clasicas',name:'Pollo Champiñón',photo:(window.__resources&&window.__resources['vegpollo'])||'uploads/Crepe vegetales pollo.jpg',price:16500,
+   desc:'Pollo desmechado, champiñones, queso doble crema, salsa paris.',
+   ingredients:['🍗 Pollo','🍄 Champiñones','🧀 Doble crema','🫙 Salsa Paris']},
+  {id:9,cat:'clasicas',name:'Pollo y Piña',photo:(window.__resources&&window.__resources['pollopina'])||'uploads/POLLO Y PIÑA.jpg',price:15500,
+   desc:'Pollo desmechado, piña calada, queso doble crema, salsa paris.',
+   ingredients:['🍗 Pollo','🍍 Piña calada','🧀 Doble crema','🫙 Salsa Paris']},
+  {id:10,cat:'clasicas',name:'Pollo y Carne',photo:(window.__resources&&window.__resources['pollocarne'])||'uploads/DSC09943.jpg',price:17000,
+   desc:'Pollo y carne desmechados, queso doble crema, salsa paris.',
+   ingredients:['🍗 Pollo','🥩 Carne','🧀 Doble crema','🫙 Salsa Paris']},
+  {id:11,cat:'clasicas',name:'Pollo',photo:(window.__resources&&window.__resources['pollo'])||'uploads/pollo.jpg',price:14500,
+   desc:'Pollo desmechado, queso doble crema, salsa paris (bechamel).',
+   ingredients:['🍗 Pollo','🧀 Doble crema','🫙 Salsa Paris']},
+  {id:12,cat:'clasicas',name:'Carne',photo:(window.__resources&&window.__resources['carne'])||'uploads/CARNE.jpg',price:17000,
+   desc:'Carne desmechada, queso doble crema, salsa paris (bechamel).',
+   ingredients:['🥩 Carne','🧀 Doble crema','🫙 Salsa Paris']},
+  {id:13,cat:'clasicas',name:'Hawaiana',photo:(window.__resources&&window.__resources['hawaiana'])||'uploads/HAWAIANA.jpg',price:14000,
+   desc:'Jamón premium, piña calada y queso doble crema.',
+   ingredients:['🥓 Jamón','🍍 Piña calada','🧀 Doble crema']},
+  {id:14,cat:'clasicas',name:'Ranchera',photo:(window.__resources&&window.__resources['ranchera'])||'uploads/RANCHERA.jpeg',price:14500,
+   desc:'Salchicha ranchera, maíz tierno, queso doble crema y salsa de queso cheddar.',
+   ingredients:['🌭 Salchicha','🌽 Maíz','🧀 Doble crema','🧀 Cheddar']},
+  // FAST FOOD
+  {id:15,cat:'fastfood',name:'Costillas BBQ',photo:(window.__resources&&window.__resources['bbq'])||'uploads/BBQ.jpg',price:28500,
+   desc:'Costillas de cerdo en salsa BBQ artesanal, maíz, lechuga, aguacate, tomate y queso doble crema.',
+   ingredients:['🍖 Costillas cerdo','🫙 Salsa BBQ','🌽 Maíz','🥬 Lechuga','🥑 Aguacate','🍅 Tomate','🧀 Doble crema']},
+  {id:16,cat:'fastfood',name:'Americana',photo:(window.__resources&&window.__resources['americana'])||'uploads/AMERICANA.jpeg',price:19900,
+   desc:'Perro caliente versión crepe: salchicha, queso cuajada, huevos de codorniz, piña calada, fosforitos y queso doble crema.',
+   ingredients:['🌭 Salchicha perro','🧀 Cuajada','🥚 Codorniz','🍍 Piña','🧀 Doble crema']},
+  {id:17,cat:'fastfood',name:'Crepe Burguesa',photo:(window.__resources&&window.__resources['burguesa'])||'uploads/BURGUESA.jpeg',price:24500,
+   desc:'180g de lomo de res madurado con queso americano y doble crema, tocineta, cebolla salteada, tomate y lechuga.',
+   ingredients:['🥩 Lomo res 180g','🧀 Americano','🧀 Doble crema','🥓 Tocineta','🧅 Cebolla','🍅 Tomate','🥬 Lechuga']},
+  {id:18,cat:'fastfood',name:'Italiana',photo:(window.__resources&&window.__resources['italiana'])||'uploads/ITALIANA.jpeg',price:23500,
+   desc:'Pepperoni, salami, tomate, queso parmesano y salsa italiana.',
+   ingredients:['🍕 Pepperoni','🥩 Salami','🍅 Tomate','🧀 Parmesano','🫙 Salsa italiana']},
+  // DEL MAR
+  {id:19,cat:'delmar',name:'Mediterránea Camarones',photo:(window.__resources&&window.__resources['medcamaron'])||'uploads/MEDITERRANEA DE CAMARON.jpg',price:33500,
+   desc:'Camarones tigre salteados al ajillo con pimentón y finas hierbas, con queso doble crema y parmesano.',
+   ingredients:['🦐 Camarones tigre','🧄 Ajillo','🫑 Pimentón','🌿 Finas hierbas','🧀 Doble crema','🧀 Parmesano']},
+  {id:20,cat:'delmar',name:'Mediterránea Mariscos',photo:(window.__resources&&window.__resources['medmixta'])||'uploads/MEDITERRANEA MIXTA.jpeg',price:35500,
+   desc:'Camarones, pulpo, calamar y pescado salteados al ajillo con pimentón y finas hierbas, con queso doble crema y parmesano.',
+   ingredients:['🦐 Camarones','🐙 Pulpo','🦑 Calamar','🐟 Pescado','🧄 Ajillo','🧀 Doble crema']},
+  {id:21,cat:'delmar',name:'Atún',photo:(window.__resources&&window.__resources['atun'])||'uploads/ATUN.jpeg',price:23500,
+   desc:'180g de lomitos de atún con mayo ajo, pico de gallo, lechuga y queso doble crema.',
+   ingredients:['🐟 Atún 180g','🧄 Mayo ajo','🍅 Pico de gallo','🥬 Lechuga','🧀 Doble crema']},
+  // GOURMET
+  {id:22,cat:'gourmet',name:'Strogonoff de Pollo',photo:(window.__resources&&window.__resources['strogpollo'])||'uploads/STROGANOFF DE POLLO.jpeg',price:29900,
+   desc:'Suculentos trozos de pechuga salteados con champiñones en salsa strogonoff y vino blanco, con queso doble crema.',
+   ingredients:['🍗 Pechuga','🍄 Champiñones','🫙 Salsa strogonoff','🍷 Vino blanco','🧀 Doble crema']},
+  {id:23,cat:'gourmet',name:'Strogonoff de Carne',photo:(window.__resources&&window.__resources['strogcarne'])||'uploads/STROGANOFF CARNE.jpg',price:34500,
+   desc:'Tiras de lomo de res salteadas con champiñones en salsa strogonoff y vino blanco, con queso doble crema.',
+   ingredients:['🥩 Lomo res','🍄 Champiñones','🫙 Salsa strogonoff','🍷 Vino blanco','🧀 Doble crema']},
+  {id:24,cat:'gourmet',name:'Crepe Mignon',photo:(window.__resources&&window.__resources['mignon'])||'uploads/CREPE MIGNON.jpg',price:36500,
+   desc:'Lomo de res salteado con tocineta y champiñones en salsa con vino tinto y queso doble crema.',
+   ingredients:['🥩 Lomo res','🥓 Tocineta','🍄 Champiñones','🍷 Vino tinto','🧀 Doble crema']},
+  {id:25,cat:'gourmet',name:'Marinera',photo:(window.__resources&&window.__resources['marinera'])||'uploads/MARINERA.jpeg',price:37500,
+   desc:'Combinación de mariscos en deliciosa salsa marinera, servido con queso doble crema.',
+   ingredients:['🦐 Mariscos mixtos','🫙 Salsa marinera','🧀 Doble crema']},
+  {id:26,cat:'gourmet',name:'Camarones Gourmet',photo:(window.__resources&&window.__resources['gourmetcamar'])||'uploads/Crepe GOURMET CAMARONES.jpg',price:35500,
+   desc:'Camarones en deliciosa salsa marinera, servido con queso doble crema.',
+   ingredients:['🦐 Camarones','🫙 Salsa marinera','🧀 Doble crema']},
+  // VEGETARIANAS
+  {id:27,cat:'veggie',name:'Stroganoff Veggie',photo:(window.__resources&&window.__resources['strogveggi'])||'uploads/STROGANOFF VEGGI.jpg',price:36500,
+   desc:'Albóndigas de proteína de soya y huevo salteadas con champiñones en salsa al vino tinto.',
+   ingredients:['🌱 Proteína soya','🥚 Huevo','🍄 Champiñones','🍷 Vino tinto','🫙 Salsa strogonoff']},
+  {id:28,cat:'veggie',name:'Vegetariana',photo:(window.__resources&&window.__resources['vegetariana'])||'uploads/VEGETARIANA.jpeg',price:13900,
+   variants:[{name:'Con Salsa Paris',price:13900},{name:'Con Salsa Italiana de Olivos',price:14500},{name:'Con Salsa de Albahaca',price:14500}],
+   desc:'Champiñón, maíz tierno, pico de gallo y queso doble crema. Con salsa paris $13.900 / Con salsa italiana de olivos o albahaca $14.500',
+   ingredients:['🍄 Champiñón','🌽 Maíz','🍅 Pico de gallo','🧀 Doble crema','🫙 Salsa a escoger']},
+  {id:29,cat:'veggie',name:'Burguessa Veggie',photo:(window.__resources&&window.__resources['burgveggi'])||'uploads/burguesa veggi.jpg',price:25500,
+   desc:'Proteína de soya y huevo, tomate, dos tipos de queso, lechuga, cebolla salteada y tomate.',
+   ingredients:['🌱 Proteína soya','🥚 Huevo','🍅 Tomate','🧀 Americano','🧀 Doble crema','🥬 Lechuga','🧅 Cebolla']},
+  // CON FRUTAS
+  {id:30,cat:'frutas',name:'Tropinutella',photo:(window.__resources&&window.__resources['tropinutella'])||'uploads/DSC09992.jpg',price:19900,
+   desc:'Nutella, durazno, fresa, banano, manzana, queso cuajada, queso doble crema y crema de leche.',
+   ingredients:['🍫 Nutella','🍑 Durazno','🍓 Fresa','🍌 Banano','🍎 Manzana','🧀 Cuajada','🧀 Doble crema','🥛 Crema de leche']},
+  {id:31,cat:'frutas',name:'Tropical',photo:(window.__resources&&window.__resources['tropical'])||'uploads/Crepe tropical.jpg',price:16900,
+   desc:'Durazno, fresa, banano, manzana, queso cuajada, queso doble crema y crema de leche.',
+   ingredients:['🍑 Durazno','🍓 Fresa','🍌 Banano','🍎 Manzana','🧀 Cuajada','🥛 Crema de leche']},
+  {id:32,cat:'frutas',name:'Crepostre',photo:(window.__resources&&window.__resources['crepostre'])||'uploads/CREPOSTRE.jpeg',price:9500,
+   desc:'Deliciosa crepe fría con Nutella, fresa y durazno.',
+   ingredients:['🍫 Nutella','🍓 Fresa','🍑 Durazno']},
+  // DULCES
+  {id:33,cat:'dulces',name:'Nutella',photo:(window.__resources&&window.__resources['nutella'])||'uploads/NUTELLA.jpg',price:11500,
+   desc:'Nutella con queso doble crema (opcional).',
+   ingredients:['🍫 Nutella','🧀 Doble crema']},
+  {id:34,cat:'dulces',name:'Chocolate',photo:(window.__resources&&window.__resources['chocolate'])||'uploads/Crepe de chocolate (1).jpg',price:10500,
+   desc:'Chocolate de leche con queso doble crema (opcional).',
+   ingredients:['🍫 Chocolate','🧀 Doble crema']},
+  {id:35,cat:'dulces',name:'Arequipe',photo:(window.__resources&&window.__resources['arequipe'])||'uploads/Crepe arequipe.jpg',price:10500,
+   desc:'Arequipe con queso doble crema (opcional).',
+   ingredients:['🍮 Arequipe','🧀 Doble crema']},
+  {id:36,cat:'dulces',name:'Crepe Oblea',photo:(window.__resources&&window.__resources['oblea'])||'uploads/OBLEA.jpg',price:11900,
+   desc:'Arequipe, queso cuajada, salsa de mora y crema de leche.',
+   ingredients:['🍮 Arequipe','🧀 Cuajada','🫐 Salsa mora','🥛 Crema de leche']},
+  // ENTRADAS
+  {id:37,cat:'entradas',name:'Super Nachos',price:32500,
+   desc:'Crujientes nachos de maíz con pico de gallo, frijol, chile, carne desmechada y salsa de queso cheddar.',
+   ingredients:['🌮 Nachos','🍅 Pico de gallo','🫘 Frijol','🌶️ Chile','🥩 Carne','🧀 Cheddar']},
+  {id:38,cat:'entradas',name:'Nachos Paris',price:27000,
+   desc:'Crujientes nachos con pico de gallo, frijol, chile y salsa de queso cheddar.',
+   ingredients:['🌮 Nachos','🍅 Pico de gallo','🫘 Frijol','🌶️ Chile','🧀 Cheddar']},
+  {id:39,cat:'entradas',name:'Nachos con Cheddar',price:18000,photo:(window.__resources&&window.__resources['nachosCheddar'])||'uploads/NACHOS_CHEDDAR.jpeg',
+   desc:'Nachos con salsa de queso cheddar.',
+   ingredients:['🌮 Nachos','🧀 Cheddar']},
+];
+
+const ADICIONALES_SALADAS = [
+  {group:'🥩 Carnes', items:[
+    {name:'Carne desmechada',price:7500},{name:'Pollo desmechado',price:7000},
+    {name:'Tocineta',price:5500},{name:'Pepperoni',price:5000},
+    {name:'Salami',price:5000},{name:'Jamón',price:5000},
+    {name:'Salchicha ranchera',price:5500},{name:'Chile con carne',price:5500},
+  ]},
+  {group:'🧀 Quesos', items:[
+    {name:'Doble crema',price:5000},{name:'Americano',price:5000},
+    {name:'Cuajada',price:4500},{name:'Parmesano',price:5000},
+    {name:'Salsa cheddar',price:5000},
+  ]},
+  {group:'🥦 Verduras', items:[
+    {name:'Champiñón',price:4500},{name:'Maíz tierno',price:3500},
+    {name:'Pico de gallo',price:2000},{name:'Jalapeños',price:2000},
+  ]},
+  {group:'🍍 Extra', items:[
+    {name:'Piña calada',price:2000},
+  ]},
+];
+
+const ADICIONALES_DULCES = [
+  {group:'🍓 Frutas', items:[
+    {name:'Fresa',price:3000},{name:'Banano',price:2000},{name:'Durazno',price:3900},{name:'Manzana',price:2500},{name:'Piña calada',price:2000}
+  ]},
+  {group:'🍫 Dulces', items:[
+    {name:'Nutella',price:6900},{name:'Chocolate',price:3500},{name:'Arequipe',price:3000},{name:'Crema de maní',price:4500}
+  ]},
+  {group:'🍦 Helado', items:[
+    {name:'Helado 1 bola',price:5500},{name:'Helado 2 bolas',price:8000}
+  ]},
+];
+
+const CATS_SALADAS = ['favoritas','clasicas','fastfood','delmar','gourmet','veggie','entradas'];
+
+const getAdicionales = (cat) => CATS_SALADAS.includes(cat) ? ADICIONALES_SALADAS : ADICIONALES_DULCES;
+
+const SABORES_JUGO = ['🫐 Mora','🥭 Mango','🍈 Guanábana','🍋 Maracuyá','🍓 Fresa'];
+
+const BEBIDAS = [
+  {id:'b0',name:'Jugo Natural',price:9900,photo:(window.__resources&&window.__resources['jugosnat'])||'uploads/JUGOS NATURALES.jpeg',
+   jugo:true,
+   variants:[{name:'En Agua',price:9900},{name:'En Leche',price:11500}],
+   desc:'Mora · Mango · Guanábana · Maracuyá · Fresa'},
+  {id:'b3',name:'Batido de Frutas',price:11500,preparada:true,desc:'Fresa, banano, crema de maní, leche deslactosada'},
+  {id:'b4',name:'Limonada Natural',price:5000,preparada:true,photo:(window.__resources&&window.__resources['limonat'])||'uploads/LIMONADA NATURAL.jpg'},
+  {id:'b5',name:'Limonada de Coco',price:10500,preparada:true,photo:(window.__resources&&window.__resources['limococo'])||'uploads/LIMONADA DE COCO.jpg'},
+  {id:'b6',name:'Limonada Cerezada',price:12500,preparada:true,photo:(window.__resources&&window.__resources['limocereza'])||'uploads/LIMONADA DE CEREZA.jpg'},
+  {id:'b7',name:'Malteada',price:17900,preparada:true,photo:(window.__resources&&window.__resources['malteada'])||'uploads/MALTEADA DE FRESA.jpg',
+   sabores:['🍓 Fresa','🍦 Vainilla','🍫 Brownie'],
+   desc:'Fresa · Vainilla · Brownie'},
+  {id:'b8',name:'Agua',price:3900,preparada:true,noAzucar:true,sabores:['💧 Sin Gas','🥊 Con Gas']},
+  {id:'b9',name:'Gaseosa Personal',price:5900,preparada:true,noAzucar:true,
+   sabores:['🔴 Coca-Cola Original','⚫ Coca-Cola Zero','🟡 Cuatro','🟢 Sprite','🏆 Premio']},
+  {id:'b11',name:'Jugo Hit',price:5900,preparada:true,noAzucar:true,
+   sabores:['🥭 Mango','🫐 Mora','🌴 Tropical','🍊 Naranja','🍍 Piña']},
+  {id:'b13',name:'Mr. Te Pet 500',price:5900,preparada:true,noAzucar:true,sabores:['🍑 Durazno','🍋 Limón']},
+  {id:'b14',name:'Bretaña',price:4900,noAzucar:true},
+  {id:'b15',name:'H2O Pet 400',price:5900,noAzucar:true},
+  {id:'b16',name:'Saborizadas Pet 400',price:5900,preparada:true,noAzucar:true,sabores:['🍎 Manzana','🍋 Lima Limón','🍋 Maracuyá']},
+  {id:'b17',name:'Té Hatsu',price:9900,preparada:true,noAzucar:true,sabores:['⚪ Blanco','🟣 Lila','🟢 Verde','⚫ Negro','🔵 Azul','🟡 Amarillo','🟣 Morado']},
+  {id:'b19',name:'Gaseosa Familiar 1.25L',price:9500,preparada:true,noAzucar:true,
+   sabores:['🔴 Coca-Cola Original','⚫ Coca-Cola Zero','🟡 Manzana Brisa']},
+];
+
+const ARMA_BASE = 11500;
+const ARMA_CARNES = [
+  {name:'Carne desmechada',price:7500},{name:'Pollo desmechado',price:7000},
+  {name:'Tocineta',price:5500},{name:'Pepperoni',price:5000},
+  {name:'Salami',price:5000},{name:'Jamón',price:5000},
+  {name:'Salchicha ranchera',price:5500},{name:'Chile con carne',price:5500},
+];
+const ARMA_QUESOS = [
+  {name:'Doble crema',price:5000},{name:'Americano',price:5000},
+  {name:'Cuajada',price:4500},{name:'Parmesano',price:5000},{name:'Salsa cheddar',price:5000},
+];
+const ARMA_VERDURAS = [
+  {name:'Champiñón',price:4500},{name:'Maíz tierno',price:3500},
+  {name:'Pico de gallo',price:2000},{name:'Jalapeños',price:2000},
+];
+
+// ============================================================
+// HELPERS
+// ============================================================
+const fmtP = p => '$' + p.toLocaleString('es-CO');
+const catColor = id => (CATEGORIES.find(c=>c.id===id)||{color:'#C41E3A'}).color;
+const catEmoji = id => (CATEGORIES.find(c=>c.id===id)||{emoji:'🥞'}).emoji;
+
+// ============================================================
+// INGREDIENT EXPLOSION
+// ============================================================
+// Parse "🍗 Pollo desmechado" → { emoji: "🍗", label: "Pollo desmechado" }
+function parseIng(ing) {
+  const m = ing.match(/^([\p{Emoji_Presentation}\p{Extended_Pictographic}]+)\s+(.+)$/u);
+  if (m) return { emoji: m[1].trim(), label: m[2].trim() };
+  return { emoji: '🥞', label: ing };
+}
+
+// Category-based colors for ingredient bubbles
+const ING_COLORS = [
+  '#FFF0E0','#E8F5FF','#F0FFE8','#FFF0F5','#F5F0FF',
+  '#FFFBE0','#E0F5FF','#FFE8F0','#E8FFE8','#FFE0E0',
+];
+
+function Explosion({ingredients, onDone, centerEmoji, centerPhoto}) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 1600);
+    return () => clearTimeout(t);
+  }, []);
+
+  const total = ingredients.length;
+  // Spiral outward with varied distances for more dramatic effect
+  const positions = ingredients.map((_, i) => {
+    const angle = (2 * Math.PI * i / total) - Math.PI / 2;
+    const dist = 100 + (i % 3) * 20; // 100–140px
+    return {
+      tx: Math.cos(angle) * dist,
+      ty: Math.sin(angle) * dist,
+      rot: ((i * 47) % 40 - 20) + 'deg',
+      delay: (i * 0.07) + 's',
+      color: ING_COLORS[i % ING_COLORS.length],
+    };
+  });
+
+  return (
+    <div className="expl-wrap" style={{height:230}}>
+      {/* Center: photo circle or emoji shaking */}
+      {centerEmoji
+        ? <span className="boom" style={{fontSize:72, position:'absolute', zIndex:5}}>{centerEmoji}</span>
+        : centerPhoto
+          ? <img className="boom" src={centerPhoto} alt="" style={{width:80,height:80,borderRadius:'50%',objectFit:'cover',position:'absolute',zIndex:5,border:'3px solid #F4C430',boxShadow:'0 4px 20px rgba(0,0,0,.25)'}}/>
+          : <span className="boom" style={{fontSize:72, position:'absolute', zIndex:5}}>🥞</span>
+      }
+      {ingredients.map((ing, i) => {
+        const {emoji, label} = parseIng(ing);
+        return (
+          <div
+            key={i}
+            className="ing-bubble"
+            style={{
+              '--tx': positions[i].tx + 'px',
+              '--ty': positions[i].ty + 'px',
+              '--rot': positions[i].rot,
+              animationDelay: positions[i].delay,
+              background: positions[i].color,
+              borderColor: '#F4C430',
+            }}
+          >
+            <div className="ing-emoji">{emoji}</div>
+            <div className="ing-label">{label}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
+// PRODUCT MODAL
+// ============================================================
+function ProductModal({item, onClose, onAdd}) {
+  const [phase, setPhase] = useState('photo'); // photo | exploding | revealed
+  const [qty, setQty] = useState(1);
+  const [ads, setAds] = useState({});
+  const [obs, setObs] = useState('');
+  const [retirados, setRetirados] = useState({});
+  const [showRetiro, setShowRetiro] = useState(false);
+  const [variant, setVariant] = useState(item.variants ? item.variants[0] : null);
+  const [mods, setMods] = useState(() => {
+    const m = {};
+    (item.modifiers||[]).forEach(mod => { m[mod.name] = mod.default || mod.options[0]; });
+    return m;
+  });
+
+  const basePrice = variant ? variant.price : item.price;
+
+  const color = catColor(item.cat);
+  const emoji = catEmoji(item.cat);
+  const ADICIONALES = getAdicionales(item.cat);
+
+  const changeAdQty = (ad, delta) => {
+    setAds(prev => {
+      const cur = prev[ad.name]?.qty || 0;
+      const next = Math.max(0, cur + delta);
+      if (next === 0) { const n={...prev}; delete n[ad.name]; return n; }
+      return {...prev, [ad.name]: {...ad, qty: next}};
+    });
+  };
+
+  const adsTotal = Object.values(ads).reduce((s,a)=>s+(a.price*(a.qty||1)), 0);
+  const total = (basePrice + adsTotal) * qty;
+
+  const handleAdd = () => {
+    const retiradosList = Object.keys(retirados).filter(k=>retirados[k]);
+    const modsList = Object.entries(mods).map(([k,v])=>v).join(', ');
+    const obsFinal = [obs, retiradosList.length ? `SIN: ${retiradosList.join(', ')}` : '', modsList].filter(Boolean).join(' | ');
+    const itemName = variant ? `${item.name} (${variant.name})` : item.name;
+    onAdd({item:{...item,name:itemName}, qty, additions:Object.values(ads), obs:obsFinal, totalPrice:total});
+    onClose();
+  };
+
+  return (
+    <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-handle"/>
+        <button className="close-x" onClick={onClose}>← Volver</button>
+
+        {/* PHOTO / EXPLOSION / REVEALED */}
+        {phase === 'photo' && (
+          <div
+            className="photo-zone"
+            style={item.photo ? {background:'#000'} : {background:`linear-gradient(135deg,${color}22,${color}55)`}}
+            onClick={() => setPhase('exploding')}
+          >
+            {item.photo
+              ? <img src={item.photo} alt={item.name} style={{width:'100%',height:'100%',objectFit:'cover',position:'absolute',inset:0,borderRadius:20,opacity:.92}}/>
+              : <span>{emoji}</span>
+            }
+            <div className="tap-hint" style={{zIndex:2,position:'relative'}}>👆 Toca para ver los ingredientes</div>
+          </div>
+        )}
+        {phase === 'exploding' && (
+          <Explosion
+            ingredients={item.ingredients}
+            onDone={() => setPhase('revealed')}
+            centerEmoji={item.photo ? null : emoji}
+            centerPhoto={item.photo || null}
+          />
+        )}
+        {phase === 'revealed' && (
+          <div style={{paddingTop:14}}>
+            <div style={{textAlign:'center',fontSize:13,fontWeight:800,color:'#aaa',marginBottom:8}}>
+              ✨ Ingredientes de tu crepe
+            </div>
+            <div className="ing-grid">
+              {item.ingredients.map((ing,i) => {
+                const {emoji:e, label} = parseIng(ing);
+                return (
+                  <div key={i} className="ing-pill" style={{animationDelay:(i*0.07)+'s',display:'flex',alignItems:'center',gap:5}}>
+                    <span style={{fontSize:18}}>{e}</span>
+                    <span style={{fontSize:12,fontWeight:700}}>{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {/* BOTÓN RETIRAR INGREDIENTES */}
+            <div style={{padding:'0 16px',marginTop:10}}>
+              <button
+                onClick={()=>setShowRetiro(r=>!r)}
+                style={{
+                  width:'100%',padding:'10px 14px',
+                  background: showRetiro ? '#FFF0F0' : '#FFF6E0',
+                  border:`2px solid ${showRetiro ? '#C41E3A' : '#F4C430'}`,
+                  borderRadius:12,cursor:'pointer',
+                  display:'flex',alignItems:'center',justifyContent:'space-between',
+                  fontFamily:"'Nunito',sans-serif",fontWeight:800,fontSize:13,color:'#2C1810'
+                }}
+              >
+                <span>🚫 ¿Deseas retirar algún ingrediente?</span>
+                <span style={{fontSize:16}}>{showRetiro ? '▲' : '▼'}</span>
+              </button>
+
+              {showRetiro && (
+                <div style={{background:'#FFF0F0',borderRadius:'0 0 12px 12px',padding:'10px 12px',border:'2px solid #C41E3A',borderTop:'none',display:'flex',flexWrap:'wrap',gap:8}}>
+                  {item.ingredients.map((ing,i) => {
+                    const {emoji:e, label} = parseIng(ing);
+                    const removed = !!retirados[label];
+                    return (
+                      <div
+                        key={i}
+                        onClick={()=>setRetirados(p=>({...p,[label]:!p[label]}))}
+                        style={{
+                          display:'flex',alignItems:'center',gap:5,
+                          padding:'6px 12px',borderRadius:50,cursor:'pointer',
+                          background: removed ? '#C41E3A' : '#fff',
+                          border:`2px solid ${removed ? '#C41E3A' : '#ddd'}`,
+                          color: removed ? '#fff' : '#2C1810',
+                          fontSize:13,fontWeight:700,
+                          textDecoration: removed ? 'line-through' : 'none',
+                          transition:'all .15s'
+                        }}
+                      >
+                        <span style={{fontSize:16,opacity:removed?.4:1}}>{e}</span>
+                        <span>{label}</span>
+                        {removed && <span style={{fontSize:11,marginLeft:2}}>✕</span>}
+                      </div>
+                    );
+                  })}
+                  {Object.values(retirados).some(Boolean) && (
+                    <button
+                      onClick={()=>setRetirados({})}
+                      style={{background:'none',border:'none',color:'#C41E3A',fontSize:12,fontWeight:800,cursor:'pointer',width:'100%',textAlign:'right',marginTop:4}}
+                    >
+                      Restablecer todo ↺
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <button onClick={()=>setPhase('photo')} style={{background:'none',border:'none',color:'#bbb',fontSize:11,marginTop:10,cursor:'pointer',display:'block',marginLeft:'auto',marginRight:16}}>
+              ← ver foto
+            </button>
+          </div>
+        )}
+
+        {/* BODY */}
+        <div className="mbody">
+          <div className="mname">{item.name}</div>
+          <div className="mprice">{fmtP(basePrice)}</div>
+
+          {/* VARIANTES */}
+          {item.variants && (
+            <div style={{marginTop:10}}>
+              <div className="sec-title">🍽️ ¿Cómo la prefieres?</div>
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {item.variants.map((v,i) => (
+                  <div
+                    key={i}
+                    onClick={()=>setVariant(v)}
+                    style={{
+                      display:'flex',justifyContent:'space-between',alignItems:'center',
+                      padding:'11px 14px',borderRadius:12,cursor:'pointer',
+                      background: variant?.name===v.name ? '#FFF0C0' : '#FFF5D0',
+                      border: `2.5px solid ${variant?.name===v.name ? '#C41E3A' : '#E8C89A'}`,
+                      transition:'all .15s'
+                    }}
+                  >
+                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                      <div style={{
+                        width:20,height:20,borderRadius:'50%',flexShrink:0,
+                        border:`2.5px solid ${variant?.name===v.name ? '#C41E3A' : '#C8A96A'}`,
+                        background: variant?.name===v.name ? '#C41E3A' : 'transparent',
+                        display:'flex',alignItems:'center',justifyContent:'center'
+                      }}>
+                        {variant?.name===v.name && <div style={{width:8,height:8,borderRadius:'50%',background:'#fff'}}/>}
+                      </div>
+                      <span style={{fontWeight:800,fontSize:14,color:'#3B1A0A'}}>{v.name}</span>
+                    </div>
+                    <span style={{fontFamily:"'Anton',sans-serif",fontSize:18,color:'#C41E3A'}}>{fmtP(v.price)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="mdesc">{item.desc}</div>
+
+          {/* MODIFICADORES */}
+          {item.modifiers && item.modifiers.length > 0 && (
+            <div>
+              {item.modifiers.map(mod => (
+                <div key={mod.name}>
+                  <div className="sec-title">🌶️ {mod.name}</div>
+                  <div style={{display:'flex',gap:8}}>
+                    {mod.options.map(opt => (
+                      <div
+                        key={opt}
+                        onClick={()=>setMods(p=>({...p,[mod.name]:opt}))}
+                        style={{
+                          flex:1,padding:'10px 8px',borderRadius:12,cursor:'pointer',textAlign:'center',
+                          background:mods[mod.name]===opt?'#C41E3A':'#FFF5D0',
+                          border:`2px solid ${mods[mod.name]===opt?'#C41E3A':'#E8C89A'}`,
+                          transition:'all .15s'
+                        }}
+                      >
+                        <div style={{fontWeight:800,fontSize:13,color:mods[mod.name]===opt?'#fff':'#3B1A0A'}}>{opt}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* CANTIDAD */}
+          <div className="sec-title">🔢 Cantidad</div>
+          <div className="qty-row">
+            <button className="qty-btn" onClick={()=>setQty(q=>Math.max(1,q-1))}>−</button>
+            <span className="qty-num">{qty}</span>
+            <button className="qty-btn" onClick={()=>setQty(q=>q+1)}>+</button>
+          </div>
+
+          {/* ADICIONALES */}
+          <div className="sec-title">➕ Adicionales</div>
+          {ADICIONALES.map(g => (
+            <div key={g.group}>
+              <div className="ad-group-title">{g.group}</div>
+              {g.items.map(ad => {
+                const qty_ad = ads[ad.name]?.qty || 0;
+                return (
+                  <div key={ad.name} className={`ad-item ${qty_ad>0?'on':''}`}>
+                    <div className="ad-left">
+                      <div className="ad-name">{ad.name}</div>
+                      <div className="ad-price">+ {fmtP(ad.price)}{qty_ad>1 ? ` × ${qty_ad} = ${fmtP(ad.price*qty_ad)}` : ''}</div>
+                    </div>
+                    <div className="ad-qty-row">
+                      <button className="ad-qty-btn" onClick={()=>changeAdQty(ad,-1)} style={{opacity:qty_ad===0?.3:1}}>−</button>
+                      <span className="ad-qty-num">{qty_ad}</span>
+                      <button className="ad-qty-btn" onClick={()=>changeAdQty(ad,1)}>+</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+          {/* OBSERVACIONES */}
+          <div className="sec-title">📝 Observaciones</div>
+          <textarea
+            className="obs"
+            rows={3}
+            placeholder="Sin cebolla, extra salsa, por favor sin piña... ¡Lo que necesites!"
+            value={obs}
+            onChange={e=>setObs(e.target.value)}
+          />
+
+          <button className="add-btn" onClick={handleAdd}>
+            🛒 Agregar — {fmtP(total)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// SPLASH SCREEN
+// ============================================================
+// 👉 Para agregar tu video:
+//    OPCIÓN A: sube el archivo MP4 al proyecto y cambia VIDEO_SRC a la ruta, ej: 'uploads/mi-video.mp4'
+//    OPCIÓN B: en Google Drive abre el video → Compartir → Copiar link → pega el ID en VIDEO_DRIVE_ID
+const VIDEO_SRC = 'uploads/Reel preparacion Crepe.mp4';
+const VIDEO_DRIVE_ID = '1gPi9DWTnCoZ1yN2Tb_3Hhmq7Dam77SK2';
+
+function Splash({onEnter}) {
+  const [leaving, setLeaving] = useState(false);
+  const [countdown, setCountdown] = useState(6);
+
+  const handleEnter = () => {
+    setLeaving(true);
+    setTimeout(onEnter, 450);
+  };
+
+  // Auto-advance after 6 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCountdown(c => {
+        if (c <= 1) { clearInterval(interval); handleEnter(); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const embedSrc = VIDEO_DRIVE_ID
+    ? `https://drive.google.com/file/d/${VIDEO_DRIVE_ID}/preview`
+    : null;
+
+  return (
+    <div className={`splash ${leaving ? 'out' : ''}`} style={{padding:'24px 16px',gap:14,background:'#fff'}}>
+      {/* Decorative SVG corners like the original menu */}
+      <svg style={{position:'absolute',top:0,left:0,width:140,opacity:.08}} viewBox="0 0 200 200"><path d="M20 80 Q40 20 80 40 Q60 80 20 80Z" fill="#3B1A0A"/><circle cx="50" cy="30" r="18" fill="none" stroke="#3B1A0A" strokeWidth="3"/><path d="M10 120 Q30 90 60 110 Q40 130 10 120Z" fill="#3B1A0A"/></svg>
+      <svg style={{position:'absolute',top:0,right:0,width:140,opacity:.06}} viewBox="0 0 200 200"><path d="M180 60 Q160 10 130 30 Q150 70 180 60Z" fill="#3B1A0A"/><ellipse cx="155" cy="110" rx="30" ry="20" fill="none" stroke="#3B1A0A" strokeWidth="3"/></svg>
+      <svg style={{position:'absolute',bottom:0,right:0,width:180,opacity:.07}} viewBox="0 0 200 200"><path d="M200 200 Q160 140 120 160 Q140 200 200 200Z" fill="#3B1A0A"/><path d="M150 140 Q180 120 190 150 Q170 165 150 140Z" fill="#3B1A0A"/></svg>
+      <svg style={{position:'absolute',bottom:60,left:0,width:120,opacity:.07}} viewBox="0 0 200 200"><path d="M0 180 Q30 140 60 160 Q30 190 0 180Z" fill="#3B1A0A"/></svg>
+
+      {/* Logo grande centrado */}
+      <div className="splash-logo" style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14}}>
+        <img
+          src="uploads/logo-9cc2bf2c.jpeg"
+          alt="Las Crepes"
+          style={{width:140,height:140,borderRadius:'50%',objectFit:'cover',border:'5px solid #C41E3A',boxShadow:'0 6px 24px rgba(196,30,58,.25)',background:'#fff'}}
+        />
+        <div style={{textAlign:'center'}}>
+          <div style={{fontFamily:"'Anton',sans-serif",fontSize:44,color:'#C41E3A',letterSpacing:3,lineHeight:1,textShadow:'none'}}>LAS CREPES</div>
+          <div style={{fontSize:12,color:'#3B1A0A',letterSpacing:2,textTransform:'uppercase',fontWeight:800,marginTop:4}}>Rápidas, Exquisitas y Saludables</div>
+        </div>
+      </div>
+
+      {/* VIDEO compacto */}
+      {(VIDEO_SRC || embedSrc) && (
+        <div style={{
+          width:'100%',maxWidth:360,borderRadius:18,overflow:'hidden',
+          boxShadow:'0 8px 32px rgba(0,0,0,.18)',
+          border:'3px solid #C41E3A',
+          background:'#000',
+          animation:'videoIn .7s .3s ease both',
+          position:'relative',
+          marginTop:20
+        }}>
+          {VIDEO_SRC
+            ? <video
+                src={VIDEO_SRC}
+                autoPlay muted playsInline
+                style={{width:'100%',maxHeight:280,objectFit:'cover',display:'block'}}
+                onEnded={handleEnter}
+              />
+            : <iframe
+                src={embedSrc + '&autoplay=1'}
+                allowFullScreen
+                allow="autoplay; encrypted-media"
+                frameBorder="0"
+                style={{width:'100%',border:'none',height:'56vw',maxHeight:280,display:'block'}}
+              />
+          }
+        </div>
+      )}
+
+      {/* Botón + countdown */}
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,marginTop:20,animation:'btnIn .5s .8s ease both',opacity:0,animationFillMode:'both'}}>
+        <button
+          onClick={handleEnter}
+          style={{
+            background:'#C41E3A',border:'none',borderRadius:50,
+            padding:'14px 44px',fontFamily:"'Anton',sans-serif",
+            fontSize:22,letterSpacing:2,color:'#fff',cursor:'pointer',
+            boxShadow:'0 4px 16px rgba(196,30,58,.35)',transition:'transform .15s'
+          }}
+        >
+          🥞 VER MENÚ
+        </button>
+        <div style={{fontSize:11,color:'#C8A96A',fontWeight:800,letterSpacing:1}}>
+          {countdown > 0 ? `Continúa en ${countdown}s` : ''}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function CartDrawer({cart, onClose, onRemove}) {
+  const total = cart.reduce((s,c)=>s+c.totalPrice, 0);
+
+  const sendWA = () => {
+    const lines = ['🥞 *PEDIDO - LAS CREPES*\n'];
+    cart.forEach((c,i) => {
+      lines.push(`*${i+1}. ${c.item.name}* ×${c.qty}`);
+      if (c.additions.length) lines.push(`   ➕ ${c.additions.map(a=>`${a.name}${a.qty>1?' ×'+a.qty:''}`).join(', ')}`);
+      if (c.obs) lines.push(`   📝 ${c.obs}`);
+      lines.push(`   💰 ${fmtP(c.totalPrice)}\n`);
+    });
+    lines.push(`*TOTAL: ${fmtP(total)}*`);
+    window.open(`https://wa.me/573137160625?text=${encodeURIComponent(lines.join('\n'))}`,'_blank');
+  };
+
+  return (
+    <div className="cart-overlay" onClick={e=>e.target===e.currentTarget && onClose()}>
+      <div className="cart-draw">
+        <div className="modal-handle"/>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div className="cart-title">🛒 Tu Pedido</div>
+          <button onClick={onClose} style={{background:'none',border:'none',fontSize:22,cursor:'pointer',color:'#aaa'}}>✕</button>
+        </div>
+
+        {cart.length === 0 ? (
+          <div className="empty-cart">
+            <div style={{fontSize:60}}>🥞</div>
+            <div style={{fontWeight:800,marginTop:12,fontSize:16}}>¡El carrito está vacío!</div>
+            <div style={{fontSize:13,marginTop:4}}>Agrega tus crepes favoritas</div>
+          </div>
+        ) : (
+          <>
+            {cart.map((c,i) => (
+              <div key={i} className="ci-row">
+                <div className="ci-emoji">{catEmoji(c.item.cat)}</div>
+                <div className="ci-info">
+                  <div className="ci-name">{c.item.name} ×{c.qty}</div>
+                  {c.additions.length>0 && <div className="ci-detail">➕ {c.additions.map(a=>`${a.name}${a.qty>1?' ×'+a.qty:''}`).join(', ')}</div>}
+                  {c.obs && <div className="ci-detail">📝 {c.obs}</div>}
+                  <button className="ci-del" onClick={()=>onRemove(i)}>✕ quitar</button>
+                </div>
+                <div className="ci-price">{fmtP(c.totalPrice)}</div>
+              </div>
+            ))}
+            <div className="total-row">
+              <div className="total-label">Total del pedido</div>
+              <div className="total-price">{fmtP(total)}</div>
+            </div>
+            <button className="wa-btn" onClick={sendWA}>
+              <svg width="24" height="24" viewBox="0 0 32 32" fill="white">
+                <path d="M16 3C8.82 3 3 8.82 3 16c0 2.3.6 4.47 1.65 6.35L3 29l6.82-1.6A13 13 0 0016 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.35 18.35c-.27.76-1.57 1.44-2.15 1.53-.55.08-1.25.12-2.02-.13-.47-.15-1.07-.35-1.84-.68-3.23-1.4-5.33-4.6-5.49-4.81-.15-.21-1.27-1.69-1.27-3.22 0-1.53.8-2.28 1.08-2.59.28-.3.6-.38.8-.38h.58c.19 0 .44-.07.68.52.27.62.9 2.2.98 2.36.08.15.13.33.03.53-.1.2-.15.32-.29.5-.15.17-.31.38-.44.51-.15.14-.3.3-.13.58.17.28.77 1.27 1.65 2.06 1.13 1.01 2.08 1.32 2.37 1.47.29.14.46.12.63-.07.17-.2.74-.86.93-1.15.2-.29.4-.24.67-.14.27.1 1.74.82 2.04.97.3.15.5.22.57.34.07.12.07.7-.2 1.46z"/>
+              </svg>
+              Enviar por WhatsApp
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// ARMA TU CREPE
+// ============================================================
+function ArmaTuCrepe({onAdd}) {
+  const [carnes, setCarnes] = useState({});
+  const [quesos, setQuesos] = useState({});
+  const [verduras, setVerduras] = useState({});
+  const [qty, setQty] = useState(1);
+  const [obs, setObs] = useState('');
+
+  const toggle = (setter, item) => setter(p => {
+    if (p[item.name]) { const n={...p}; delete n[item.name]; return n; }
+    return {...p, [item.name]:item};
+  });
+
+  const all = {...carnes,...quesos,...verduras};
+  const extras = Object.values(all).reduce((s,a)=>s+a.price,0);
+  const total = (ARMA_BASE + extras) * qty;
+
+  const Pill = ({item, sel, onToggle}) => (
+    <div onClick={()=>onToggle(item)} className={`pill-sel ${sel?'on':''}`}>
+      {item.name} <span style={{opacity:.7,fontSize:11}}>+${(item.price/1000).toFixed(1)}k</span>
+    </div>
+  );
+
+  const handleAdd = () => {
+    if (!Object.keys(all).length) { alert('¡Selecciona al menos un ingrediente!'); return; }
+    onAdd({
+      item:{id:'arma',name:'Arma Tu Crepe Salada',cat:'armatu',price:ARMA_BASE},
+      qty, additions:Object.values(all), obs, totalPrice:total,
+    });
+  };
+
+  return (
+    <div className="arma-wrap">
+      <div className="arma-hero">
+        <div className="arma-title">🛠️ Arma Tu Crepe Salada</div>
+        <div style={{fontSize:14,color:'#777'}}>Masa clásica — {fmtP(ARMA_BASE)} · Elige tus ingredientes</div>
+      </div>
+
+      <div className="sec-title">🥩 Carnes</div>
+      <div style={{display:'flex',flexWrap:'wrap'}}>
+        {ARMA_CARNES.map(c=><Pill key={c.name} item={c} sel={!!carnes[c.name]} onToggle={i=>toggle(setCarnes,i)}/>)}
+      </div>
+
+      <div className="sec-title">🧀 Quesos y Salsas</div>
+      <div style={{display:'flex',flexWrap:'wrap'}}>
+        {ARMA_QUESOS.map(c=><Pill key={c.name} item={c} sel={!!quesos[c.name]} onToggle={i=>toggle(setQuesos,i)}/>)}
+      </div>
+
+      <div className="sec-title">🥬 Verduras</div>
+      <div style={{display:'flex',flexWrap:'wrap'}}>
+        {ARMA_VERDURAS.map(c=><Pill key={c.name} item={c} sel={!!verduras[c.name]} onToggle={i=>toggle(setVerduras,i)}/>)}
+      </div>
+
+      <div className="arma-summary">
+        <div style={{fontWeight:800,fontSize:14,marginBottom:6}}>Tu selección:</div>
+        {!Object.keys(all).length
+          ? <div style={{color:'#bbb',fontSize:13}}>¡Elige tus ingredientes arriba!</div>
+          : <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+              {Object.values(all).map(a=>(
+                <span key={a.name} style={{background:'#fff',border:'1.5px solid #F4C430',borderRadius:50,padding:'4px 10px',fontSize:12,fontWeight:700}}>{a.name}</span>
+              ))}
+            </div>
+        }
+        <div style={{fontFamily:'Bangers',fontSize:26,color:'#C41E3A',marginTop:10,letterSpacing:1}}>Total: {fmtP(total)}</div>
+      </div>
+
+      <div className="sec-title">🔢 Cantidad</div>
+      <div className="qty-row" style={{marginBottom:16}}>
+        <button className="qty-btn" onClick={()=>setQty(q=>Math.max(1,q-1))}>−</button>
+        <span className="qty-num">{qty}</span>
+        <button className="qty-btn" onClick={()=>setQty(q=>q+1)}>+</button>
+      </div>
+
+      <div className="sec-title">📝 Observaciones</div>
+      <textarea className="obs" rows={2} style={{marginBottom:4}} placeholder="Alguna preferencia especial..." value={obs} onChange={e=>setObs(e.target.value)}/>
+
+      <button className="add-btn" style={{marginTop:14}} onClick={handleAdd}>
+        🛒 Agregar al pedido — {fmtP(total)}
+      </button>
+    </div>
+  );
+}
+
+// ============================================================
+// BEBIDAS
+// ============================================================
+function BebidaJugo({b, onAdd}) {
+  const [open, setOpen] = React.useState(false);
+  const [base, setBase] = React.useState(null);
+  const [sabor, setSabor] = React.useState(null);
+  const [warn, setWarn] = React.useState('');
+  const precio = base ? b.variants.find(v=>v.name===base)?.price : b.price;
+  const handleAdd = () => {
+    if (!base) { setWarn('Elige en agua o en leche'); return; }
+    if (!sabor) { setWarn('Elige el sabor'); return; }
+    setWarn('');
+    onAdd({item:{...b,cat:'bebidas',name:`Jugo ${sabor} ${base}`},qty:1,additions:[],obs:'',totalPrice:precio});
+    setBase(null); setSabor(null); setOpen(false);
+  };
+  return (
+    <div style={{background:'#fff',borderRadius:14,marginBottom:8,boxShadow:'0 2px 8px rgba(0,0,0,.07)',border:'1.5px solid #F0DEB4',overflow:'hidden'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',cursor:'pointer'}} onClick={()=>setOpen(o=>!o)}>
+        {b.photo && <img src={b.photo} alt={b.name} style={{width:52,height:52,borderRadius:10,objectFit:'cover',flexShrink:0}}/>}
+        <div style={{flex:1}}>
+          <div style={{fontWeight:800,fontSize:14,color:'#3B1A0A'}}>🥤 {b.name}</div>
+          <div style={{fontSize:10,color:'#8B5E3C',marginTop:1}}>{b.desc}</div>
+          <div style={{fontSize:10,color:'#C41E3A',fontWeight:800,marginTop:2}}>💧 $9.9k agua · 🥛 $11.5k leche</div>
+        </div>
+        <div style={{fontSize:18,color:'#C41E3A'}}>{open?'▲':'▼'}</div>
+      </div>
+      {open && (
+        <div style={{padding:'0 12px 12px',borderTop:'1.5px solid #F0DEB4'}}>
+          <div style={{fontSize:11,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginTop:10,marginBottom:6}}>¿En agua o en leche?</div>
+          <div style={{display:'flex',gap:8,marginBottom:10}}>
+            {b.variants.map(v=>(
+              <div key={v.name} onClick={()=>{setBase(v.name);setWarn('');}} style={{
+                flex:1,padding:'8px',borderRadius:10,cursor:'pointer',textAlign:'center',
+                background:base===v.name?'#C41E3A':'#FFF5D0',
+                border:`2px solid ${base===v.name?'#C41E3A':'#E8C89A'}`,transition:'all .15s'
+              }}>
+                <div style={{fontWeight:800,fontSize:12,color:base===v.name?'#fff':'#3B1A0A'}}>{v.name}</div>
+                <div style={{fontFamily:"'Anton',sans-serif",fontSize:15,color:base===v.name?'#FFE080':'#C41E3A'}}>${(v.price/1000).toFixed(1)}k</div>
+              </div>
+            ))}
+          </div>
+          <div style={{fontSize:11,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>🍓 Sabor</div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:10}}>
+            {SABORES_JUGO.map(s=>(
+              <div key={s} onClick={()=>{setSabor(s);setWarn('');}} style={{
+                padding:'6px 11px',borderRadius:50,cursor:'pointer',
+                background:sabor===s?'#C41E3A':'#FFF5D0',
+                border:`2px solid ${sabor===s?'#C41E3A':'#E8C89A'}`,
+                color:sabor===s?'#fff':'#3B1A0A',fontWeight:800,fontSize:12,transition:'all .15s'
+              }}>{s}</div>
+            ))}
+          </div>
+          {warn && <div style={{color:'#C41E3A',fontSize:11,fontWeight:800,marginBottom:6}}>⚠️ {warn}</div>}
+          <button onClick={handleAdd} style={{
+            width:'100%',padding:'10px',background:'#C41E3A',border:'none',borderRadius:10,
+            fontFamily:"'Anton',sans-serif",fontSize:16,color:'#fff',cursor:'pointer',letterSpacing:1
+          }}>🛒 Agregar {sabor||''} {base||''}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const AZUCAR_OPTS = ['Normal','Poca azúcar','Sin azúcar'];
+
+function BebidaPreparada({b, onAdd}) {
+  const [open, setOpen] = React.useState(false);
+  const [azucar, setAzucar] = React.useState('Normal');
+  const [sabor, setSabor] = React.useState(b.sabores ? b.sabores[0] : null);
+  const [qty, setQty] = React.useState(1);
+  return (
+    <div style={{background:'#fff',borderRadius:14,marginBottom:8,boxShadow:'0 2px 8px rgba(0,0,0,.07)',border:'1.5px solid #F0DEB4',overflow:'hidden'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',cursor:'pointer'}} onClick={()=>setOpen(o=>!o)}>
+        {b.photo && <img src={b.photo} alt={b.name} style={{width:52,height:52,borderRadius:10,objectFit:'cover',flexShrink:0}}/>}
+        <div style={{flex:1}}>
+          <div style={{fontWeight:800,fontSize:14,color:'#3B1A0A'}}>🥤 {b.name}</div>
+          {b.desc && <div style={{fontSize:10,color:'#8B5E3C',marginTop:1}}>{b.desc}</div>}
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+          <div style={{fontFamily:"'Anton',sans-serif",fontSize:18,color:'#C41E3A'}}>{fmtP(b.price)}</div>
+          <div style={{fontSize:16,color:'#C41E3A'}}>{open?'▲':'▼'}</div>
+        </div>
+      </div>
+      {open && (
+        <div style={{padding:'0 12px 12px',borderTop:'1.5px solid #F0DEB4'}}>
+          {/* Selector de sabor si aplica */}
+          {b.sabores && (
+            <>
+              <div style={{fontSize:11,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginTop:10,marginBottom:6}}>🍓 Sabor</div>
+              <div style={{display:'flex',gap:6,marginBottom:10}}>
+                {b.sabores.map(s=>(
+                  <div key={s} onClick={()=>setSabor(s)} style={{
+                    flex:1,padding:'7px 4px',borderRadius:10,cursor:'pointer',textAlign:'center',
+                    background:sabor===s?'#C41E3A':'#FFF5D0',
+                    border:`2px solid ${sabor===s?'#C41E3A':'#E8C89A'}`,
+                    color:sabor===s?'#fff':'#3B1A0A',fontWeight:800,fontSize:11,transition:'all .15s'
+                  }}>{s}</div>
+                ))}
+              </div>
+            </>
+          )}
+          {!b.noAzucar && (<>
+          <div style={{fontSize:11,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginTop:b.sabores?0:10,marginBottom:6}}>🍬 Azúcar</div>
+          <div style={{display:'flex',gap:6,marginBottom:10}}>
+            {AZUCAR_OPTS.map(a=>(
+              <div key={a} onClick={()=>setAzucar(a)} style={{
+                flex:1,padding:'7px 4px',borderRadius:10,cursor:'pointer',textAlign:'center',
+                background:azucar===a?'#C41E3A':'#FFF5D0',
+                border:`2px solid ${azucar===a?'#C41E3A':'#E8C89A'}`,
+                color:azucar===a?'#fff':'#3B1A0A',fontWeight:800,fontSize:11,transition:'all .15s'
+              }}>{a}</div>
+            ))}
+          </div>
+          </>)}
+          <div style={{display:'flex',alignItems:'center',gap:8,marginTop:4}}>
+            <div style={{display:'flex',alignItems:'center',gap:0,border:'2px solid #C41E3A',borderRadius:10,overflow:'hidden',flexShrink:0}}>
+              <button onClick={()=>setQty(q=>Math.max(1,q-1))} style={{width:34,height:38,background:'#FFF5D0',border:'none',cursor:'pointer',fontSize:20,fontWeight:700,color:'#C41E3A',display:'flex',alignItems:'center',justifyContent:'center'}}>−</button>
+              <span style={{minWidth:28,textAlign:'center',fontFamily:"'Anton',sans-serif",fontSize:16,color:'#3B1A0A'}}>{qty}</span>
+              <button onClick={()=>setQty(q=>q+1)} style={{width:34,height:38,background:'#FFF5D0',border:'none',cursor:'pointer',fontSize:20,fontWeight:700,color:'#C41E3A',display:'flex',alignItems:'center',justifyContent:'center'}}>+</button>
+            </div>
+            <button onClick={()=>{const name=`${b.name}${sabor?' '+sabor:''}${b.noAzucar?'':' ('+azucar+')'}`;onAdd({item:{...b,cat:'bebidas',name},qty,additions:[],obs:'',totalPrice:b.price*qty});setOpen(false);setQty(1);}} style={{
+              flex:1,padding:'10px',background:'#C41E3A',border:'none',borderRadius:10,
+              fontFamily:"'Anton',sans-serif",fontSize:16,color:'#fff',cursor:'pointer',letterSpacing:1
+            }}>🛒 Agregar — {fmtP(b.price*qty)}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+function Bebidas({onAdd}) {
+  return (
+    <div className="beb-wrap">
+      {BEBIDAS.map(b => b.jugo
+        ? <BebidaJugo key={b.id} b={b} onAdd={onAdd}/>
+        : b.preparada
+          ? <BebidaPreparada key={b.id} b={b} onAdd={onAdd}/>
+          : (
+            <div key={b.id} className="beb-item" onClick={()=>onAdd({
+              item:{...b,cat:'bebidas'},qty:1,additions:[],obs:'',totalPrice:b.price,
+            })}>
+              <div>
+                <div className="beb-name">🥤 {b.name}</div>
+                {b.desc && <div className="beb-desc">{b.desc}</div>}
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:10}}>
+                <div style={{fontFamily:"'Anton',sans-serif",fontSize:20,color:'#C41E3A'}}>{fmtP(b.price)}</div>
+                <div className="plus-circle">+</div>
+              </div>
+            </div>
+          )
+      )}
+    </div>
+  );
+}
+// ============================================================
+// PRODUCT CARD
+// ============================================================
+function ProductCard({item, onSelect}) {
+  const color = catColor(item.cat);
+  const emoji = catEmoji(item.cat);
+  return (
+    <div className="card" onClick={()=>onSelect(item)}>
+      <div className="card-img" style={{background:`linear-gradient(135deg,${color}20,${color}50)`}}>
+        {item.photo
+          ? <img src={item.photo} alt={item.name} style={{width:'100%',height:'100%',objectFit:'cover',position:'absolute',inset:0}}/>
+          : <span>{emoji}</span>
+        }
+        {item.badge && <div className="card-badge">{item.badge}</div>}
+      </div>
+      <div className="card-body">
+        <div className="card-name">{item.name}</div>
+        <div className="card-price">{fmtP(item.price)}</div>
+        <div className="card-tap">👆 Toca para ver ingredientes</div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// APP
+// ============================================================
+function App() {
+  const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('lc_entered'));
+  const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [cat, setCat] = useState('favoritas');
+  const [sel, setSel] = useState(null);
+  const [cart, setCart] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('lc_cart')||'[]'); } catch { return []; }
+  });
+  const [showCart, setShowCart] = useState(false);
+  const [bounce, setBounce] = useState(false);
+  const catRef = useRef(null);
+
+  useEffect(() => {
+    localStorage.setItem('lc_cart', JSON.stringify(cart));
+  }, [cart]);
+
+  const playCartSound = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Fun "pop" + ascending ding sound
+      const playTone = (freq, start, dur, type='sine') => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = type; o.frequency.setValueAtTime(freq, ctx.currentTime + start);
+        o.frequency.exponentialRampToValueAtTime(freq*1.5, ctx.currentTime + start + dur*0.5);
+        g.gain.setValueAtTime(0.3, ctx.currentTime + start);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        o.start(ctx.currentTime + start);
+        o.stop(ctx.currentTime + start + dur);
+      };
+      playTone(400, 0,    0.08, 'square');
+      playTone(600, 0.07, 0.08, 'square');
+      playTone(900, 0.14, 0.15, 'sine');
+    } catch(e) {}
+  };
+
+  const addToCart = (item) => {
+    setCart(p => [...p, item]);
+    playCartSound();
+    setBounce(true);
+    setTimeout(()=>setBounce(false), 400);
+  };
+
+  const removeFromCart = (idx) => setCart(p => p.filter((_,i)=>i!==idx));
+
+  const handleEnter = () => { sessionStorage.setItem('lc_entered','1'); setShowSplash(false); };
+  if (showSplash) return <Splash onEnter={handleEnter}/>;
+
+  const searchQ = search.trim().toLowerCase();
+  const searchResults = searchQ.length > 1
+    ? ITEMS.filter(i => i.name.toLowerCase().includes(searchQ) || (i.desc||'').toLowerCase().includes(searchQ))
+    : [];
+
+  const items = ITEMS.filter(i => i.cat === cat);
+  const cartTotal = cart.reduce((s,c)=>s+c.totalPrice,0);
+
+  const switchCat = (id) => {
+    setCat(id);
+    // Scroll the cat tab into view
+    setTimeout(() => {
+      if (catRef.current) {
+        const btn = catRef.current.querySelector(`.cat-tab.on`);
+        if (btn) btn.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'});
+      }
+    }, 50);
+  };
+
+  return (
+    <>
+      {/* HEADER */}
+      <div className="hdr">
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <img
+            src="uploads/logo-9cc2bf2c.jpeg"
+            alt="Las Crepes Logo"
+            style={{width:54,height:54,borderRadius:'50%',objectFit:'cover',border:'3px solid #C41E3A',flexShrink:0,background:'#fff',boxShadow:'0 3px 12px rgba(196,30,58,.3)'}}
+          />
+          <div>
+            <div className="hdr-logo">LAS CREPES</div>
+            <div className="hdr-sub">Rápidas · Exquisitas · Saludables</div>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          {/* Icono lupa — expande input */}
+          <div style={{position:'relative',display:'flex',alignItems:'center'}}>
+            {searchOpen
+              ? <div style={{display:'flex',alignItems:'center',background:'#FFF5D0',border:'2px solid #C41E3A',borderRadius:50,padding:'5px 10px 5px 12px',gap:6}}>
+                  <span style={{fontSize:14}}>🔍</span>
+                  <input
+                    autoFocus
+                    style={{border:'none',background:'transparent',fontFamily:"'Nunito',sans-serif",fontWeight:700,fontSize:13,color:'#3B1A0A',outline:'none',width:120}}
+                    placeholder="Buscar..."
+                    value={search}
+                    onChange={e=>setSearch(e.target.value)}
+                  />
+                  <button onClick={()=>{setSearch('');setSearchOpen(false);}} style={{background:'none',border:'none',color:'#aaa',cursor:'pointer',fontSize:14,padding:0,lineHeight:1}}>✕</button>
+                </div>
+              : <button
+                  onClick={()=>setSearchOpen(true)}
+                  style={{background:'#FFF5D0',border:'2px solid #E8C89A',borderRadius:50,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:17}}
+                >🔍</button>
+            }
+          </div>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2}}>
+            <button className={`cart-btn ${bounce?'cbounce':''}`} onClick={()=>setShowCart(true)}>
+              🛒 Pedido
+              {cart.length>0 && <div className="cart-count">{cart.length}</div>}
+            </button>
+            <span style={{fontSize:9,color:'#8B5E3C',fontWeight:700,letterSpacing:.5}}>Aquí puedes ver tu pedido</span>
+          </div>
+        </div>
+      </div>
+
+      {/* BARRA DE BÚSQUEDA eliminada del body */}
+
+      {/* CATEGORIES - ocultas si hay búsqueda */}
+      {!searchQ && <div className="cats" ref={catRef}>
+        {CATEGORIES.map(c => (
+          <button
+            key={c.id}
+            className={`cat-tab ${cat===c.id?'on':''}`}
+            style={cat===c.id ? {background:c.color} : {}}
+            onClick={()=>switchCat(c.id)}
+          >
+            {c.emoji} {c.name}
+          </button>
+        ))}
+      </div>}
+
+      {/* RESULTADOS DE BÚSQUEDA */}
+      {searchQ.length > 1 ? (
+        <div style={{padding:'14px 12px 110px'}}>
+          {searchResults.length === 0 ? (
+            <div className="no-results">
+              <div style={{fontSize:48}}>🥞</div>
+              <div style={{fontWeight:800,fontSize:16,marginTop:10,color:'#3B1A0A'}}>Sin resultados para "{search}"</div>
+              <div style={{fontSize:13,marginTop:4,color:'#C8A96A'}}>Intenta con otro nombre o ingrediente</div>
+            </div>
+          ) : (
+            <>
+              <div style={{fontSize:12,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>
+                {searchResults.length} resultado{searchResults.length!==1?'s':''} • "{search}"
+              </div>
+              <div className="grid" style={{padding:0,paddingBottom:110}}>
+                {searchResults.map(item => (
+                  <ProductCard key={item.id} item={item} onSelect={setSel}/>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* CONTENT */}
+          {cat === 'armatu' ? (
+            <ArmaTuCrepe onAdd={addToCart}/>
+          ) : cat === 'bebidas' ? (
+            <Bebidas onAdd={addToCart}/>
+          ) : (
+            <div className="grid">
+              {items.map(item => (
+                <ProductCard key={item.id} item={item} onSelect={setSel}/>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* CART BAR */}
+      {cart.length > 0 && (
+        <div className="cbar">
+          <button className="cbar-btn" onClick={()=>setShowCart(true)}>
+            <span>{cart.length} {cart.length===1?'producto':'productos'}</span>
+            <span>Ver pedido →</span>
+            <span>{fmtP(cartTotal)}</span>
+          </button>
+        </div>
+      )}
+
+      {/* MODALS */}
+      {sel && <ProductModal item={sel} onClose={()=>setSel(null)} onAdd={addToCart}/>}
+      {showCart && <CartDrawer cart={cart} onClose={()=>setShowCart(false)} onRemove={removeFromCart}/>}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+<template id="__bundler_thumbnail" data-bg-color="#FFF5D0">
+  <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+    <rect width="400" height="300" fill="#FFF5D0"/>
+    <rect x="0" y="0" width="400" height="60" fill="#C41E3A"/>
+    <text x="200" y="42" text-anchor="middle" font-size="36" font-weight="bold" fill="#fff" font-family="sans-serif">LAS CREPES</text>
+    <text x="200" y="160" text-anchor="middle" font-size="90" font-family="sans-serif">🥞</text>
+    <text x="200" y="230" text-anchor="middle" font-size="18" fill="#8B5E3C" font-family="sans-serif">Carta Digital</text>
+  </svg>
+</template>
+</body>
+</html>
