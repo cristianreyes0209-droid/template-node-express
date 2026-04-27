@@ -3716,17 +3716,22 @@ return res.sendStatus(200);
   if (!order.direccion && customer?.last_address) {
     updateOrderAddress(phone, customer.last_address);
   }
-  let valorDomicilio = 4500;
-  let descripcionDomicilio = "";
-  try {
-    const calculo = await calcularDomicilio(customer?.last_address || "", order.sucursal || "la_villa");
-    valorDomicilio = calculo.valorDomicilio;
-    descripcionDomicilio = calculo.descripcion;
-    order.valorDomicilio = valorDomicilio;
-    order.distanciaKm = calculo.distanciaKm;
-    order.domicilioTexto = calculo.descripcion;
-  } catch (e) {
-    console.log("Error calculando domicilio:", e);
+  let valorDomicilio = order.valorDomicilio || 4500;
+  let descripcionDomicilio = order.domicilioTexto || "";
+  if (!order.valorDomicilio) {
+    try {
+      const calculo = await calcularDomicilio(
+        order.direccion || customer?.last_address || "",
+        order.sucursal || "la_villa"
+      );
+      valorDomicilio = calculo.valorDomicilio;
+      descripcionDomicilio = calculo.descripcion;
+      order.valorDomicilio = valorDomicilio;
+      order.distanciaKm = calculo.distanciaKm;
+      order.domicilioTexto = calculo.descripcion;
+    } catch (e) {
+      console.log("Error calculando domicilio:", e);
+    }
   }
 
   updateOrderStep(phone, "esperando_confirmacion");
