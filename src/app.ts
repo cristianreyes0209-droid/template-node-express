@@ -2543,9 +2543,34 @@ return res.sendStatus(200);
     lower.includes("la villa")
   ) {
     currentOrder.sucursal = "la_villa";
-    updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
 
+    if (currentOrder.vieneDeCarta) {
+      if (!currentOrder.nombre && !customer?.name) {
+        updateOrderStep(phone, "esperando_nombre");
+        await sendWhatsAppMessage(phone, "Perfecto 👍\n\n¿Cómo es tu nombre?");
+      } else {
+        if (customer?.name && !currentOrder.nombre) updateOrderName(phone, customer.name);
+        if (!currentOrder.tipoEntrega) {
+          updateOrderStep(phone, "esperando_tipo_entrega");
+          await sendWhatsAppButtons(phone, "¿Cómo deseas recibir tu pedido?", [
+            { id: "domicilio", title: "Domicilio 🛵" },
+            { id: "recoger",   title: "Recoger en tienda 🏪" }
+          ]);
+        } else {
+          updateOrderStep(phone, "post_agregar_producto");
+          await sendWhatsAppButtons(phone, "Perfecto 👍 ¿Qué deseas hacer?", [
+            { id: "confirmar",   title: "Confirmar ✅" },
+            { id: "agregar_mas", title: "Agregar más ➕" },
+            { id: "eliminar",    title: "Eliminar ➖" }
+          ]);
+        }
+      }
+      return res.sendStatus(200);
+    }
+
+    updateOrderStep(phone, "armando_pedido");
+    currentOrder = getOrder(phone)!;
     replyMessage =
       "Perfecto 👍\n\n" +
       "Puedes hacer tu pedido aquí:\n" +
@@ -2559,9 +2584,34 @@ return res.sendStatus(200);
     lower.includes("av circunvalar")
   ) {
     currentOrder.sucursal = "circunvalar";
-    updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
 
+    if (currentOrder.vieneDeCarta) {
+      if (!currentOrder.nombre && !customer?.name) {
+        updateOrderStep(phone, "esperando_nombre");
+        await sendWhatsAppMessage(phone, "Perfecto 👍\n\n¿Cómo es tu nombre?");
+      } else {
+        if (customer?.name && !currentOrder.nombre) updateOrderName(phone, customer.name);
+        if (!currentOrder.tipoEntrega) {
+          updateOrderStep(phone, "esperando_tipo_entrega");
+          await sendWhatsAppButtons(phone, "¿Cómo deseas recibir tu pedido?", [
+            { id: "domicilio", title: "Domicilio 🛵" },
+            { id: "recoger",   title: "Recoger en tienda 🏪" }
+          ]);
+        } else {
+          updateOrderStep(phone, "post_agregar_producto");
+          await sendWhatsAppButtons(phone, "Perfecto 👍 ¿Qué deseas hacer?", [
+            { id: "confirmar",   title: "Confirmar ✅" },
+            { id: "agregar_mas", title: "Agregar más ➕" },
+            { id: "eliminar",    title: "Eliminar ➖" }
+          ]);
+        }
+      }
+      return res.sendStatus(200);
+    }
+
+    updateOrderStep(phone, "armando_pedido");
+    currentOrder = getOrder(phone)!;
     replyMessage =
       "Perfecto 👍\n\n" +
       "Puedes hacer tu pedido aquí:\n" +
