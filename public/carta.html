@@ -192,7 +192,7 @@
   <meta name="ext-resource-dependency" content="uploads/Crepe vegetales mixta (1).jpg" data-resource-id="vegmixta" />
   <meta name="ext-resource-dependency" content="uploads/DSC09947 (2).jpg" data-resource-id="rancheramixta" />
   <meta name="ext-resource-dependency" content="uploads/BOLOGNESA.jpeg" data-resource-id="bolognesa" />
-  <meta name="ext-resource-dependency" content="uploads/Crepe vegetales pollo.jpg" data-resource-id="vegpollo" />
+  <meta name="ext-resource-dependency" content="uploads/pollo champiñones.jpg" data-resource-id="vegpollo" />
   <meta name="ext-resource-dependency" content="uploads/POLLO Y PIÑA.jpg" data-resource-id="pollopina" />
   <meta name="ext-resource-dependency" content="uploads/DSC09943.jpg" data-resource-id="pollocarne" />
   <meta name="ext-resource-dependency" content="uploads/pollo.jpg" data-resource-id="pollo" />
@@ -278,7 +278,7 @@ const ITEMS = [
   {id:7,cat:'clasicas',name:'Bolognesa',photo:(window.__resources&&window.__resources['bolognesa'])||'uploads/BOLOGNESA.jpeg',price:26500,
    desc:'Exquisitas albóndigas mixtas de res y cerdo en espectacular salsa bolognesa con queso parmesano y doble crema.',
    ingredients:['🥩 Albóndigas res','🐷 Albóndigas cerdo','🫙 Salsa bolognesa','🧀 Parmesano','🧀 Doble crema']},
-  {id:8,cat:'clasicas',name:'Pollo Champiñón',photo:(window.__resources&&window.__resources['vegpollo'])||'uploads/Crepe vegetales pollo.jpg',price:16500,
+  {id:8,cat:'clasicas',name:'Pollo Champiñón',photo:(window.__resources&&window.__resources['vegpollo'])||'uploads/pollo champiñones.jpg',price:16500,
    desc:'Pollo desmechado, champiñones, queso doble crema, salsa paris.',
    ingredients:['🍗 Pollo','🍄 Champiñones','🧀 Doble crema','🫙 Salsa Paris']},
   {id:9,cat:'clasicas',name:'Pollo y Piña',photo:(window.__resources&&window.__resources['pollopina'])||'uploads/POLLO Y PIÑA.jpg',price:15500,
@@ -914,7 +914,7 @@ function Splash({onEnter}) {
 }
 
 
-function CartDrawer({cart, onClose, onRemove}) {
+function CartDrawer({cart, onClose, onRemove, onSend}) {
   const total = cart.reduce((s,c)=>s+c.totalPrice, 0);
 
   const sendWA = () => {
@@ -927,6 +927,7 @@ function CartDrawer({cart, onClose, onRemove}) {
     });
     lines.push(`*TOTAL: ${fmtP(total)}*`);
     window.open(`https://wa.me/573137160625?text=${encodeURIComponent(lines.join('\n'))}`,'_blank');
+    if (onSend) onSend();
   };
 
   return (
@@ -1428,7 +1429,7 @@ function App() {
 
       {/* MODALS */}
       {sel && <ProductModal item={sel} onClose={()=>setSel(null)} onAdd={addToCart}/>}
-      {showCart && <CartDrawer cart={cart} onClose={()=>setShowCart(false)} onRemove={removeFromCart}/>}
+      {showCart && <CartDrawer cart={cart} onClose={()=>setShowCart(false)} onRemove={removeFromCart} onSend={()=>{setCart([]);setShowCart(false);}}/>}
     </>
   );
 }
