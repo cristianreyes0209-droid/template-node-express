@@ -176,6 +176,8 @@
     .splash.out{animation:splashFadeOut .5s ease forwards;pointer-events:none;}
     @keyframes logoIn{0%{opacity:0;transform:translateY(-20px)}100%{opacity:1;transform:translateY(0)}}
     .splash-logo{animation:logoIn .6s .2s ease both;text-align:center;}
+    @keyframes logoFloat{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-14px) rotate(1.5deg)}}
+    .splash-logo-img{animation:logoFloat 3.2s ease-in-out infinite;display:block;}
     @keyframes videoIn{0%{opacity:0;transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
     .splash-video-wrap{width:calc(100vw - 32px);max-width:380px;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.4);animation:videoIn .7s .5s ease both;background:#000;position:relative;}
     .splash-video-wrap video{width:100%;display:block;max-height:55vh;object-fit:cover;}
@@ -815,12 +817,12 @@ function ProductModal({item, onClose, onAdd}) {
 // 👉 Para agregar tu video:
 //    OPCIÓN A: sube el archivo MP4 al proyecto y cambia VIDEO_SRC a la ruta, ej: 'uploads/mi-video.mp4'
 //    OPCIÓN B: en Google Drive abre el video → Compartir → Copiar link → pega el ID en VIDEO_DRIVE_ID
-const VIDEO_SRC = 'uploads/Reel preparacion Crepe.mp4';
-const VIDEO_DRIVE_ID = '1gPi9DWTnCoZ1yN2Tb_3Hhmq7Dam77SK2';
+const VIDEO_SRC = null;
+const VIDEO_DRIVE_ID = null;
 
 function Splash({onEnter}) {
   const [leaving, setLeaving] = useState(false);
-  const [countdown, setCountdown] = useState(6);
+  const [countdown, setCountdown] = useState(4);
 
   const handleEnter = () => {
     setLeaving(true);
@@ -853,9 +855,10 @@ function Splash({onEnter}) {
       {/* Logo grande centrado */}
       <div className="splash-logo" style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14}}>
         <img
+          className="splash-logo-img"
           src="uploads/logo-9cc2bf2c.jpeg"
           alt="Las Crepes"
-          style={{width:140,height:140,borderRadius:'50%',objectFit:'cover',border:'5px solid #C41E3A',boxShadow:'0 6px 24px rgba(196,30,58,.25)',background:'#fff'}}
+          style={{width:150,height:150,borderRadius:'50%',objectFit:'cover',border:'5px solid #C41E3A',boxShadow:'0 8px 32px rgba(196,30,58,.30)',background:'#fff'}}
         />
         <div style={{textAlign:'center'}}>
           <div style={{fontFamily:"'Anton',sans-serif",fontSize:44,color:'#C41E3A',letterSpacing:3,lineHeight:1,textShadow:'none'}}>LAS CREPES</div>
