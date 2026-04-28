@@ -1099,7 +1099,10 @@ if (esQuejaDedemora && !esMensajeLargo) {
 }
 
 // Cortesías — responder y continuar sin detener el flujo
-const esCortesia = !esMensajeLargo && /^(muchas?\s+)?gracia[s]?[!\s]*$|^muy\s+amables?[!\s]*$|^mil\s+gracias[!\s]*$|^(que|qué)\s+amables?[!\s]*$|^de\s+nada[!\s]*$/i.test(lower.trim());
+const esCortesia = !esMensajeLargo && (
+  /^(muchas?\s+)?gracia[s]?[!\s]*$|^muy\s+amables?[!\s]*$|^mil\s+gracias[!\s]*$|^(que|qué)\s+amables?[!\s]*$|^de\s+nada[!\s]*$/i.test(lower.trim()) ||
+  /\b(muchas?\s+gracias|muy\s+amables?|mil\s+gracias|qu[eé]\s+amables?)\b/i.test(lower)
+);
 if (esCortesia) {
   await sendWhatsAppMessage(phone, "¡Estamos para servirte! 😊");
   return res.sendStatus(200);
@@ -2091,7 +2094,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         return res.sendStatus(200);
       }
       await sendWhatsAppButtons(phone,
-        (customer.name?.trim() ? `Hola, ${customer.name.trim()}. ` : "") + "Qué bueno tenerte de vuelta en LAS CREPES ¿Qué deseas hacer?" + CREBOT_SUFFIX,
+        "¿Qué deseas hacer?",
         [
           { id: "a", title: "Lo de siempre 🔄" },
           { id: "b", title: "Pedir algo nuevo 🥞" },
@@ -2133,7 +2136,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
 } else {
   await sendWhatsAppButtons(phone,
-    "Hola  Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
+    "¿Qué deseas hacer?",
     [
       { id: "1", title: "Hacer un pedido 🥞" },
       { id: "2", title: "Ver menú 📋" },
