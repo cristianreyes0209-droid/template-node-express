@@ -451,7 +451,7 @@ const BEBIDAS = [
    sabores:['🔴 Coca-Cola Original','⚫ Coca-Cola Zero','🟡 Manzana Brisa']},
 ];
 
-const ARMA_BASE = 11500;
+const ARMA_BASE = 6000;
 const ARMA_CARNES = [
   {name:'Carne desmechada',price:7500},{name:'Pollo desmechado',price:7000},
   {name:'Tocineta',price:5500},{name:'Pepperoni',price:5000},
@@ -465,6 +465,14 @@ const ARMA_QUESOS = [
 const ARMA_VERDURAS = [
   {name:'Champiñón',price:4500},{name:'Maíz tierno',price:3500},
   {name:'Pico de gallo',price:2000},{name:'Jalapeños',price:2000},
+];
+const ARMA_FRUTAS = [
+  {name:'Fresa',price:3000},{name:'Banano',price:2000},
+  {name:'Durazno',price:3900},{name:'Manzana',price:2500},{name:'Piña',price:2000},
+];
+const ARMA_DULCES = [
+  {name:'Nutella',price:6900},{name:'Chocolate',price:3500},
+  {name:'Arequipe',price:3000},{name:'Crema de maní',price:4500},
 ];
 
 // ============================================================
@@ -986,6 +994,8 @@ function ArmaTuCrepe({onAdd}) {
   const [carnes, setCarnes] = useState({});
   const [quesos, setQuesos] = useState({});
   const [verduras, setVerduras] = useState({});
+  const [frutas, setFrutas] = useState({});
+  const [dulces, setDulces] = useState({});
   const [qty, setQty] = useState(1);
   const [obs, setObs] = useState('');
 
@@ -994,7 +1004,7 @@ function ArmaTuCrepe({onAdd}) {
     return {...p, [item.name]:item};
   });
 
-  const all = {...carnes,...quesos,...verduras};
+  const all = {...carnes,...quesos,...verduras,...frutas,...dulces};
   const extras = Object.values(all).reduce((s,a)=>s+a.price,0);
   const total = (ARMA_BASE + extras) * qty;
 
@@ -1007,7 +1017,7 @@ function ArmaTuCrepe({onAdd}) {
   const handleAdd = () => {
     if (!Object.keys(all).length) { alert('¡Selecciona al menos un ingrediente!'); return; }
     onAdd({
-      item:{id:'arma',name:'Arma Tu Crepe Salada',cat:'armatu',price:ARMA_BASE},
+      item:{id:'arma',name:'Arma Tu Crepe',cat:'armatu',price:ARMA_BASE},
       qty, additions:Object.values(all), obs, totalPrice:total,
     });
   };
@@ -1015,7 +1025,7 @@ function ArmaTuCrepe({onAdd}) {
   return (
     <div className="arma-wrap">
       <div className="arma-hero">
-        <div className="arma-title">🛠️ Arma Tu Crepe Salada</div>
+        <div className="arma-title">🛠️ Arma Tu Crepe</div>
         <div style={{fontSize:14,color:'#777'}}>Masa clásica — {fmtP(ARMA_BASE)} · Elige tus ingredientes</div>
       </div>
 
@@ -1032,6 +1042,16 @@ function ArmaTuCrepe({onAdd}) {
       <div className="sec-title">🥬 Verduras</div>
       <div style={{display:'flex',flexWrap:'wrap'}}>
         {ARMA_VERDURAS.map(c=><Pill key={c.name} item={c} sel={!!verduras[c.name]} onToggle={i=>toggle(setVerduras,i)}/>)}
+      </div>
+
+      <div className="sec-title">🍓 Frutas</div>
+      <div style={{display:'flex',flexWrap:'wrap'}}>
+        {ARMA_FRUTAS.map(c=><Pill key={c.name} item={c} sel={!!frutas[c.name]} onToggle={i=>toggle(setFrutas,i)}/>)}
+      </div>
+
+      <div className="sec-title">🍫 Dulces</div>
+      <div style={{display:'flex',flexWrap:'wrap'}}>
+        {ARMA_DULCES.map(c=><Pill key={c.name} item={c} sel={!!dulces[c.name]} onToggle={i=>toggle(setDulces,i)}/>)}
       </div>
 
       <div className="arma-summary">
