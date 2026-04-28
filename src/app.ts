@@ -799,6 +799,93 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     return res.sendStatus(200);
   }
 
+  // ── Preguntas frecuentes — responden siempre, incluso fuera de horario ──────
+  const _lower = lower.trim();
+  const _esMsgLargo = text.length > 200;
+
+  const _esConsultaHorario =
+    _lower.includes("a qué hora") || _lower.includes("a que hora") ||
+    _lower.includes("que hora") || _lower.includes("horario") ||
+    _lower.includes("abren") || _lower.includes("cierran") ||
+    _lower.includes("hasta qué hora") || _lower.includes("hasta que hora") ||
+    _lower.includes("desde qué hora") || _lower.includes("desde que hora") ||
+    _lower.includes("abierto") || _lower.includes("cerrado") ||
+    _lower.includes("están abiertos") || _lower.includes("estan abiertos") ||
+    _lower.includes("horario de atención") || _lower.includes("horario de atencion") ||
+    _lower === "horario" || _lower === "horas";
+
+  if (_esConsultaHorario && !_esMsgLargo) {
+    await sendWhatsAppMessage(phone,
+      "🕐 Nuestro horario de atención es de 3:00 PM a 10:15 PM todos los días\n\n" +
+      "📍 La Villa - Calle 83 #16a-22\n" +
+      "📍 Av. Circunvalar #8-94 local 1\n\n" +
+      "📞 *606 341 3020*"
+    );
+    return res.sendStatus(200);
+  }
+
+  const _esConsultaUbicacion =
+    _lower.includes("donde estan") || _lower.includes("dónde están") ||
+    _lower.includes("donde quedan") || _lower.includes("dónde quedan") ||
+    _lower.includes("donde queda") || _lower.includes("dónde queda") ||
+    _lower.includes("ubicacion") || _lower.includes("ubicación") ||
+    _lower.includes("como llegar") || _lower.includes("cómo llegar") ||
+    _lower.includes("dónde es") || _lower.includes("donde es") ||
+    _lower.includes("la dirección") || _lower.includes("la direccion") ||
+    _lower.includes("su dirección") || _lower.includes("su direccion") ||
+    _lower === "dirección" || _lower === "direccion";
+
+  if (_esConsultaUbicacion && !_esMsgLargo) {
+    await sendWhatsAppMessage(phone,
+      "📍 Nuestras sucursales:\n\n" +
+      "🏪 *La Villa*\nCalle 83 #16a-22, Pereira\nhttps://maps.app.goo.gl/KvWtZ9r2vQKdcmXU6\n\n" +
+      "🏪 *Av. Circunvalar*\nCircunvalar #8-94 local 1, Pereira\nhttps://maps.app.goo.gl/xRrJgWBGSNPdTnir9\n\n" +
+      "📞 *606 341 3020*"
+    );
+    return res.sendStatus(200);
+  }
+
+  const _esConsultaMenu =
+    _lower === "menu" || _lower === "menú" || _lower === "carta" ||
+    _lower.includes("ver menu") || _lower.includes("ver menú") ||
+    _lower.includes("ver carta") || _lower.includes("ver el menu") ||
+    _lower.includes("qué tienen") || _lower.includes("que tienen") ||
+    _lower.includes("qué hay") || _lower.includes("que hay") ||
+    _lower.includes("envíame el menu") || _lower.includes("enviame el menu") ||
+    _lower.includes("manda el menu") || _lower.includes("manda la carta");
+
+  if (_esConsultaMenu && !_esMsgLargo) {
+    await sendWhatsAppMessage(phone,
+      "🥞 Aquí puedes ver nuestro menú completo:\n\nhttps://crepes-bot.onrender.com/carta\n\n" +
+      "¿Deseas hacer un pedido? Escríbeme 😊"
+    );
+    return res.sendStatus(200);
+  }
+
+  const _esConsultaContacto =
+    _lower.includes("teléfono") || _lower.includes("telefono") ||
+    _lower.includes("número de contacto") || _lower.includes("numero de contacto") ||
+    _lower.includes("cómo los llamo") || _lower.includes("como los llamo") ||
+    _lower.includes("cómo los contacto") || _lower.includes("como los contacto") ||
+    _lower.includes("número del local") || _lower.includes("numero del local") ||
+    _lower.includes("número fijo") || _lower.includes("numero fijo") ||
+    _lower.includes("datos de contacto") || _lower.includes("información de contacto") ||
+    _lower.includes("informacion de contacto") ||
+    _lower === "contacto" || _lower === "número" || _lower === "numero";
+
+  if (_esConsultaContacto && !_esMsgLargo) {
+    await sendWhatsAppMessage(phone,
+      "📞 Puedes contactarnos al:\n\n" +
+      "*606 341 3020* (línea fija)\n" +
+      "*315 191 3928* (WhatsApp asesor)\n\n" +
+      "📍 La Villa - Calle 83 #16a-22\n" +
+      "📍 Av. Circunvalar #8-94 local 1\n\n" +
+      "🕐 Horario: 3:00 PM a 10:15 PM todos los días"
+    );
+    return res.sendStatus(200);
+  }
+  // ────────────────────────────────────────────────────────────────────────────
+
   // Verificar horario de atención solo si el cliente no está en medio de un pedido
   if (!currentOrder || currentOrder.step === "esperando_menu_principal") {
     const tipoEntrega = currentOrder?.tipoEntrega === "domicilio" ? "domicilio" : "recoger";
