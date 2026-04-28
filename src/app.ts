@@ -1104,25 +1104,29 @@ const enStepDePago = stepActualPago === "esperando_pago"
   || stepActualPago === "esperando_comprobante_holaclick";
 if (esPreguntaPago && !esMensajeLargo && !enStepDePago) {
   const sucursal = currentOrder?.sucursal;
-  let msgPago = "Aceptamos Efectivo 💵, Nequi/Daviplata 📱 y Bancolombia 🏦\n\n";
+  let msgPago = "Aceptamos Efectivo 💵, Nequi/Daviplata 📱 y Bancolombia/Llave 🏦\n\n";
   if (sucursal === "circunvalar") {
     msgPago +=
       "📍 *Av. Circunvalar:*\n" +
       "• Nequi/Daviplata: *320 583 9477*\n" +
-      "• Bancolombia: *270 0000 4514*";
+      "• Bancolombia: *270 0000 4514*\n" +
+      "  🔑 Llave: 0040652828";
   } else if (sucursal === "la_villa") {
     msgPago +=
       "📍 *La Villa:*\n" +
       "• Nequi/Daviplata: *320 721 8267*\n" +
-      "• Bancolombia: *270 3382 5108*";
+      "• Bancolombia: *270 3382 5108*\n" +
+      "  🔑 Llave: @niet661";
   } else {
     msgPago +=
       "📍 *Av. Circunvalar:*\n" +
       "• Nequi/Daviplata: *320 583 9477*\n" +
-      "• Bancolombia: *270 0000 4514*\n\n" +
+      "• Bancolombia: *270 0000 4514*\n" +
+      "  🔑 Llave: 0040652828\n\n" +
       "📍 *La Villa:*\n" +
       "• Nequi/Daviplata: *320 721 8267*\n" +
-      "• Bancolombia: *270 3382 5108*";
+      "• Bancolombia: *270 3382 5108*\n" +
+      "  🔑 Llave: @niet661";
   }
   await sendWhatsAppMessage(phone, msgPago);
   return res.sendStatus(200);
@@ -1390,7 +1394,7 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
     await sendWhatsAppButtons(phone, hcBodyPago, [
       { id: "efectivo", title: "Efectivo 💵" },
       { id: "nequi", title: "Nequi/Daviplata 📱" },
-      { id: "bancolombia", title: "Bancolombia 🏦" }
+      { id: "bancolombia", title: "Bancolombia/Llave🏦" }
     ]);
   } else {
     updateOrderStep(phone, "esperando_sucursal_holaclick");
@@ -2294,7 +2298,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   await sendWhatsAppButtons(phone, bodyPagoSuc, [
     { id: "efectivo", title: "Efectivo 💵" },
     { id: "nequi", title: "Nequi/Daviplata 📱" },
-    { id: "bancolombia", title: "Bancolombia 🏦" }
+    { id: "bancolombia", title: "Bancolombia/Llave🏦" }
   ]);
   return res.sendStatus(200);
 } else if (currentOrder?.step === "esperando_pago_holaclick") {
@@ -2315,7 +2319,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     await sendWhatsAppButtons(phone, bodyPago2, [
       { id: "efectivo", title: "Efectivo 💵" },
       { id: "nequi", title: "Nequi/Daviplata 📱" },
-      { id: "bancolombia", title: "Bancolombia 🏦" }
+      { id: "bancolombia", title: "Bancolombia/Llave🏦" }
     ]);
     return res.sendStatus(200);
   }
@@ -2340,13 +2344,15 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     return res.sendStatus(200);
   } else if (formaPago === "bancolombia") {
     const bancoNum = currentOrder.sucursal === "circunvalar" ? "27000004514" : "27033825108";
+    const bancoLlave = currentOrder.sucursal === "circunvalar" ? "0040652828" : "@niet661";
     updateOrderStep(phone, "esperando_comprobante_holaclick");
     replyMessage =
       "Perfecto 👌\n\n" +
       (holaclickTotalTexto ? `El total a pagar es: ${holaclickTotalTexto}\n\n` : "") +
-      "Transferencia Bancolombia:\n" +
+      "Transferencia Bancolombia/Llave:\n" +
       "🏦 Cuenta de ahorros\n" +
-      `💳 ${bancoNum}\n\n` +
+      `💳 ${bancoNum}\n` +
+      `🔑 Llave: ${bancoLlave}\n\n` +
       "Cuando realices el pago envíame el comprobante 📸";
   } else {
     // Efectivo → confirmar pedido directamente
@@ -2502,7 +2508,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       [
         { id: "efectivo", title: "Efectivo 💵" },
         { id: "nequi", title: "Nequi/Daviplata 📱" },
-        { id: "bancolombia", title: "Bancolombia 🏦" }
+        { id: "bancolombia", title: "Bancolombia/Llave🏦" }
       ]
     );
     return res.sendStatus(200);
@@ -3535,7 +3541,7 @@ return res.sendStatus(200);
   [
     { id: "efectivo", title: "Efectivo 💵" },
     { id: "nequi", title: "Nequi/Daviplata 📱" },
-    { id: "bancolombia", title: "Bancolombia 🏦" }
+    { id: "bancolombia", title: "Bancolombia/Llave🏦" }
   ]
 );
 return res.sendStatus(200);
@@ -3553,7 +3559,7 @@ return res.sendStatus(200);
   [
     { id: "efectivo", title: "Efectivo 💵" },
     { id: "nequi", title: "Nequi/Daviplata 📱" },
-    { id: "bancolombia", title: "Bancolombia 🏦" }
+    { id: "bancolombia", title: "Bancolombia/Llave🏦" }
   ]
 );
 return res.sendStatus(200);
@@ -3642,7 +3648,7 @@ return res.sendStatus(200);
   [
     { id: "efectivo", title: "Efectivo 💵" },
     { id: "nequi", title: "Nequi/Daviplata 📱" },
-    { id: "bancolombia", title: "Bancolombia 🏦" }
+    { id: "bancolombia", title: "Bancolombia/Llave🏦" }
   ]
 );
 return res.sendStatus(200);
@@ -3672,12 +3678,14 @@ return res.sendStatus(200);
     try { await handleOperationalRouting(orderBanco, totalsBanco); } catch (e) { console.error(e); }
 
     const bancoNum = orderBanco.sucursal === "circunvalar" ? "27000004514" : "27033825108";
+    const bancoLlave = orderBanco.sucursal === "circunvalar" ? "0040652828" : "@niet661";
     replyMessage =
       "Perfecto 👌\n\n" +
       `El total a pagar es: $${totalsBanco.total.toLocaleString("es-CO")}\n\n` +
-      "Transferencia Bancolombia:\n" +
+      "Transferencia Bancolombia/Llave:\n" +
       "🏦 Cuenta de ahorros\n" +
-      `💳 ${bancoNum}\n\n` +
+      `💳 ${bancoNum}\n` +
+      `🔑 Llave: ${bancoLlave}\n\n` +
       "Cuando realices el pago envíame el comprobante 📸";
 
 } else {
@@ -3687,7 +3695,7 @@ return res.sendStatus(200);
   [
     { id: "efectivo", title: "Efectivo 💵" },
     { id: "nequi", title: "Nequi/Daviplata 📱" },
-    { id: "bancolombia", title: "Bancolombia 🏦" }
+    { id: "bancolombia", title: "Bancolombia/Llave🏦" }
   ]
 );
 return res.sendStatus(200);
@@ -3716,7 +3724,7 @@ return res.sendStatus(200);
       [
         { id: "efectivo", title: "Efectivo 💵" },
         { id: "nequi", title: "Nequi/Daviplata 📱" },
-        { id: "bancolombia", title: "Bancolombia 🏦" }
+        { id: "bancolombia", title: "Bancolombia/Llave🏦" }
       ]
     );
     return res.sendStatus(200);
@@ -3734,7 +3742,7 @@ return res.sendStatus(200);
     [
       { id: "efectivo", title: "Efectivo 💵" },
       { id: "nequi", title: "Nequi/Daviplata 📱" },
-      { id: "bancolombia", title: "Bancolombia 🏦" }
+      { id: "bancolombia", title: "Bancolombia/Llave🏦" }
     ]
   );
   return res.sendStatus(200);
@@ -3911,7 +3919,7 @@ return res.sendStatus(200);
       [
         { id: "efectivo", title: "Efectivo 💵" },
         { id: "nequi", title: "Nequi/Daviplata 📱" },
-        { id: "bancolombia", title: "Bancolombia 🏦" }
+        { id: "bancolombia", title: "Bancolombia/Llave🏦" }
       ]
     );
     return res.sendStatus(200);
