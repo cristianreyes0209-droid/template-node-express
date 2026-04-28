@@ -511,10 +511,10 @@ function parseCartaDigitalText(text: string) {
       continue;
     }
 
-    // Precio: 💰 $42.500
+    // Precio: 💰 $42.500 — es el total de la línea (precio × cantidad), guardar precio unitario
     const precioMatch = trimmed.match(/^💰\s*\$\s*([\d.,]+)/);
     if (precioMatch) {
-      cur.precio = toNum(precioMatch[1]);
+      cur.precio = Math.round(toNum(precioMatch[1]) / cur.cantidad);
       continue;
     }
   }
