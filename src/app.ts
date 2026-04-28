@@ -1098,6 +1098,13 @@ if (esQuejaDedemora && !esMensajeLargo) {
   return res.sendStatus(200);
 }
 
+// Cortesías — responder y continuar sin detener el flujo
+const esCortesia = !esMensajeLargo && /^(muchas?\s+)?gracia[s]?[!\s]*$|^muy\s+amables?[!\s]*$|^mil\s+gracias[!\s]*$|^(que|qué)\s+amables?[!\s]*$|^de\s+nada[!\s]*$/i.test(lower.trim());
+if (esCortesia) {
+  await sendWhatsAppMessage(phone, "¡Estamos para servirte! 😊");
+  return res.sendStatus(200);
+}
+
 // Consulta de toppings/extras disponibles
 const esConsultaToppings =
   lower.includes("topping") ||
