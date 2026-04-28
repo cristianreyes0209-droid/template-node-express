@@ -87,6 +87,22 @@ export type CustomerOrder = {
 
 const orders: Record<string, CustomerOrder> = {};
 
+// Limpiar sesiones inactivas cada hora
+setInterval(() => {
+  const ahora = Date.now();
+  const LIMITE_24H = 24 * 60 * 60 * 1000;
+  const LIMITE_2H  =  2 * 60 * 60 * 1000;
+  for (const phone of Object.keys(orders)) {
+    const order = orders[phone];
+    const inactividad = ahora - (order.lastInteraction || 0);
+    if (order.step === "confirmado" && inactividad < LIMITE_2H) continue;
+    if (inactividad > LIMITE_24H) {
+      delete orders[phone];
+      console.log(`🧹 Sesión limpiada: ${phone}`);
+    }
+  }
+}, 60 * 60 * 1000);
+
 export function calculateTotal(order: CustomerOrder, valorDomicilioOverride?: number) {
   let subtotal = 0;
 
