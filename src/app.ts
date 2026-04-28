@@ -358,6 +358,20 @@ app.get('/whatsapp', (req, res) => {
 
 const CREBOT_SUFFIX = "\n\nSoy CreBot 🤖 y estoy en período de prueba. Si necesitas hablar con un asesor puedes escribirnos al 📱 315 191 3928.";
 
+const MSG_BIENVENIDA_NUEVO =
+  "👋 ¡Hola! Bienvenido/a a LAS CREPES 🥞\n\n" +
+  "Estoy aquí para ayudarte paso a paso en tu elección y que tu experiencia ordenando y disfrutando de nuestras deliciosas crepes sea fácil y fluida.\n\n" +
+  "¡Tú decides, yo te guío! ¡Comencemos! 😊";
+
+const MSG_BIENVENIDA_RECURRENTE = (nombre?: string) =>
+  nombre
+    ? `👋 ¡Hola, ${nombre}! ¡Qué bueno tenerte de vuelta en LAS CREPES! 🥞\n\n` +
+      "Estoy aquí para ayudarte paso a paso en tu elección y que tu experiencia ordenando y disfrutando de nuestras deliciosas crepes sea fácil y fluida.\n\n" +
+      "¡Tú decides, yo te guío! ¡Comencemos! 😊"
+    : "👋 ¡Qué bueno tenerte de vuelta en LAS CREPES! 🥞\n\n" +
+      "Estoy aquí para ayudarte paso a paso en tu elección y que tu experiencia ordenando y disfrutando de nuestras deliciosas crepes sea fácil y fluida.\n\n" +
+      "¡Tú decides, yo te guío! ¡Comencemos! 😊";
+
     function formatObservaciones(obs?: string) {
   if (!obs) return "";
 
@@ -1269,7 +1283,7 @@ if (lower === "test") {
   await sendWhatsAppMessage(phone, "Modo test activado ✅ El horario de atención no aplica.");
   if (customer) {
     await sendWhatsAppButtons(phone,
-      `Hola${customer.name ? ", " + customer.name : ""}. ¿Cómo te podemos servir?` + CREBOT_SUFFIX,
+      MSG_BIENVENIDA_RECURRENTE(customer.name?.trim() || undefined) + CREBOT_SUFFIX,
       [
         { id: "a", title: "Lo de siempre 🔄" },
         { id: "b", title: "Pedir algo nuevo 🥞" },
@@ -1278,7 +1292,7 @@ if (lower === "test") {
     );
   } else {
     await sendWhatsAppButtons(phone,
-      "👋 Hola, Bienvenido/a a LAS CREPES! ¿Cómo te podemos servir?" + CREBOT_SUFFIX,
+      MSG_BIENVENIDA_NUEVO + CREBOT_SUFFIX,
       [
         { id: "1", title: "Hacer un pedido 🥞" },
         { id: "2", title: "Ver menu 📋" },
@@ -1295,7 +1309,7 @@ if (lower === "reset") {
   await sendWhatsAppMessage(phone, "Sesión reiniciada ✅");
   if (customer) {
     await sendWhatsAppButtons(phone,
-      `Hola${customer.name ? ", " + customer.name : ""}. ¿Cómo te podemos servir?` + CREBOT_SUFFIX,
+      MSG_BIENVENIDA_RECURRENTE(customer.name?.trim() || undefined) + CREBOT_SUFFIX,
       [
         { id: "a", title: "Lo de siempre 🔄" },
         { id: "b", title: "Pedir algo nuevo 🥞" },
@@ -1304,7 +1318,7 @@ if (lower === "reset") {
     );
   } else {
     await sendWhatsAppButtons(phone,
-      "👋 Hola, Bienvenido/a a LAS CREPES! ¿Cómo te podemos servir?" + CREBOT_SUFFIX,
+      MSG_BIENVENIDA_NUEVO + CREBOT_SUFFIX,
       [
         { id: "1", title: "Hacer un pedido 🥞" },
         { id: "2", title: "Ver menu 📋" },
@@ -1749,7 +1763,7 @@ if (
 
 
 await sendWhatsAppButtons(phone,
-   (nombreCliente ? `Hola${nombreCliente}, que bueno tenerte de vuelta. ¿Como te podemos servir hoy?` : "Que bueno tenerte de vuelta. ¿Como te podemos servir?") + CREBOT_SUFFIX,
+   MSG_BIENVENIDA_RECURRENTE(customer?.name?.trim() || undefined) + CREBOT_SUFFIX,
   [
     { id: "a", title: "Lo mismo de siempre" },
     { id: "b", title: "Pedir algo nuevo" },
@@ -1759,7 +1773,7 @@ await sendWhatsAppButtons(phone,
 return res.sendStatus(200);
   } else {
    await sendWhatsAppButtons(phone,
-  "Bienvenido a LAS CREPES. ¿Como te podemos servir?" + CREBOT_SUFFIX,
+  MSG_BIENVENIDA_NUEVO + CREBOT_SUFFIX,
   [
     { id: "1", title: "Hacer un pedido" },
     { id: "2", title: "Ver menú" },
@@ -1845,9 +1859,7 @@ if (!currentOrder) {
     const nombreCliente = (customer?.name && customer.name.trim() !== "") 
       ? `, ${customer.name.trim()}` 
       : "";
-    const bodyMsg = (nombreCliente
-      ? `Hola${nombreCliente}. Que bueno tenerte de vuelta. ¿Como te podemos servir?`
-      : "Que bueno tenerte de vuelta. ¿Como te podemos servir?") + CREBOT_SUFFIX;
+    const bodyMsg = MSG_BIENVENIDA_RECURRENTE(customer?.name?.trim() || undefined) + CREBOT_SUFFIX;
     console.log("BODY IF CUSTOMER:", JSON.stringify(bodyMsg));
     await sendWhatsAppButtons(phone,
       bodyMsg,
@@ -1860,7 +1872,7 @@ if (!currentOrder) {
     return res.sendStatus(200);
   } else {
     await sendWhatsAppButtons(phone,
-      "👋 Hola, Bienvenido/a a LAS CREPES! Estamos aquí para asegurarnos de darte la mejor atención para que puedas realizar tu pedido sin complicaciones. ¿Como te podemos servir?" + CREBOT_SUFFIX,
+      MSG_BIENVENIDA_NUEVO + CREBOT_SUFFIX,
       [
         { id: "1", title: "Hacer un pedido 🥞" },
         { id: "2", title: "Ver menu 📋" },
@@ -3871,7 +3883,7 @@ return res.sendStatus(200);
     clearOrder(phone);
     if (customer) {
       await sendWhatsAppButtons(phone,
-        (customer.name?.trim() ? `Hola, ${customer.name.trim()}. ` : "Hola. ") + "Qué bueno tenerte de vuelta en LAS CREPES 😊 ¿Qué deseas hacer?" + CREBOT_SUFFIX,
+        MSG_BIENVENIDA_RECURRENTE(customer.name?.trim() || undefined) + CREBOT_SUFFIX,
         [
           { id: "a", title: "Lo de siempre 🔄" },
           { id: "b", title: "Pedir algo nuevo 🥞" },
@@ -3880,7 +3892,7 @@ return res.sendStatus(200);
       );
     } else {
       await sendWhatsAppButtons(phone,
-        "👋 Hola, Bienvenido/a a LAS CREPES! ¿Cómo te podemos servir?" + CREBOT_SUFFIX,
+        MSG_BIENVENIDA_NUEVO + CREBOT_SUFFIX,
         [
           { id: "1", title: "Hacer un pedido 🥞" },
           { id: "2", title: "Ver menu 📋" },
@@ -4129,7 +4141,7 @@ return res.sendStatus(200);
   lower.includes("buenas noches")
 ) {
   await sendWhatsAppButtons(phone,
-    "Hola  Bienvenido a LAS CREPES \n\n¿Qué deseas hacer?",
+    MSG_BIENVENIDA_NUEVO,
     [
       { id: "1", title: "Hacer un pedido 🥞" },
       { id: "2", title: "Ver menú 📋" },
