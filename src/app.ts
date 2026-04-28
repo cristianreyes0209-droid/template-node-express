@@ -1315,9 +1315,15 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
 if (text.includes("🥞 *PEDIDO - LAS CREPES*")) {
   const cdParsed = parseCartaDigitalText(text);
 
+  const prevTipoEntrega = currentOrder?.tipoEntrega;
+  const prevSucursal    = currentOrder?.sucursal;
+
   clearOrder(phone);
   createOrUpdateOrder(phone, []);
   const orderCD = getOrder(phone)!;
+
+  if (prevTipoEntrega) orderCD.tipoEntrega = prevTipoEntrega;
+  if (prevSucursal)    orderCD.sucursal    = prevSucursal;
 
   if (cdParsed.items.length > 0) {
     createOrUpdateOrder(phone, cdParsed.items.map(i => ({
