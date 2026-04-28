@@ -1483,7 +1483,7 @@ if (
   updateOrderStep(phone, "esperando_ayuda");
   currentOrder = getOrder(phone)!;
   await sendWhatsAppMessage(phone,
-    "Con gusto te ayudo 😊\n\nCuéntame en qué puedo ayudarte.\n\nSi necesitas hablar con un asesor puedes escribirnos al 📱 315 191 3928"
+    "Con gusto te ayudo 😊\n\nCuéntame en qué puedo ayudarte.\n\nSi necesitas hablar con un asesor puedes escribirnos al 📱 *315 191 3928*\n\no llamar directamente a una de nuestras sedes:\n📞 La Villa: *606 341 3020*\n📞 Circunvalar: *606 345 0257*"
   );
   return res.sendStatus(200);
 }
@@ -2183,7 +2183,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   } else if (lower === "3" || lower.includes("otros") || lower.includes("ayuda") || lower.includes("pqr")) {
       updateOrderStep(phone, "esperando_ayuda");
       currentOrder = getOrder(phone)!;
-      replyMessage = "Con gusto te ayudo 😊\n\nCuéntame en qué puedo ayudarte.\n\nSi necesitas hablar con un asesor puedes escribirnos al 📱 315 191 3928";
+      replyMessage = "Con gusto te ayudo 😊\n\nCuéntame en qué puedo ayudarte.\n\nSi necesitas hablar con un asesor puedes escribirnos al 📱 *315 191 3928*\n\no llamar directamente a una de nuestras sedes:\n📞 La Villa: *606 341 3020*\n📞 Circunvalar: *606 345 0257*";
   } else {
       // Guard: sesión activa con items → re-mostrar resumen en vez de bienvenida
       if (sesionActiva) {
@@ -2233,9 +2233,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   updateOrderStep(phone, "esperando_ayuda");
   currentOrder = getOrder(phone)!;
   replyMessage =
-    "Con gusto te ayudo 😊\n\n" +
-    "Cuéntame en qué puedo ayudarte.\n\n" +
-    "Si necesitas hablar con un asesor puedes escribirnos al 📱 315 191 3928";
+    "Con gusto te ayudo 😊\n\nCuéntame en qué puedo ayudarte.\n\nSi necesitas hablar con un asesor puedes escribirnos al 📱 *315 191 3928*\n\no llamar directamente a una de nuestras sedes:\n📞 La Villa: *606 341 3020*\n📞 Circunvalar: *606 345 0257*";
 
 } else {
   await sendWhatsAppButtons(phone,
