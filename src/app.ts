@@ -673,6 +673,11 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     return res.sendStatus(200);
   }
   const customer = await getCustomerByPhone(phone);
+  const tieneUltimoPedido = !!(
+    customer?.last_order &&
+    Array.isArray(customer.last_order) &&
+    customer.last_order.length > 0
+  );
   const text = messageData.text?.body
   || messageData.interactive?.button_reply?.id
   || messageData.interactive?.list_reply?.id
@@ -931,7 +936,8 @@ const skipParsing =
   currentOrder?.step === "esperando_observacion_general" ||
   currentOrder?.step === "esperando_nombre" ||
   currentOrder?.step === "esperando_direccion" ||
-  currentOrder?.step === "esperando_jalapenos";
+  currentOrder?.step === "esperando_jalapenos" ||
+  currentOrder?.step === "esperando_queso_dulce";
 
 // Palabras clave simples y mensajes de botones que NO deben llamar a Gemini
 
@@ -1314,11 +1320,11 @@ if (lower === "test") {
   currentOrder = testOrder;
   await setTestMode(phone, true);
   await sendWhatsAppMessage(phone, "Modo test activado ✅ El horario de atención no aplica.");
-  if (customer) {
+  if (tieneUltimoPedido) {
     await sendWhatsAppButtons(phone,
-      MSG_BIENVENIDA_RECURRENTE(customer.name?.trim() || undefined) + CREBOT_SUFFIX,
+      MSG_BIENVENIDA_RECURRENTE(customer!.name?.trim() || undefined) + CREBOT_SUFFIX,
       [
-        { id: "a", title: "Lo de siempre 🔄" },
+        { id: "a", title: "Pedido anterior 🔄" },
         { id: "b", title: "Pedir algo nuevo 🥞" },
         { id: "3", title: "Otros 💬" }
       ]
@@ -1340,11 +1346,11 @@ if (lower === "reset") {
   clearOrder(phone);
   await setTestMode(phone, false);
   await sendWhatsAppMessage(phone, "Sesión reiniciada ✅");
-  if (customer) {
+  if (tieneUltimoPedido) {
     await sendWhatsAppButtons(phone,
-      MSG_BIENVENIDA_RECURRENTE(customer.name?.trim() || undefined) + CREBOT_SUFFIX,
+      MSG_BIENVENIDA_RECURRENTE(customer!.name?.trim() || undefined) + CREBOT_SUFFIX,
       [
-        { id: "a", title: "Lo de siempre 🔄" },
+        { id: "a", title: "Pedido anterior 🔄" },
         { id: "b", title: "Pedir algo nuevo 🥞" },
         { id: "3", title: "Otros 💬" }
       ]
@@ -1789,18 +1795,18 @@ if (
   updateOrderStep(phone, "esperando_menu_principal");
   currentOrder = getOrder(phone)!;
 
-  if (customer) {
-   const nombreCliente = (customer?.name && customer.name.trim() !== "") 
-  ? `, ${customer.name.trim()}` 
+  if (tieneUltimoPedido) {
+   const nombreCliente = (customer?.name && customer.name.trim() !== "")
+  ? `, ${customer.name.trim()}`
   : "";
 
 
 await sendWhatsAppButtons(phone,
    MSG_BIENVENIDA_RECURRENTE(customer?.name?.trim() || undefined) + CREBOT_SUFFIX,
   [
-    { id: "a", title: "Lo mismo de siempre" },
-    { id: "b", title: "Pedir algo nuevo" },
-    { id: "3", title: "Otros" }
+    { id: "a", title: "Pedido anterior 🔄" },
+    { id: "b", title: "Pedir algo nuevo 🥞" },
+    { id: "3", title: "Otros 💬" }
   ]
 );
 return res.sendStatus(200);
@@ -1888,18 +1894,14 @@ if (!currentOrder) {
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
   currentOrder = getOrder(phone)!;
-  if (customer) {
-    const nombreCliente = (customer?.name && customer.name.trim() !== "") 
-      ? `, ${customer.name.trim()}` 
-      : "";
+  if (tieneUltimoPedido) {
     const bodyMsg = MSG_BIENVENIDA_RECURRENTE(customer?.name?.trim() || undefined) + CREBOT_SUFFIX;
-    console.log("BODY IF CUSTOMER:", JSON.stringify(bodyMsg));
     await sendWhatsAppButtons(phone,
       bodyMsg,
       [
-       { id: "a", title: "Lo mismo de siempre" },
-       { id: "b", title: "Pedir algo nuevo" },
-       { id: "3", title: "Otros" }
+       { id: "a", title: "Pedido anterior 🔄" },
+       { id: "b", title: "Pedir algo nuevo 🥞" },
+       { id: "3", title: "Otros 💬" }
       ]
     );
     return res.sendStatus(200);
@@ -2090,13 +2092,22 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         if (idx >= 0) currentOrder.itemsPendientes.splice(idx, 1);
       }
 
-      // Preguntas post-variante (mexicana)
+      // Preguntas post-variante (mexicana → jalapeños, dulces → queso)
       if (pending.id === "mexicana") {
         updateOrderStep(phone, "esperando_jalapenos");
         currentOrder = getOrder(phone)!;
         await sendWhatsAppButtons(phone,
           `¿Deseas tu ${pending.nombre} con jalapeños o sin jalapeños?`,
           [{ id: "con_jalapenos", title: "Con jalapeños 🌶️" }, { id: "sin_jalapenos", title: "Sin jalapeños" }]
+        );
+        return res.sendStatus(200);
+      }
+      if (["nutella_crepe","chocolate_crepe","arequipe_crepe"].includes(pending.id)) {
+        updateOrderStep(phone, "esperando_queso_dulce");
+        currentOrder = getOrder(phone)!;
+        await sendWhatsAppButtons(phone,
+          `¿Deseas tu ${pending.nombre} con queso o sin queso? 🧀`,
+          [{ id: "con_queso_dulce", title: "Con queso 🧀" }, { id: "sin_queso_dulce", title: "Sin queso" }]
         );
         return res.sendStatus(200);
       }
@@ -2154,7 +2165,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
 } else if (currentOrder?.step === "esperando_menu_principal") {
 
-  if (customer) {
+  if (tieneUltimoPedido) {
 
     if (
       lower === "a" ||
@@ -2163,7 +2174,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       lower.includes("el mismo")
     ) {
 
-      if (customer.last_order) {
+      if (customer!.last_order) {
         const order = getOrder(phone)!;
         order.items = customer.last_order;
         order.direccion = customer.last_address;
@@ -2246,14 +2257,25 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         );
         return res.sendStatus(200);
       }
-      await sendWhatsAppButtons(phone,
-        "¿Qué deseas hacer?",
-        [
-          { id: "a", title: "Lo de siempre 🔄" },
-          { id: "b", title: "Pedir algo nuevo 🥞" },
-          { id: "3", title: "Otros 💬" }
-        ]
-      );
+      if (tieneUltimoPedido) {
+        await sendWhatsAppButtons(phone,
+          "¿Qué deseas hacer?",
+          [
+            { id: "a", title: "Pedido anterior 🔄" },
+            { id: "b", title: "Pedir algo nuevo 🥞" },
+            { id: "3", title: "Otros 💬" }
+          ]
+        );
+      } else {
+        await sendWhatsAppButtons(phone,
+          "¿Qué deseas hacer?",
+          [
+            { id: "1", title: "Hacer un pedido 🥞" },
+            { id: "2", title: "Ver menu 📋" },
+            { id: "3", title: "Otros 💬" }
+          ]
+        );
+      }
       return res.sendStatus(200);
     }
   } else if (lower === "1" || lower.includes("pedido") || lower.includes("pedir")) {
@@ -2516,11 +2538,11 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     createOrUpdateOrder(phone, []);
     updateOrderStep(phone, "esperando_menu_principal");
     currentOrder = getOrder(phone)!;
-    if (customer) {
+    if (tieneUltimoPedido) {
       await sendWhatsAppButtons(phone,
-        MSG_BIENVENIDA_RECURRENTE(customer.name?.trim() || undefined) + CREBOT_SUFFIX,
+        MSG_BIENVENIDA_RECURRENTE(customer!.name?.trim() || undefined) + CREBOT_SUFFIX,
         [
-          { id: "a", title: "Lo de siempre 🔄" },
+          { id: "a", title: "Pedido anterior 🔄" },
           { id: "b", title: "Pedir algo nuevo 🥞" },
           { id: "3", title: "Otros 💬" }
         ]
@@ -2537,6 +2559,29 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     }
     return res.sendStatus(200);
   }
+  // FAQ fuera de horario — responder sin escalar
+  if (
+    lower.includes("menu") || lower.includes("menú") ||
+    lower.includes("carta") || lower.includes("qué tienen") || lower.includes("que tienen") ||
+    lower === "ver menu" || lower === "ver menú"
+  ) {
+    await sendWhatsAppMessage(phone,
+      "Aquí tienes el menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\nRecuerda que estamos disponibles de 3:00 PM a 10:15 PM 😊"
+    );
+    return res.sendStatus(200);
+  }
+
+  if (
+    lower.includes("horario") || lower.includes("hora") ||
+    lower.includes("abren") || lower.includes("cierran") ||
+    lower.includes("a qué hora") || lower.includes("cuando abren") || lower.includes("cuándo abren")
+  ) {
+    await sendWhatsAppMessage(phone,
+      "Nuestro horario de atención es de *3:00 PM a 10:15 PM* 🕒\n\nEn cuanto abramos podrás hacer tu pedido 😊"
+    );
+    return res.sendStatus(200);
+  }
+
   try {
     await sendWhatsAppMessage("573151913928",
       `🔔 Mensaje fuera de horario\n👤 Tel: ${phone}\n💬 Mensaje: ${text}\n⚠️ Atiende esta solicitud`
@@ -2595,11 +2640,11 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     createOrUpdateOrder(phone, []);
     updateOrderStep(phone, "esperando_menu_principal");
     currentOrder = getOrder(phone)!;
-    if (customer) {
+    if (tieneUltimoPedido) {
       await sendWhatsAppButtons(phone,
-        MSG_BIENVENIDA_RECURRENTE(customer.name?.trim() || undefined) + CREBOT_SUFFIX,
+        MSG_BIENVENIDA_RECURRENTE(customer!.name?.trim() || undefined) + CREBOT_SUFFIX,
         [
-          { id: "a", title: "Lo de siempre 🔄" },
+          { id: "a", title: "Pedido anterior 🔄" },
           { id: "b", title: "Pedir algo nuevo 🥞" },
           { id: "3", title: "Otros 💬" }
         ]
@@ -2882,12 +2927,22 @@ return res.sendStatus(200);
 
   // Preguntas post-producto
   const lastItem = parsedItems[parsedItems.length - 1];
+  const DULCES_IDS = new Set(["nutella_crepe", "chocolate_crepe", "arequipe_crepe"]);
   if (lastItem?.productoId === "mexicana" || lastItem?.producto?.toLowerCase().includes("mexican")) {
     updateOrderStep(phone, "esperando_jalapenos");
     currentOrder = getOrder(phone)!;
     await sendWhatsAppButtons(phone,
       `¿Deseas tu ${lastItem.producto} con jalapeños o sin jalapeños?`,
       [{ id: "con_jalapenos", title: "Con jalapeños 🌶️" }, { id: "sin_jalapenos", title: "Sin jalapeños" }]
+    );
+    return res.sendStatus(200);
+  }
+  if (DULCES_IDS.has(lastItem?.productoId)) {
+    updateOrderStep(phone, "esperando_queso_dulce");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      `¿Deseas tu ${lastItem.producto} con queso o sin queso? 🧀`,
+      [{ id: "con_queso_dulce", title: "Con queso 🧀" }, { id: "sin_queso_dulce", title: "Sin queso" }]
     );
     return res.sendStatus(200);
   }
@@ -2922,6 +2977,23 @@ return res.sendStatus(200);
   const resumenJal = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
   await sendWhatsAppButtons(phone,
     "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenJal + "\n\n📝 Si deseas una observación escríbela, o elige:",
+    [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+  );
+  return res.sendStatus(200);
+
+} else if (currentOrder?.step === "esperando_queso_dulce") {
+  const withQueso = lower === "con_queso_dulce" || lower.includes("con queso") || lower === "con" || lower.includes("queso");
+  const orderQD = getOrder(phone)!;
+  const lastItemQD = orderQD.items[orderQD.items.length - 1];
+  if (lastItemQD) {
+    const obsActual = lastItemQD.observaciones ? lastItemQD.observaciones + ", " : "";
+    lastItemQD.observaciones = withQueso ? obsActual + "con queso" : obsActual + "sin queso";
+  }
+  updateOrderStep(phone, "post_agregar_producto");
+  currentOrder = getOrder(phone)!;
+  const resumenQD = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+  await sendWhatsAppButtons(phone,
+    "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenQD + "\n\n📝 Si deseas una observación escríbela, o elige:",
     [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
   );
   return res.sendStatus(200);
@@ -3953,11 +4025,11 @@ return res.sendStatus(200);
   if (pedidoVencido) {
     // Más de 2 horas → limpiar y mostrar menú de bienvenida como cliente recurrente
     clearOrder(phone);
-    if (customer) {
+    if (tieneUltimoPedido) {
       await sendWhatsAppButtons(phone,
-        MSG_BIENVENIDA_RECURRENTE(customer.name?.trim() || undefined) + CREBOT_SUFFIX,
+        MSG_BIENVENIDA_RECURRENTE(customer!.name?.trim() || undefined) + CREBOT_SUFFIX,
         [
-          { id: "a", title: "Lo de siempre 🔄" },
+          { id: "a", title: "Pedido anterior 🔄" },
           { id: "b", title: "Pedir algo nuevo 🥞" },
           { id: "3", title: "Otros 💬" }
         ]

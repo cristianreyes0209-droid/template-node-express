@@ -1,0 +1,653 @@
+* [33m9b3b69f[m[33m ([m[1;36mHEAD[m[33m)[m Fix BUG Google Maps, BUG F: persist domicilio coords and guard payment keyword detection from long messages
+* [33mad297d1[m Fix BUG AA: return en bancolombia; Fix BUG Z: prompt Gemini productos compuestos
+* [33m2deb189[m Fix BUG Z: agregar frases de cortesía faltantes al cleanup de textoLimpio en parseOrder
+* [33mfa54a85[m feat: off-hours responde menu/horario/ubicacion antes de escalar a asesor
+* [33m17e7d49[m fix: limpiar carrito al elegir pedir algo nuevo en cliente recurrente
+* [33m2f1d102[m fix: preguntas con ? siempre van a Gemini, refuerzo intent pregunta en prompt
+* [33m708686d[m fix: burguesa dispara ambiguedad entre Crepe Burguesa y Burguessa Veggie
+* [33m2f629c4[m fix: BUG G+H pollo_champinon — dedup Gemini, prompt regla compuesta, pre-pass parser
+* [33m335309c[m feat: agregar bebidas embotelladas con variantes
+* [33meeebe38[m fix: upselling prompts, multi-producto variantes, producto-no-disponible, llegada-recoger
+* [33md94e8cc[m Update aliases for various menu items
+* [33m9c6f312[m Fix confirmar texto, no reiniciar pedido activo, pago info, nutella sin queso, no en agregar, pollo champiñon parser
+* [33m61e6d8a[m Fix acumulado cancelar pedido direccion invalida panel operaciones
+* [33m879573a[m IA responde preguntas frecuentes en esperando_asesor antes de escalar
+* [33maedd604[m Horario apertura 3pm cierre 10:15pm todos los dias
+* [33m593a3c8[m Panel con envio de mensajes al cliente
+* [33m2c8b984[m Panel con envio de mensajes al cliente
+* [33m7c81487[m Panel con envio de mensajes al cliente
+* [33m2b7b837[m Fix HolaClick primer mensaje, factura texto libre, observacion entrega y retomar pago
+* [33m92db939[m Reactivar Gemini solo para casos necesarios
+* [33mf64c9b2[m Add type annotations to map function in app.ts
+* [33mf7be0a5[m  reemplazo ambas usando una variable de entorno IMPRESORA_LA_VILLA_URL:
+* [33m992e40e[m Desactivar Gemini temporalmente parser solo reglas
+* [33m5cf9542[m Fix CSP para permitir scripts inline en panel
+* [33m77666f3[m Fix declaracion lower antes de uso
+* [33me93145e[m Fix vegetariana precios, respuesta si tras ingredientes e inactividad
+* [33me1ea1d1[m Fix modelo Gemini a gemini-2.0-flash
+* [33ma2123d2[m Fix panel HTML content-type y ruta correcta
+* [33m9f2eee0[m Debug saveMessage con logs detallados
+* [33m9ab7d30[m Fix saveMessage para panel de conversaciones
+* [33mf18db6c[m Fix jalapeños y queso con nombre producto, km a 1200 y factura electronica
+* [33mde743ea[m URL impresora nueva y fix ver menu
+* [33mc0d0eaa[m Panel de conversaciones web
+* [33m4bb8b15[m Fix routing pedidos y comprobantes por sucursal y advertencia domicilio
+* [33mb14608e[m Logs diagnostico calculo domicilio Google Maps
+* [33md50312c[m Fix jalapeños y queso con nombre producto, km a 1200 y factura electronica
+* [33mdd112ac[m URL impresora nueva y fix ver menu
+* [33ma8586a3[m Cambios pendientes
+* [33m303db73[m Fix direcciones sucursales, nombre obligatorio y logs Gemini
+* [33mb817f71[m Solicitud direccion y recepcion de ubicacion por GPS
+* [33me7cf8f0[m Update delivery cost per kilometer value
+* [33mf741047[m Change fetch URL for printing in app.ts
+* [33m976f35e[m Mensaje fuera de horario con opcion de contacto
+* [33m0a51c8a[m Integrar servidor impresion La Villa
+* [33m71e7321[m Update app.ts
+* [33m366998e[m Revertir link sucursal a HolaClick y fix deteccion HolaClick antes de steps
+* [33m35ec8af[m Update app.ts
+* [33mddb783d[m Update app.ts
+* [33m60f9c88[m Fix flujo HolaClick completo - orden correcto y comprobante
+* [33m2715bee[m Fix jugos ambiguedad, total en transferencia, domicilio en resumen y comprobante dos numeros
+* [33mfc6fa45[m Eliminar endpoint prueba usar solo bot real
+* [33md000c69[m Debug log procesamiento webhook
+* [33m2bec104[m Update app.ts
+* [33mccc0ef1[m Add WhatsApp message handling endpoint
+* [33m88646de[m botoms
+* [33m69d87a6[m Mejorar parser - separadores, cantidades, extras y observaciones
+* [33mda7e4db[m Pedidos La Villa, mensajes Otros y flujo pago inmediato
+* [33m2ec9da8[m Jugos por sabor con variantes agua y leche
+* [33m166d833[m Horario apertura 3:30pm
+* [33m640a05f[m Flujo pago inmediato, comprobantes, numeros por sucursal
+* [33m7f2b833[m Completar menu - nuevas categorias y fix duplicados
+* [33m72fbe55[m Update app.ts
+* [33m648900e[m No reiniciar sesion por 2 horas post-confirmacion
+* [33m0c0d0ac[m Mensaje bienvenida clientes nuevos y inactividad
+* [33m6649288[m Horario de atencion domicilio y recoger
+* [33mdd41e78[m Flujo HolaClick - sucursal y pago
+* [33m6dde15f[m Fix loop en esperando_ayuda
+* [33made0b5f[m Fix Nequi/Daviplata y nombre cliente
+* [33md03e034[m Fix menu flows para clientes nuevos y recurrentes
+* [33m6e64860[m Update app.ts
+* [33m09d4aef[m Update app.ts
+* [33m4e24c73[m Update db.ts
+* [33m6b2d42a[m Update app.ts
+* [33m025a694[m Update db.ts
+* [33m0e13409[m Update app.ts
+* [33m17b31b1[m Update app.ts
+* [33m65b6686[m Update menu.ts
+* [33m080996a[m Update app.ts
+* [33me3288fd[m Update app.ts
+* [33m94ca052[m Update app.ts
+* [33me75fada[m Update app.ts
+* [33md36d5e1[m Update app.ts
+* [33m9929bde[m Update app.ts
+* [33m9597e30[m Update app.ts
+* [33mbd60081[m Update app.ts
+* [33maf8e2cf[m Update app.ts
+* [33m911717a[m Update app.ts
+* [33m57eaa5d[m Update app.ts
+* [33ma176d11[m Update app.ts
+* [33mb5250aa[m Update app.ts
+* [33mc53f48c[m Update app.ts
+* [33m8fef468[m Update app.ts
+* [33m4518127[m Update app.ts
+* [33mfcf6cca[m Update app.ts
+* [33m5c9a725[m Update app.ts
+* [33m47f4199[m Update app.ts
+* [33me8ce656[m Update app.ts
+* [33mf75a2ea[m Update app.ts
+* [33m376a5e7[m Update app.ts
+* [33m206bd27[m Update app.ts
+* [33md0c5a54[m Update app.ts
+* [33m4b01608[m Update app.ts
+* [33m02ba011[m Update app.ts
+* [33m09b8b83[m Update app.ts
+* [33m6eb1159[m Update app.ts
+* [33mc2ae7f4[m Update app.ts
+* [33m5a800a2[m Update orders.ts
+* [33m66086bb[m Update app.ts
+* [33mbe7b3e7[m Update app.ts
+* [33m575e836[m Update app.ts
+* [33m7c2b8aa[m Update app.ts
+* [33mceb2a3f[m Update app.ts
+* [33mad6c633[m Update app.ts
+* [33m0621843[m Update app.ts
+* [33m61b2e05[m Update app.ts
+* [33md508c4e[m Update app.ts
+* [33m46877bd[m Update app.ts
+* [33mc4538f0[m Update app.ts
+* [33m0338f68[m Update app.ts
+* [33md0a90e4[m Update app.ts
+* [33m2b6adfd[m Update app.ts
+* [33mcdc0e54[m Update app.ts
+* [33mceb2150[m Update app.ts
+* [33m89cb56f[m Update app.ts
+* [33mbaef7ef[m Update app.ts
+* [33m13fe0bf[m Update app.ts
+* [33m4e878b5[m Update app.ts
+* [33mc5f6047[m Update app.ts
+* [33md6f3cdf[m Update app.ts
+* [33m073e8b7[m Update app.ts
+* [33m2fcf370[m Update app.ts
+* [33m5265a90[m Update app.ts
+* [33ma15d936[m Update app.ts
+* [33m07ff350[m Update app.ts
+* [33m33f4956[m Update orders.ts
+* [33m1115834[m Update orders.ts
+* [33m14aea6c[m Update orders.ts
+* [33m9c630ec[m Update app.ts
+* [33m4b031d4[m Update app.ts
+* [33m0e603d5[m Update app.ts
+* [33m97f6ae8[m Update app.ts
+* [33mf411500[m Update app.ts
+* [33m4f4671c[m Update app.ts
+* [33m980a385[m Update app.ts
+* [33m278b438[m Update app.ts
+* [33m460d874[m Update app.ts
+* [33m3677b58[m Update app.ts
+* [33ma420907[m Update app.ts
+* [33m7bf7a59[m Update app.ts
+* [33m9d6a0a9[m Update app.ts
+* [33maa5ecf7[m Update app.ts
+* [33m2ae09f4[m Update menu.ts
+* [33ma72f566[m Update app.ts
+* [33mabc79da[m Update app.ts
+* [33mf1d9a20[m Update db.ts
+* [33mc9d1961[m Update db.ts
+* [33m9331057[m Update parser.ts
+* [33me9e104f[m Update app.ts
+* [33maec3279[m Update app.ts
+* [33m229b92d[m Update parser.ts
+* [33m4ab6aac[m Update parser.ts
+* [33m5497238[m Update parser.ts
+* [33mde9c675[m Update app.ts
+* [33m5ad3433[m Update app.ts
+* [33me53de66[m Update app.ts
+* [33m94fe70a[m Update app.ts
+* [33ma6e68fe[m Update app.ts
+* [33m91bcbcb[m Update app.ts
+* [33md77bbcb[m Update app.ts
+* [33m204a6c7[m Update app.ts
+* [33m686bb7d[m Update app.ts
+* [33med903c6[m Update app.ts
+* [33m7cae191[m Update parser.ts
+* [33md6be65e[m Update parser.ts
+* [33me48e4b5[m Update parser.ts
+* [33m7ced64e[m Update app.ts
+* [33ma6c899c[m Update app.ts
+* [33m545bdf3[m Update app.ts
+* [33m3a3d43b[m Update app.ts
+* [33mc4d4165[m Update app.ts
+* [33m7e84019[m Update app.ts
+* [33m7ac7caf[m Update app.ts
+* [33m45a17ce[m Update app.ts
+* [33m6d882e7[m Update app.ts
+* [33mf77c814[m Update orders.ts
+* [33mdb457da[m Update app.ts
+* [33m05fd66c[m Update orders.ts
+* [33m66c58e0[m Update app.ts
+* [33m898a4b7[m Update app.ts
+* [33mb22666c[m Update app.ts
+* [33m75005b7[m Update app.ts
+* [33m37dac8a[m Update app.ts
+* [33m4da1de4[m Update parser.ts
+* [33m2c06806[m Update app.ts
+* [33m3864b22[m Update parser.ts
+* [33mec8fa50[m Update parser.ts
+* [33m66db93d[m Update parser.ts
+* [33me78318b[m Update app.ts
+* [33m8cd6d1e[m Update app.ts
+* [33m693fdb4[m Update app.ts
+* [33mc27fab5[m Update app.ts
+* [33m80df2a4[m Update app.ts
+* [33m18636f8[m Update app.ts
+* [33m5e910b1[m Update app.ts
+* [33maf66f77[m Update app.ts
+* [33maff8573[m Update app.ts
+* [33me7e4439[m Update app.ts
+* [33mdbd2127[m Update app.ts
+* [33m4155d04[m Update app.ts
+* [33m278dde8[m Update app.ts
+* [33mb489d7a[m Update app.ts
+* [33mdcab3e5[m Update app.ts
+* [33m752bce6[m Update app.ts
+* [33m9919f96[m Update app.ts
+* [33ma4b116c[m Update app.ts
+* [33me6c1b19[m Update app.ts
+* [33m93c0696[m Update app.ts
+* [33mea0a107[m Update app.ts
+* [33m6fce9ca[m Update app.ts
+* [33m20a83b9[m Update app.ts
+* [33m9e1ad92[m Update orders.ts
+* [33mc81c197[m Update app.ts
+* [33m828429e[m Update orders.ts
+* [33m1b08149[m Update app.ts
+* [33m5f5b9db[m Update app.ts
+* [33mf60b434[m Update app.ts
+* [33me2eac29[m Update app.ts
+* [33mcc84aa3[m Update parser.ts
+* [33m346f1da[m Update parser.ts
+* [33ma2dd862[m Update app.ts
+* [33ma91e5b9[m Update app.ts
+* [33mfbad447[m Update app.ts
+* [33me2069a2[m Update app.ts
+* [33mf602dbe[m Update app.ts
+* [33m7b9b794[m Update app.ts
+* [33mbcac57e[m Update app.ts
+* [33m93f58e4[m Update app.ts
+* [33mbf8b501[m Update app.ts
+* [33ma7e1d80[m Update app.ts
+* [33mb6ead5a[m Update app.ts
+* [33m28e5dab[m Update app.ts
+* [33mda65d74[m Update app.ts
+* [33me1034cb[m Update app.ts
+* [33m9d4d71e[m Update app.ts
+* [33m6056f29[m Update app.ts
+* [33m18ef299[m Update app.ts
+* [33m2a024f1[m Update parser.ts
+* [33m1a75a26[m Update app.ts
+* [33mc25d960[m Update orders.ts
+* [33m58bd6d7[m Update app.ts
+* [33md99fb51[m Update app.ts
+* [33m6597650[m Update app.ts
+* [33m3aa5e19[m Update app.ts
+* [33m230bdcb[m Update app.ts
+* [33mdde0bc6[m Update app.ts
+* [33m860cd76[m Update app.ts
+* [33m1c90e36[m Update menu.ts
+* [33m0b2e4a7[m Update menu.ts
+* [33me68ff8c[m Update orders.ts
+* [33mb59e705[m Update app.ts
+* [33m0f259c2[m Update app.ts
+* [33mf4a5f2a[m Update app.ts
+* [33m2353f09[m Update app.ts
+* [33m62c695e[m Update app.ts
+* [33m0bf60d8[m Update menu.ts
+* [33m2ed0d26[m Update app.ts
+* [33m1a574a8[m Update menu.ts
+* [33m53c2a20[m Update menu.ts
+* [33m209da01[m Update db.ts
+* [33m355ee32[m Update app.ts
+* [33m0716278[m Update app.ts
+* [33mb950253[m Update parser.ts
+* [33m940ac9a[m Update app.ts
+* [33m02c33a2[m Update app.ts
+* [33m50d6fe9[m Update app.ts
+* [33me916506[m Update app.ts
+* [33mf91f1bc[m Update db.ts
+* [33m7bcd401[m Update app.ts
+* [33m50a63d6[m Update app.ts
+* [33maea3f8e[m Create customers.ts
+* [33m9db04d3[m Update package.json
+* [33meaff98d[m Update package.json
+* [33ma8b972a[m Update app.ts
+* [33mb2418c7[m Update package.json
+* [33m603e742[m Update app.ts
+* [33m1c101d0[m Update db.ts
+* [33m2d41e29[m Create db.ts
+* [33m082027e[m Update parser.ts
+* [33m3b13e0f[m Update parser.ts
+* [33mac623bc[m Update parser.ts
+* [33m2f7a49e[m Update parser.ts
+* [33m09b20a7[m Update parser.ts
+* [33m35e49e6[m Update menu.ts
+* [33ma0b454e[m Update menu.ts
+* [33me3b3d86[m Update menu.ts
+* [33m0364355[m Update app.ts
+* [33mbfdbce1[m Update app.ts
+* [33m23c5411[m Update app.ts
+* [33mfa4bcb1[m Update app.ts
+* [33mf727b03[m Update app.ts
+* [33m9ef5ed5[m Update app.ts
+* [33m0ab8be9[m Update app.ts
+* [33mf2198cb[m Update app.ts
+* [33mc1e15eb[m Update app.ts
+* [33m53f6dde[m Update app.ts
+* [33m20dcffd[m Update app.ts
+* [33m351a641[m Update app.ts
+* [33mc1ade5e[m Update app.ts
+* [33m24d125b[m Update app.ts
+* [33ma05d608[m Update app.ts
+* [33m5176479[m Update app.ts
+* [33m074550a[m Update app.ts
+* [33maf21808[m Update parser.ts
+* [33m7e437d3[m Update app.ts
+* [33m03ce36b[m Update parser.ts
+* [33m63bcbed[m Update app.ts
+* [33m23070d5[m Update app.ts
+* [33mb97a3e7[m Update app.ts
+* [33meeb1192[m Update app.ts
+* [33m02794b8[m Update app.ts
+* [33m626f62e[m Update app.ts
+* [33md253968[m Update app.ts
+* [33mc12b5ef[m Update app.ts
+* [33m64d1bac[m Update app.ts
+* [33m54cda7b[m Update app.ts
+* [33m2f66618[m Update app.ts
+* [33mdf0e45d[m Update app.ts
+* [33m3ef8be2[m Update app.ts
+* [33m1b4ceee[m Update app.ts
+* [33m7fc9eb2[m Update app.ts
+* [33m304bbb5[m Update app.ts
+* [33m4f54123[m Update app.ts
+* [33mf46df23[m Update app.ts
+* [33m8399364[m Update app.ts
+* [33mdcae812[m Update app.ts
+* [33m77a283a[m Update app.ts
+* [33m5e55888[m Update app.ts
+* [33m47ce1a2[m Update parser.ts
+* [33m0faaeae[m Update parser.ts
+* [33mf3e3fda[m Update app.ts
+* [33mfaf143f[m Update parser.ts
+* [33mddd71b5[m Update parser.ts
+* [33m79125d8[m Update app.ts
+* [33mf4506ff[m Update app.ts
+* [33mc2ff8c8[m Update parser.ts
+* [33m6036f38[m Update parser.ts
+* [33m094ae7a[m Update parser.ts
+* [33m771da9b[m Update parser.ts
+* [33m21f5381[m Update app.ts
+* [33me329bf6[m Update app.ts
+* [33mf151691[m Update app.ts
+* [33m9f82a8c[m Update app.ts
+* [33m6987826[m Update parser.ts
+* [33mff7e88b[m Update parser.ts
+* [33m7d99d14[m Update parser.ts
+* [33m79a0328[m Update app.ts
+* [33m629bf1c[m Update app.ts
+* [33md025ee7[m Update app.ts
+* [33mc2dbd85[m Update app.ts
+* [33m54267b0[m Update app.ts
+* [33mdf15288[m Update app.ts
+* [33m9702922[m Update app.ts
+* [33mbd919fe[m Update app.ts
+* [33ma4e87d4[m Update app.ts
+* [33m0554ca7[m Update app.ts
+* [33m7e5a671[m Update app.ts
+* [33m1d6074f[m Update app.ts
+* [33m41d456f[m Update app.ts
+* [33mb009e80[m Update app.ts
+* [33m9dd24e9[m Update app.ts
+* [33m5005bf0[m Update app.ts
+* [33mf4e1f68[m Update menu.ts
+* [33m4877879[m Update app.ts
+* [33m5823de1[m Update parser.ts
+* [33mbe8f1e0[m Update parser.ts
+* [33m7cadf53[m Update menu.ts
+* [33m9bd77f0[m Update app.ts
+* [33mf65fafc[m Update app.ts
+* [33m5976ab3[m Update menu.ts
+* [33m703ed86[m Update menu.ts
+* [33m0370caa[m Update menu.ts
+* [33m924d9bc[m Update menu.ts
+* [33m1391220[m Update menu.ts
+* [33mf97f555[m Update menu.ts
+* [33med7a0cd[m Update menu.ts
+* [33m8fd24a2[m Update app.ts
+* [33mad4913a[m Update orders.ts
+* [33m048e566[m Update app.ts
+* [33mcada291[m Update orders.ts
+* [33mb74a7e2[m Update app.ts
+* [33m09fb568[m Update app.ts
+* [33m7080c54[m Update parser.ts
+* [33mfaaad60[m Update orders.ts
+* [33m78b45e1[m Update parser.ts
+* [33m9d9f8bc[m Update app.ts
+* [33m0c1f7ee[m Update app.ts
+* [33m9e71ea5[m Update app.ts
+* [33maec23e7[m Update menu.ts
+* [33md5bd1fa[m Update app.ts
+* [33mee47300[m Update parser.ts
+* [33mcdfec3a[m Update orders.ts
+* [33mccda8dd[m Update menu.ts
+* [33m0d202cc[m Update menu.ts
+* [33mc7ba2fe[m Update app.ts
+* [33mdb9002d[m Update menu.ts
+* [33m0ca1f63[m Update menu.ts
+* [33mcc05906[m Update menu.ts
+* [33m18d3f91[m Update menu.ts
+* [33m4c185d5[m Update app.ts
+* [33mac7bf15[m Update parser.ts
+* [33m475ba01[m Update orders.ts
+* [33m4929f58[m Update app.ts
+* [33m052faee[m Update parser.ts
+* [33mce4d986[m Update parser.ts
+* [33m5b88514[m Update parser.ts
+* [33mfa0ee97[m Update parser.ts
+* [33me7052cd[m Update app.ts
+* [33mc74f347[m Update app.ts
+* [33m420d961[m Update parser.ts
+* [33m8caaa18[m Update parser.ts
+* [33m7cf9703[m Update orders.ts
+* [33m34e0bec[m Update parser.ts
+* [33m47a53bf[m Update app.ts
+* [33m8dc94a1[m Update parser.ts
+* [33mca3a4a3[m Update menu.ts
+* [33m9101571[m Update app.ts
+* [33m99106d1[m Update parser.ts
+* [33m3f6c279[m Update menu.ts
+* [33m8640040[m Update menu.ts
+* [33m2d64ff1[m Update app.ts
+* [33m8cadfe1[m Update app.ts
+* [33m5a664c3[m Update menu.ts
+* [33mcaf17b1[m Update menu.ts
+* [33m4f41253[m Update app.ts
+* [33mc856070[m Update app.ts
+* [33mba699d1[m Update app.ts
+* [33m95d3739[m Update app.ts
+* [33mabba4c5[m Update app.ts
+* [33m2deb385[m Update app.ts
+* [33m2455fdc[m Update app.ts
+* [33mf0d773d[m Update app.ts
+* [33m206f3fb[m Update orders.ts
+* [33m3045045[m Update orders.ts
+* [33mb16b211[m Update app.ts
+* [33m847851c[m Update orders.ts
+* [33m86bb1ef[m Update app.ts
+* [33mcfcedbf[m Update orders.ts
+* [33macc0d6e[m Update app.ts
+* [33m9c35943[m Update app.ts
+* [33m50857be[m Update app.ts
+* [33m78cc176[m Update app.ts
+* [33m9a8e700[m Update app.ts
+* [33m9cc4bd0[m Update app.ts
+* [33mb607eda[m Update app.ts
+* [33m679a06c[m Update app.ts
+* [33m6626ee7[m Update app.ts
+* [33m0ffb846[m Update app.ts
+* [33mad37e57[m Update app.ts
+* [33mbd23f9b[m Update orders.ts
+* [33ma50c78b[m Update orders.ts
+* [33mdf424b8[m Update parser.ts
+* [33m8fd97d8[m Update parser.ts
+* [33m88ebbe4[m Update app.ts
+* [33m6f4bbea[m Update app.ts
+* [33mbaa7114[m Update app.ts
+* [33m8a77688[m Update parser.ts
+* [33m8e4c80a[m Update orders.ts
+* [33m43507db[m Update parser.ts
+* [33mea77258[m Update app.ts
+* [33mdd34903[m Update menu.ts
+* [33m2fb899f[m Update parser.ts
+* [33m9b2dcec[m Update menu.ts
+* [33m11c6883[m Update menu.ts
+* [33meb047b5[m Update menu.ts
+* [33me9c30f9[m Update menu.ts
+* [33m9c2bafb[m Update app.ts
+* [33m7843c2a[m Update app.ts
+* [33m9f40546[m Update orders.ts
+* [33m0f79514[m Update app.ts
+* [33m130c48c[m Update parser.ts
+* [33md643cd4[m Update app.ts
+* [33mbfeaab8[m Update app.ts
+* [33mcc484bb[m Update app.ts
+* [33mf3f969d[m Update app.ts
+* [33m4f6444d[m Update app.ts
+* [33m85d7081[m Update app.ts
+* [33m4b60059[m Update app.ts
+* [33m655999d[m Update app.ts
+* [33me4bb6cb[m Update app.ts
+* [33m2104177[m Update app.ts
+* [33m9a77c07[m Update orders.ts
+* [33m03a5208[m Update app.ts
+* [33m63f5412[m Update app.ts
+* [33mce114aa[m Update orders.ts
+* [33m8bee473[m Update app.ts
+* [33mcbb7b71[m Update app.ts
+* [33m8668a76[m Update app.ts
+* [33m54074a9[m Update app.ts
+* [33m63fcd6e[m Update orders.ts
+* [33m28735fd[m Update app.ts
+* [33m88a88dd[m Update app.ts
+* [33mdcb751f[m Update app.ts
+* [33me4b0544[m Update app.ts
+* [33mb5d7c64[m Update app.ts
+* [33mf313ec6[m Update app.ts
+* [33m6a72506[m Update app.ts
+* [33m4ebce94[m Update app.ts
+* [33me0e58c4[m Update app.ts
+* [33maea9a58[m Update app.ts
+* [33md95eb90[m Update app.ts
+* [33me320375[m Update app.ts
+* [33me4d33e7[m Update app.ts
+* [33m07f9d48[m Update app.ts
+* [33maafa011[m Update menu.ts
+* [33m2cdf0c3[m Update app.ts
+* [33m300efd8[m Update app.ts
+* [33m9e2f258[m Update parser.ts
+* [33mf9e8fa0[m Update parser.ts
+* [33m635a53e[m Update parser.ts
+* [33m27a6bf5[m Update menu.ts
+* [33m4bee32c[m Update orders.ts
+* [33m9b92454[m Update parser.ts
+* [33md56c2b6[m Update app.ts
+* [33m66878e5[m Update menu.ts
+* [33mdde4edb[m Update menu.ts
+* [33m4aab153[m Update app.ts
+* [33m65574ab[m Update app.ts
+* [33m193be99[m Update app.ts
+* [33mf9a2904[m Update orders.ts
+* [33m795ef78[m Update orders.ts
+* [33m0b795bf[m Update app.ts
+* [33mf2b42bc[m Update app.ts
+* [33me2edc08[m Update app.ts
+* [33m7b640fb[m Update orders.ts
+* [33mc0932bc[m Update app.ts
+* [33mb759b70[m Update orders.ts
+* [33m882d1b6[m Update app.ts
+* [33m06740b8[m Update app.ts
+* [33m5a0c2ce[m Update app.ts
+* [33m09d4563[m Update app.ts
+* [33m8545aa3[m Update orders.ts
+* [33m539f6c5[m Update app.ts
+* [33m7bd928c[m Update app.ts
+* [33mc6d5206[m Update app.ts
+* [33mc011ccd[m Update app.ts
+* [33mc39a0e0[m Update app.ts
+* [33m87abcbc[m Update app.ts
+* [33m2c09be9[m Update app.ts
+* [33m52982da[m Update app.ts
+* [33me60f7c5[m Update app.ts
+* [33m0a6966b[m Update app.ts
+* [33m6e5447c[m Update app.ts
+* [33m980d3e8[m Update app.ts
+* [33m05c27dd[m Update app.ts
+* [33m3760424[m Update app.ts
+* [33m7936bd5[m Update app.ts
+* [33m8942ed3[m Update app.ts
+* [33mef6070b[m Update app.ts
+* [33mf6177bf[m Update app.ts
+* [33m14ac5cf[m Update app.ts
+* [33mb424e02[m Update app.ts
+* [33m966347d[m Update app.ts
+* [33m99eac71[m add customer name step
+* [33m1de71b4[m improve order state
+* [33m516cf6c[m Update app.ts
+* [33me340c30[m Update app.ts
+* [33maad6f61[m Update app.ts
+* [33mfca661f[m Update app.ts
+* [33m7be5232[m Update app.ts
+* [33m5a6385d[m Update app.ts
+* [33m1834e55[m Update app.ts
+* [33md970ad6[m Update app.ts
+* [33m9e4aec8[m add order closing step
+* [33me942d2a[m Update app.ts
+* [33m9157aac[m fix reply template
+* [33ma1aac5c[m add in-memory orders state
+* [33m6c04394[m connect parser to whatsapp bot
+* [33m0a8d04f[m Update parser.ts
+* [33mf1b1ee4[m add order parser
+* [33mc272bfd[m Create menu.ts
+* [33md790087[m Update app.ts
+* [33mec859af[m Update app.ts
+* [33mf41b682[m Update app.ts
+* [33mfe7b15f[m Update app.ts
+* [33mb4908ff[m Update app.ts
+* [33mccd38a5[m Update app.ts
+* [33m2dd8cb0[m Update app.ts
+* [33m9711a6e[m Update app.ts
+* [33m12995f8[m Update app.ts
+* [33m8e6e9a8[m Update app.ts
+* [33m404c1f7[m Update app.ts
+* [33ma450d1e[m Update app.ts
+* [33m1ded2b6[m Update app.ts
+* [33m2e4131a[m Update app.ts
+* [33m4b224c2[m Update app.ts
+* [33m57c9c37[m Update app.ts
+* [33mc2cb8a0[m Update app.ts
+* [33ma077e31[m Update app.ts
+* [33mf656a3d[m Update app.ts
+* [33m4bcedf1[m Update app.ts
+* [33m4f86d63[m Update app.ts
+* [33m2c87ffd[m Update app.ts
+* [33m1252d59[m Update app.ts
+* [33mb62bffb[m Update app.ts
+* [33mbbcb99f[m Update app.ts
+* [33mfbbd369[m Update app.ts
+* [33m9d87423[m Update app.ts
+* [33md9aa9cf[m Update app.ts
+* [33m2edcd8b[m Update app.ts
+* [33mea11fbe[m Update app.ts
+*   [33m3773c8c[m[33m ([m[1;31mupstream/main[m[33m, [m[1;31mupstream/HEAD[m[33m)[m Merge pull request #8 from dillonstreator/dependabot/npm_and_yarn/npm_and_yarn-e4710623d2
+[32m|[m[33m\[m  
+[32m|[m * [33m5c2b0e8[m Bump @babel/runtime in the npm_and_yarn group across 1 directory
+[32m|[m[32m/[m  
+*   [33m2ca1a02[m Merge pull request #7 from dillonstreator/dependabot/npm_and_yarn/npm_and_yarn-f03e39912e
+[34m|[m[35m\[m  
+[34m|[m * [33m2a232ec[m Bump @babel/helpers in the npm_and_yarn group across 1 directory
+[34m|[m[34m/[m  
+*   [33mdd1d26a[m Merge pull request #6 from dillonstreator/dependabot/npm_and_yarn/npm_and_yarn-0189ad7b96
+[36m|[m[1;31m\[m  
+[36m|[m * [33ma5e1c82[m Bump cross-spawn in the npm_and_yarn group across 1 directory
+[36m|[m[36m/[m  
+*   [33mc7e35dc[m Merge pull request #5 from dillonstreator/dependabot/npm_and_yarn/npm_and_yarn-ceff1a497b
+[1;32m|[m[1;33m\[m  
+[1;32m|[m * [33m5523407[m Bump the npm_and_yarn group across 1 directory with 2 updates
+[1;32m|[m[1;32m/[m  
+*   [33m4caf626[m Merge pull request #4 from dillonstreator/dependabot/npm_and_yarn/npm_and_yarn-07a849e1ae
+[1;34m|[m[1;35m\[m  
+[1;34m|[m * [33m2419368[m Bump micromatch in the npm_and_yarn group across 1 directory
+[1;34m|[m[1;34m/[m  
+*   [33m502a60c[m Merge pull request #3 from dillonstreator/dependabot/npm_and_yarn/npm_and_yarn-cc593fed76
+[1;36m|[m[31m\[m  
+[1;36m|[m * [33me722461[m Bump the npm_and_yarn group across 1 directory with 3 updates
+[1;36m|[m[1;36m/[m  
+* [33m7065708[m document request abort test more
+* [33mc3a30f9[m fix request abort test
+* [33m9ceeed8[m remove only
+* [33m358b3ef[m test update
+* [33md196e52[m fix abort signal propagation
+* [33mecb2149[m add express-async-errors
+* [33mf2df35f[m add fetch-mock to readme
+* [33mbdcfd7c[m fix express validator import and AbortSignal propagation
+* [33m836a73a[m payload size limiting and express-validator
+* [33m883d980[m add default error handler
+* [33ma2cde21[m capture bytes written and bytes read in request logger
+* [33me7fc870[m import telemetry first
+* [33m491df62[m always strict
+* [33mfcbbbe6[m update testing section
+* [33m3d866dc[m update template id
+* [33ma1c8773[m update template id
+* [33m9738174[m update readme and add .env-example
+* [33m39f2555[m add middlewares, readme, and get real ip
+* [33m340d206[m init

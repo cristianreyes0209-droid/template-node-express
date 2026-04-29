@@ -1431,7 +1431,7 @@ aliases: [
           variantes: [
             { id: "natural", nombre: "Natural", precio: 5000, aliases: ["natural", "limonada natural", "limonada"] },
             { id: "coco", nombre: "De coco", precio: 10500, aliases: ["de coco", "coco", "limonada de coco", "limonada coco"] },
-            { id: "cereza", nombre: "De cereza", precio: 12500, aliases: ["de cereza", "cereza", "limonada de cereza", "limonada cereza"] }
+            { id: "cereza", nombre: "Cerezada", precio: 12500, aliases: ["de cereza", "cereza", "cerezada", "limonada de cereza", "limonada cereza", "limonada cerezada"] }
           ]
         },
         {
