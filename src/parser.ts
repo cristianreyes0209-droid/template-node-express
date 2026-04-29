@@ -181,9 +181,11 @@ function splitIntoFragments(text: string) {
         .filter((c: any) => c.id !== "extras")
         .flatMap((c: any) => c.productos as any[]);
       const partNorm = normalizeText(part);
+      const partNormSinCantidad = partNorm.replace(/^\d+\s+|^(?:un|una|uno|dos|tres|cuatro|cinco)\s+/i, "").trim();
       const isKnownProductPhrase = allMainProdsForSplit.some((p: any) =>
         normalizeText(p.nombre) === partNorm ||
-        (p.aliases || []).some((a: string) => normalizeText(a) === partNorm)
+        normalizeText(p.nombre) === partNormSinCantidad ||
+        (p.aliases || []).some((a: string) => normalizeText(a) === partNorm || normalizeText(a) === partNormSinCantidad)
       );
       if (isKnownProductPhrase) {
         result.push(...splitByInlineNumbers(part));

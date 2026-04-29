@@ -425,7 +425,7 @@ function parseOlaClickText(text: string) {
   const entregaMatch   = text.match(/^Entrega:\s*\$\s*([\d.,]+)/m);
   const totalMatch     =
     text.match(/\*?Total\s+a\s+pagar:\s*\$\s*([\d.,]+)\*?/im) ||
-    text.match(/\*?Total:\s*\$\s*([\d.,]+)\*?/im);
+    text.match(/^\*?Total:\s*\$\s*([\d.,]+)\*?/im);
   const propinaMatch   = text.match(/propina\s+([\d.,]+)/i);
   const tipoServMatch  = text.match(/Tipo de servicio:\s*(\w+)/i);
   const coordMatch     = text.match(/query=([\d.-]+),([\d.-]+)/);
@@ -849,7 +849,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     _lower.includes("su dirección") || _lower.includes("su direccion") ||
     _lower === "dirección" || _lower === "direccion";
 
-  if (_esConsultaUbicacion && !_esMsgLargo) {
+  if (_esConsultaUbicacion && !_esMsgLargo && currentOrder?.step !== "esperando_direccion") {
     await sendWhatsAppMessage(phone,
       "📍 Nuestras sucursales:\n\n" +
       "🏪 *La Villa*\nCalle 83 #16a-22, Pereira\nhttps://maps.app.goo.gl/KvWtZ9r2vQKdcmXU6\n\n" +
@@ -943,7 +943,8 @@ const useRulesThenAI =
 // Gemini solo se llama si: mensaje tipo "text", más de 3 palabras, y no es keyword simple
 const SKIP_AI_KEYWORDS = new Set([
   "si", "sí", "no", "hola", "reset", "confirmar", "agregar", "eliminar",
-  "ok", "dale", "listo", "menu", "menú", "ayuda", "ayudarme"
+  "ok", "dale", "listo", "menu", "menú", "ayuda", "ayudarme",
+  "recoger", "para recoger", "retirar", "para retirar", "en tienda", "para llevar"
 ]);
 const stepNeedsAI = currentOrder?.step === "armando_pedido" || currentOrder?.step === "post_agregar_producto";
 const shouldCallAI =
@@ -1210,6 +1211,31 @@ const esCortesia = !esMensajeLargo && (
 );
 if (esCortesia) {
   await sendWhatsAppMessage(phone, "¡Estamos para servirte! 😊");
+  return res.sendStatus(200);
+}
+
+// Cambio de tipo de entrega a "recoger" — botón viejo de WhatsApp o texto explícito
+const esChangeToRecoger =
+  lower === "recoger" ||
+  lower.includes("para recoger") ||
+  lower.includes("retirar en") ||
+  lower.includes("quiero recoger") ||
+  lower.includes("voy a recoger");
+
+if (esChangeToRecoger && currentOrder && currentOrder.step !== "confirmado") {
+  updateOrderDeliveryType(phone, "recoger");
+  currentOrder = getOrder(phone)!;
+  currentOrder.valorDomicilio = 0;
+  currentOrder.sucursal = undefined;
+  updateOrderStep(phone, "esperando_sucursal");
+  currentOrder = getOrder(phone)!;
+  await sendWhatsAppButtons(phone,
+    "Perfecto, cambiado a *Recoger en tienda* 🏪\n\n¿En cuál sucursal recoges?",
+    [
+      { id: "a", title: "La Villa 📍" },
+      { id: "b", title: "Av. Circunvalar 📍" }
+    ]
+  );
   return res.sendStatus(200);
 }
 
@@ -2254,8 +2280,11 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     currentOrder.sucursal = "circunvalar";
   } else if (!currentOrder.sucursal) {
     // Solo preguntar de nuevo si no se tiene sucursal guardada
+    const msgHCSuc = currentOrder.tipoEntrega === "recoger"
+      ? "¿En qué sucursal vas a recoger?"
+      : "¿Desde qué sucursal deseas tu domicilio?";
     await sendWhatsAppButtons(phone,
-      "¿Desde qué sucursal deseas tu domicilio?",
+      msgHCSuc,
       [
         { id: "la_villa", title: "La Villa 🏪" },
         { id: "circunvalar", title: "Av. Circunvalar 🏪" }
@@ -2457,6 +2486,33 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   }
 
 } else if (currentOrder?.step === "esperando_mensaje_fuera_horario") {
+  // Si ya abrimos, reiniciar sesión y mostrar bienvenida
+  if (isWithinBusinessHours("domicilio")) {
+    clearOrder(phone);
+    createOrUpdateOrder(phone, []);
+    updateOrderStep(phone, "esperando_menu_principal");
+    currentOrder = getOrder(phone)!;
+    if (customer) {
+      await sendWhatsAppButtons(phone,
+        MSG_BIENVENIDA_RECURRENTE(customer.name?.trim() || undefined) + CREBOT_SUFFIX,
+        [
+          { id: "a", title: "Lo de siempre 🔄" },
+          { id: "b", title: "Pedir algo nuevo 🥞" },
+          { id: "3", title: "Otros 💬" }
+        ]
+      );
+    } else {
+      await sendWhatsAppButtons(phone,
+        MSG_BIENVENIDA_NUEVO + CREBOT_SUFFIX,
+        [
+          { id: "1", title: "Hacer un pedido 🥞" },
+          { id: "2", title: "Ver menu 📋" },
+          { id: "3", title: "Otros 💬" }
+        ]
+      );
+    }
+    return res.sendStatus(200);
+  }
   try {
     await sendWhatsAppMessage("573151913928",
       `🔔 Mensaje fuera de horario\n👤 Tel: ${phone}\n💬 Mensaje: ${text}\n⚠️ Atiende esta solicitud`
@@ -2505,6 +2561,37 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   replyMessage = "Gracias por escribirnos. En breve un asesor te contactará 😊\n\nTambién puedes comunicarte al establecimiento 📞 *606 341 3020*";
 
 } else if (currentOrder?.step === "esperando_asesor") {
+  // Si ya abrimos y el cliente saluda → reiniciar sesión como bienvenida normal
+  const esGreeting = lower.includes("hola") || lower.includes("buenas") ||
+    lower === "hi" || lower === "hey" ||
+    lower.includes("buen dia") || lower.includes("buen día") ||
+    lower.includes("buenos dias") || lower.includes("buenos días");
+  if (esGreeting && isWithinBusinessHours("domicilio") && !currentOrder.asesorIntervenido) {
+    clearOrder(phone);
+    createOrUpdateOrder(phone, []);
+    updateOrderStep(phone, "esperando_menu_principal");
+    currentOrder = getOrder(phone)!;
+    if (customer) {
+      await sendWhatsAppButtons(phone,
+        MSG_BIENVENIDA_RECURRENTE(customer.name?.trim() || undefined) + CREBOT_SUFFIX,
+        [
+          { id: "a", title: "Lo de siempre 🔄" },
+          { id: "b", title: "Pedir algo nuevo 🥞" },
+          { id: "3", title: "Otros 💬" }
+        ]
+      );
+    } else {
+      await sendWhatsAppButtons(phone,
+        MSG_BIENVENIDA_NUEVO + CREBOT_SUFFIX,
+        [
+          { id: "1", title: "Hacer un pedido 🥞" },
+          { id: "2", title: "Ver menu 📋" },
+          { id: "3", title: "Otros 💬" }
+        ]
+      );
+    }
+    return res.sendStatus(200);
+  }
   // Si el cliente quiere pagar, retomar flujo de pago
   const quierePagar = lower.includes("pagar") || lower.includes("quiero pagar") ||
     lower.includes("transferencia") || lower.includes("nequi") ||
@@ -2523,63 +2610,18 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     );
     return res.sendStatus(200);
   }
-  // Intentar responder automáticamente con Gemini antes de escalar al asesor
-  let escaladoAsesor = false;
-  const geminiKeyAsesor = process.env.GEMINI_API_KEY;
-  if (geminiKeyAsesor) {
-    try {
-      const promptAsesor =
-        `Eres el asistente de Las Crepes de París en Pereira. Responde preguntas frecuentes de forma breve y amable. Si puedes responder, hazlo. Si no puedes, responde exactamente la palabra ESCALAR.\n\n` +
-        `Información del restaurante:\n` +
-        `- Horario: 3:00 PM a 10:15 PM todos los días\n` +
-        `- Sucursales: La Villa (Calle 83 #16a-22) y Av. Circunvalar (#8-94 local 1)\n` +
-        `- Hacemos domicilios a toda Pereira y Dosquebradas\n` +
-        `- Domicilio mínimo $4.500, calculado por distancia\n` +
-        `- Medios de pago: Efectivo, Nequi, Daviplata, Bancolombia\n` +
-        `- Ver menú: https://crepes-bot.onrender.com/carta\n` +
-        `- Para pedidos escribir al bot directamente\n\n` +
-        `Pregunta del cliente: ${text}`;
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKeyAsesor}`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: promptAsesor }] }] })
-        }
-      );
-      if (geminiRes.ok) {
-        const geminiData = await geminiRes.json();
-        const respuestaGemini = (geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "ESCALAR").trim();
-        if (respuestaGemini.toUpperCase() !== "ESCALAR") {
-          replyMessage = respuestaGemini;
-          console.log("🤖 Gemini respondió FAQ en esperando_asesor:", respuestaGemini.slice(0, 80));
-        } else {
-          escaladoAsesor = true;
-        }
-      } else {
-        escaladoAsesor = true;
-      }
-    } catch (e) {
-      console.error("❌ Error Gemini en esperando_asesor:", e);
-      escaladoAsesor = true;
-    }
-  } else {
-    escaladoAsesor = true;
-  }
-
-  if (escaladoAsesor) {
-    const nombreAsesor = currentOrder.nombre || customer?.name || phone;
-    const mensajeReenvio =
-      `💬 MENSAJE DE CLIENTE\n\n` +
-      `👤 Nombre: ${nombreAsesor}\n` +
-      `📞 Tel: ${phone}\n` +
-      `💬 Mensaje: ${text}`;
-    try {
-      await sendWhatsAppMessage("573151913928", mensajeReenvio);
-      console.log("✅ MENSAJE REENVIADO A ASESOR 573151913928 desde", phone);
-    } catch (e) { console.error("❌ ERROR reenviando a asesor:", e); }
-    replyMessage = "Con gusto 😊 Un asesor te atenderá pronto.";
-  }
+  // Reenviar al asesor en silencio — el bot no responde al cliente
+  const nombreAsesor = currentOrder.nombre || customer?.name || phone;
+  const mensajeReenvio =
+    `💬 MENSAJE DE CLIENTE\n\n` +
+    `👤 Nombre: ${nombreAsesor}\n` +
+    `📞 Tel: ${phone}\n` +
+    `💬 Mensaje: ${text}`;
+  try {
+    await sendWhatsAppMessage("573151913928", mensajeReenvio);
+    console.log("✅ MENSAJE REENVIADO A ASESOR desde", phone);
+  } catch (e) { console.error("❌ ERROR reenviando a asesor:", e); }
+  return res.sendStatus(200);
 } else if (currentOrder?.step === "esperando_tipo_entrega_repetido") {
   if (
     lower === "a" ||
@@ -2983,10 +3025,18 @@ return res.sendStatus(200);
 
   const order = getOrder(phone)!;
 
+  // Limpiar valores stale antes de recalcular
+  order.valorDomicilio = undefined;
+  order.distanciaKm = undefined;
+  order.domicilioTexto = undefined;
+
   let valorDomicilio = 4500;
   let descripcionDomicilio = "";
   try {
-    const calculo = await calcularDomicilio(text, order.sucursal || "la_villa");
+    const addressToCalc = order.locationCoords
+      ? `${order.locationCoords.latitude},${order.locationCoords.longitude}`
+      : (order.direccion || text);
+    const calculo = await calcularDomicilio(addressToCalc, order.sucursal || "la_villa");
     valorDomicilio = calculo.valorDomicilio;
     descripcionDomicilio = calculo.descripcion;
     order.valorDomicilio = valorDomicilio;
