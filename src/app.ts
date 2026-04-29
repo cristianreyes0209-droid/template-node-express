@@ -1217,10 +1217,15 @@ if (esCortesia) {
 // Cambio de tipo de entrega a "recoger" — botón viejo de WhatsApp o texto explícito
 const esChangeToRecoger =
   lower === "recoger" ||
-  lower.includes("para recoger") ||
+  lower === "para recoger" ||
+  lower === "quiero recoger" ||
+  lower === "voy a recoger" ||
+  lower === "retirar" ||
+  lower === "para retirar" ||
+  lower === "para llevar" ||
+  lower === "en tienda" ||
   lower.includes("retirar en") ||
-  lower.includes("quiero recoger") ||
-  lower.includes("voy a recoger");
+  lower.includes("recoger en");
 
 if (esChangeToRecoger && currentOrder && currentOrder.step !== "confirmado") {
   updateOrderDeliveryType(phone, "recoger");
@@ -2037,6 +2042,23 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     const allProducts = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
     const product = allProducts.find((p: any) => p.id === pending.id);
     const variantes: any[] = product?.variantes || [];
+
+    // Si llega un saludo → cliente quiere empezar de nuevo, borrar pendiente
+    const esGreetingVariante =
+      lower === "hola" || lower === "hi" || lower === "buenas" ||
+      lower.startsWith("hola ") || lower.startsWith("buenas ") ||
+      lower.includes("buen dia") || lower.includes("buen día");
+    if (esGreetingVariante) {
+      currentOrder.pendingProduct = undefined;
+      currentOrder.itemsPendientes = undefined;
+      updateOrderStep(phone, "armando_pedido");
+      currentOrder = getOrder(phone)!;
+      const resumenActualGV = currentOrder.items.length > 0
+        ? currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n") + "\n\n¿Qué más deseas agregar?"
+        : "¿Qué deseas pedir? 😊";
+      await sendWhatsAppMessage(phone, resumenActualGV);
+      return res.sendStatus(200);
+    }
 
     // Buscar variante por id del botón o por texto
     let varianteElegida = variantes.find((v: any) => lower === `variante_${v.id}`);
@@ -4283,7 +4305,14 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     await sendWhatsAppMessage(phone, mensaje);
     await saveMessage(phone, "asesor", mensaje);
     const sessionOrder = getOrder(phone);
-    if (sessionOrder) sessionOrder.asesorIntervenido = true;
+    if (sessionOrder) {
+      sessionOrder.asesorIntervenido = true;
+      // Cambiar step a esperando_asesor para que el timer de inactividad se cancele
+      // y el bot quede en silencio mientras el asesor maneja la conversación
+      if (sessionOrder.step !== "confirmado") {
+        updateOrderStep(phone, "esperando_asesor");
+      }
+    }
     return res.json({ ok: true });
   } catch (err: any) {
     console.error("❌ Error enviando mensaje desde panel:", err);
