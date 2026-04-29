@@ -786,18 +786,20 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
       inactivityTimers.delete(phone);
     }
   } else if (currentOrder) {
-    // Iniciar timer solo en steps activos
-    const timer = setTimeout(async () => {
-      const order = getOrder(phone);
-      if (order && !STEPS_SIN_TIMER.has(order.step)) {
-        order.inactivityPending = true;
-        await sendWhatsAppMessage(phone,
-          "¿Sigues ahí? 😊 Tu pedido está guardado. Escríbeme cuando quieras continuar."
-        );
-      }
-      inactivityTimers.delete(phone);
-    }, 10 * 60 * 1000);
-    inactivityTimers.set(phone, timer);
+    // Solo armar timer si el mensaje de inactividad nunca se ha enviado en esta sesión
+    if (!currentOrder.inactivityPending) {
+      const timer = setTimeout(async () => {
+        const order = getOrder(phone);
+        if (order && !STEPS_SIN_TIMER.has(order.step) && !order.inactivityPending) {
+          order.inactivityPending = true;
+          await sendWhatsAppMessage(phone,
+            "¿Sigues ahí? 😊 Tu pedido está guardado. Escríbeme cuando quieras continuar."
+          );
+        }
+        inactivityTimers.delete(phone);
+      }, 10 * 60 * 1000);
+      inactivityTimers.set(phone, timer);
+    }
   }
 
   // Observación de entrega interceptada en cualquier step cuando hay dirección guardada
