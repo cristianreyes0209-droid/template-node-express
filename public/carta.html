@@ -363,12 +363,15 @@ const ITEMS = [
    ingredients:['🍫 Nutella','🍓 Fresa','🍑 Durazno']},
   // DULCES
   {id:33,cat:'dulces',name:'Nutella',photo:(window.__resources&&window.__resources['nutella'])||'uploads/NUTELLA.jpg',price:11500,
+   modifiers:[{name:'Queso',emoji:'🧀',options:['Con Queso','Sin Queso'],default:'Con Queso'}],
    desc:'Nutella con queso doble crema (opcional).',
    ingredients:['🍫 Nutella','🧀 Doble crema']},
   {id:34,cat:'dulces',name:'Chocolate',photo:(window.__resources&&window.__resources['chocolate'])||'uploads/Crepe de chocolate (1).jpg',price:10500,
+   modifiers:[{name:'Queso',emoji:'🧀',options:['Con Queso','Sin Queso'],default:'Con Queso'}],
    desc:'Chocolate de leche con queso doble crema (opcional).',
    ingredients:['🍫 Chocolate','🧀 Doble crema']},
   {id:35,cat:'dulces',name:'Arequipe',photo:(window.__resources&&window.__resources['arequipe'])||'uploads/Crepe arequipe.jpg',price:10500,
+   modifiers:[{name:'Queso',emoji:'🧀',options:['Con Queso','Sin Queso'],default:'Con Queso'}],
    desc:'Arequipe con queso doble crema (opcional).',
    ingredients:['🍮 Arequipe','🧀 Doble crema']},
   {id:36,cat:'dulces',name:'Crepe Oblea',photo:(window.__resources&&window.__resources['oblea'])||'uploads/OBLEA.jpg',price:11900,
@@ -746,7 +749,7 @@ function ProductModal({item, onClose, onAdd}) {
             <div>
               {item.modifiers.map(mod => (
                 <div key={mod.name}>
-                  <div className="sec-title">🌶️ {mod.name}</div>
+                  <div className="sec-title">{mod.emoji||'🌶️'} {mod.name}</div>
                   <div style={{display:'flex',gap:8}}>
                     {mod.options.map(opt => (
                       <div

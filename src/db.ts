@@ -157,6 +157,20 @@ export async function getConversacion(phone: string) {
   }
 }
 
+// Limpiar conversaciones antiguas de la BD cada hora (mantiene últimos 7 días)
+setInterval(async () => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM conversaciones WHERE created_at < NOW() - INTERVAL '3 days'`
+    );
+    if ((result.rowCount ?? 0) > 0) {
+      console.log(`🧹 BD: ${result.rowCount} mensajes antiguos eliminados`);
+    }
+  } catch (err) {
+    console.error("❌ Error limpiando conversaciones antiguas:", err);
+  }
+}, 60 * 60 * 1000); // cada hora
+
 export type PedidoData = {
   numero_orden?: number;
   phone: string;
