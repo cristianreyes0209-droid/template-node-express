@@ -3764,7 +3764,7 @@ return res.sendStatus(200);
     }
 
     if (orderEf.sucursal === "la_villa") {
-      await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://towns-cheats-resulting-same.trycloudflare.com/imprimir"}`, {
+      await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -3991,7 +3991,7 @@ return res.sendStatus(200);
     }
 
     if (order.sucursal === "la_villa") {
-      await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://towns-cheats-resulting-same.trycloudflare.com/imprimir"}`, {
+      await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
