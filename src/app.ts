@@ -760,6 +760,9 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   // Si el cliente responde tras el mensaje de inactividad, re-mostrar estado actual sin procesar el texto
   if (currentOrder?.inactivityPending && lower !== "reset") {
     currentOrder.inactivityPending = false;
+    if (currentOrder.step === "esperando_asesor" || currentOrder.step === "esperando_mensaje_fuera_horario") {
+      return res.sendStatus(200);
+    }
     const stepActual = currentOrder.step;
     const resumenActual = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
     if (
@@ -1466,7 +1469,7 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
   return res.sendStatus(200);
 }
 
-if (text.includes("🥞 *PEDIDO - LAS CREPES*")) {
+if (text.includes("🥞 *PEDIDO - LAS CREPES*") || text.includes("🥞 PEDIDO - LAS CREPES")) {
   const cdParsed = parseCartaDigitalText(text);
 
   const prevTipoEntrega = currentOrder?.tipoEntrega;
@@ -3321,11 +3324,18 @@ return res.sendStatus(200);
 );
 return res.sendStatus(200);
     }
+  } else if (!Number.isNaN(Number(lower)) && Number(lower) < 1) {
+    const resumen = order.items
+      .map((item: any, i: number) => `* ${i + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`)
+      .join("\n");
+    replyMessage =
+      "Los números válidos empiezan en 1 😊\n\n" +
+      "Respóndeme con el número del producto a retirar:\n\n" +
+      resumen;
   } else {
     const resumen = order.items
       .map((item: any, i: number) => `* ${i + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`)
       .join("\n");
-
     replyMessage =
       "No entendí cuál producto deseas retirar 😊\n\n" +
       "Respóndeme con el número:\n\n" +
