@@ -1455,6 +1455,7 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
   } else {
     updateOrderStep(phone, "esperando_sucursal_holaclick");
     currentOrder = getOrder(phone)!;
+    await sendWhatsAppMessage(phone, "Gracias por tu orden en OlaClick, vamos a procesarla 🥞");
     const msgSucursalHC = orderHC.tipoEntrega === "recoger"
       ? "¿En qué sucursal vas a recoger?"
       : "¿Desde qué sucursal deseas tu domicilio?";
@@ -2577,7 +2578,11 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   if (
     lower.includes("horario") || lower.includes("hora") ||
     lower.includes("abren") || lower.includes("cierran") ||
-    lower.includes("a qué hora") || lower.includes("cuando abren") || lower.includes("cuándo abren")
+    lower.includes("a qué hora") || lower.includes("cuando abren") || lower.includes("cuándo abren") ||
+    lower.includes("atención") || lower.includes("atencion") ||
+    lower.includes("atienden") || lower.includes("abiertos") || lower.includes("abierto") ||
+    lower === "hola" || lower === "buenas" || lower === "buenas tardes" ||
+    lower === "buenas noches" || lower === "buenos días" || lower === "buenos dias"
   ) {
     await sendWhatsAppMessage(phone,
       "Nuestro horario de atención es de *3:00 PM a 10:15 PM* 🕒\n\nEn cuanto abramos podrás hacer tu pedido 😊"
