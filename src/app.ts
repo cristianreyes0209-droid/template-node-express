@@ -940,7 +940,8 @@ const skipParsing =
   currentOrder?.step === "esperando_nombre" ||
   currentOrder?.step === "esperando_direccion" ||
   currentOrder?.step === "esperando_jalapenos" ||
-  currentOrder?.step === "esperando_queso_dulce";
+  currentOrder?.step === "esperando_queso_dulce" ||
+  currentOrder?.step === "esperando_confirmacion_direccion";
 
 // Palabras clave simples y mensajes de botones que NO deben llamar a Gemini
 
@@ -1107,6 +1108,23 @@ if (esPrecioProducto) {
     return res.sendStatus(200);
   }
   // Si no encuentra el producto, deja caer al flujo normal (Gemini lo manejará)
+}
+
+// Pregunta sobre costo de domicilio
+const esConsultaCostoDomicilio =
+  lower.includes("domicilio") && (
+    lower.includes("costo") || lower.includes("cuesta") ||
+    lower.includes("cuánto") || lower.includes("cuanto") ||
+    lower.includes("precio") || lower.includes("valor") ||
+    lower.includes("cuál") || lower.includes("cual") ||
+    lower.includes("qué costo") || lower.includes("que costo") ||
+    lower.includes("cuánto es") || lower.includes("cuanto es")
+  );
+if (esConsultaCostoDomicilio && !esMensajeLargo) {
+  await sendWhatsAppMessage(phone,
+    "El valor del domicilio es calculado por Google Maps dependiendo de la distancia. Una vez ingreses tu dirección te arrojará el valor exacto 🛵"
+  );
+  return res.sendStatus(200);
 }
 
 // Pregunta sobre formas de pago — respuesta inmediata en cualquier step
@@ -2795,6 +2813,19 @@ return res.sendStatus(200);
             { id: "domicilio", title: "Domicilio 🛵" },
             { id: "recoger",   title: "Recoger en tienda 🏪" }
           ]);
+        } else if (currentOrder.tipoEntrega === "domicilio") {
+          if (customer?.last_address) {
+            updateOrderStep(phone, "esperando_confirmacion_direccion");
+            currentOrder = getOrder(phone)!;
+            await sendWhatsAppButtons(phone,
+              `Perfecto 👍\n\n¿Deseas usar tu dirección habitual?\n\n📍 ${customer.last_address}`,
+              [{ id: "a", title: "Sí, esa misma ✅" }, { id: "b", title: "No, cambiarla 📍" }]
+            );
+          } else {
+            updateOrderStep(phone, "esperando_direccion");
+            currentOrder = getOrder(phone)!;
+            await sendWhatsAppMessage(phone, "Perfecto 👍\n\nEnvíame tu ubicación 📍 o escríbeme tu dirección de domicilio.");
+          }
         } else {
           updateOrderStep(phone, "post_agregar_producto");
           await sendWhatsAppButtons(phone, "Perfecto 👍 ¿Qué deseas hacer?", [
@@ -2803,6 +2834,22 @@ return res.sendStatus(200);
             { id: "eliminar",    title: "Eliminar ➖" }
           ]);
         }
+      }
+      return res.sendStatus(200);
+    }
+
+    if (currentOrder.tipoEntrega === "domicilio" && currentOrder.items.length > 0) {
+      if (customer?.last_address) {
+        updateOrderStep(phone, "esperando_confirmacion_direccion");
+        currentOrder = getOrder(phone)!;
+        await sendWhatsAppButtons(phone,
+          `Perfecto 👍\n\n¿Deseas usar tu dirección habitual?\n\n📍 ${customer.last_address}`,
+          [{ id: "a", title: "Sí, esa misma ✅" }, { id: "b", title: "No, cambiarla 📍" }]
+        );
+      } else {
+        updateOrderStep(phone, "esperando_direccion");
+        currentOrder = getOrder(phone)!;
+        await sendWhatsAppMessage(phone, "Perfecto 👍\n\nEnvíame tu ubicación 📍 o escríbeme tu dirección de domicilio.");
       }
       return res.sendStatus(200);
     }
@@ -2836,6 +2883,19 @@ return res.sendStatus(200);
             { id: "domicilio", title: "Domicilio 🛵" },
             { id: "recoger",   title: "Recoger en tienda 🏪" }
           ]);
+        } else if (currentOrder.tipoEntrega === "domicilio") {
+          if (customer?.last_address) {
+            updateOrderStep(phone, "esperando_confirmacion_direccion");
+            currentOrder = getOrder(phone)!;
+            await sendWhatsAppButtons(phone,
+              `Perfecto 👍\n\n¿Deseas usar tu dirección habitual?\n\n📍 ${customer.last_address}`,
+              [{ id: "a", title: "Sí, esa misma ✅" }, { id: "b", title: "No, cambiarla 📍" }]
+            );
+          } else {
+            updateOrderStep(phone, "esperando_direccion");
+            currentOrder = getOrder(phone)!;
+            await sendWhatsAppMessage(phone, "Perfecto 👍\n\nEnvíame tu ubicación 📍 o escríbeme tu dirección de domicilio.");
+          }
         } else {
           updateOrderStep(phone, "post_agregar_producto");
           await sendWhatsAppButtons(phone, "Perfecto 👍 ¿Qué deseas hacer?", [
@@ -2844,6 +2904,22 @@ return res.sendStatus(200);
             { id: "eliminar",    title: "Eliminar ➖" }
           ]);
         }
+      }
+      return res.sendStatus(200);
+    }
+
+    if (currentOrder.tipoEntrega === "domicilio" && currentOrder.items.length > 0) {
+      if (customer?.last_address) {
+        updateOrderStep(phone, "esperando_confirmacion_direccion");
+        currentOrder = getOrder(phone)!;
+        await sendWhatsAppButtons(phone,
+          `Perfecto 👍\n\n¿Deseas usar tu dirección habitual?\n\n📍 ${customer.last_address}`,
+          [{ id: "a", title: "Sí, esa misma ✅" }, { id: "b", title: "No, cambiarla 📍" }]
+        );
+      } else {
+        updateOrderStep(phone, "esperando_direccion");
+        currentOrder = getOrder(phone)!;
+        await sendWhatsAppMessage(phone, "Perfecto 👍\n\nEnvíame tu ubicación 📍 o escríbeme tu dirección de domicilio.");
       }
       return res.sendStatus(200);
     }
@@ -3342,8 +3418,7 @@ return res.sendStatus(200);
       .map((item: any, i: number) => `* ${i + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`)
       .join("\n");
     replyMessage =
-      "No entendí cuál producto deseas retirar 😊\n\n" +
-      "Respóndeme con el número:\n\n" +
+      "Por favor respóndeme con el número del producto que deseas retirar:\n\n" +
       resumen;
   }
 
@@ -3684,16 +3759,16 @@ return res.sendStatus(200);
     return res.sendStatus(200);
 } else {
   await sendWhatsAppButtons(phone,
-    "¿Que deseas hacer?",
+    "¿Qué deseas hacer con tu pedido?",
     [
-      { id: "confirmar", title: "Confirmar" },
-      { id: "agregar_mas", title: "Agregar mas" },
-      { id: "eliminar", title: "Eliminar" }
+      { id: "agregar_mas", title: "Agregar más ➕" },
+      { id: "eliminar",    title: "Quitar ➖" },
+      { id: "4",           title: "Observación 📝" }
     ]
   );
   return res.sendStatus(200);
 }
-      
+
 } else if (currentOrder?.step === "esperando_pago") {
       
   if (
