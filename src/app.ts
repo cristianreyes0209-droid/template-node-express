@@ -3784,7 +3784,14 @@ return res.sendStatus(200);
           horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
           sucursal: "La Villa"
         })
-      }).catch(err => console.error("❌ Error impresora La Villa:", err));
+      }).then(async r => {
+        if (!r.ok) {
+          const body = await r.text().catch(() => "");
+          console.error(`❌ Impresora La Villa: HTTP ${r.status} → ${body}`);
+        } else {
+          console.log("🖨️ Impresora La Villa: OK");
+        }
+      }).catch(err => console.error("❌ Impresora La Villa (red):", err));
     }
 
     const resumenEf = orderEf.items.map((item: any) => formatLineaItem(item)).join("\n");
@@ -4011,7 +4018,14 @@ return res.sendStatus(200);
           horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
           sucursal: "La Villa"
         })
-      }).catch(err => console.error("❌ Error impresora La Villa:", err));
+      }).then(async r => {
+        if (!r.ok) {
+          const body = await r.text().catch(() => "");
+          console.error(`❌ Impresora La Villa: HTTP ${r.status} → ${body}`);
+        } else {
+          console.log("🖨️ Impresora La Villa: OK");
+        }
+      }).catch(err => console.error("❌ Impresora La Villa (red):", err));
     }
 
     const resumenComprobante =
