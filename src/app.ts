@@ -1809,7 +1809,14 @@ if (
   const confirmedAt = currentOrder.confirmedAt ? new Date(currentOrder.confirmedAt).getTime() : currentOrder.lastInteraction;
   const twoHoursMs = 2 * 60 * 60 * 1000;
   if (Date.now() - confirmedAt < twoHoursMs) {
-    await sendWhatsAppMessage(phone, "Tu pedido ya fue confirmado ✅. Si necesitas algo más escríbenos.");
+    const nombreConf = currentOrder.nombre || customer?.name || "";
+    await sendWhatsAppButtons(phone,
+      `Hola de nuevo${nombreConf ? " " + nombreConf : ""} 😊 Tu pedido está en proceso 🔥\n\n¿Deseas hacer algo más?`,
+      [
+        { id: "nuevo_pedido_conf", title: "Nuevo pedido 🥞" },
+        { id: "hablar_asesor_conf", title: "Hablar con asesor 💬" }
+      ]
+    );
     return res.sendStatus(200);
   }
 
@@ -1818,11 +1825,6 @@ if (
   currentOrder = getOrder(phone)!;
 
   if (tieneUltimoPedido) {
-   const nombreCliente = (customer?.name && customer.name.trim() !== "")
-  ? `, ${customer.name.trim()}`
-  : "";
-
-
 await sendWhatsAppButtons(phone,
    MSG_BIENVENIDA_RECURRENTE(customer?.name?.trim() || undefined) + CREBOT_SUFFIX,
   [
@@ -4223,10 +4225,31 @@ return res.sendStatus(200);
     if (currentOrder.tipoEntrega === "recoger") {
       replyMessage = "¡Te esperamos! 😊 Tu pedido estará listo en breve.";
     } else {
-      return res.sendStatus(200); // domicilio → ignorar
+      return res.sendStatus(200);
     }
+  } else if (lower === "nuevo_pedido_conf" || lower.includes("nuevo pedido") || lower.includes("otro pedido")) {
+    clearOrder(phone);
+    createOrUpdateOrder(phone, []);
+    updateOrderStep(phone, "armando_pedido");
+    currentOrder = getOrder(phone)!;
+    if (customer?.name && !currentOrder.nombre) updateOrderName(phone, customer.name);
+    replyMessage = "Perfecto 👌 ¿Qué deseas pedir?\n\nEscríbeme el producto:\n• 1 Hawaiana\n• 1 Ranchera\n• 1 París...";
+  } else if (lower === "hablar_asesor_conf") {
+    updateOrderStep(phone, "esperando_asesor");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppMessage(phone,
+      "Con gusto te comunico con un asesor 😊\n\nEscríbeme tu consulta y se la hacemos llegar.\n\nO contáctanos directamente al 📱 *315 191 3928*"
+    );
+    return res.sendStatus(200);
   } else {
-    // Mensaje no reconocido en pedido confirmado → silencio para no generar bucle
+    const nombreHola = currentOrder.nombre || customer?.name || "";
+    await sendWhatsAppButtons(phone,
+      `Hola de nuevo${nombreHola ? " " + nombreHola : ""} 😊 Tu pedido está en proceso 🔥\n\n¿Deseas hacer algo más?`,
+      [
+        { id: "nuevo_pedido_conf", title: "Nuevo pedido 🥞" },
+        { id: "hablar_asesor_conf", title: "Hablar con asesor 💬" }
+      ]
+    );
     return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "armando_pedido") {
