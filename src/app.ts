@@ -678,6 +678,13 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     Array.isArray(customer.last_order) &&
     customer.last_order.length > 0
   );
+  const COORDS_REGEX = /^-?\d+\.\d+,-?\d+\.\d+$/;
+  const tieneUltimaDir = !!(
+    customer?.last_address &&
+    customer.last_address.trim().length > 3 &&
+    customer.last_address.trim() !== "null" &&
+    !COORDS_REGEX.test(customer.last_address.trim())
+  );
   const text = messageData.text?.body
   || messageData.interactive?.button_reply?.id
   || messageData.interactive?.list_reply?.id
@@ -1554,6 +1561,32 @@ if (
   parsedItems.length === 0 &&
   !parseResult.ambiguousChoice
 ) {
+  // Detectar preguntas de disponibilidad de producto (¿manejan X?, ¿tienen X?, etc.)
+  const esPreguntaExistencia =
+    text.includes("?") && (
+      lower.includes("manejan") ||
+      lower.includes("venden") ||
+      lower.includes("preparan") ||
+      lower.includes("tienen ") ||
+      lower.includes("¿tienen") ||
+      lower.startsWith("tienen ") ||
+      lower.includes("¿hay ") ||
+      lower.startsWith("hay ")
+    );
+  if (esPreguntaExistencia) {
+    const matchProd =
+      lower.match(/manejan\s+([^?.,!]+)/) ||
+      lower.match(/venden\s+([^?.,!]+)/) ||
+      lower.match(/tienen\s+([^?.,!]+)/) ||
+      lower.match(/preparan\s+([^?.,!]+)/) ||
+      lower.match(/hay\s+([^?.,!]+)/);
+    const productoConsulta = matchProd?.[1]?.trim() || "ese producto";
+    await sendWhatsAppMessage(phone,
+      `Lo sentimos, no manejamos ${productoConsulta} 😊\n\n¿Deseas agregar otro producto a tu pedido?`
+    );
+    return res.sendStatus(200);
+  }
+
   // Manejar intents de IA que no son "producto"
   if (aiClassification) {
     if (aiClassification.intent === "pregunta") {
@@ -2758,7 +2791,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     }
     currentOrder = getOrder(phone)!;
 
-    if (customer?.last_address) {
+    if (tieneUltimaDir) {
       updateOrderStep(phone, "esperando_confirmacion_direccion");
       currentOrder = getOrder(phone)!;
 
@@ -2816,7 +2849,7 @@ return res.sendStatus(200);
             { id: "recoger",   title: "Recoger en tienda 🏪" }
           ]);
         } else if (currentOrder.tipoEntrega === "domicilio") {
-          if (customer?.last_address) {
+          if (tieneUltimaDir) {
             updateOrderStep(phone, "esperando_confirmacion_direccion");
             currentOrder = getOrder(phone)!;
             await sendWhatsAppButtons(phone,
@@ -2841,7 +2874,7 @@ return res.sendStatus(200);
     }
 
     if (currentOrder.tipoEntrega === "domicilio" && currentOrder.items.length > 0) {
-      if (customer?.last_address) {
+      if (tieneUltimaDir) {
         updateOrderStep(phone, "esperando_confirmacion_direccion");
         currentOrder = getOrder(phone)!;
         await sendWhatsAppButtons(phone,
@@ -2886,7 +2919,7 @@ return res.sendStatus(200);
             { id: "recoger",   title: "Recoger en tienda 🏪" }
           ]);
         } else if (currentOrder.tipoEntrega === "domicilio") {
-          if (customer?.last_address) {
+          if (tieneUltimaDir) {
             updateOrderStep(phone, "esperando_confirmacion_direccion");
             currentOrder = getOrder(phone)!;
             await sendWhatsAppButtons(phone,
@@ -2911,7 +2944,7 @@ return res.sendStatus(200);
     }
 
     if (currentOrder.tipoEntrega === "domicilio" && currentOrder.items.length > 0) {
-      if (customer?.last_address) {
+      if (tieneUltimaDir) {
         updateOrderStep(phone, "esperando_confirmacion_direccion");
         currentOrder = getOrder(phone)!;
         await sendWhatsAppButtons(phone,
@@ -3203,6 +3236,9 @@ return res.sendStatus(200);
       return res.sendStatus(200);
     }
     updateOrderAddress(phone, text);
+    // La dirección escrita tiene prioridad sobre coords GPS anteriores
+    const orderTxt = getOrder(phone);
+    if (orderTxt) orderTxt.locationCoords = undefined;
   }
 
   const order = getOrder(phone)!;
@@ -3275,7 +3311,7 @@ return res.sendStatus(200);
     }
 
     if (currentOrder.tipoEntrega === "domicilio" && !currentOrder.direccion) {
-      if (customer?.last_address) {
+      if (tieneUltimaDir) {
         updateOrderStep(phone, "esperando_confirmacion_direccion");
         currentOrder = getOrder(phone)!;
         await sendWhatsAppButtons(phone,
@@ -3436,7 +3472,7 @@ return res.sendStatus(200);
     texto === "igual"
   ) {
     
-   if (customer?.last_address) {
+   if (tieneUltimaDir) {
   updateOrderAddress(phone, customer.last_address);
 }
   }
@@ -3540,7 +3576,7 @@ return res.sendStatus(200);
     }
 
    if (currentOrder.tipoEntrega === "domicilio" && !currentOrder.direccion) {
-  if (customer?.last_address) {
+  if (tieneUltimaDir) {
     updateOrderStep(phone, "esperando_confirmacion_direccion");
     currentOrder = getOrder(phone)!;
 
@@ -4285,7 +4321,7 @@ return res.sendStatus(200);
       currentOrder = getOrder(phone)!;
 
       if (currentOrder.tipoEntrega === "domicilio") {
-        if (customer?.last_address) {
+        if (tieneUltimaDir) {
           updateOrderStep(phone, "esperando_confirmacion_direccion");
           currentOrder = getOrder(phone)!;
 
@@ -4342,8 +4378,8 @@ return res.sendStatus(200);
   const order = getOrder(phone)!;
   // Si la dirección ya está guardada (nueva dirección capturada), mantenerla.
   // Si no, usar la última dirección del cliente.
-  if (!order.direccion && customer?.last_address) {
-    updateOrderAddress(phone, customer.last_address);
+  if (!order.direccion && tieneUltimaDir) {
+    updateOrderAddress(phone, customer!.last_address!);
   }
   let valorDomicilio = order.valorDomicilio || 4500;
   let descripcionDomicilio = order.domicilioTexto || "";
