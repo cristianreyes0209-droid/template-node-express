@@ -644,6 +644,10 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   console.log(JSON.stringify(req.body, null, 2));
   console.log("=====================================");
 
+  const _fromPhone: string | undefined = req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
+
+  try {
+
   const entry = req.body.entry?.[0];
   const changes = entry?.changes;
   const value = changes?.[0]?.value;
@@ -711,6 +715,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   // Si el asesor intervino, ignorar el siguiente mensaje del cliente (no responder)
   if (currentOrder?.asesorIntervenido) {
     currentOrder.asesorIntervenido = false;
+    currentOrder.inactivityPending = false;
     return res.sendStatus(200);
   }
 
@@ -954,10 +959,7 @@ const skipParsing =
 
 // Steps donde se intenta el parser de reglas primero, y la IA solo si no detecta producto
 const useRulesThenAI =
-  !skipParsing && (
-    currentOrder?.step === "armando_pedido" ||
-    currentOrder?.step === "post_agregar_producto"
-  );
+  !skipParsing && currentOrder?.step === "armando_pedido";
 
 // Gemini solo se llama si: mensaje tipo "text", más de 3 palabras, y no es keyword simple
 const SKIP_AI_KEYWORDS = new Set([
@@ -965,7 +967,7 @@ const SKIP_AI_KEYWORDS = new Set([
   "ok", "dale", "listo", "menu", "menú", "ayuda", "ayudarme",
   "recoger", "para recoger", "retirar", "para retirar", "en tienda", "para llevar"
 ]);
-const stepNeedsAI = currentOrder?.step === "armando_pedido" || currentOrder?.step === "post_agregar_producto";
+const stepNeedsAI = currentOrder?.step === "armando_pedido";
 const shouldCallAI =
   tipoMensaje === "text" &&
   (stepNeedsAI ? text.trim().split(/\s+/).length >= 1 : text.trim().split(/\s+/).length > 3) &&
@@ -1241,7 +1243,8 @@ if (esQuejaDedemora && !esMensajeLargo) {
 }
 
 // Cortesías — responder y continuar sin detener el flujo
-const esCortesia = !esMensajeLargo && (
+// Excluir mensajes de carta digital (pueden contener "Mil gracias" en observaciones)
+const esCortesia = !esMensajeLargo && !text.includes("🥞") && (
   /^(muchas?\s+)?gracia[s]?[!\s]*$|^muy\s+amables?[!\s]*$|^mil\s+gracias[!\s]*$|^(que|qué)\s+amables?[!\s]*$|^de\s+nada[!\s]*$/i.test(lower.trim()) ||
   /\b(muchas?\s+gracias|muy\s+amables?|mil\s+gracias|qu[eé]\s+amables?)\b/i.test(lower)
 );
@@ -3225,6 +3228,45 @@ return res.sendStatus(200);
     const orderForCoords = getOrder(phone);
     if (orderForCoords) orderForCoords.locationCoords = { latitude, longitude };
   } else {
+    // Manejar botones de cancelar domicilio
+    if (lower === "recoger_en_vez") {
+      updateOrderDeliveryType(phone, "recoger");
+      currentOrder = getOrder(phone)!;
+      currentOrder.valorDomicilio = 0;
+      updateOrderStep(phone, "esperando_sucursal");
+      currentOrder = getOrder(phone)!;
+      await sendWhatsAppButtons(phone, "¿En cuál sucursal recoges?", [
+        { id: "a", title: "La Villa 🏪" },
+        { id: "b", title: "Av. Circunvalar 🏪" }
+      ]);
+      return res.sendStatus(200);
+    }
+    if (lower === "cancelar_pedido_dir") {
+      clearOrder(phone);
+      await sendWhatsAppMessage(phone, "Tu pedido ha sido cancelado 😊 ¡Cuando quieras volver a pedir, estamos aquí!");
+      return res.sendStatus(200);
+    }
+
+    // Detectar intención de cancelar domicilio
+    const esCancelarDomicilio =
+      lower.includes("cancel") ||
+      lower.includes("no quiero") ||
+      lower.includes("muy caro") ||
+      lower === "caro" ||
+      lower.includes("no lo quiero") ||
+      (lower.includes("cambiar") && lower.includes("tienda"));
+
+    if (esCancelarDomicilio) {
+      await sendWhatsAppButtons(phone,
+        "Entendido 😊 ¿Deseas recoger en tienda en su lugar?",
+        [
+          { id: "recoger_en_vez", title: "🏪 Recoger en tienda" },
+          { id: "cancelar_pedido_dir", title: "❌ Cancelar pedido" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
+
     // Validar que el texto parece una dirección real
     const PALABRAS_INVALIDAS_DIR = new Set(["hola", "si", "sí", "ok", "espera", "espérame", "esperame", "bueno", "bien", "ya", "dale", "listo", "claro", "no", "momento", "ahorita", "ahora", "gracias", "ok gracias", "muchas gracias", "perfecto", "entendido"]);
     const textoDirLimpio = text.trim();
@@ -3876,6 +3918,7 @@ return res.sendStatus(200);
       } catch (e) { console.error("❌ Error enviando ubicación a domiciliarios:", e); }
     }
 
+    console.log(`🖨️ PRINTER CHECK (efectivo): sucursal="${orderEf.sucursal}", url="${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}"`);
     if (orderEf.sucursal === "la_villa") {
       await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}`, {
         method: "POST",
@@ -4110,6 +4153,7 @@ return res.sendStatus(200);
       } catch (e) { console.error(`❌ ERROR reenviando comprobante a ${destino}:`, e); }
     }
 
+    console.log(`🖨️ PRINTER CHECK (comprobante): sucursal="${order.sucursal}", url="${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}"`);
     if (order.sucursal === "la_villa") {
       await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}`, {
         method: "POST",
@@ -4428,16 +4472,26 @@ return res.sendStatus(200);
     replyMessage =
       "Perfecto 👍\n\nEnvíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
   } else {
-   await sendWhatsAppButtons(phone,
-  `Perfecto 👍\n\n¿Deseas usar la misma dirección de siempre?\n\n📍 ${customer.last_address}`,
-  [
-    { id: "a", title: "Sí, esa misma ✅" },
-    { id: "b", title: "No, cambiarla 📍" }
-  ]
-);
-return res.sendStatus(200);
-  
-}
+    const orderFB = getOrder(phone)!;
+    if (orderFB.direccion) {
+      await sendWhatsAppButtons(phone,
+        `¿Es correcta esta dirección? 📍\n\n*${orderFB.direccion}*` +
+        (orderFB.domicilioTexto ? `\n\n${orderFB.domicilioTexto}` : "") +
+        (orderFB.valorDomicilio ? `\n💵 Domicilio: $${orderFB.valorDomicilio.toLocaleString("es-CO")}` : ""),
+        [{ id: "a", title: "Confirmar ✅" }, { id: "b", title: "Corregir ✏️" }]
+      );
+    } else if (tieneUltimaDir) {
+      await sendWhatsAppButtons(phone,
+        `Perfecto 👍\n\n¿Deseas usar tu dirección habitual?\n\n📍 ${customer!.last_address}`,
+        [{ id: "a", title: "Sí, esa misma ✅" }, { id: "b", title: "No, cambiarla 📍" }]
+      );
+    } else {
+      updateOrderStep(phone, "esperando_direccion");
+      currentOrder = getOrder(phone)!;
+      replyMessage = "Envíame tu ubicación 📍 o escríbeme tu dirección de domicilio.";
+    }
+    return res.sendStatus(200);
+  }
 } else if (
   lower.includes("hola") ||
   lower.includes("buenas") ||
@@ -4471,6 +4525,18 @@ if (replyMessage) {
   await sendWhatsAppMessage(phone, replyMessage);
 }
 return res.sendStatus(200);
+
+  } catch (err) {
+    console.error("❌ Error fatal en webhook:", err);
+    if (_fromPhone && typeof _fromPhone === "string" && !_fromPhone.includes("@g.us") && _fromPhone !== "573151913928") {
+      try {
+        await sendWhatsAppMessage(_fromPhone, "Voy a conectarte con un asesor 😊");
+        const errMsg = err instanceof Error ? err.message : String(err);
+        await sendWhatsAppMessage("573151913928", `⚠️ Error en bot\n📞 ${_fromPhone}\n❌ ${errMsg}`);
+      } catch (e2) { console.error("❌ Error enviando escalación:", e2); }
+    }
+    return res.sendStatus(200);
+  }
 });
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   asl.getStore()?.logger.error(err);
