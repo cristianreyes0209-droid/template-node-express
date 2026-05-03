@@ -73,6 +73,7 @@ export type CustomerOrder = {
   itemsPendientes?: { productoId: string; cantidad: number }[];
   inactivityPending?: boolean;
   vieneDeCarta?: boolean;
+  cartFreeTextAttempts?: number;
   asesorIntervenido?: boolean;
   upsellingFrutasMostrado?: boolean;
   upsellingTocinetaMostrado?: boolean;

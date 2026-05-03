@@ -1608,7 +1608,7 @@ if (
       }
       await sendWhatsAppButtons(phone,
         `Anotado ✅ "${aiClassification.texto}"\n\n¿Algo más?`,
-        [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+        [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
       );
       return res.sendStatus(200);
     }
@@ -1618,7 +1618,7 @@ if (
       lastItem.extras.push({ nombre: aiClassification.nombre, precio: aiClassification.precio, cantidad: 1 });
       await sendWhatsAppButtons(phone,
         `Agregado ✅ ${aiClassification.nombre} (+$${aiClassification.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
-        [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+        [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
       );
       return res.sendStatus(200);
     }
@@ -1676,7 +1676,7 @@ if (
       : text.trim();
     await sendWhatsAppButtons(phone,
       `Anotado ✅ "${text.trim()}"\n\n¿Algo más?`,
-      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
     );
     return res.sendStatus(200);
   }
@@ -1702,7 +1702,7 @@ if (
     const resumenNada = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
     await sendWhatsAppButtons(phone,
       "Tu pedido hasta ahora:\n\n" + resumenNada + "\n\n¿Qué deseas hacer?",
-      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
     );
     return res.sendStatus(200);
   }
@@ -1715,7 +1715,7 @@ if (
     const resumenFallback = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
     await sendWhatsAppButtons(phone,
       "Tu pedido hasta ahora:\n\n" + resumenFallback + "\n\n¿Qué deseas hacer?",
-      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
     );
     return res.sendStatus(200);
   }
@@ -1760,7 +1760,7 @@ if (
       }
       await sendWhatsAppButtons(phone,
         `Agregado ✅ ${extraMatch.nombre} (+$${extraMatch.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
-        [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+        [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
       );
       return res.sendStatus(200);
     }
@@ -1775,7 +1775,7 @@ if (
       : text.trim();
     await sendWhatsAppButtons(phone,
       `Anotado ✅ "${text.trim()}"\n\n¿Algo más?`,
-      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
     );
     return res.sendStatus(200);
   }
@@ -1922,7 +1922,7 @@ if (currentOrder && currentOrder.items.length > 0 &&
   currentOrder = getOrder(phone)!;
   await sendWhatsAppButtons(phone,
     "Tu pedido hasta ahora:\n\n" + resumenSN + "\n\n¿Qué deseas hacer?",
-    [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+    [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
   );
   return res.sendStatus(200);
 }
@@ -2054,11 +2054,11 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       const resumen = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
 
       await sendWhatsAppButtons(phone,
-        "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n📝 Si deseas una observacion escribela, o elige:",
+        "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n¿Qué deseas hacer?",
         [
-          { id: "confirmar", title: "Confirmar" },
-          { id: "agregar_mas", title: "Agregar mas" },
-          { id: "eliminar", title: "Eliminar" }
+          { id: "confirmar",   title: "✅ Confirmar" },
+          { id: "eliminar",    title: "🗑️ Quitar" },
+          { id: "4",           title: "📝 Observación" }
         ]
       );
       return res.sendStatus(200);
@@ -2078,7 +2078,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         const resumenObs = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
         await sendWhatsAppButtons(phone,
           `Anotado ✅ "${text.trim()}"\n\n${resumenObs}\n\n¿Qué deseas hacer?`,
-          [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+          [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
         );
       } else {
         await sendWhatsAppMessage(phone,
@@ -2202,11 +2202,11 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       const resumen = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
 
       await sendWhatsAppButtons(phone,
-        "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n📝 Si deseas una observacion escribela, o elige:",
+        "Perfecto 👌\n\nEstoy registrando:\n\n" + resumen + "\n\n¿Qué deseas hacer?",
         [
-          { id: "confirmar", title: "Confirmar" },
-          { id: "agregar_mas", title: "Agregar mas" },
-          { id: "eliminar", title: "Eliminar" }
+          { id: "confirmar",   title: "✅ Confirmar" },
+          { id: "eliminar",    title: "🗑️ Quitar" },
+          { id: "4",           title: "📝 Observación" }
         ]
       );
       return res.sendStatus(200);
@@ -2313,7 +2313,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         currentOrder = getOrder(phone)!;
         await sendWhatsAppButtons(phone,
           "Tienes un pedido en proceso 😊\n\n" + resumenGuard + "\n\n¿Qué deseas hacer?",
-          [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+          [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
         );
         return res.sendStatus(200);
       }
@@ -3099,7 +3099,7 @@ return res.sendStatus(200);
   const resumenJal = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
   await sendWhatsAppButtons(phone,
     "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenJal + "\n\n📝 Si deseas una observación escríbela, o elige:",
-    [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+    [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
   );
   return res.sendStatus(200);
 
@@ -3116,7 +3116,7 @@ return res.sendStatus(200);
   const resumenQD = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
   await sendWhatsAppButtons(phone,
     "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenQD + "\n\n📝 Si deseas una observación escríbela, o elige:",
-    [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+    [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
   );
   return res.sendStatus(200);
 
@@ -3338,6 +3338,7 @@ return res.sendStatus(200);
   lower.includes("va")
 
  ) {
+    currentOrder.cartFreeTextAttempts = 0;
     // Guardar nombre del perfil si el pedido no tiene nombre aún
     if (customer?.name && !currentOrder.nombre) {
       updateOrderName(phone, customer.name);
@@ -3392,6 +3393,7 @@ return res.sendStatus(200);
     lower.includes("eliminar") ||
     lower.includes("quitar")
   ) {
+    currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "retirando_productos");
     currentOrder = getOrder(phone)!;
 
@@ -3415,6 +3417,7 @@ return res.sendStatus(200);
     lower.includes("más") ||
     lower.includes("mas")
   ) {
+    currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
 
@@ -3425,9 +3428,11 @@ return res.sendStatus(200);
 
   } else if (
     lower === "d" ||
+    lower === "4" ||
     lower.includes("observacion") ||
     lower.includes("observación")
   ) {
+    currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "esperando_observacion_general");
     currentOrder = getOrder(phone)!;
 
@@ -3436,15 +3441,21 @@ return res.sendStatus(200);
       "Escríbeme la observación para tu pedido 😊";
 
   } else {
-  await sendWhatsAppButtons(phone,
-  "¿Qué deseas hacer?",
-  [
-    { id: "confirmar", title: "Confirmar ✅" },
-    { id: "agregar_mas", title: "Agregar más ➕" },
-    { id: "eliminar", title: "Eliminar ➖" }
-  ]
-);
-return res.sendStatus(200);
+    currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;
+    if (currentOrder.cartFreeTextAttempts >= 3) {
+      currentOrder.cartFreeTextAttempts = 0;
+      updateOrderStep(phone, "esperando_asesor");
+      currentOrder = getOrder(phone)!;
+      await sendWhatsAppMessage(phone, "Voy a conectarte con un asesor que puede ayudarte mejor 😊");
+      sendWhatsAppMessage("573151913928", `💬 Cliente necesita ayuda con carrito\n👤 ${currentOrder.nombre || phone}\n📞 ${phone}`).catch(() => {});
+    } else {
+      await sendWhatsAppButtons(phone, "¿Qué deseas hacer? 😊", [
+        { id: "agregar_mas", title: "➕ Agregar" },
+        { id: "eliminar",    title: "🗑️ Quitar" },
+        { id: "4",           title: "📝 Observación" }
+      ]);
+    }
+    return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "retirando_productos") {
   const order = getOrder(phone)!;
@@ -3476,11 +3487,11 @@ return res.sendStatus(200);
   "Perfecto 👌\n\nTu pedido actualizado es:\n" +
   resumen +
   buildResumenFooter(order, totals, order.domicilioTexto) +
-  "\n\n📝 Si deseas una observación escríbela, o elige:",
+  "\n\n¿Qué deseas hacer?",
  [
-    { id: "confirmar", title: "Confirmar" },
-    { id: "agregar_mas", title: "Agregar mas" },
-    { id: "eliminar", title: "Eliminar" }
+    { id: "confirmar",   title: "✅ Confirmar" },
+    { id: "agregar_mas", title: "➕ Agregar" },
+    { id: "4",           title: "📝 Observación" }
   ]
 );
 return res.sendStatus(200);
@@ -3537,9 +3548,9 @@ return res.sendStatus(200);
 await sendWhatsAppButtons(phone,
   `Anotado ✅ "${text}"\n\n¿Qué deseas hacer?`,
   [
-    { id: "confirmar", title: "Confirmar" },
-    { id: "agregar_mas", title: "Agregar mas" },
-    { id: "eliminar", title: "Eliminar" }
+    { id: "confirmar",   title: "✅ Confirmar" },
+    { id: "agregar_mas", title: "➕ Agregar" },
+    { id: "eliminar",    title: "🗑️ Quitar" }
   ]
 );
 return res.sendStatus(200);
@@ -3555,6 +3566,7 @@ return res.sendStatus(200);
 
   const CONFIRMAR_KEYWORDS = new Set(["confirmar", "1", "listo", "ok", "dale", "si", "sí", "okay", "perfecto", "confirmo", "vamos", "de una", "adelante", "va"]);
   if (CONFIRMAR_KEYWORDS.has(lower)) {
+    currentOrder.cartFreeTextAttempts = 0;
     // Upselling al confirmar — una sola vez, solo si aplica. Omitir pedidos de carta digital.
     if (!currentOrder.vieneDeCarta && !currentOrder.upsellingToppingsMostrado) {
       currentOrder.upsellingToppingsMostrado = true;
@@ -3651,15 +3663,16 @@ return res.sendStatus(200);
   "Perfecto 👌\n\nTu pedido es:\n" +
   resumen +
   buildResumenFooter(order, totals, order.domicilioTexto) +
-  "\n\n📝 Si deseas una observación escríbela, o elige:",
+  "\n\n¿Qué deseas hacer?",
  [
-    { id: "confirmar", title: "Confirmar" },
-    { id: "agregar_mas", title: "Agregar mas" },
-    { id: "eliminar", title: "Eliminar" }
+    { id: "confirmar",   title: "✅ Confirmar" },
+    { id: "agregar_mas", title: "➕ Agregar" },
+    { id: "eliminar",    title: "🗑️ Quitar" }
   ]
 );
 return res.sendStatus(200);
   } else if (lower === "agregar_mas" || lower === "2" || lower.includes("agregar")) {
+    currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
 
@@ -3669,6 +3682,7 @@ return res.sendStatus(200);
       "Recuerda: un producto por mensaje 😊";
 
   } else if (lower === "eliminar" || lower === "3") {
+    currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "retirando_productos");
     currentOrder = getOrder(phone)!;
 
@@ -3686,6 +3700,7 @@ return res.sendStatus(200);
       'Respóndeme con el número del producto o escribe "todos".';
 
   } else if (lower === "4") {
+    currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "esperando_observacion_general");
     currentOrder = getOrder(phone)!;
 
@@ -3710,6 +3725,7 @@ return res.sendStatus(200);
       createOrUpdateOrder(phone, parsedItems);
     }
     currentOrder = getOrder(phone)!;
+    currentOrder.cartFreeTextAttempts = 0;
     const lastItemPAP = parsedItems[parsedItems.length - 1];
     if (lastItemPAP?.productoId === "mexicana" || lastItemPAP?.producto?.toLowerCase().includes("mexican")) {
       updateOrderStep(phone, "esperando_jalapenos");
@@ -3722,11 +3738,11 @@ return res.sendStatus(200);
     }
     const resumen2 = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
     await sendWhatsAppButtons(phone,
-      "Perfecto, agregué:\n\n" + resumen2 + "\n\n📝 Si deseas una observacion escribela, o elige:",
+      "Perfecto, agregué:\n\n" + resumen2 + "\n\n¿Qué deseas hacer?",
       [
-        { id: "confirmar", title: "Confirmar" },
-        { id: "agregar_mas", title: "Agregar mas" },
-        { id: "eliminar", title: "Eliminar" }
+        { id: "confirmar",   title: "✅ Confirmar" },
+        { id: "eliminar",    title: "🗑️ Quitar" },
+        { id: "4",           title: "📝 Observación" }
       ]
     );
     return res.sendStatus(200);
@@ -3749,7 +3765,7 @@ return res.sendStatus(200);
     }
     await sendWhatsAppButtons(phone,
       `Anotado ✅ "${aiClassification.texto}"\n\n¿Algo más?`,
-      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
     );
     return res.sendStatus(200);
   }
@@ -3759,7 +3775,7 @@ return res.sendStatus(200);
     lastItem.extras.push({ nombre: aiClassification.nombre, precio: aiClassification.precio, cantidad: 1 });
     await sendWhatsAppButtons(phone,
       `Agregado ✅ ${aiClassification.nombre} (+$${aiClassification.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
-      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
     );
     return res.sendStatus(200);
   }
@@ -3771,7 +3787,7 @@ return res.sendStatus(200);
       : text.trim();
     await sendWhatsAppButtons(phone,
       `Anotado ✅ "${text.trim()}"\n\n¿Algo más?`,
-      [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
     );
     return res.sendStatus(200);
   }
@@ -3799,53 +3815,43 @@ return res.sendStatus(200);
       }
       await sendWhatsAppButtons(phone,
         `Agregado ✅ ${extraMatchPAP.nombre} (+${extraMatchPAP.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
-        [{ id: "confirmar", title: "Confirmar ✅" }, { id: "agregar_mas", title: "Agregar más ➕" }, { id: "eliminar", title: "Eliminar ➖" }]
+        [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
       );
       return res.sendStatus(200);
     }
   }
 
-  // Ambiguo o sin match — guardar como observación
-  if (text.length > 3) {
-    if (esObservacionDireccion(text)) {
-      updateOrderDireccionNotes(phone, text);
-    } else {
-      updateOrderGeneralNotes(phone, text);
-    }
-    updateOrderStep(phone, "esperando_confirmacion");
+  // Ambiguo o sin match — usar contador de intentos
+  currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;
+  if (currentOrder.cartFreeTextAttempts >= 3) {
+    currentOrder.cartFreeTextAttempts = 0;
+    updateOrderStep(phone, "esperando_asesor");
     currentOrder = getOrder(phone)!;
-    await sendWhatsAppButtons(phone,
-      `Anotado ✅\n\n📝 ${text}\n\n¿Qué deseas hacer?`,
-      [{ id: "confirmar", title: "Confirmar" }, { id: "agregar_mas", title: "Agregar mas" }, { id: "eliminar", title: "Eliminar" }]
-    );
-    return res.sendStatus(200);
+    await sendWhatsAppMessage(phone, "Voy a conectarte con un asesor que puede ayudarte mejor 😊");
+    sendWhatsAppMessage("573151913928", `💬 Cliente necesita ayuda con carrito\n👤 ${currentOrder.nombre || phone}\n📞 ${phone}`).catch(() => {});
+  } else {
+    await sendWhatsAppButtons(phone, "¿Qué deseas hacer? 😊", [
+      { id: "agregar_mas", title: "➕ Agregar" },
+      { id: "eliminar",    title: "🗑️ Quitar" },
+      { id: "4",           title: "📝 Observación" }
+    ]);
   }
-} else if (text.length > 3 && !["hola", "ok", "dale", "bien", "listo"].includes(lower)) {
-    if (esObservacionDireccion(text)) {
-      updateOrderDireccionNotes(phone, text);
-    } else {
-      updateOrderGeneralNotes(phone, text);
-    }
-    updateOrderStep(phone, "esperando_confirmacion");
-    currentOrder = getOrder(phone)!;
-    await sendWhatsAppButtons(phone,
-      `Anotado ✅\n\n📝 ${text}\n\n¿Qué deseas hacer?`,
-      [
-        { id: "confirmar", title: "Confirmar" },
-        { id: "agregar_mas", title: "Agregar mas" },
-        { id: "eliminar", title: "Eliminar" }
-      ]
-    );
-    return res.sendStatus(200);
+  return res.sendStatus(200);
 } else {
-  await sendWhatsAppButtons(phone,
-    "¿Qué deseas hacer con tu pedido?",
-    [
-      { id: "agregar_mas", title: "Agregar más ➕" },
-      { id: "eliminar",    title: "Quitar ➖" },
-      { id: "4",           title: "Observación 📝" }
-    ]
-  );
+  currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;
+  if (currentOrder.cartFreeTextAttempts >= 3) {
+    currentOrder.cartFreeTextAttempts = 0;
+    updateOrderStep(phone, "esperando_asesor");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppMessage(phone, "Voy a conectarte con un asesor que puede ayudarte mejor 😊");
+    sendWhatsAppMessage("573151913928", `💬 Cliente necesita ayuda con carrito\n👤 ${currentOrder.nombre || phone}\n📞 ${phone}`).catch(() => {});
+  } else {
+    await sendWhatsAppButtons(phone, "¿Qué deseas hacer? 😊", [
+      { id: "agregar_mas", title: "➕ Agregar" },
+      { id: "eliminar",    title: "🗑️ Quitar" },
+      { id: "4",           title: "📝 Observación" }
+    ]);
+  }
   return res.sendStatus(200);
 }
 
@@ -4395,11 +4401,11 @@ return res.sendStatus(200);
   "Perfecto 👌\n\nTu pedido es:\n" +
   resumen +
   buildResumenFooter(order, totals, order.domicilioTexto) +
-  "\n\n📝 Si deseas una observación escríbela, o elige:",
+  "\n\n¿Qué deseas hacer?",
  [
-    { id: "confirmar", title: "Confirmar" },
-    { id: "agregar_mas", title: "Agregar mas" },
-    { id: "eliminar", title: "Eliminar" }
+    { id: "confirmar",   title: "✅ Confirmar" },
+    { id: "agregar_mas", title: "➕ Agregar" },
+    { id: "eliminar",    title: "🗑️ Quitar" }
   ]
 );
 return res.sendStatus(200);
