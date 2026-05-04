@@ -953,7 +953,9 @@ const skipParsing =
   currentOrder?.step === "esperando_direccion" ||
   currentOrder?.step === "esperando_jalapenos" ||
   currentOrder?.step === "esperando_queso_dulce" ||
-  currentOrder?.step === "esperando_confirmacion_direccion";
+  currentOrder?.step === "esperando_confirmacion_direccion" ||
+  currentOrder?.step === "post_agregar_producto" ||
+  currentOrder?.step === "esperando_confirmacion";
 
 // Palabras clave simples y mensajes de botones que NO deben llamar a Gemini
 
@@ -3347,20 +3349,8 @@ return res.sendStatus(200);
   );
   return res.sendStatus(200);
 } else if (currentOrder?.step === "esperando_confirmacion") {
- if (
-  lower === "confirmar" ||
-  lower === "a" ||
-  lower === "1" ||
-  lower === "si" ||
-  lower === "sí" ||
-  lower.includes("confirmar") ||
-  lower.includes("confirmado") ||
-  lower.includes("listo") ||
-  lower.includes("dale") ||
-  lower.includes("de una") ||
-  lower.includes("va")
-
- ) {
+  const CONFIRMAR_EC = new Set(["confirmar", "a", "1", "si", "sí", "listo", "dale", "de una", "va", "ok", "okay", "perfecto", "vamos", "adelante"]);
+ if (CONFIRMAR_EC.has(lower)) {
     currentOrder.cartFreeTextAttempts = 0;
     // Guardar nombre del perfil si el pedido no tiene nombre aún
     if (customer?.name && !currentOrder.nombre) {
@@ -3408,14 +3398,7 @@ return res.sendStatus(200);
     );
     return res.sendStatus(200);
 
-  } else if (
-    lower === "eliminar" ||
-    lower === "b" ||
-    lower === "3" ||
-    lower.includes("retirar") ||
-    lower.includes("eliminar") ||
-    lower.includes("quitar")
-  ) {
+  } else if (lower === "eliminar" || lower === "b" || lower === "3") {
     currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "retirando_productos");
     currentOrder = getOrder(phone)!;
@@ -3432,14 +3415,7 @@ return res.sendStatus(200);
       resumen +
       "\n\nRespóndeme con el número del producto.";
 
-  } else if (
-    lower === "agregar_mas" ||
-    lower === "c" ||
-    lower === "2" ||
-    lower.includes("agregar") ||
-    lower.includes("más") ||
-    lower.includes("mas")
-  ) {
+  } else if (lower === "agregar_mas" || lower === "c" || lower === "2") {
     currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
@@ -3449,12 +3425,7 @@ return res.sendStatus(200);
       "¿Qué deseas agregar?\n\n" +
       "Puedes escribir otra crepe, bebida, topping o hacer una observación.";
 
-  } else if (
-    lower === "d" ||
-    lower === "4" ||
-    lower.includes("observacion") ||
-    lower.includes("observación")
-  ) {
+  } else if (lower === "d" || lower === "4") {
     currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "esperando_observacion_general");
     currentOrder = getOrder(phone)!;
@@ -3694,7 +3665,7 @@ return res.sendStatus(200);
   ]
 );
 return res.sendStatus(200);
-  } else if (lower === "agregar_mas" || lower === "2" || lower.includes("agregar")) {
+  } else if (lower === "agregar_mas" || lower === "2") {
     currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
@@ -3719,8 +3690,7 @@ return res.sendStatus(200);
       "Perfecto 👍\n\n" +
       "¿Qué producto deseas retirar?\n\n" +
       resumen +
-      "\n\nO escribe:\n* todos\n\n" +
-      'Respóndeme con el número del producto o escribe "todos".';
+      "\n\nRespóndeme con el número del producto.";
 
   } else if (lower === "4") {
     currentOrder.cartFreeTextAttempts = 0;
@@ -3731,136 +3701,7 @@ return res.sendStatus(200);
       "Perfecto 👌\n\n" +
       "Escríbeme la observación para tu pedido 😊";
 
-} else if (parsedItems.length > 0) {
-    // Si el último ítem del pedido es "gaseosa" (genérico) y el nuevo es una gaseosa específica → reemplazar
-    const specificSodas = new Set(["coca_cola", "sprite", "manzana", "agua_tonica"]);
-    const lastExistingItem = currentOrder.items[currentOrder.items.length - 1];
-    if (
-      lastExistingItem?.producto?.toLowerCase() === "gaseosa" &&
-      parsedItems.length === 1 &&
-      specificSodas.has(parsedItems[0].productoId)
-    ) {
-      currentOrder.items[currentOrder.items.length - 1] = {
-        ...parsedItems[0],
-        cantidad: lastExistingItem.cantidad
-      };
-    } else {
-      createOrUpdateOrder(phone, parsedItems);
-    }
-    currentOrder = getOrder(phone)!;
-    currentOrder.cartFreeTextAttempts = 0;
-    const lastItemPAP = parsedItems[parsedItems.length - 1];
-    if (lastItemPAP?.productoId === "mexicana" || lastItemPAP?.producto?.toLowerCase().includes("mexican")) {
-      updateOrderStep(phone, "esperando_jalapenos");
-      currentOrder = getOrder(phone)!;
-      await sendWhatsAppButtons(phone,
-        `¿Deseas tu ${lastItemPAP.producto} con jalapeños o sin jalapeños?`,
-        [{ id: "con_jalapenos", title: "Con jalapeños 🌶️" }, { id: "sin_jalapenos", title: "Sin jalapeños" }]
-      );
-      return res.sendStatus(200);
-    }
-    const resumen2 = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
-    await sendWhatsAppButtons(phone,
-      "Perfecto, agregué:\n\n" + resumen2 + "\n\n¿Qué deseas hacer?",
-      [
-        { id: "confirmar",   title: "✅ Confirmar" },
-        { id: "eliminar",    title: "🗑️ Quitar" },
-        { id: "4",           title: "📝 Observación" }
-      ]
-    );
-    return res.sendStatus(200);
-
-} else if (aiClassification) {
-  // IA respondió un intent no-producto en post_agregar_producto
-  if (aiClassification.intent === "pregunta") {
-    await sendWhatsAppMessage(phone, aiClassification.respuesta);
-    return res.sendStatus(200);
-  }
-  if (aiClassification.intent === "observacion" && currentOrder.items.length > 0) {
-    const idx = (aiClassification.productoIndex ?? -1) >= 0
-      ? aiClassification.productoIndex!
-      : currentOrder.items.length - 1;
-    const targetItem = currentOrder.items[idx] || currentOrder.items[currentOrder.items.length - 1];
-    if (targetItem) {
-      targetItem.observaciones = targetItem.observaciones
-        ? `${targetItem.observaciones}, ${aiClassification.texto}`
-        : aiClassification.texto;
-    }
-    await sendWhatsAppButtons(phone,
-      `Anotado ✅ "${aiClassification.texto}"\n\n¿Algo más?`,
-      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
-    );
-    return res.sendStatus(200);
-  }
-  if (aiClassification.intent === "extra" && currentOrder.items.length > 0) {
-    const lastItem = currentOrder.items[currentOrder.items.length - 1];
-    lastItem.extras = lastItem.extras || [];
-    lastItem.extras.push({ nombre: aiClassification.nombre, precio: aiClassification.precio, cantidad: 1 });
-    await sendWhatsAppButtons(phone,
-      `Agregado ✅ ${aiClassification.nombre} (+$${aiClassification.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
-      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
-    );
-    return res.sendStatus(200);
-  }
-  // Modificador de producto (sin/poco/bien/con ...) → asociar al último ítem
-  if (currentOrder.items.length > 0 && /^(sin|poco|bien|con|extra)\s+\S/i.test(text.trim())) {
-    const lastItemObs = currentOrder.items[currentOrder.items.length - 1];
-    lastItemObs.observaciones = lastItemObs.observaciones
-      ? `${lastItemObs.observaciones}, ${text.trim()}`
-      : text.trim();
-    await sendWhatsAppButtons(phone,
-      `Anotado ✅ "${text.trim()}"\n\n¿Algo más?`,
-      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
-    );
-    return res.sendStatus(200);
-  }
-
-  // Detección "adición de X" antes de guardar como observación
-  const esAdicionPAP = /^(adici[oó]n de|adicci[oó]n de|con adici[oó]n de|agregar|añadir|añade|extra)\s+/i.test(lower);
-  if (currentOrder.items.length > 0 && esAdicionPAP) {
-    const EXTRAS_MAP_PAP = [
-      { keywords: ["tocineta", "tocino", "bacon"],                     nombre: "Tocineta",    precio: 5500 },
-      { keywords: ["champiñon", "champinon", "champiñones", "hongos"], nombre: "Champiñones", precio: 4500 },
-      { keywords: ["maiz", "maíz", "elote"],                           nombre: "Maíz tierno", precio: 3500 },
-      { keywords: ["piña", "pina", "anana"],                           nombre: "Piña",        precio: 2000 },
-      { keywords: ["jalapeño", "jalapeno", "jalapeños"],               nombre: "Jalapeños",   precio: 2000 },
-      { keywords: ["fresa", "fresas", "frutilla"],                     nombre: "Fresa",       precio: 3000 },
-      { keywords: ["banano", "banana", "guineo", "cambur"],            nombre: "Banano",      precio: 2000 },
-      { keywords: ["durazno", "melocoton"],                            nombre: "Durazno",     precio: 3900 },
-      { keywords: ["manzana"],                                          nombre: "Manzana",     precio: 2500 },
-    ];
-    const extraMatchPAP = EXTRAS_MAP_PAP.find(e => e.keywords.some(k => lower.includes(k)));
-    if (extraMatchPAP) {
-      const li = currentOrder.items[currentOrder.items.length - 1];
-      li.extras = li.extras || [];
-      if (!li.extras.find((e: any) => e.nombre === extraMatchPAP.nombre)) {
-        li.extras.push({ nombre: extraMatchPAP.nombre, precio: extraMatchPAP.precio, cantidad: 1 });
-      }
-      await sendWhatsAppButtons(phone,
-        `Agregado ✅ ${extraMatchPAP.nombre} (+${extraMatchPAP.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
-        [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
-      );
-      return res.sendStatus(200);
-    }
-  }
-
-  // Ambiguo o sin match — usar contador de intentos
-  currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;
-  if (currentOrder.cartFreeTextAttempts >= 3) {
-    currentOrder.cartFreeTextAttempts = 0;
-    updateOrderStep(phone, "esperando_asesor");
-    currentOrder = getOrder(phone)!;
-    await sendWhatsAppMessage(phone, "Voy a conectarte con un asesor que puede ayudarte mejor 😊");
-    sendWhatsAppMessage("573151913928", `💬 Cliente necesita ayuda con carrito\n👤 ${currentOrder.nombre || phone}\n📞 ${phone}`).catch(() => {});
   } else {
-    await sendWhatsAppButtons(phone, "¿Qué deseas hacer? 😊", [
-      { id: "agregar_mas", title: "➕ Agregar" },
-      { id: "eliminar",    title: "🗑️ Quitar" },
-      { id: "4",           title: "📝 Observación" }
-    ]);
-  }
-  return res.sendStatus(200);
-} else {
   currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;
   if (currentOrder.cartFreeTextAttempts >= 3) {
     currentOrder.cartFreeTextAttempts = 0;
