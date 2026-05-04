@@ -510,8 +510,8 @@ function parseCartaDigitalText(text: string) {
     if (!cur) continue;
 
     // Extras: ➕ Carne desmechada, Tocineta
-    if (trimmed.startsWith("➕")) {
-      const extrasStr = trimmed.replace(/^➕\s*/, "");
+    if (/^[➕\+]/.test(trimmed)) {
+      const extrasStr = trimmed.replace(/^[➕\+]\s*/, "");
       for (const ex of extrasStr.split(",")) {
         const nombre = ex.trim();
         if (nombre) cur.extras.push({ nombre, precio: 0, cantidad: 1 });
@@ -521,7 +521,7 @@ function parseCartaDigitalText(text: string) {
 
     // Observación: 📝 Sin salsas por favor
     if (trimmed.startsWith("📝")) {
-      cur.observaciones = trimmed.replace(/^📝\s*/, "").trim();
+      cur.observaciones = trimmed.replace(/^📝️?\s*/, "").trim();
       continue;
     }
 
@@ -1498,7 +1498,7 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
   return res.sendStatus(200);
 }
 
-if (text.includes("🥞 *PEDIDO - LAS CREPES*") || text.includes("🥞 PEDIDO - LAS CREPES")) {
+if (text.includes("PEDIDO - LAS CREPES")) {
   const cdParsed = parseCartaDigitalText(text);
 
   const prevTipoEntrega = currentOrder?.tipoEntrega;
@@ -3290,6 +3290,7 @@ return res.sendStatus(200);
   order.distanciaKm = undefined;
   order.domicilioTexto = undefined;
 
+  const isGpsPin = !!order.locationCoords;
   let valorDomicilio = 4500;
   let descripcionDomicilio = "";
   try {
@@ -3306,9 +3307,31 @@ return res.sendStatus(200);
     console.log("Error calculando domicilio:", e);
   }
 
-  const totals = calculateTotal(order, valorDomicilio);
- 
- 
+  if (isGpsPin) {
+    // Guardar snapshot GPS para comparar si el cliente cambia a dirección texto
+    order.gpsDistanciaKm = order.distanciaKm || 0;
+    order.gpsSnapshot = {
+      direccion: order.direccion || "",
+      coords: order.locationCoords!,
+      valorDomicilio: order.valorDomicilio || 4500,
+      domicilioTexto: order.domicilioTexto || "",
+      distanciaKm: order.distanciaKm || 0
+    };
+  } else if (order.gpsDistanciaKm && order.gpsDistanciaKm > 0 && (order.distanciaKm || 0) > order.gpsDistanciaKm * 2) {
+    // Dirección texto resulta más del doble de lejos que el pin GPS → advertir
+    updateOrderStep(phone, "esperando_confirmacion_direccion");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      `La dirección que ingresaste queda a ${order.distanciaKm}km 📍\n\n` +
+      `_Tu ubicación GPS inicial era de ${order.gpsDistanciaKm}km._\n\n` +
+      `¿Es correcta esta dirección o prefieres usar tu ubicación GPS?`,
+      [
+        { id: "confirmar_dir_texto", title: "✏️ La dirección es correcta" },
+        { id: "usar_gps_dir",        title: "📍 Usar mi GPS" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
 
   updateOrderStep(phone, "esperando_confirmacion_direccion");
   currentOrder = getOrder(phone)!;
@@ -4424,7 +4447,29 @@ return res.sendStatus(200);
   }
 
 } else if (currentOrder?.step === "esperando_confirmacion_direccion") {
-  if (lower === "a" || lower === "confirmar" || lower.includes("si") || lower.includes("sí") || lower.includes("esa misma") || lower.includes("confirmar")) {
+  if (lower === "usar_gps_dir") {
+    // Restaurar datos del pin GPS original
+    const order = getOrder(phone)!;
+    const snap = order.gpsSnapshot;
+    if (snap) {
+      updateOrderAddress(phone, snap.direccion);
+      order.locationCoords = snap.coords;
+      order.valorDomicilio = snap.valorDomicilio;
+      order.distanciaKm = snap.distanciaKm;
+      order.domicilioTexto = snap.domicilioTexto;
+    }
+    currentOrder = getOrder(phone)!;
+    const snapOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      `¿Es correcta esta dirección? 📍\n\n*${snapOrder.direccion}*` +
+      (snapOrder.domicilioTexto ? `\n\n${snapOrder.domicilioTexto}` : "") +
+      `\n💵 Domicilio: $${(snapOrder.valorDomicilio || 4500).toLocaleString("es-CO")}`,
+      [{ id: "a", title: "Confirmar ✅" }, { id: "b", title: "Corregir ✏️" }]
+    );
+    return res.sendStatus(200);
+  }
+
+  if (lower === "a" || lower === "confirmar" || lower === "confirmar_dir_texto" || /\bsi\b/i.test(lower) || /\bsí\b/i.test(lower) || lower.includes("esa misma")) {
   const order = getOrder(phone)!;
   // Si la dirección ya está guardada (nueva dirección capturada), mantenerla.
   // Si no, usar la última dirección del cliente.

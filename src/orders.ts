@@ -73,6 +73,14 @@ export type CustomerOrder = {
   itemsPendientes?: { productoId: string; cantidad: number }[];
   inactivityPending?: boolean;
   vieneDeCarta?: boolean;
+  gpsDistanciaKm?: number;
+  gpsSnapshot?: {
+    direccion: string;
+    coords: { latitude: number; longitude: number };
+    valorDomicilio: number;
+    domicilioTexto: string;
+    distanciaKm: number;
+  };
   cartFreeTextAttempts?: number;
   asesorIntervenido?: boolean;
   upsellingFrutasMostrado?: boolean;
