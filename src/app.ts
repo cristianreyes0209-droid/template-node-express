@@ -3509,6 +3509,19 @@ return res.sendStatus(200);
 
 } else if (currentOrder?.step === "esperando_observacion_general") {
 
+  // Si el cliente envió un ID de botón en vez de texto, volver al menú de carrito
+  const esBotoneId = /^[1-5d]$/.test(lower) || ["confirmar","agregar_mas","eliminar","agregar"].includes(lower);
+  if (esBotoneId) {
+    updateOrderStep(phone, "post_agregar_producto");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone, "¿Qué deseas hacer con tu pedido? 😊", [
+      { id: "agregar_mas", title: "Agregar más ➕" },
+      { id: "eliminar",    title: "Quitar ➖" },
+      { id: "4",           title: "Observación 📝" }
+    ]);
+    return res.sendStatus(200);
+  }
+
   const texto = text.toLowerCase();
 
   // 👇 AQUÍ VA LA LÓGICA DE MISMA DIRECCIÓN

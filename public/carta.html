@@ -13,7 +13,7 @@
     body{background:#FFF5D0;font-family:'Nunito',sans-serif;color:#3B1A0A;min-height:100vh;overflow-x:hidden;}
 
     /* HEADER */
-    .hdr{background:#fff;color:#3B1A0A;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 3px 14px rgba(0,0,0,.12);border-bottom:4px solid #C41E3A;}
+    .hdr{background:#fff;color:#3B1A0A;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 14px rgba(0,0,0,.12);border-bottom:4px solid #C41E3A;}
     .hdr-logo{font-family:'Anton',sans-serif;font-size:26px;letter-spacing:2px;color:#C41E3A;line-height:1.1;}
     .hdr-sub{font-size:9px;color:#8B5E3C;margin-top:1px;letter-spacing:1.5px;text-transform:uppercase;font-weight:800;}
     .cart-btn{background:#C41E3A;border:none;border-radius:50px;padding:10px 18px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:6px;transition:transform .15s;box-shadow:0 2px 8px rgba(196,30,58,.3);}
@@ -27,8 +27,11 @@
     .hero-title{font-family:'Anton',sans-serif;font-size:36px;letter-spacing:2px;text-shadow:2px 2px 0 rgba(0,0,0,.2);}
     .hero-sub{font-size:13px;opacity:.85;margin-top:2px;}
 
+    /* STICKY NAV WRAPPER — header + cats como una sola unidad sticky */
+    .sticky-nav{position:sticky;top:0;z-index:100;}
+
     /* CATEGORY TABS */
-    .cats{background:#fff;overflow-x:auto;padding:10px 12px;display:flex;gap:8px;position:sticky;top:78px;z-index:90;scrollbar-width:none;box-shadow:0 2px 10px rgba(0,0,0,.08);}
+    .cats{background:#fff;overflow-x:auto;padding:10px 12px;display:flex;gap:8px;scrollbar-width:none;box-shadow:0 2px 10px rgba(0,0,0,.08);}
     .cats::-webkit-scrollbar{display:none;}
     .cat-tab{flex-shrink:0;padding:8px 16px;border-radius:50px;border:2px solid #E8C89A;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;background:#FFF5D0;color:#8B5E3C;transition:all .2s;white-space:nowrap;}
     .cat-tab.on{color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(196,30,58,.25);}
@@ -121,6 +124,10 @@
     /* ADD BTN */
     .add-btn{width:100%;padding:16px;background:linear-gradient(135deg,#C41E3A,#A01530);color:#fff;border:none;border-radius:16px;font-family:'Anton',sans-serif;font-size:22px;letter-spacing:1px;cursor:pointer;margin-top:18px;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s;box-shadow:0 4px 14px rgba(196,30,58,.4);}
     .add-btn:active{transform:scale(.97);}
+
+    /* CART HINT TOAST */
+    .cart-hint{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#3B1A0A;color:#fff;padding:10px 22px;border-radius:50px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;z-index:160;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.35);pointer-events:none;animation:hintIn .35s cubic-bezier(.34,1.3,.64,1);}
+    @keyframes hintIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
     /* CART BAR */
     .cbar{position:fixed;bottom:0;left:0;right:0;padding:10px 14px;background:#fff;box-shadow:0 -4px 20px rgba(0,0,0,.12);z-index:150;border-top:3px solid #C41E3A;}
@@ -1283,6 +1290,7 @@ function App() {
   });
   const [showCart, setShowCart] = useState(false);
   const [bounce, setBounce] = useState(false);
+  const [cartHint, setCartHint] = useState(false);
   const catRef = useRef(null);
 
   useEffect(() => {
@@ -1311,7 +1319,13 @@ function App() {
   };
 
   const addToCart = (item) => {
-    setCart(p => [...p, item]);
+    setCart(p => {
+      if (p.length === 0) {
+        setCartHint(true);
+        setTimeout(() => setCartHint(false), 3500);
+      }
+      return [...p, item];
+    });
     playCartSound();
     setBounce(true);
     setTimeout(()=>setBounce(false), 400);
@@ -1343,6 +1357,8 @@ function App() {
 
   return (
     <>
+      {/* STICKY NAV: header + category bar como una unidad */}
+      <div className="sticky-nav">
       {/* HEADER */}
       <div className="hdr">
         <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -1402,6 +1418,7 @@ function App() {
           </button>
         ))}
       </div>}
+      </div>{/* /sticky-nav */}
 
       {/* RESULTADOS DE BÚSQUEDA */}
       {searchQ.length > 1 ? (
@@ -1452,6 +1469,9 @@ function App() {
           </button>
         </div>
       )}
+
+      {/* CART HINT TOAST */}
+      {cartHint && <div className="cart-hint">⬆️ Desliza hacia arriba para ver tu carrito 🛒</div>}
 
       {/* MODALS */}
       {sel && <ProductModal item={sel} onClose={()=>setSel(null)} onAdd={addToCart}/>}

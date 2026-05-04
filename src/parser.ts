@@ -182,10 +182,17 @@ function splitIntoFragments(text: string) {
         .flatMap((c: any) => c.productos as any[]);
       const partNorm = normalizeText(part);
       const partNormSinCantidad = partNorm.replace(/^\d+\s+|^(?:un|una|uno|dos|tres|cuatro|cinco)\s+/i, "").trim();
+      // También probar sin prefijo "crepe de " / "crepe " para capturar "una crepe de pollo y carne"
+      const partNormSinCrepe = partNormSinCantidad.replace(/^crepe\s+de\s+|^crepe\s+/i, "").trim();
       const isKnownProductPhrase = allMainProdsForSplit.some((p: any) =>
         normalizeText(p.nombre) === partNorm ||
         normalizeText(p.nombre) === partNormSinCantidad ||
-        (p.aliases || []).some((a: string) => normalizeText(a) === partNorm || normalizeText(a) === partNormSinCantidad)
+        normalizeText(p.nombre) === partNormSinCrepe ||
+        (p.aliases || []).some((a: string) =>
+          normalizeText(a) === partNorm ||
+          normalizeText(a) === partNormSinCantidad ||
+          normalizeText(a) === partNormSinCrepe
+        )
       );
       if (isKnownProductPhrase) {
         result.push(...splitByInlineNumbers(part));
