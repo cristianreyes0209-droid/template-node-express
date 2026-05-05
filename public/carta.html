@@ -125,9 +125,12 @@
     .add-btn{width:100%;padding:16px;background:linear-gradient(135deg,#C41E3A,#A01530);color:#fff;border:none;border-radius:16px;font-family:'Anton',sans-serif;font-size:22px;letter-spacing:1px;cursor:pointer;margin-top:18px;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s;box-shadow:0 4px 14px rgba(196,30,58,.4);}
     .add-btn:active{transform:scale(.97);}
 
-    /* CART HINT TOAST */
-    .cart-hint{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#3B1A0A;color:#fff;padding:10px 22px;border-radius:50px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;z-index:160;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.35);pointer-events:none;animation:hintIn .35s cubic-bezier(.34,1.3,.64,1);}
-    @keyframes hintIn{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+    /* INCENTIVO BANNER (domicilio gratis) */
+    .incentivo-banner{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a6b3a;color:#fff;padding:11px 24px;border-radius:50px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;z-index:160;white-space:nowrap;box-shadow:0 4px 18px rgba(26,107,58,.45);pointer-events:none;animation:bannerIn .4s cubic-bezier(.34,1.3,.64,1);}
+    @keyframes bannerIn{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+    /* SEL HINT (desliza para pedir) */
+    .sel-hint{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(59,26,10,.88);backdrop-filter:blur(6px);color:#fff;padding:9px 20px;border-radius:50px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;z-index:260;white-space:nowrap;pointer-events:none;animation:bannerIn .35s cubic-bezier(.34,1.3,.64,1);}
 
     /* CART BAR */
     .cbar{position:fixed;bottom:0;left:0;right:0;padding:10px 14px;background:#fff;box-shadow:0 -4px 20px rgba(0,0,0,.12);z-index:150;border-top:3px solid #C41E3A;}
@@ -1290,12 +1293,34 @@ function App() {
   });
   const [showCart, setShowCart] = useState(false);
   const [bounce, setBounce] = useState(false);
-  const [cartHint, setCartHint] = useState(false);
+  const [incentivoBanner, setIncentivoBanner] = useState('');
+  const [selHint, setSelHint] = useState(false);
   const catRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem('lc_cart', JSON.stringify(cart));
   }, [cart]);
+
+  // Banner incentivo domicilio gratis
+  useEffect(() => {
+    if (cart.length === 0) { setIncentivoBanner(''); return; }
+    const total = cart.reduce((s, c) => s + c.totalPrice, 0);
+    if (total < 60000) { setIncentivoBanner(''); return; }
+    const msg = total >= 100000
+      ? '🚀 ¡Domicilio GRATIS en tu pedido!'
+      : `🎉 ¡Te faltan $${(100000 - total).toLocaleString('es-CO')} para domicilio GRATIS!`;
+    setIncentivoBanner(msg);
+    const t = setTimeout(() => setIncentivoBanner(''), 4000);
+    return () => clearTimeout(t);
+  }, [cart]);
+
+  // Hint al abrir modal de producto
+  useEffect(() => {
+    if (!sel) return;
+    setSelHint(true);
+    const t = setTimeout(() => setSelHint(false), 3000);
+    return () => clearTimeout(t);
+  }, [sel]);
 
   const playCartSound = () => {
     try {
@@ -1319,13 +1344,7 @@ function App() {
   };
 
   const addToCart = (item) => {
-    setCart(p => {
-      if (p.length === 0) {
-        setCartHint(true);
-        setTimeout(() => setCartHint(false), 3500);
-      }
-      return [...p, item];
-    });
+    setCart(p => [...p, item]);
     playCartSound();
     setBounce(true);
     setTimeout(()=>setBounce(false), 400);
@@ -1470,8 +1489,11 @@ function App() {
         </div>
       )}
 
-      {/* CART HINT TOAST */}
-      {cartHint && <div className="cart-hint">⬆️ Desliza hacia arriba para ver tu carrito 🛒</div>}
+      {/* INCENTIVO BANNER */}
+      {incentivoBanner && <div className="incentivo-banner">{incentivoBanner}</div>}
+
+      {/* SEL HINT */}
+      {selHint && <div className="sel-hint">⬆️ Desliza hacia arriba para pedir</div>}
 
       {/* MODALS */}
       {sel && <ProductModal item={sel} onClose={()=>setSel(null)} onAdd={addToCart}/>}
