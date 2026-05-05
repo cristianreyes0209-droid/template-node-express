@@ -164,7 +164,7 @@ async function sendWhatsAppLocation(phone: string, latitude: number, longitude: 
   console.log("RESPUESTA LOCATION META:", data);
 }
 
-async function calcularDomicilio(direccionCliente: string, sucursal: string): Promise<{
+async function calcularDomicilio(direccionCliente: string, sucursal: string, subtotalPedido?: number): Promise<{
   distanciaKm: number;
   valorDomicilio: number;
   descripcion: string;
@@ -204,7 +204,7 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
   const distanciaMetros = elemento.distance.value;
   const distanciaKm = distanciaMetros / 1000;
   const MINIMO = 4500;
-  const VALOR_POR_KM = 1000;
+  const VALOR_POR_KM = 800;
   const KM_MINIMO = 2;
   let valorDomicilio = MINIMO;
   if (distanciaKm > KM_MINIMO) {
@@ -213,20 +213,25 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string): Pr
 
   valorDomicilio = Math.ceil(valorDomicilio / 500) * 500;
 
-  // Aplicar mínimo si la distancia es <1km o el valor calculado es <$4.500
   if (distanciaKm < 1 || valorDomicilio < 4500) {
     valorDomicilio = 4500;
   }
+
+  // Domicilio gratis en pedidos >= $100.000
+  if (subtotalPedido && subtotalPedido >= 100000) {
+    valorDomicilio = 0;
+  }
+
+  const distKmRedondeado = Math.round(distanciaKm * 10) / 10;
+  const descripcion = valorDomicilio === 0
+    ? `${distKmRedondeado}km → 🎉 Domicilio gratis`
+    : `${distKmRedondeado}km → $${valorDomicilio.toLocaleString("es-CO")}`;
 
   console.log("DISTANCIA KM:", distanciaKm);
   console.log("VALOR DOMICILIO:", valorDomicilio);
   console.log("========================");
 
-  return {
-    distanciaKm: Math.round(distanciaKm * 10) / 10,
-    valorDomicilio,
-    descripcion: `${Math.round(distanciaKm * 10) / 10}km → $${valorDomicilio.toLocaleString("es-CO")}`
-  };
+  return { distanciaKm: distKmRedondeado, valorDomicilio, descripcion };
 }
 
 const inactivityTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -1442,7 +1447,7 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
     if (orderHC.tipoEntrega === "domicilio" && orderHC.locationCoords) {
       try {
         const coordStr = `${orderHC.locationCoords.latitude},${orderHC.locationCoords.longitude}`;
-        const calculo = await calcularDomicilio(coordStr, sucursalPrevia);
+        const calculo = await calcularDomicilio(coordStr, sucursalPrevia, calculateTotal(orderHC).subtotal);
         orderHC.valorDomicilio = calculo.valorDomicilio;
         orderHC.distanciaKm = calculo.distanciaKm;
         orderHC.domicilioTexto = calculo.descripcion;
@@ -2408,7 +2413,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   if (orderHCSuc.tipoEntrega === "domicilio" && orderHCSuc.locationCoords) {
     try {
       const coordStr = `${orderHCSuc.locationCoords.latitude},${orderHCSuc.locationCoords.longitude}`;
-      const calculo = await calcularDomicilio(coordStr, orderHCSuc.sucursal || "la_villa");
+      const calculo = await calcularDomicilio(coordStr, orderHCSuc.sucursal || "la_villa", calculateTotal(orderHCSuc).subtotal);
       orderHCSuc.valorDomicilio = calculo.valorDomicilio;
       orderHCSuc.distanciaKm = calculo.distanciaKm;
       orderHCSuc.domicilioTexto = calculo.descripcion;
@@ -3299,7 +3304,7 @@ return res.sendStatus(200);
     const addressToCalc = order.locationCoords
       ? `${order.locationCoords.latitude},${order.locationCoords.longitude}`
       : (order.direccion || text);
-    const calculo = await calcularDomicilio(addressToCalc, order.sucursal || "la_villa");
+    const calculo = await calcularDomicilio(addressToCalc, order.sucursal || "la_villa", calculateTotal(order).subtotal);
     valorDomicilio = calculo.valorDomicilio;
     descripcionDomicilio = calculo.descripcion;
     order.valorDomicilio = valorDomicilio;
@@ -4336,7 +4341,8 @@ return res.sendStatus(200);
     try {
       const calculo = await calcularDomicilio(
         order.direccion || customer?.last_address || "",
-        order.sucursal || "la_villa"
+        order.sucursal || "la_villa",
+        calculateTotal(order).subtotal
       );
       valorDomicilio = calculo.valorDomicilio;
       descripcionDomicilio = calculo.descripcion;
