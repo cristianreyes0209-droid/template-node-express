@@ -361,7 +361,7 @@ app.get('/whatsapp', (req, res) => {
   return res.status(400).send("Missing hub params");
 });
 
-const CREBOT_SUFFIX = "\n\nSoy CreBot 🤖 y estoy en período de prueba. Si necesitas hablar con un asesor puedes escribirnos al 📱 315 191 3928.";
+const CREBOT_SUFFIX = "\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 La Villa: 606 341 3020 | Circunvalar: 606 345 0257";
 
 const MSG_BIENVENIDA_NUEVO =
   "👋 ¡Hola! Bienvenido/a a LAS CREPES 🥞\n\n" +
@@ -2905,7 +2905,7 @@ return res.sendStatus(200);
       "Perfecto 👍\n\n" +
       "Puedes hacer tu pedido aquí:\n" +
       "https://crepes-bot.onrender.com/carta\n\n" +
-      "si tienes dificultad para hacer el pedido puedes llamarnos al 6063413020 😊";
+      "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 341 3020";
 
   } else if (
     lower === "b" ||
@@ -2975,7 +2975,7 @@ return res.sendStatus(200);
       "Perfecto 👍\n\n" +
       "Puedes hacer tu pedido aquí:\n" +
       "https://crepes-bot.onrender.com/carta\n\n" +
-      "si tienes dificulta para hacer el pedido nos puedes llamar al 6063413020";
+      "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 345 0257";
 
   } else {
     await sendWhatsAppButtons(phone,
