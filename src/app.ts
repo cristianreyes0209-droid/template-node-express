@@ -1168,7 +1168,7 @@ if (esPreguntaPago && !esMensajeLargo && !enStepDePago) {
   if (sucursal === "circunvalar") {
     msgPago +=
       "📍 *Av. Circunvalar:*\n" +
-      "• Nequi/Daviplata: *320 583 9477*\n" +
+      "• llave: *0040652828*\n" +
       "• Bancolombia: *270 0000 4514*\n" +
       "  🔑 Llave: 0040652828";
   } else if (sucursal === "la_villa") {
