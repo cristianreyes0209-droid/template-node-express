@@ -82,6 +82,7 @@ export type CustomerOrder = {
     distanciaKm: number;
   };
   cartFreeTextAttempts?: number;
+  armandoFallbacks?: number;
   asesorIntervenido?: boolean;
   upsellingFrutasMostrado?: boolean;
   upsellingTocinetaMostrado?: boolean;

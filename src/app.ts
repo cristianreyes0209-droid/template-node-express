@@ -787,15 +787,21 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
       stepActual === "esperando_confirmacion" ||
       stepActual === "armando_pedido"
     ) {
-      const totals = calculateTotal(currentOrder);
-      await sendWhatsAppButtons(phone,
-        "Tu pedido sigue aquí 😊\n\n" + resumenActual + (currentOrder.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio}` : "") + `\n💵 Total: $${totals.total}\n\n¿Qué deseas hacer?`,
-        [
-          { id: "confirmar", title: "Confirmar ✅" },
-          { id: "agregar_mas", title: "Agregar más ➕" },
-          { id: "eliminar", title: "Eliminar ➖" }
-        ]
-      );
+      if (currentOrder.items.length === 0) {
+        await sendWhatsAppMessage(phone,
+          "Aquí estoy 😊 Aún no tienes productos en tu pedido.\n\n¿Qué deseas pedir?\n• Hawaiana\n• Ranchera\n• Parisina\n• Pollo y Carne..."
+        );
+      } else {
+        const totals = calculateTotal(currentOrder);
+        await sendWhatsAppButtons(phone,
+          "Tu pedido sigue aquí 😊\n\n" + resumenActual + (currentOrder.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio.toLocaleString("es-CO")}` : "") + `\n💵 Total: $${totals.total.toLocaleString("es-CO")}\n\n¿Qué deseas hacer?`,
+          [
+            { id: "confirmar", title: "Confirmar ✅" },
+            { id: "agregar_mas", title: "Agregar más ➕" },
+            { id: "eliminar", title: "Eliminar ➖" }
+          ]
+        );
+      }
     } else {
       await sendWhatsAppMessage(phone, "Aquí estoy 😊 ¿En qué te ayudo?");
     }
@@ -1822,14 +1828,28 @@ if (
       }
     } catch (e) { console.error("❌ Error Gemini fallback:", e); }
   }
+  if (currentOrder?.step === "armando_pedido") {
+    currentOrder.armandoFallbacks = (currentOrder.armandoFallbacks || 0) + 1;
+    if (currentOrder.armandoFallbacks >= 3) {
+      currentOrder.armandoFallbacks = 0;
+      updateOrderStep(phone, "esperando_asesor");
+      currentOrder = getOrder(phone)!;
+      const nombreAsesor = currentOrder.nombre || customer?.name || phone;
+      const msgReenvio = `💬 CLIENTE SIN ENTENDER\n\n👤 ${nombreAsesor}\n📞 ${phone}\n💬 "${text}"`;
+      try { await sendWhatsAppMessage("573151913928", msgReenvio); } catch(e) {}
+      await sendWhatsAppMessage(phone,
+        "Te comunico con un asesor 😊 En breve alguien te ayudará.\n\nO llámanos directamente:\n📞 La Villa: 606 341 3020 | Circunvalar: 606 345 0257"
+      );
+      return res.sendStatus(200);
+    }
+  }
   replyMessage =
     "No logré entender bien tu pedido 😅\n\n" +
     "Puedes escribirlo así:\n" +
     "• 1 Hawaiana\n" +
     "• 2 Ranchera\n" +
     "• 1 Especial\n\n" +
-    "O escribe ayuda 😊\n\n" +
-    "Si necesitas hablar con un asesor puedes escribirnos al 📱 315 191 3928";
+    "O escribe ayuda 😊";
   await sendWhatsAppMessage(phone, replyMessage);
   return res.sendStatus(200);
 }
@@ -3076,6 +3096,7 @@ return res.sendStatus(200);
     return res.sendStatus(200);
   }
   const order = getOrder(phone)!;
+  order.armandoFallbacks = 0;
   updateOrderStep(phone, "post_agregar_producto");
   currentOrder = getOrder(phone)!;
 
