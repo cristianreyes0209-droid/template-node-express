@@ -412,14 +412,14 @@ function esObservacionDireccion(text: string): boolean {
 function buildResumenFooter(order: any, totals: { subtotal: number; domicilio: number; total: number }, descripcionDomicilio?: string) {
   const notaDomicilio = "\n⚠️ _El costo del domicilio es calculado por Google Maps y puede estar sujeto a ajustes._";
   const domicilioLinea = order.tipoEntrega === "domicilio"
-    ? "\n🛵 Domicilio: $" + totals.domicilio + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "") + notaDomicilio
+    ? "\n🛵 Domicilio: $" + totals.domicilio.toLocaleString("es-CO") + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "") + notaDomicilio
     : "";
   const obsLinea = getObservacionGeneralTexto(order);
   const obsDir = order.observacionDireccion?.trim() ? "\n📌 " + order.observacionDireccion.trim() : "";
   const entregaLinea = order.tipoEntrega === "domicilio"
     ? "\n📍 Dirección: " + (order.direccion || "No aplica") + obsDir
     : "\n🏪 Recoger en tienda";
-  return "\n\nSubtotal: $" + totals.subtotal + domicilioLinea + "\nTotal: $" + totals.total + (obsLinea ? "\n" + obsLinea : "") + entregaLinea;
+  return "\n\nSubtotal: $" + totals.subtotal.toLocaleString("es-CO") + domicilioLinea + "\nTotal: $" + totals.total.toLocaleString("es-CO") + (obsLinea ? "\n" + obsLinea : "") + entregaLinea;
 }
 function parseOlaClickText(text: string) {
   const toNum = (s: string | undefined) =>
@@ -703,6 +703,8 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   const lower = text.toLowerCase().trim();
 
   const tipoMensaje = messageData.type || "desconocido";
+  // true cuando el mensaje viene de un clic en botón de WhatsApp (no texto escrito a mano)
+  const esBoton = tipoMensaje === "interactive";
 
   console.log("=== PROCESANDO MENSAJE ===");
   console.log("PHONE:", phone);
@@ -3375,8 +3377,8 @@ return res.sendStatus(200);
   );
   return res.sendStatus(200);
 } else if (currentOrder?.step === "esperando_confirmacion") {
-  const CONFIRMAR_EC = new Set(["confirmar", "a", "1", "si", "sí", "listo", "dale", "de una", "va", "ok", "okay", "perfecto", "vamos", "adelante"]);
- if (CONFIRMAR_EC.has(lower)) {
+  const CONFIRMAR_EC = new Set(["confirmar", "a", "1", "confirmar_dir_texto"]);
+  if (esBoton && CONFIRMAR_EC.has(lower)) {
     currentOrder.cartFreeTextAttempts = 0;
     // Guardar nombre del perfil si el pedido no tiene nombre aún
     if (customer?.name && !currentOrder.nombre) {
@@ -3424,7 +3426,7 @@ return res.sendStatus(200);
     );
     return res.sendStatus(200);
 
-  } else if (lower === "eliminar" || lower === "b" || lower === "3") {
+  } else if (esBoton && (lower === "eliminar" || lower === "b")) {
     currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "retirando_productos");
     currentOrder = getOrder(phone)!;
@@ -3441,7 +3443,7 @@ return res.sendStatus(200);
       resumen +
       "\n\nRespóndeme con el número del producto.";
 
-  } else if (lower === "agregar_mas" || lower === "c" || lower === "2") {
+  } else if (esBoton && lower === "agregar_mas") {
     currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
@@ -3451,7 +3453,7 @@ return res.sendStatus(200);
       "¿Qué deseas agregar?\n\n" +
       "Puedes escribir otra crepe, bebida, topping o hacer una observación.";
 
-  } else if (lower === "d" || lower === "4") {
+  } else if (esBoton && (lower === "d" || lower === "4")) {
     currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "esperando_observacion_general");
     currentOrder = getOrder(phone)!;
@@ -3597,8 +3599,8 @@ return res.sendStatus(200);
     return res.sendStatus(200);
   }
 
-  const CONFIRMAR_KEYWORDS = new Set(["confirmar", "1", "listo", "ok", "dale", "si", "sí", "okay", "perfecto", "confirmo", "vamos", "de una", "adelante", "va"]);
-  if (CONFIRMAR_KEYWORDS.has(lower)) {
+  const CONFIRMAR_KEYWORDS = new Set(["confirmar", "a", "1"]);
+  if (esBoton && CONFIRMAR_KEYWORDS.has(lower)) {
     currentOrder.cartFreeTextAttempts = 0;
     // Upselling al confirmar — una sola vez, solo si aplica. Omitir pedidos de carta digital.
     if (!currentOrder.vieneDeCarta && !currentOrder.upsellingToppingsMostrado) {
@@ -3704,7 +3706,7 @@ return res.sendStatus(200);
   ]
 );
 return res.sendStatus(200);
-  } else if (lower === "agregar_mas" || lower === "2") {
+  } else if (esBoton && lower === "agregar_mas") {
     currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
@@ -3714,7 +3716,7 @@ return res.sendStatus(200);
       "¿Qué deseas agregar?\n\n" +
       "Recuerda: un producto por mensaje 😊";
 
-  } else if (lower === "eliminar" || lower === "3") {
+  } else if (esBoton && lower === "eliminar") {
     currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "retirando_productos");
     currentOrder = getOrder(phone)!;
@@ -3731,7 +3733,7 @@ return res.sendStatus(200);
       resumen +
       "\n\nRespóndeme con el número del producto.";
 
-  } else if (lower === "4") {
+  } else if (esBoton && lower === "4") {
     currentOrder.cartFreeTextAttempts = 0;
     updateOrderStep(phone, "esperando_observacion_general");
     currentOrder = getOrder(phone)!;
@@ -4098,9 +4100,9 @@ return res.sendStatus(200);
       "🔥 *Tu pedido fue confirmado*\n\n" +
       "🧾 Tu pedido:\n" +
       order.items.map((item: any) => formatLineaItem(item)).join("\n") +
-      `\n\n💰 Subtotal: $${totals.subtotal}` +
-      (order.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio}\n⚠️ _El costo del domicilio es calculado por Google Maps y puede estar sujeto a ajustes._` : "") +
-      `\n💵 Total: $${totals.total}` +
+      `\n\n💰 Subtotal: $${totals.subtotal.toLocaleString("es-CO")}` +
+      (order.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio.toLocaleString("es-CO")}\n⚠️ _El costo del domicilio es calculado por Google Maps y puede estar sujeto a ajustes._` : "") +
+      `\n💵 Total: $${totals.total.toLocaleString("es-CO")}` +
       (order.direccion ? `\n📍 Dirección: ${order.direccion}` : "") +
       `\n💳 Pago: ${order.formaPago}`;
 
@@ -4183,11 +4185,17 @@ return res.sendStatus(200);
     lower.includes("demora") ||
     lower.includes("ya salio") ||
     lower.includes("ya salió") ||
-    lower.includes("estado")
+    lower.includes("estado") ||
+    lower.includes("tiempo de entrega") ||
+    lower.includes("tiempo") ||
+    lower.includes("cuánto tarda") ||
+    lower.includes("cuanto tarda") ||
+    lower.includes("cuándo llega") ||
+    lower.includes("cuando llega")
   ) {
+    const minutosEst = currentOrder.tipoEntrega === "recoger" ? "15-20 min" : "40-50 min";
     replyMessage =
-      "Tu pedido sigue en preparación 👨‍🍳🚚\n\n" +
-      "Tiempo estimado: 40-50 min. Te avisaremos si hay alguna novedad.";
+      `Tu pedido sigue en preparación 👨‍🍳🚚\n\nTiempo estimado: ${minutosEst}. Te avisaremos si hay alguna novedad.`;
   } else if (
     lower.includes("gracias") ||
     lower.includes("ok") ||
