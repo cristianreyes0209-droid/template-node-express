@@ -1104,14 +1104,16 @@ function BebidaJugo({b, onAdd}) {
   const [open, setOpen] = React.useState(false);
   const [base, setBase] = React.useState(null);
   const [sabor, setSabor] = React.useState(null);
+  const [azucar, setAzucar] = React.useState('Normal');
   const [warn, setWarn] = React.useState('');
   const precio = base ? b.variants.find(v=>v.name===base)?.price : b.price;
   const handleAdd = () => {
     if (!base) { setWarn('Elige en agua o en leche'); return; }
     if (!sabor) { setWarn('Elige el sabor'); return; }
     setWarn('');
-    onAdd({item:{...b,cat:'bebidas',name:`Jugo ${sabor} ${base}`},qty:1,additions:[],obs:'',totalPrice:precio});
-    setBase(null); setSabor(null); setOpen(false);
+    const azucarTag = azucar === 'Normal' ? '' : ` (${azucar})`;
+    onAdd({item:{...b,cat:'bebidas',name:`Jugo ${sabor} ${base}${azucarTag}`},qty:1,additions:[],obs:'',totalPrice:precio});
+    setBase(null); setSabor(null); setAzucar('Normal'); setOpen(false);
   };
   return (
     <div style={{background:'#fff',borderRadius:14,marginBottom:8,boxShadow:'0 2px 8px rgba(0,0,0,.07)',border:'1.5px solid #F0DEB4',overflow:'hidden'}}>
@@ -1148,6 +1150,17 @@ function BebidaJugo({b, onAdd}) {
                 border:`2px solid ${sabor===s?'#C41E3A':'#E8C89A'}`,
                 color:sabor===s?'#fff':'#3B1A0A',fontWeight:800,fontSize:12,transition:'all .15s'
               }}>{s}</div>
+            ))}
+          </div>
+          <div style={{fontSize:11,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>🍬 Azúcar</div>
+          <div style={{display:'flex',gap:6,marginBottom:10}}>
+            {AZUCAR_OPTS.map(a=>(
+              <div key={a} onClick={()=>setAzucar(a)} style={{
+                flex:1,padding:'7px 4px',borderRadius:10,cursor:'pointer',textAlign:'center',
+                background:azucar===a?'#C41E3A':'#FFF5D0',
+                border:`2px solid ${azucar===a?'#C41E3A':'#E8C89A'}`,
+                color:azucar===a?'#fff':'#3B1A0A',fontWeight:800,fontSize:11,transition:'all .15s'
+              }}>{a}</div>
             ))}
           </div>
           {warn && <div style={{color:'#C41E3A',fontSize:11,fontWeight:800,marginBottom:6}}>⚠️ {warn}</div>}
