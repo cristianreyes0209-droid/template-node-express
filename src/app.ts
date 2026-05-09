@@ -4193,9 +4193,11 @@ return res.sendStatus(200);
     lower.includes("cuándo llega") ||
     lower.includes("cuando llega")
   ) {
-    const minutosEst = currentOrder.tipoEntrega === "recoger" ? "15-20 min" : "40-50 min";
-    replyMessage =
-      `Tu pedido sigue en preparación 👨‍🍳🚚\n\nTiempo estimado: ${minutosEst}. Te avisaremos si hay alguna novedad.`;
+    if (currentOrder.tipoEntrega === "recoger") {
+      replyMessage = "Tu pedido estará listo en aproximadamente 15-20 minutos 👨‍🍳 Te avisaremos cualquier novedad.";
+    } else {
+      replyMessage = "Nuestros domicilios tardan aproximadamente de 40 a 50 minutos 🚚\n\nSituaciones adversas como el tráfico o el clima podrían hacer que demore algo más. Te avisaremos si hay alguna novedad.";
+    }
   } else if (
     lower.includes("gracias") ||
     lower.includes("ok") ||
