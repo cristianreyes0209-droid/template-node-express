@@ -1218,7 +1218,7 @@ function BebidaPreparada({b, onAdd}) {
               <span style={{minWidth:28,textAlign:'center',fontFamily:"'Anton',sans-serif",fontSize:16,color:'#3B1A0A'}}>{qty}</span>
               <button onClick={()=>setQty(q=>q+1)} style={{width:34,height:38,background:'#FFF5D0',border:'none',cursor:'pointer',fontSize:20,fontWeight:700,color:'#C41E3A',display:'flex',alignItems:'center',justifyContent:'center'}}>+</button>
             </div>
-            <button onClick={()=>{const name=`${b.name}${sabor?' '+sabor:''}${b.noAzucar?'':' ('+azucar+')'}`;onAdd({item:{...b,cat:'bebidas',name},qty,additions:[],obs:'',totalPrice:b.price*qty});setOpen(false);setQty(1);}} style={{
+            <button onClick={()=>{const name=`${b.name}${sabor?' '+sabor:''}${b.noAzucar||azucar==='Normal'?'':' ('+azucar+')'}`;onAdd({item:{...b,cat:'bebidas',name},qty,additions:[],obs:'',totalPrice:b.price*qty});setOpen(false);setQty(1);}} style={{
               flex:1,padding:'10px',background:'#C41E3A',border:'none',borderRadius:10,
               fontFamily:"'Anton',sans-serif",fontSize:16,color:'#fff',cursor:'pointer',letterSpacing:1
             }}>🛒 Agregar — {fmtP(b.price*qty)}</button>
