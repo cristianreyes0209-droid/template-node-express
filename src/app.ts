@@ -907,7 +907,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
 
   if (_esConsultaMenu && !_esMsgLargo) {
     await sendWhatsAppMessage(phone,
-      "🥞 Aquí puedes ver nuestro menú completo:\n\nhttps://crepes-bot.onrender.com/carta\n\n" +
+      "🥞 Aquí puedes ver nuestro menú completo:\n\nhttp://crepes.tecmenu.com\n\n" +
       "¿Deseas hacer un pedido? Escríbeme 😊"
     );
     return res.sendStatus(200);
@@ -1680,7 +1680,7 @@ if (
   // Solicitud de ver menú en medio del pedido
   if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("carta") || lower === "ver menu") {
     await sendWhatsAppMessage(phone,
-      "Aquí tienes el menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\n 😊"
+      "Aquí tienes el menú completo 📋\n\nhttp://crepes.tecmenu.com\n\n 😊"
     );
     return res.sendStatus(200);
   }
@@ -1961,7 +1961,7 @@ if (currentOrder && currentOrder.items.length > 0 &&
 if (!currentOrder) {
   if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("ver menu") || lower.includes("carta")) {
     await sendWhatsAppButtons(phone,
-      "Aquí puedes ver nuestro menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\n¿Deseas hacer un pedido?",
+      "Aquí puedes ver nuestro menú completo 📋\n\nhttp://crepes.tecmenu.com\n\n¿Deseas hacer un pedido?",
       [
         { id: "1", title: "Sí, hacer un pedido" },
         { id: "3", title: "Otros" }
@@ -2384,7 +2384,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
 
 } else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
   await sendWhatsAppButtons(phone,
-    "Aquí puedes ver nuestro menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\n¿Deseas hacer un pedido?",
+    "Aquí puedes ver nuestro menú completo 📋\n\nhttp://crepes.tecmenu.com\n\n¿Deseas hacer un pedido?",
     [
       { id: "1", title: "Hacer un pedido 🥞" },
       { id: "3", title: "Otros 💬" }
@@ -2657,7 +2657,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     lower === "ver menu" || lower === "ver menú"
   ) {
     await sendWhatsAppMessage(phone,
-      "Aquí tienes el menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\nRecuerda que estamos disponibles de 3:00 PM a 10:15 PM 😊"
+      "Aquí tienes el menú completo 📋\n\nhttp://crepes.tecmenu.com\n\nRecuerda que estamos disponibles de 3:00 PM a 10:15 PM 😊"
     );
     return res.sendStatus(200);
   }
@@ -2699,7 +2699,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     lower === "ver menu" || lower === "ver menú"
   ) {
     await sendWhatsAppMessage(phone,
-      "Aquí tienes el menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\nCuando estés listo, escríbeme qué deseas pedir 😊"
+      "Aquí tienes el menú completo 📋\n\nhttp://crepes.tecmenu.com\n\nCuando estés listo, escríbeme qué deseas pedir 😊"
     );
     return res.sendStatus(200);
   }
@@ -2928,7 +2928,7 @@ return res.sendStatus(200);
     replyMessage =
       "Perfecto 👍\n\n" +
       "Puedes hacer tu pedido aquí:\n" +
-      "https://crepes-bot.onrender.com/carta\n\n" +
+      "http://crepes.tecmenu.com\n\n" +
       "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 341 3020";
 
   } else if (
@@ -2998,7 +2998,7 @@ return res.sendStatus(200);
     replyMessage =
       "Perfecto 👍\n\n" +
       "Puedes hacer tu pedido aquí:\n" +
-      "https://crepes-bot.onrender.com/carta\n\n" +
+      "http://crepes.tecmenu.com\n\n" +
       "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 345 0257";
 
   } else {
@@ -3596,7 +3596,7 @@ return res.sendStatus(200);
   // Ver menú en medio del pedido
   if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("carta") || lower === "ver menu") {
     await sendWhatsAppMessage(phone,
-      "Aquí tienes el menú completo 📋\n\nhttps://crepes-bot.onrender.com/carta\n\nCuando estés listo, elige una opción 😊"
+      "Aquí tienes el menú completo 📋\n\nhttp://crepes.tecmenu.com\n\nCuando estés listo, elige una opción 😊"
     );
     return res.sendStatus(200);
   }
