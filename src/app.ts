@@ -482,6 +482,8 @@ function parseOlaClickText(text: string) {
   };
 }
 function parseCartaDigitalText(text: string) {
+  // WhatsApp appends variation selectors (U+FE0F) to emojis — strip them so regexes match reliably
+  text = text.replace(/️/g, "");
   const toNum = (s: string) => parseInt(s.replace(/\./g, "").replace(",", ""), 10) || 0;
 
   type CDItem = {
