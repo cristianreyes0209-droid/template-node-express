@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "./db";
 import cron from "node-cron";
-import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidosActivos, getPedidosArchivados } from "./db";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h } from "./db";
 import path from "path";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -556,7 +556,7 @@ function parseCartaDigitalText(text: string) {
   };
 }
 async function handleOperationalRouting(order: any, totals: any) {
-  const numeroOrden = await getNextOrderNumber();
+  const numeroOrden = await getNextOrderNumberForDay();
   order.numeroOrden = numeroOrden;
 
   const sucursalTexto = order.sucursal === "la_villa" ? "La Villa" : order.sucursal === "circunvalar" ? "Av. Circunvalar" : order.sucursal || "No definida";
@@ -2549,7 +2549,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     const orderEfHC = getOrder(phone)!;
     const holaclickResumenEf = orderEfHC.holaclick_order || "";
     const hcParsedEf = parseOlaClickText(holaclickResumenEf);
-    savePedido({ phone, nombre: orderEfHC.nombre || customer?.name, sucursal: orderEfHC.sucursal, forma_pago: "efectivo", canal: "holaclick", holaclick_order: holaclickResumenEf, confirmed_at: orderEfHC.confirmedAt }).catch(e => console.error("❌ savePedido HC:", e));
+    savePedido({ phone, nombre: orderEfHC.nombre || customer?.name, sucursal: orderEfHC.sucursal, forma_pago: "efectivo", canal: "holaclick", holaclick_order: holaclickResumenEf, confirmed_at: orderEfHC.confirmedAt, estado: 'recibido' }).catch(e => console.error("❌ savePedido HC:", e));
     const hcItemsTextoEf = hcParsedEf.items.length > 0
       ? hcParsedEf.items.map(i =>
           `• ${i.cantidad}x ${i.producto} — $${i.precio.toLocaleString("es-CO")}` +
@@ -2594,7 +2594,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     const holaclickResumen = order.holaclick_order || "";
     const sucursalTexto = order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar";
     const hcParsedComp = parseOlaClickText(holaclickResumen);
-    savePedido({ phone, nombre: order.nombre || customer?.name, sucursal: order.sucursal, forma_pago: order.formaPago, canal: "holaclick", holaclick_order: holaclickResumen, confirmed_at: order.confirmedAt }).catch(e => console.error("❌ savePedido HC:", e));
+    savePedido({ phone, nombre: order.nombre || customer?.name, sucursal: order.sucursal, forma_pago: order.formaPago, canal: "holaclick", holaclick_order: holaclickResumen, confirmed_at: order.confirmedAt, estado: 'recibido' }).catch(e => console.error("❌ savePedido HC:", e));
     const hcItemsTextoComp = hcParsedComp.items.length > 0
       ? hcParsedComp.items.map(i =>
           `• ${i.cantidad}x ${i.producto} — $${i.precio.toLocaleString("es-CO")}` +
@@ -3823,7 +3823,7 @@ return res.sendStatus(200);
     const totalsEf = calculateTotal(orderEf);
 
     await upsertCustomer({ phone, name: orderEf.nombre, last_address: orderEf.direccion, last_order: orderEf.items, last_order_at: new Date().toISOString(), last_sucursal: orderEf.sucursal });
-    savePedido({ numero_orden: orderEf.numeroOrden, phone, nombre: orderEf.nombre, direccion: orderEf.direccion, items: orderEf.items, subtotal: totalsEf.subtotal, domicilio: totalsEf.domicilio, total: totalsEf.total, forma_pago: "efectivo", sucursal: orderEf.sucursal, tipo_entrega: orderEf.tipoEntrega, canal: orderEf.canal, confirmed_at: orderEf.confirmedAt }).catch(e => console.error("❌ savePedido:", e));
+    savePedido({ numero_orden: orderEf.numeroOrden, phone, nombre: orderEf.nombre, direccion: orderEf.direccion, items: orderEf.items, subtotal: totalsEf.subtotal, domicilio: totalsEf.domicilio, total: totalsEf.total, forma_pago: "efectivo", sucursal: orderEf.sucursal, tipo_entrega: orderEf.tipoEntrega, canal: orderEf.canal, confirmed_at: orderEf.confirmedAt, estado: 'recibido' }).catch(e => console.error("❌ savePedido:", e));
     if (orderEf.tipoEntrega === "domicilio") {
       const dirEf = (orderEf.direccion || "").trim();
       const INVALIDAS_DIR = new Set(["hola", "si", "sí", "ok", "espera", "bueno", "bien", "ya", "dale", "listo", "claro", "no"]);
@@ -4035,7 +4035,7 @@ return res.sendStatus(200);
       last_order_at: new Date().toISOString(),
       last_sucursal: order.sucursal
     });
-    savePedido({ numero_orden: order.numeroOrden, phone, nombre: order.nombre, direccion: order.direccion, items: order.items, subtotal: totals.subtotal, domicilio: totals.domicilio, total: totals.total, forma_pago: order.formaPago, sucursal: order.sucursal, tipo_entrega: order.tipoEntrega, canal: order.canal, confirmed_at: order.confirmedAt }).catch(e => console.error("❌ savePedido:", e));
+    savePedido({ numero_orden: order.numeroOrden, phone, nombre: order.nombre, direccion: order.direccion, items: order.items, subtotal: totals.subtotal, domicilio: totals.domicilio, total: totals.total, forma_pago: order.formaPago, sucursal: order.sucursal, tipo_entrega: order.tipoEntrega, canal: order.canal, confirmed_at: order.confirmedAt, estado: 'recibido' }).catch(e => console.error("❌ savePedido:", e));
     if (order.tipoEntrega === "domicilio") {
       const dirComp = (order.direccion || "").trim();
       const INVALIDAS_DIR_C = new Set(["hola", "si", "sí", "ok", "espera", "bueno", "bien", "ya", "dale", "listo", "claro", "no"]);
@@ -4590,7 +4590,7 @@ app.get('/api/pedidos', async (req, res) => {
   if (!key || key !== process.env.PANEL_KEY) {
     return res.status(401).json({ error: "Acceso no autorizado" });
   }
-  const rows = await getPedidosActivos();
+  const rows = await getPedidosUltimas24h();
   res.json(rows);
 });
 
@@ -4601,6 +4601,32 @@ app.get('/api/pedidos/archivados', async (req, res) => {
   }
   const rows = await getPedidosArchivados();
   res.json(rows);
+});
+
+app.post('/api/pedidos/:id/estado', async (req, res) => {
+  const key = req.headers['x-panel-key'] as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) {
+    return res.status(401).json({ error: "Acceso no autorizado" });
+  }
+  const id = parseInt(req.params.id);
+  const { estado } = req.body || {};
+  const ESTADOS_VALIDOS = ['en_preparacion', 'en_camino', 'entregado'];
+  if (!estado || isNaN(id) || !ESTADOS_VALIDOS.includes(estado)) {
+    return res.status(400).json({ error: "Parámetros inválidos" });
+  }
+  await updatePedidoEstado(id, estado);
+  const pedido = await getPedidoById(id);
+  if (pedido?.phone) {
+    const nombre = pedido.nombre || "Cliente";
+    const msgs: Record<string, string> = {
+      en_preparacion: `🍳 ${nombre}, tu pedido está en preparación. ¡Ya casi!`,
+      en_camino:      `🛵 ${nombre}, tu pedido ya va en camino. Tiempo estimado: 30-40 min.`,
+      entregado:      `✅ ${nombre}, pedido entregado. ¡Gracias por pedir en Las Crepes! 🥞`
+    };
+    sendWhatsAppMessage(pedido.phone, msgs[estado])
+      .catch(e => console.error("❌ Notif estado:", e));
+  }
+  res.json({ ok: true, id, estado });
 });
 
 app.put('/api/pedidos/:id/estado', async (req, res) => {

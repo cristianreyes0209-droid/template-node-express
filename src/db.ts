@@ -186,6 +186,7 @@ export type PedidoData = {
   canal?: string;
   holaclick_order?: string;
   confirmed_at?: string;
+  estado?: string;
 };
 
 export async function savePedido(data: PedidoData): Promise<number | null> {
@@ -193,8 +194,8 @@ export async function savePedido(data: PedidoData): Promise<number | null> {
     const result = await pool.query(
       `INSERT INTO pedidos
         (numero_orden, phone, nombre, direccion, items, subtotal, domicilio, total,
-         forma_pago, sucursal, tipo_entrega, canal, holaclick_order, confirmed_at)
-       VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+         forma_pago, sucursal, tipo_entrega, canal, holaclick_order, confirmed_at, estado)
+       VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
        RETURNING id`,
       [
         data.numero_orden || null,
@@ -211,6 +212,7 @@ export async function savePedido(data: PedidoData): Promise<number | null> {
         data.canal || null,
         data.holaclick_order || null,
         data.confirmed_at || null,
+        data.estado || 'recibido',
       ]
     );
     console.log("✅ Pedido guardado id:", result.rows[0]?.id);
@@ -262,6 +264,30 @@ export async function getPedidosArchivados() {
     return result.rows;
   } catch (error) {
     console.error("❌ Error getPedidosArchivados:", error);
+    return [];
+  }
+}
+
+export async function getNextOrderNumberForDay(): Promise<number> {
+  try {
+    const result = await pool.query(
+      `SELECT COUNT(*)::int + 1 AS num FROM pedidos WHERE created_at::date = CURRENT_DATE`
+    );
+    return result.rows[0]?.num ?? 1;
+  } catch (error) {
+    console.error("❌ Error getNextOrderNumberForDay:", error);
+    return 1;
+  }
+}
+
+export async function getPedidosUltimas24h() {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM pedidos WHERE created_at >= NOW() - INTERVAL '24 hours' ORDER BY created_at DESC`
+    );
+    return result.rows;
+  } catch (error) {
+    console.error("❌ Error getPedidosUltimas24h:", error);
     return [];
   }
 }
