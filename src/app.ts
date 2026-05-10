@@ -482,9 +482,11 @@ function parseOlaClickText(text: string) {
   };
 }
 function parseCartaDigitalText(text: string) {
-  // WhatsApp appends variation selectors (U+FE0F) to emojis — strip them so regexes match reliably
-  text = text.replace(/️/g, "");
+  // Strip variation selectors and zero-width joiners that WhatsApp adds to emojis
+  text = text.replace(/[️︎‍]/g, "");
   const toNum = (s: string) => parseInt(s.replace(/\./g, "").replace(",", ""), 10) || 0;
+  // Strip leading emoji/symbol from a line to get plain content
+  const stripEmoji = (s: string) => s.replace(/^[\u{1F000}-\u{1FFFF}\u{2000}-\u{2BFF}]\s*/u, "").trim();
 
   type CDItem = {
     producto: string;
@@ -500,9 +502,10 @@ function parseCartaDigitalText(text: string) {
 
   for (const line of text.split("\n")) {
     const trimmed = line.trim();
+    if (!trimmed) continue;
 
     // Producto: *1. Crepe de Paris (Solo Pollo)* ×2
-    const prod = trimmed.match(/^\*\d+\.\s+(.+?)(?:\s+\((.+?)\))?\*\s*[×x](\d+)/);
+    const prod = trimmed.match(/^\*\d+\.\s+(.+?)(?:\s+\((.+?)\))?\*\s*[×x](\d+)/u);
     if (prod) {
       if (cur) items.push(cur);
       cur = {
@@ -515,27 +518,32 @@ function parseCartaDigitalText(text: string) {
       continue;
     }
     if (!cur) continue;
+    if (trimmed.startsWith("*TOTAL")) continue;
 
-    // Extras: ➕ Carne desmechada, Tocineta
-    if (/^[➕\+]/.test(trimmed)) {
-      const extrasStr = trimmed.replace(/^[➕\+]\s*/, "");
-      for (const ex of extrasStr.split(",")) {
+    // Precio: línea que termina en $XX.XXX (no depende del emoji 💰)
+    const precioMatch = trimmed.match(/\$\s*([\d.]+)\s*$/u);
+    if (precioMatch) {
+      cur.precio = Math.round(toNum(precioMatch[1]) / cur.cantidad);
+      continue;
+    }
+
+    // Clasificar el contenido restante por el primer carácter del emoji
+    const firstCP = [...trimmed][0];  // primer code point Unicode
+    const content = stripEmoji(trimmed);
+    if (!content) continue;
+
+    // ➕ (U+2795) o + → extras
+    if (firstCP === "➕" || firstCP === "+" || firstCP === "➕") {
+      for (const ex of content.split(",")) {
         const nombre = ex.trim();
         if (nombre) cur.extras.push({ nombre, precio: 0, cantidad: 1 });
       }
       continue;
     }
 
-    // Observación: 📝 Sin salsas por favor
-    if (trimmed.startsWith("📝")) {
-      cur.observaciones = trimmed.replace(/^📝️?\s*/, "").trim();
-      continue;
-    }
-
-    // Precio: 💰 $42.500 — es el total de la línea (precio × cantidad), guardar precio unitario
-    const precioMatch = trimmed.match(/^💰\s*\$\s*([\d.,]+)/);
-    if (precioMatch) {
-      cur.precio = Math.round(toNum(precioMatch[1]) / cur.cantidad);
+    // 📝 (U+1F4DD) → observación
+    if (firstCP === "📝" || firstCP === "\u{1F4DD}") {
+      cur.observaciones = content;
       continue;
     }
   }
