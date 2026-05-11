@@ -2687,6 +2687,20 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     return res.sendStatus(200);
   }
 
+  if (
+    lower.includes("tienen domicilio") || lower.includes("hacen domicilio") ||
+    lower.includes("tienen domicilios") || lower.includes("hacen domicilios") ||
+    lower.includes("manejan domicilio") || lower.includes("realizan domicilio") ||
+    lower.includes("delivery")
+  ) {
+    await sendWhatsAppMessage(phone,
+      "Sí, hacemos domicilios 🛵\n\nNuestro horario de atención es de *3:00 PM a 10:15 PM* todos los días.\n\n¡Te esperamos! 😊"
+    );
+    return res.sendStatus(200);
+  }
+
+  // Cambiar step antes de los awaits para evitar duplicados por webhooks concurrentes
+  updateOrderStep(phone, "esperando_asesor");
   try {
     await sendWhatsAppMessage("573151913928",
       `🔔 Mensaje fuera de horario\n👤 Tel: ${phone}\n💬 Mensaje: ${text}\n⚠️ Atiende esta solicitud`
@@ -2698,7 +2712,6 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       `🔔 *Escalada a asesor*\n👤 Nombre: ${nombreFH}\n📞 Tel: ${phone}\n🏬 Sucursal: ${currentOrder.sucursal || "No seleccionada"}\n💬 Último mensaje: ${text}`
     );
   } catch (e) { console.error("❌ ERROR notificando dueño (fuera horario):", e); }
-  updateOrderStep(phone, "esperando_asesor");
   replyMessage = "Gracias por tu mensaje ✅ Un asesor se pondrá en contacto contigo pronto 😊";
 
 } else if (currentOrder?.step === "esperando_ayuda") {
@@ -2784,6 +2797,18 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     );
     return res.sendStatus(200);
   }
+  if (
+    lower.includes("tienen domicilio") || lower.includes("hacen domicilio") ||
+    lower.includes("tienen domicilios") || lower.includes("hacen domicilios") ||
+    lower.includes("manejan domicilio") || lower.includes("realizan domicilio") ||
+    lower.includes("delivery")
+  ) {
+    await sendWhatsAppMessage(phone,
+      "Sí, hacemos domicilios 🛵\n\nPuedes hacer tu pedido en nuestro horario de *3:00 PM a 10:15 PM* todos los días.\n\n¡Te esperamos! 😊"
+    );
+    return res.sendStatus(200);
+  }
+
   // Reenviar al asesor en silencio — el bot no responde al cliente
   const nombreAsesor = currentOrder.nombre || customer?.name || phone;
   const mensajeReenvio =
