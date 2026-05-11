@@ -4557,6 +4557,10 @@ app.get('/carta', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/carta.html'));
 });
 
+app.get('/pedidos', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/pedidos.html'));
+});
+
 app.get('/api/conversaciones', async (req, res) => {
   const key = req.query.key as string | undefined;
   if (!key || key !== process.env.PANEL_KEY) {
