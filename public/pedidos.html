@@ -506,7 +506,8 @@ function checkPin() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// El script está al final del body — DOM ya está listo, no necesita DOMContentLoaded
+(function init() {
   const p = new URLSearchParams(window.location.search);
   if (p.get('key') === PANEL_KEY) {
     document.getElementById('lock').style.display = 'none';
@@ -515,7 +516,7 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshTimer = setInterval(loadPedidos, 30000);
   }
   document.getElementById('pin').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
-});
+})();
 
 // --- Load ---
 async function loadPedidos() {
