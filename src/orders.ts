@@ -129,9 +129,12 @@ export function calculateTotal(order: CustomerOrder, valorDomicilioOverride?: nu
     subtotal += itemTotal * item.cantidad;
   }
 
-  const domicilio = order.tipoEntrega === "domicilio"
+  const domicilioBase = order.tipoEntrega === "domicilio"
     ? (valorDomicilioOverride ?? order.valorDomicilio ?? DOMICILIO)
     : 0;
+
+  // Domicilio gratis cuando subtotal >= $100.000
+  const domicilio = (subtotal >= 100000 && domicilioBase > 0) ? 0 : domicilioBase;
 
   const total = subtotal + domicilio;
 

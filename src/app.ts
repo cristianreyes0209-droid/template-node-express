@@ -412,7 +412,9 @@ function esObservacionDireccion(text: string): boolean {
 function buildResumenFooter(order: any, totals: { subtotal: number; domicilio: number; total: number }, descripcionDomicilio?: string) {
   const notaDomicilio = "\n⚠️ _El costo del domicilio es calculado por Google Maps y puede estar sujeto a ajustes._";
   const domicilioLinea = order.tipoEntrega === "domicilio"
-    ? "\n🛵 Domicilio: $" + totals.domicilio.toLocaleString("es-CO") + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "") + notaDomicilio
+    ? (totals.domicilio === 0
+        ? "\n🎉 Domicilio gratis (pedido ≥ $100.000)"
+        : "\n🛵 Domicilio: $" + totals.domicilio.toLocaleString("es-CO") + (descripcionDomicilio ? ` (${descripcionDomicilio})` : "") + notaDomicilio)
     : "";
   const obsLinea = getObservacionGeneralTexto(order);
   const obsDir = order.observacionDireccion?.trim() ? "\n📌 " + order.observacionDireccion.trim() : "";
@@ -4111,7 +4113,7 @@ return res.sendStatus(200);
       "🧾 Tu pedido:\n" +
       order.items.map((item: any) => formatLineaItem(item)).join("\n") +
       `\n\n💰 Subtotal: $${totals.subtotal.toLocaleString("es-CO")}` +
-      (order.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio.toLocaleString("es-CO")}\n⚠️ _El costo del domicilio es calculado por Google Maps y puede estar sujeto a ajustes._` : "") +
+      (order.tipoEntrega === "domicilio" ? (totals.domicilio === 0 ? "\n🎉 Domicilio gratis (pedido ≥ $100.000)" : `\n🚚 Domicilio: $${totals.domicilio.toLocaleString("es-CO")}\n⚠️ _El costo del domicilio es calculado por Google Maps y puede estar sujeto a ajustes._`) : "") +
       `\n💵 Total: $${totals.total.toLocaleString("es-CO")}` +
       (order.direccion ? `\n📍 Dirección: ${order.direccion}` : "") +
       `\n💳 Pago: ${order.formaPago}`;
