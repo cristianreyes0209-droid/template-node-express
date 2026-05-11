@@ -4558,6 +4558,7 @@ app.get('/carta', (req, res) => {
 });
 
 app.get('/pedidos', (req, res) => {
+  res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
   res.sendFile(path.join(__dirname, '../public/pedidos.html'));
 });
 
