@@ -910,6 +910,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     _lower === "menu" || _lower === "menú" || _lower === "carta" ||
     _lower.includes("ver menu") || _lower.includes("ver menú") ||
     _lower.includes("ver carta") || _lower.includes("ver el menu") ||
+    _lower.includes("la carta") || _lower.includes("el menu") || _lower.includes("el menú") ||
     _lower.includes("qué tienen") || _lower.includes("que tienen") ||
     _lower.includes("qué hay") || _lower.includes("que hay") ||
     _lower.includes("envíame el menu") || _lower.includes("enviame el menu") ||
@@ -4146,6 +4147,21 @@ return res.sendStatus(200);
     await sendWhatsAppMessage(phone, resumenComprobante);
     replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
 
+  } else if (
+    lower.includes("efectivo") || lower.includes("nequi") || lower.includes("daviplata") ||
+    lower.includes("bancolombia") || lower.includes("cambiar pago") ||
+    lower.includes("cambio de pago") || lower.includes("otro metodo") || lower.includes("otro método")
+  ) {
+    updateOrderStep(phone, "esperando_pago");
+    await sendWhatsAppButtons(phone,
+      "Claro 😊 ¿Cómo deseas pagar?",
+      [
+        { id: "efectivo", title: "Efectivo 💵" },
+        { id: "nequi", title: "Nequi/Daviplata 📱" },
+        { id: "bancolombia", title: "Bancolombia/Llave🏦" }
+      ]
+    );
+    return res.sendStatus(200);
   } else {
     replyMessage = "Por favor envía una foto del comprobante 📸";
   }
