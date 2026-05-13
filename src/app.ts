@@ -4542,21 +4542,21 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   res.json({ msg: 'Something went wrong' });
 });
 
-// 🌅 Job diario: aviso de bot activo a las 9:00 AM hora Colombia
-cron.schedule("0 9 * * *", async () => {
-  console.log("🌅 Ejecutando mensaje matutino a sucursales...");
-  const msg = "🌅 Buenos días! El bot de Las Crepes está activo y listo para recibir pedidos hoy.";
+// 🕓 Job diario: aviso de bot activo a las 4:00 PM hora Colombia
+cron.schedule("0 16 * * *", async () => {
+  console.log("🕓 Ejecutando mensaje 4pm a sucursales...");
+  const msg = "Envíame un mensaje para activar tus comprobantes";
   const destinatarios = ["573207218267", "573151913928", "573217233342"];
   for (const numero of destinatarios) {
     try {
       await sendWhatsAppMessage(numero, msg);
-      console.log(`✅ Mensaje de buenos días enviado a ${numero}`);
+      console.log(`✅ Mensaje 4pm enviado a ${numero}`);
     } catch (e) {
-      console.error(`❌ Error enviando buenos días a ${numero}:`, e);
+      console.error(`❌ Error enviando mensaje 4pm a ${numero}:`, e);
     }
   }
 }, { timezone: "America/Bogota" });
-console.log("🕘 Cron registrado – job 9am America/Bogota activo");
+console.log("🕓 Cron registrado – job 4pm America/Bogota activo");
 
 // ── Panel web de conversaciones ──────────────────────────────────────────────
 app.get('/panel', (req, res) => {
