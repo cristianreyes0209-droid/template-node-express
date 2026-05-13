@@ -1468,7 +1468,7 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
     if (orderHC.tipoEntrega === "domicilio" && orderHC.locationCoords) {
       try {
         const coordStr = `${orderHC.locationCoords.latitude},${orderHC.locationCoords.longitude}`;
-        const calculo = await calcularDomicilio(coordStr, sucursalPrevia, calculateTotal(orderHC).subtotal);
+        const calculo = await calcularDomicilio(coordStr, sucursalPrevia, hcParsed.totalAPagar);
         orderHC.valorDomicilio = calculo.valorDomicilio;
         orderHC.distanciaKm = calculo.distanciaKm;
         orderHC.domicilioTexto = calculo.descripcion;
@@ -2448,7 +2448,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   if (orderHCSuc.tipoEntrega === "domicilio" && orderHCSuc.locationCoords) {
     try {
       const coordStr = `${orderHCSuc.locationCoords.latitude},${orderHCSuc.locationCoords.longitude}`;
-      const calculo = await calcularDomicilio(coordStr, orderHCSuc.sucursal || "la_villa", calculateTotal(orderHCSuc).subtotal);
+      const calculo = await calcularDomicilio(coordStr, orderHCSuc.sucursal || "la_villa", hcParsedSuc.totalAPagar);
       orderHCSuc.valorDomicilio = calculo.valorDomicilio;
       orderHCSuc.distanciaKm = calculo.distanciaKm;
       orderHCSuc.domicilioTexto = calculo.descripcion;
@@ -2628,8 +2628,23 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     }
 
     replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
+  } else if (
+    lower.includes("efectivo") || lower.includes("nequi") || lower.includes("daviplata") ||
+    lower.includes("bancolombia") || lower.includes("cambiar pago") ||
+    lower.includes("cambio de pago") || lower.includes("otro metodo") || lower.includes("otro método")
+  ) {
+    updateOrderStep(phone, "esperando_pago_holaclick");
+    await sendWhatsAppButtons(phone,
+      "Claro 😊 ¿Cómo deseas pagar?",
+      [
+        { id: "efectivo", title: "Efectivo 💵" },
+        { id: "nequi", title: "Nequi/Daviplata 📱" },
+        { id: "bancolombia", title: "Bancolombia/Llave🏦" }
+      ]
+    );
+    return res.sendStatus(200);
   } else {
-    // Llegó texto (incluyendo "listo") en lugar de imagen — pedir foto
+    // Llegó texto en lugar de imagen — pedir foto
     replyMessage = "Por favor envía una foto del comprobante 📸";
   }
 
