@@ -343,7 +343,7 @@ export const initApp = async (
         }
     );
 app.get('/whatsapp', (req, res) => {
-  const VERIFY_TOKEN = "crepes_token";
+  const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "crepes_token";
 
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];

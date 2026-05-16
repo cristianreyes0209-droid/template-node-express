@@ -484,7 +484,7 @@ body {
 
 <script>
 const API = 'https://crepes-bot.onrender.com';
-const PANEL_KEY = 'Crepes0209';
+let sessionKey = '';
 let allPedidos = [];
 let currentTab = 'todos';
 let openId = null;
@@ -493,23 +493,28 @@ let chatHistorial = {};
 let refreshTimer = null;
 
 // --- Auth ---
-function checkPin() {
+async function checkPin() {
   const v = document.getElementById('pin').value.trim();
-  if (v === PANEL_KEY) {
-    document.getElementById('lock').style.display = 'none';
-    document.getElementById('main').style.display = 'block';
-    loadPedidos();
-    refreshTimer = setInterval(loadPedidos, 30000);
-  } else {
+  if (!v) return;
+  const test = await fetch(API + '/api/pedidos?key=' + v);
+  if (test.status === 401) {
     document.getElementById('pin-err').style.display = 'block';
     document.getElementById('pin').value = '';
+    return;
   }
+  sessionKey = v;
+  document.getElementById('lock').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  loadPedidos();
+  refreshTimer = setInterval(loadPedidos, 30000);
 }
 
 // El script está al final del body — DOM ya está listo, no necesita DOMContentLoaded
 (function init() {
   const p = new URLSearchParams(window.location.search);
-  if (p.get('key') === PANEL_KEY) {
+  const k = p.get('key');
+  if (k) {
+    sessionKey = k;
     document.getElementById('lock').style.display = 'none';
     document.getElementById('main').style.display = 'block';
     loadPedidos();
@@ -523,7 +528,7 @@ async function loadPedidos() {
   const spin = document.getElementById('spin');
   spin.classList.add('spinning');
   try {
-    const r = await fetch(API + '/api/pedidos?key=' + PANEL_KEY);
+    const r = await fetch(API + '/api/pedidos?key=' + sessionKey);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     allPedidos = await r.json();
 
@@ -721,11 +726,7 @@ function toggleChat(id, phone, event) {
 
 async function cargarHistorialChat(phone) {
   try {
-    const since = new Date(Date.now() - 24*60*60*1000).toISOString();
-    const r = await fetch(
-      `https://lzouojmxrbvkgaboocpw.supabase.co/rest/v1/conversaciones?phone=eq.${phone}&created_at=gte.${since}&order=created_at.asc&select=rol,mensaje,created_at`,
-      { headers: { apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6b3Vvam14cmJ2a2dhYm9vY3B3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTk4ODgsImV4cCI6MjA5MDIzNTg4OH0.RB5IndvGlokfSvfGhiFcKkE6Rah3rcn5tAByY1hr9rk', Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6b3Vvam14cmJ2a2dhYm9vY3B3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2NTk4ODgsImV4cCI6MjA5MDIzNTg4OH0.RB5IndvGlokfSvfGhiFcKkE6Rah3rcn5tAByY1hr9rk' } }
-    );
+    const r = await fetch(`${API}/api/conversacion/${phone}?key=${sessionKey}`);
     if (r.ok) {
       chatHistorial[phone] = await r.json();
       renderList();
@@ -757,7 +758,7 @@ async function enviarMensaje(id, phone) {
   try {
     const r = await fetch(API + '/api/mensaje', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-panel-key': PANEL_KEY },
+      headers: { 'Content-Type': 'application/json', 'x-panel-key': sessionKey },
       body: JSON.stringify({ phone, mensaje: msg })
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -806,7 +807,7 @@ async function cambiarEstado(id, nuevoEstado, btn, event) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-panel-key': PANEL_KEY
+        'x-panel-key': sessionKey
       },
       body: JSON.stringify({ estado: nuevoEstado })
     });
