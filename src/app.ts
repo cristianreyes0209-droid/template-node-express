@@ -789,7 +789,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   }
 
   // Si el cliente responde tras el mensaje de inactividad, re-mostrar estado actual sin procesar el texto
-  if (currentOrder?.inactivityPending && lower !== "reset") {
+  if (currentOrder?.inactivityPending && lower !== "reset" && !text.includes("PEDIDO - LAS CREPES") && !text.includes("Vengo de https://las-crepes.ola.click")) {
     currentOrder.inactivityPending = false;
     if (currentOrder.step === "esperando_asesor" || currentOrder.step === "esperando_mensaje_fuera_horario") {
       return res.sendStatus(200);
@@ -1210,6 +1210,41 @@ if (esPreguntaPago && !esMensajeLargo && !enStepDePago) {
       "  🔑 Llave: @niet661";
   }
   await sendWhatsAppMessage(phone, msgPago);
+  return res.sendStatus(200);
+}
+
+// Número de teléfono enviado en medio del flujo — ignorar silenciosamente
+if (/^\d{7,12}$/.test(lower.trim()) && currentOrder?.step === "armando_pedido") {
+  return res.sendStatus(200);
+}
+
+// Consulta de disponibilidad: "tiene Coca-Cola", "hay jugos", "tienen malteadas"
+const esConsultaDisponibilidad =
+  !esMensajeLargo && (
+    /^(tienen?|hay|tienes)\s+\w/i.test(lower) ||
+    lower.startsWith("tienen ") ||
+    lower.startsWith("tiene ") ||
+    lower.startsWith("hay ")
+  );
+if (esConsultaDisponibilidad) {
+  const allProdsDisp = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+  let matchedProd: any = null;
+  for (const prod of allProdsDisp) {
+    const candidates = [prod.nombre, ...(prod.aliases || [])].map((a: string) => normalizeText(a));
+    if (candidates.some((c: string) => normalizeText(lower).includes(c) && c.length >= 3)) {
+      matchedProd = prod;
+      break;
+    }
+  }
+  if (matchedProd) {
+    await sendWhatsAppMessage(phone,
+      `Sí, tenemos *${matchedProd.nombre}* a $${matchedProd.precio.toLocaleString("es-CO")} 😊\n\n¿Lo agrego a tu pedido?`
+    );
+  } else {
+    await sendWhatsAppMessage(phone,
+      `Aquí puedes ver todo nuestro menú:\n\nhttps://menu.tecmenu.com\n\n¿Te ayudo con algo más? 😊`
+    );
+  }
   return res.sendStatus(200);
 }
 
