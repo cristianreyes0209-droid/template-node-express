@@ -3011,11 +3011,9 @@ return res.sendStatus(200);
 
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
-    replyMessage =
-      "Perfecto 👍\n\n" +
-      "Puedes hacer tu pedido aquí:\n" +
-      "https://menu.tecmenu.com\n\n" +
-      "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 341 3020";
+    replyMessage = currentOrder.tipoEntrega === "recoger"
+      ? "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\nSi necesitas contactarnos:\n📞 606 341 3020"
+      : "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 341 3020";
 
   } else if (
     lower === "b" ||
@@ -3081,11 +3079,9 @@ return res.sendStatus(200);
 
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
-    replyMessage =
-      "Perfecto 👍\n\n" +
-      "Puedes hacer tu pedido aquí:\n" +
-      "https://menu.tecmenu.com\n\n" +
-      "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 345 0257";
+    replyMessage = currentOrder.tipoEntrega === "recoger"
+      ? "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\nSi necesitas contactarnos:\n📞 606 345 0257"
+      : "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 345 0257";
 
   } else {
     await sendWhatsAppButtons(phone,

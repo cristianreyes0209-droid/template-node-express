@@ -143,6 +143,7 @@ export function normalizeText(text: string) {
     // Typos comunes de productos
     .replace(/\branquera\b/g, "ranchera")
     .replace(/\brancheras\b/g, "ranchera")
+    .replace(/\branchero\b/g, "ranchera")
     .replace(/\bhawaina\b/g, "hawaiana")
     .replace(/\bhawaina\b/g, "hawaiana")
     .replace(/\bhawainana\b/g, "hawaiana")
