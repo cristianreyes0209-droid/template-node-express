@@ -235,6 +235,8 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
 }
 
 const inactivityTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const phoneProcessing  = new Set<string>();
+const processedMsgIds  = new Map<string, number>(); // messageId → timestamp ms
 
 const LARGE_JSON_PATH = '/large-json-payload';
 const APPLICATION_JSON = 'application/json';
@@ -693,6 +695,26 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   if (phone.includes("@g.us")) {
     return res.sendStatus(200);
   }
+
+  // Deduplicación por messageId (retries de WhatsApp Cloud API)
+  const msgId: string | undefined = messageData.id;
+  if (msgId) {
+    const now = Date.now();
+    if (processedMsgIds.has(msgId)) {
+      return res.sendStatus(200);
+    }
+    processedMsgIds.set(msgId, now);
+    for (const [id, ts] of processedMsgIds) {
+      if (now - ts > 60_000) processedMsgIds.delete(id);
+    }
+  }
+
+  // Lock por teléfono (previene race condition con mensajes en ráfaga)
+  if (phoneProcessing.has(phone)) {
+    return res.sendStatus(200);
+  }
+  phoneProcessing.add(phone);
+
   const customer = await getCustomerByPhone(phone);
   const tieneUltimoPedido = !!(
     customer?.last_order &&
@@ -1574,15 +1596,28 @@ if (text.includes("PEDIDO - LAS CREPES")) {
   if (prevTipoEntrega) orderCD.tipoEntrega = prevTipoEntrega;
   if (prevSucursal)    orderCD.sucursal    = prevSucursal;
 
+  const allMenuProdsCD = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+
   if (cdParsed.items.length > 0) {
-    createOrUpdateOrder(phone, cdParsed.items.map(i => ({
-      producto:      i.producto,
-      variante:      i.variante,
-      cantidad:      i.cantidad,
-      precio:        i.precio,
-      observaciones: i.observaciones,
-      extras:        i.extras
-    })));
+    createOrUpdateOrder(phone, cdParsed.items.map(i => {
+      let precio = i.precio;
+      if (precio === 0) {
+        const normNombre = normalizeText(i.producto);
+        const found = allMenuProdsCD.find((p: any) => {
+          const candidates = [p.nombre, ...(p.aliases || [])].map((a: string) => normalizeText(a));
+          return candidates.some((c: string) => c === normNombre || normNombre.includes(c));
+        });
+        if (found) precio = found.precio;
+      }
+      return {
+        producto:      i.producto,
+        variante:      i.variante,
+        cantidad:      i.cantidad,
+        precio,
+        observaciones: i.observaciones,
+        extras:        i.extras
+      };
+    }));
   }
 
   currentOrder = getOrder(phone)!;
@@ -4577,6 +4612,8 @@ return res.sendStatus(200);
       } catch (e2) { console.error("❌ Error enviando escalación:", e2); }
     }
     return res.sendStatus(200);
+  } finally {
+    if (_fromPhone && !_fromPhone.includes("@g.us")) phoneProcessing.delete(_fromPhone);
   }
 });
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
