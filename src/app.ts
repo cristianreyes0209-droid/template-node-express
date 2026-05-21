@@ -590,7 +590,7 @@ async function handleOperationalRouting(order: any, totals: any) {
     `💳 Pago: ${order.formaPago || "No definido"}\n` +
     `🏪 Sucursal: ${sucursalTexto}` +
     (order.observacionesGenerales?.trim() ? `\n📝 Observación: ${order.observacionesGenerales.trim()}` : "") +
-    (order.factura ? `\n\n📄 Factura: ${order.factura}` : "");
+    (order.factura ? `\n\n📄 Factura: ${order.factura}` + (order.emailFactura ? `\n📧 Email factura: ${order.emailFactura}` : "") : "");
 
   // Mantener resumenInterno para circunvalar y logs
   const resumenInterno = resumenDomiciliarios;
@@ -1003,7 +1003,9 @@ const skipParsing =
   currentOrder?.step === "esperando_queso_dulce" ||
   currentOrder?.step === "esperando_confirmacion_direccion" ||
   currentOrder?.step === "post_agregar_producto" ||
-  currentOrder?.step === "esperando_confirmacion";
+  currentOrder?.step === "esperando_confirmacion" ||
+  currentOrder?.step === "esperando_datos_factura" ||
+  currentOrder?.step === "esperando_email_factura";
 
 // Palabras clave simples y mensajes de botones que NO deben llamar a Gemini
 
@@ -1600,19 +1602,29 @@ if (text.includes("PEDIDO - LAS CREPES")) {
 
   if (cdParsed.items.length > 0) {
     createOrUpdateOrder(phone, cdParsed.items.map(i => {
+      const normNombre = normalizeText(i.producto);
+      const found = allMenuProdsCD.find((p: any) => {
+        const candidates = [p.nombre, ...(p.aliases || [])].map((a: string) => normalizeText(a));
+        return candidates.some((c: string) => c === normNombre || normNombre.includes(c));
+      });
       let precio = i.precio;
-      if (precio === 0) {
-        const normNombre = normalizeText(i.producto);
-        const found = allMenuProdsCD.find((p: any) => {
-          const candidates = [p.nombre, ...(p.aliases || [])].map((a: string) => normalizeText(a));
-          return candidates.some((c: string) => c === normNombre || normNombre.includes(c));
-        });
-        if (found) precio = found.precio;
+      if (found) {
+        if (i.variante && found.variantes?.length) {
+          const normVariante = normalizeText(i.variante);
+          const foundVariant = found.variantes.find((v: any) => {
+            const vCandidates = [v.nombre, ...(v.aliases || [])].map((a: string) => normalizeText(a));
+            return vCandidates.some((c: string) => c === normVariante || normVariante.includes(c));
+          });
+          precio = foundVariant?.precio ?? found.precio;
+        } else {
+          precio = found.precio;
+        }
       }
+      const cantidad = Math.max(1, Math.min(20, i.cantidad || 1));
       return {
         producto:      i.producto,
         variante:      i.variante,
-        cantidad:      i.cantidad,
+        cantidad,
         precio,
         observaciones: i.observaciones,
         extras:        i.extras
@@ -3996,7 +4008,7 @@ return res.sendStatus(200);
       (orderEf.observacionesGenerales?.trim() ? "📝 Observación: " + orderEf.observacionesGenerales.trim() + "\n" : "") +
       (orderEf.tipoEntrega === "domicilio" ? "📍 Dirección:\n" + (orderEf.direccion || "No aplica") : "🏪 Recoger en tienda") + "\n\n" +
       "💳 Pago: Efectivo\n" +
-      (orderEf.factura ? "📄 Factura: " + orderEf.factura + "\n" : "") +
+      (orderEf.factura ? "📄 Factura: " + orderEf.factura + (orderEf.emailFactura ? " | " + orderEf.emailFactura : "") + "\n" : "") +
       "⏱ Tiempo estimado: " + tiempoEf + "\n" +
       "🕐 Hora: " + new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }) + "\n\n" +
       "🏪 Sucursal: " + (orderEf.sucursal === "la_villa" ? "La Villa" : orderEf.sucursal === "circunvalar" ? "Av. Circunvalar" : "Por definir") + "\n" +
@@ -4095,21 +4107,31 @@ return res.sendStatus(200);
   }
 
 } else if (currentOrder?.step === "esperando_datos_factura") {
-  // Guardar los datos de factura e ir a selección de pago
   const orderDf = getOrder(phone)!;
   orderDf.factura = text;
-  updateOrderStep(phone, "esperando_pago");
-  currentOrder = getOrder(phone)!;
-  const totalsDf = calculateTotal(orderDf);
-  await sendWhatsAppButtons(phone,
-    `El total de tu pedido es $${totalsDf.total} 💰\n¿Cómo deseas pagar?`,
-    [
-      { id: "efectivo", title: "Efectivo 💵" },
-      { id: "nequi", title: "Nequi/Daviplata 📱" },
-      { id: "bancolombia", title: "Bancolombia/Llave🏦" }
-    ]
-  );
-  return res.sendStatus(200);
+  updateOrderStep(phone, "esperando_email_factura");
+  replyMessage = "Gracias 🧾 Ahora envíame tu correo electrónico para la factura.";
+
+} else if (currentOrder?.step === "esperando_email_factura") {
+  const orderEm = getOrder(phone)!;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(text.trim())) {
+    replyMessage = "No reconocí ese correo 📧 Por favor escríbelo así:\n\nejemplo@correo.com";
+  } else {
+    orderEm.emailFactura = text.trim().toLowerCase();
+    updateOrderStep(phone, "esperando_pago");
+    currentOrder = getOrder(phone)!;
+    const totalsEm = calculateTotal(orderEm);
+    await sendWhatsAppButtons(phone,
+      `El total de tu pedido es $${totalsEm.total.toLocaleString("es-CO")} 💰\n¿Cómo deseas pagar?`,
+      [
+        { id: "efectivo", title: "Efectivo 💵" },
+        { id: "nequi", title: "Nequi/Daviplata 📱" },
+        { id: "bancolombia", title: "Bancolombia/Llave🏦" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
 
 } else if (currentOrder?.step === "esperando_comprobante") {
 
