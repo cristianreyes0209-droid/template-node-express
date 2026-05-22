@@ -1643,9 +1643,13 @@ if (text.includes("PEDIDO - LAS CREPES")) {
   updateOrderStep(phone, "post_agregar_producto");
   currentOrder = getOrder(phone)!;
 
+  const totalesCD = calculateTotal(currentOrder);
+  const preciosAjustados = totalesCD.subtotal !== cdParsed.total;
   const resumenCD = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
   await sendWhatsAppButtons(phone,
-    `🥞 *Tu pedido de la carta digital:*\n\n${resumenCD}\n\n¿Qué deseas hacer?`,
+    `🥞 *Tu pedido de la carta digital:*\n\n${resumenCD}\n\n*Subtotal: $${totalesCD.subtotal.toLocaleString("es-CO")}*` +
+    (preciosAjustados ? "\n⚠️ _Precios verificados con nuestro menú._" : "") +
+    `\n\n¿Qué deseas hacer?`,
     [
       { id: "confirmar",   title: "Confirmar ✅" },
       { id: "agregar_mas", title: "Agregar más ➕" },
