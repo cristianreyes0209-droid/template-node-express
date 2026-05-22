@@ -1611,18 +1611,19 @@ if (text.includes("PEDIDO - LAS CREPES")) {
         return candidates.some((c: string) => c === normNombre || normNombre.includes(c));
       });
       let precio = i.precio;
-      // Si el item tiene extras, la carta ya incluye su precio total → solo corregir si precio es $0
-      const tieneExtras = i.extras && i.extras.length > 0;
-      if (found && (!tieneExtras || precio === 0)) {
+      if (found) {
+        let menuPrecio = found.precio;
         if (i.variante && found.variantes?.length) {
           const normVariante = normalizeText(i.variante);
           const foundVariant = found.variantes.find((v: any) => {
             const vCandidates = [v.nombre, ...(v.aliases || [])].map((a: string) => normalizeText(a));
             return vCandidates.some((c: string) => c === normVariante || normVariante.includes(c));
           });
-          precio = foundVariant?.precio ?? found.precio;
-        } else {
-          precio = found.precio;
+          menuPrecio = foundVariant?.precio ?? found.precio;
+        }
+        // Solo corregir si la carta trae un precio menor al del menú (manipulación o $0)
+        if (precio < menuPrecio) {
+          precio = menuPrecio;
         }
       }
       const cantidad = Math.max(1, Math.min(20, i.cantidad || 1));
