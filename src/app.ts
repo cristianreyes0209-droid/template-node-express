@@ -1251,6 +1251,23 @@ const esConsultaDisponibilidad =
     lower.startsWith("hay ")
   );
 if (esConsultaDisponibilidad) {
+  // Consulta sobre domicilio como servicio
+  if (lower.includes("domicilio") || lower.includes("delivery") || lower.includes("domicilios")) {
+    await sendWhatsAppMessage(phone,
+      "Sí, tenemos domicilio a toda la ciudad 🛵\n\n🕐 Nuestro horario de atención es de *3:00 PM a 10:15 PM* todos los días.\n\n¿Te ayudo con tu pedido? 😊"
+    );
+    return res.sendStatus(200);
+  }
+  // Consulta sobre horario / servicio / atención
+  if (lower.includes("servicio") || lower.includes("atienden") || lower.includes("abren") ||
+      lower.includes("cierran") || lower.includes("abierto") || lower.includes("abiertos")) {
+    await sendWhatsAppMessage(phone,
+      "🕐 Nuestro horario de atención es de *3:00 PM a 10:15 PM* todos los días 😊\n\n" +
+      "📍 La Villa - Calle 83 #16a-22\n" +
+      "📍 Av. Circunvalar #8-94 local 1"
+    );
+    return res.sendStatus(200);
+  }
   const allProdsDisp = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
   let matchedProd: any = null;
   for (const prod of allProdsDisp) {
