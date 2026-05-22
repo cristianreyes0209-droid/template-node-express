@@ -29,6 +29,8 @@
   --villa: #7ec98a;
   --circ: #7ab8e8;
   --danger: #e87a7a;
+  --wa: #25d366;
+  --wa-bg: rgba(37,211,102,0.1);
   --r: 14px;
   --r-sm: 8px;
 }
@@ -76,13 +78,13 @@ body {
 /* HEADER */
 .header {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(15,15,15,0.94);
+  background: rgba(15,15,15,0.96);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
-  padding: 13px 16px 11px;
+  padding: 13px 16px 0;
 }
-.header-row {
+.header-top {
   display: flex; align-items: center;
   justify-content: space-between; margin-bottom: 12px;
 }
@@ -95,10 +97,10 @@ body {
 .brand-name { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
 .brand-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
 
-/* Metrics strip */
+/* Metrics */
 .metrics {
   display: grid; grid-template-columns: repeat(4, 1fr);
-  gap: 7px; padding: 0 16px; margin: 12px 0 0;
+  gap: 7px; margin-bottom: 12px;
 }
 .metric {
   background: var(--surface); border: 1px solid var(--border);
@@ -110,18 +112,34 @@ body {
 }
 .metric-lbl { font-size: 9px; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
 
-/* Tabs */
-.tabs-wrap { padding: 10px 16px 0; overflow-x: auto; scrollbar-width: none; }
-.tabs-wrap::-webkit-scrollbar { display: none; }
-.tabs { display: flex; gap: 6px; min-width: max-content; }
-.tab {
-  padding: 6px 14px; font-size: 12px; font-weight: 500;
-  font-family: 'DM Sans', sans-serif;
-  border-radius: 20px; border: 1px solid var(--border);
-  background: transparent; color: var(--muted); cursor: pointer;
-  white-space: nowrap; transition: all 0.12s;
+/* Tabs — estilo OlaClick */
+.tabs-bar {
+  display: flex; gap: 0;
+  border-top: 1px solid var(--border);
+  overflow-x: auto; scrollbar-width: none;
 }
-.tab.active { background: var(--accent); border-color: var(--accent); color: #000; }
+.tabs-bar::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex: 1; min-width: 80px;
+  padding: 10px 8px 10px;
+  font-size: 12px; font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  background: transparent; border: none;
+  color: var(--muted); cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: all 0.12s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.tab-btn .tab-count {
+  font-size: 18px; font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  line-height: 1;
+}
+.tab-btn .tab-label { font-size: 10px; color: var(--muted); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+.tab-btn.active .tab-count { color: var(--accent); }
+.tab-btn.active .tab-label { color: var(--text); }
 
 /* Content */
 .content { padding: 12px 16px 80px; }
@@ -218,6 +236,9 @@ body {
 .b-villa { background: rgba(126,201,138,0.1); color: var(--villa); }
 .b-circ { background: rgba(122,184,232,0.1); color: var(--circ); }
 .b-pago { background: var(--surface3); color: var(--muted); }
+.b-carta { background: rgba(232,201,122,0.12); color: var(--accent); }
+.b-asesor { background: rgba(232,122,122,0.15); color: var(--danger); border: 1px solid rgba(232,122,122,0.25); }
+.asesor-alert { border-color: rgba(232,122,122,0.4) !important; }
 
 .pedido-hora {
   font-size: 11px; color: var(--dim);
@@ -283,9 +304,9 @@ body {
 .btn-estado:active { opacity: 0.75; }
 .btn-estado:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.btn-preparacion { background: var(--preparacion-bg); color: var(--preparacion); border: 1px solid rgba(232,168,58,0.2); }
 .btn-camino { background: var(--camino-bg); color: var(--camino); border: 1px solid rgba(160,122,232,0.2); }
 .btn-entregado { background: var(--entregado-bg); color: var(--entregado); border: 1px solid rgba(126,201,138,0.2); }
+.btn-wa { background: var(--wa-bg); border: 1px solid rgba(37,211,102,0.25); color: var(--wa); flex: 0 0 auto; padding: 10px 14px; }
 
 .btn-active {
   outline: 2px solid currentColor;
@@ -330,11 +351,11 @@ body {
   padding: 12px 14px;
 }
 .chat-label {
-  font-size: 10px; color: var(--asesor, #e8a87a);
+  font-size: 10px; color: var(--wa);
   text-transform: uppercase; letter-spacing: 0.07em;
   margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
 }
-.chat-label::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--asesor, #e8a87a); }
+.chat-label::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--wa); }
 .chat-input-row {
   display: flex; gap: 8px; align-items: flex-end;
 }
@@ -353,13 +374,13 @@ body {
   max-height: 120px;
   line-height: 1.5;
 }
-.chat-textarea:focus { border-color: rgba(232,168,122,0.5); }
+.chat-textarea:focus { border-color: rgba(37,211,102,0.4); }
 .chat-textarea::placeholder { color: var(--dim); }
 .chat-send {
-  background: rgba(232,168,122,0.15);
-  border: 1px solid rgba(232,168,122,0.3);
+  background: var(--wa-bg);
+  border: 1px solid rgba(37,211,102,0.3);
   border-radius: var(--r-sm);
-  color: #e8a87a;
+  color: var(--wa);
   padding: 10px 14px;
   font-size: 16px;
   cursor: pointer;
@@ -367,7 +388,7 @@ body {
   transition: background 0.12s;
   height: 42px; display: flex; align-items: center;
 }
-.chat-send:active { background: rgba(232,168,122,0.25); }
+.chat-send:active { background: rgba(37,211,102,0.2); }
 .chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
 .chat-historial {
   margin-bottom: 10px;
@@ -387,14 +408,14 @@ body {
   word-break: break-word;
 }
 .chat-msg.asesor {
-  background: rgba(232,168,122,0.1);
-  color: #e8a87a;
-  border: 1px solid rgba(232,168,122,0.2);
+  background: var(--wa-bg);
+  color: var(--wa);
+  border: 1px solid rgba(37,211,102,0.2);
   align-self: flex-start;
   border-bottom-left-radius: 3px;
 }
 .chat-msg.cliente {
-  background: var(--client-bubble, #1e2d3a);
+  background: var(--surface3);
   color: var(--circ);
   align-self: flex-end;
   border-bottom-right-radius: 3px;
@@ -422,7 +443,7 @@ body {
 <div id="main" style="display:none">
 
   <div class="header">
-    <div class="header-row">
+    <div class="header-top">
       <div class="brand">
         <div class="brand-ico">🥞</div>
         <div>
@@ -454,14 +475,23 @@ body {
       </div>
     </div>
 
-    <div class="tabs-wrap">
-      <div class="tabs" style="margin-top:10px">
-        <button class="tab active" data-tab="todos" onclick="setTab(this)">Todos</button>
-        <button class="tab" data-tab="recibido" onclick="setTab(this)">🥞 Recibidos</button>
-        <button class="tab" data-tab="en_preparacion" onclick="setTab(this)">🍳 En prep.</button>
-        <button class="tab" data-tab="en_camino" onclick="setTab(this)">🛵 En camino</button>
-        <button class="tab" data-tab="entregado" onclick="setTab(this)">✅ Entregados</button>
-      </div>
+    <div class="tabs-bar">
+      <button class="tab-btn active" data-tab="todos" onclick="setTab(this)">
+        <span class="tab-count" id="tc-todos">0</span>
+        <span class="tab-label">Todos</span>
+      </button>
+      <button class="tab-btn" data-tab="la_villa" onclick="setTab(this)">
+        <span class="tab-count" id="tc-villa">0</span>
+        <span class="tab-label">🏠 La Villa</span>
+      </button>
+      <button class="tab-btn" data-tab="circunvalar" onclick="setTab(this)">
+        <span class="tab-count" id="tc-circ">0</span>
+        <span class="tab-label">📍 Circunvalar</span>
+      </button>
+      <button class="tab-btn" data-tab="entregado" onclick="setTab(this)">
+        <span class="tab-count" id="tc-entregado">0</span>
+        <span class="tab-label">✅ Entregados</span>
+      </button>
     </div>
   </div>
 
@@ -509,7 +539,6 @@ async function checkPin() {
   refreshTimer = setInterval(loadPedidos, 30000);
 }
 
-// El script está al final del body — DOM ya está listo, no necesita DOMContentLoaded
 (function init() {
   const p = new URLSearchParams(window.location.search);
   const k = p.get('key');
@@ -535,12 +564,18 @@ async function loadPedidos() {
     const activos = allPedidos.filter(p => p.estado !== 'entregado').length;
     const villa = allPedidos.filter(p => p.sucursal === 'la_villa').length;
     const circ = allPedidos.filter(p => p.sucursal === 'circunvalar').length;
+    const entregados = allPedidos.filter(p => p.estado === 'entregado').length;
 
     document.getElementById('m-total').textContent = allPedidos.length;
     document.getElementById('m-activos').textContent = activos;
     document.getElementById('m-villa').textContent = villa;
     document.getElementById('m-circ').textContent = circ;
     document.getElementById('update-txt').textContent = 'Act. ' + now() + ' · auto ↺ 30s';
+
+    document.getElementById('tc-todos').textContent = allPedidos.length;
+    document.getElementById('tc-villa').textContent = villa;
+    document.getElementById('tc-circ').textContent = circ;
+    document.getElementById('tc-entregado').textContent = entregados;
 
     renderList();
   } catch(e) {
@@ -557,22 +592,27 @@ function now() {
 
 // --- Tab ---
 function setTab(el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   currentTab = el.dataset.tab;
   renderList();
 }
 
 // --- Render ---
+function filterByTab(list) {
+  if (currentTab === 'todos') return list;
+  if (currentTab === 'entregado') return list.filter(p => p.estado === 'entregado');
+  // la_villa o circunvalar — filtrar por sucursal, excluir entregados
+  return list.filter(p => p.sucursal === currentTab && p.estado !== 'entregado');
+}
+
 function renderList() {
-  let list = allPedidos;
-  if (currentTab !== 'todos') list = allPedidos.filter(p => p.estado === currentTab);
+  const list = filterByTab(allPedidos);
 
   if (!list.length) {
     const msgs = {
-      recibido: 'Sin pedidos recibidos pendientes',
-      en_preparacion: 'Nada en preparación',
-      en_camino: 'Ningún pedido en camino',
+      la_villa: 'Sin pedidos activos en La Villa',
+      circunvalar: 'Sin pedidos activos en Circunvalar',
       entregado: 'Sin pedidos entregados hoy',
       todos: 'Sin pedidos en las últimas 24h'
     };
@@ -592,6 +632,12 @@ function renderCard(p) {
     ? '<span class="badge-small b-villa">La Villa</span>'
     : p.sucursal === 'circunvalar'
     ? '<span class="badge-small b-circ">Circunvalar</span>'
+    : '';
+  const cartaBadge = p.viene_de_carta
+    ? '<span class="badge-small b-carta">📲 Carta</span>'
+    : '';
+  const asesorBadge = p.asesor_intervenido
+    ? '<span class="badge-small b-asesor">⚠️ Asesor</span>'
     : '';
   const estadoLabels = {
     recibido: '🥞 Recibido',
@@ -619,6 +665,15 @@ function renderCard(p) {
         <div class="detail-label">Dirección</div>
         <div class="detail-dir">📍 ${esc(p.direccion)}</div>
       </div>` : ''}
+      ${p.observaciones_generales ? `<div class="detail-section">
+        <div class="detail-label">Observaciones</div>
+        <div class="detail-dir">📝 ${esc(p.observaciones_generales)}</div>
+      </div>` : ''}
+      ${p.factura ? `<div class="detail-section">
+        <div class="detail-label">Facturación electrónica</div>
+        <div class="detail-dir">🧾 ${esc(p.factura)}</div>
+        ${p.email_factura ? `<div class="detail-dir">📧 ${esc(p.email_factura)}</div>` : ''}
+      </div>` : ''}
       <div class="detail-section">
         <div class="totales-row"><span>Subtotal</span><span>${fmt(p.subtotal)}</span></div>
         ${p.domicilio ? `<div class="totales-row"><span>Domicilio</span><span>${fmt(p.domicilio)}</span></div>` : ''}
@@ -626,9 +681,9 @@ function renderCard(p) {
       </div>
     </div>` : '';
 
-  const estados = ['en_preparacion','en_camino','entregado'];
-  const btnLabels = { en_preparacion: '🍳 Preparación', en_camino: '🛵 En camino', entregado: '✅ Entregado' };
-  const btnClass = { en_preparacion: 'btn-preparacion', en_camino: 'btn-camino', entregado: 'btn-entregado' };
+  const estados = ['en_camino', 'entregado'];
+  const btnLabels = { en_camino: '🛵 En camino', entregado: '✅ Entregado' };
+  const btnClass = { en_camino: 'btn-camino', entregado: 'btn-entregado' };
 
   const btns = estados.map(e => {
     const isCurrent = p.estado === e;
@@ -640,7 +695,9 @@ function renderCard(p) {
     </button>`;
   }).join('');
 
-  return `<div class="pedido-card" id="card-${p.id}">
+  const waIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
+
+  return `<div class="pedido-card${p.asesor_intervenido ? ' asesor-alert' : ''}" id="card-${p.id}">
     <div class="pedido-top" onclick="toggleCard('${p.id}')">
       <div class="pedido-row1">
         <div>
@@ -657,7 +714,7 @@ function renderCard(p) {
         <span class="badge-estado s-${p.estado}">${estadoLabels[p.estado] || p.estado}</span>
       </div>
       <div class="pedido-row3">
-        ${sucBadge}
+        ${sucBadge}${cartaBadge}${asesorBadge}
         <span class="badge-small b-pago">${p.forma_pago || 'Sin forma pago'}</span>
         <span class="pedido-hora">${hora}</span>
       </div>
@@ -665,9 +722,9 @@ function renderCard(p) {
     ${detailHtml}
     <div class="pedido-actions">
       ${btns}
-      <button class="btn-estado" style="background:rgba(232,168,122,0.1);border:1px solid rgba(232,168,122,0.25);color:#e8a87a;flex:0 0 auto;padding:10px 12px;"
-        onclick="toggleChat('${p.id}','${p.phone}',event)" title="Escribir al cliente">
-        💬
+      <button class="btn-estado btn-wa"
+        onclick="toggleChat('${p.id}','${p.phone}',event)" title="Chat WhatsApp">
+        ${waIcon}
       </button>
     </div>
     ${chatSection(p)}
@@ -691,7 +748,7 @@ function chatSection(p) {
   }).join('') : '<div style="font-size:12px;color:var(--dim);text-align:center;padding:8px 0">Sin historial reciente</div>';
 
   return `<div class="chat-section" onclick="event.stopPropagation()">
-    <div class="chat-label">Intervención asesor → ${esc(p.nombre || p.phone)}</div>
+    <div class="chat-label">WhatsApp → ${esc(p.nombre || p.phone)}</div>
     <div class="chat-historial" id="chat-hist-${p.id}">${histHtml}</div>
     <div class="chat-input-row">
       <textarea class="chat-textarea" id="chat-txt-${p.id}"
@@ -763,13 +820,12 @@ async function enviarMensaje(id, phone) {
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
 
-    // Agregar al historial local inmediatamente
     if (!chatHistorial[phone]) chatHistorial[phone] = [];
     chatHistorial[phone].push({ rol: 'asesor', mensaje: msg, created_at: new Date().toISOString() });
 
     txt.value = '';
     txt.style.height = 'auto';
-    showToast('✅ Mensaje enviado al cliente');
+    showToast('✅ Mensaje enviado');
     renderList();
     setTimeout(() => {
       const hist = document.getElementById('chat-hist-' + chatOpenId);
@@ -778,7 +834,7 @@ async function enviarMensaje(id, phone) {
       if (t2) t2.focus();
     }, 40);
   } catch(e) {
-    showToast('⚠️ Error enviando: ' + e.message);
+    showToast('⚠️ Error: ' + e.message);
   } finally {
     if (txt) { txt.disabled = false; }
     if (btn) { btn.disabled = false; btn.textContent = '➤'; }
@@ -817,7 +873,7 @@ async function cambiarEstado(id, nuevoEstado, btn, event) {
     const idx = allPedidos.findIndex(p => p.id === id);
     if (idx !== -1) allPedidos[idx].estado = nuevoEstado;
 
-    const labels = { en_preparacion: '🍳 En preparación', en_camino: '🛵 En camino', entregado: '✅ Entregado' };
+    const labels = { en_camino: '🛵 En camino', entregado: '✅ Entregado' };
     showToast('✅ ' + (labels[nuevoEstado] || nuevoEstado) + ' → WhatsApp enviado');
     renderList();
   } catch(e) {

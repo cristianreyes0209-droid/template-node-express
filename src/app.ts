@@ -3971,7 +3971,7 @@ return res.sendStatus(200);
     const totalsEf = calculateTotal(orderEf);
 
     await upsertCustomer({ phone, name: orderEf.nombre, last_address: orderEf.direccion, last_order: orderEf.items, last_order_at: new Date().toISOString(), last_sucursal: orderEf.sucursal });
-    savePedido({ numero_orden: orderEf.numeroOrden, phone, nombre: orderEf.nombre, direccion: orderEf.direccion, items: orderEf.items, subtotal: totalsEf.subtotal, domicilio: totalsEf.domicilio, total: totalsEf.total, forma_pago: "efectivo", sucursal: orderEf.sucursal, tipo_entrega: orderEf.tipoEntrega, canal: orderEf.canal, confirmed_at: orderEf.confirmedAt, estado: 'recibido' }).catch(e => console.error("❌ savePedido:", e));
+    savePedido({ numero_orden: orderEf.numeroOrden, phone, nombre: orderEf.nombre, direccion: orderEf.direccion, items: orderEf.items, subtotal: totalsEf.subtotal, domicilio: totalsEf.domicilio, total: totalsEf.total, forma_pago: "efectivo", sucursal: orderEf.sucursal, tipo_entrega: orderEf.tipoEntrega, canal: orderEf.canal, confirmed_at: orderEf.confirmedAt, estado: 'recibido', factura: orderEf.factura, email_factura: orderEf.emailFactura, viene_de_carta: orderEf.vieneDeCarta, observaciones_generales: orderEf.observacionesGenerales, asesor_intervenido: orderEf.asesorIntervenido }).catch(e => console.error("❌ savePedido:", e));
     if (orderEf.tipoEntrega === "domicilio") {
       const dirEf = (orderEf.direccion || "").trim();
       const INVALIDAS_DIR = new Set(["hola", "si", "sí", "ok", "espera", "bueno", "bien", "ya", "dale", "listo", "claro", "no"]);
@@ -4193,7 +4193,7 @@ return res.sendStatus(200);
       last_order_at: new Date().toISOString(),
       last_sucursal: order.sucursal
     });
-    savePedido({ numero_orden: order.numeroOrden, phone, nombre: order.nombre, direccion: order.direccion, items: order.items, subtotal: totals.subtotal, domicilio: totals.domicilio, total: totals.total, forma_pago: order.formaPago, sucursal: order.sucursal, tipo_entrega: order.tipoEntrega, canal: order.canal, confirmed_at: order.confirmedAt, estado: 'recibido' }).catch(e => console.error("❌ savePedido:", e));
+    savePedido({ numero_orden: order.numeroOrden, phone, nombre: order.nombre, direccion: order.direccion, items: order.items, subtotal: totals.subtotal, domicilio: totals.domicilio, total: totals.total, forma_pago: order.formaPago, sucursal: order.sucursal, tipo_entrega: order.tipoEntrega, canal: order.canal, confirmed_at: order.confirmedAt, estado: 'recibido', factura: order.factura, email_factura: order.emailFactura, viene_de_carta: order.vieneDeCarta, observaciones_generales: order.observacionesGenerales, asesor_intervenido: order.asesorIntervenido }).catch(e => console.error("❌ savePedido:", e));
     if (order.tipoEntrega === "domicilio") {
       const dirComp = (order.direccion || "").trim();
       const INVALIDAS_DIR_C = new Set(["hola", "si", "sí", "ok", "espera", "bueno", "bien", "ya", "dale", "listo", "claro", "no"]);

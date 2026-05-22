@@ -51,6 +51,16 @@ pool.connect()
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `).catch(err => console.error("❌ Error creando tabla pedidos:", err));
+    await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS factura TEXT`)
+      .catch(err => console.error("❌ Error agregando columna factura:", err));
+    await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS email_factura TEXT`)
+      .catch(err => console.error("❌ Error agregando columna email_factura:", err));
+    await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS viene_de_carta BOOLEAN DEFAULT false`)
+      .catch(err => console.error("❌ Error agregando columna viene_de_carta:", err));
+    await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS observaciones_generales TEXT`)
+      .catch(err => console.error("❌ Error agregando columna observaciones_generales:", err));
+    await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS asesor_intervenido BOOLEAN DEFAULT false`)
+      .catch(err => console.error("❌ Error agregando columna asesor_intervenido:", err));
     client.release();
   })
   .catch((err) => {
@@ -187,6 +197,11 @@ export type PedidoData = {
   holaclick_order?: string;
   confirmed_at?: string;
   estado?: string;
+  factura?: string;
+  email_factura?: string;
+  viene_de_carta?: boolean;
+  observaciones_generales?: string;
+  asesor_intervenido?: boolean;
 };
 
 export async function savePedido(data: PedidoData): Promise<number | null> {
@@ -194,8 +209,9 @@ export async function savePedido(data: PedidoData): Promise<number | null> {
     const result = await pool.query(
       `INSERT INTO pedidos
         (numero_orden, phone, nombre, direccion, items, subtotal, domicilio, total,
-         forma_pago, sucursal, tipo_entrega, canal, holaclick_order, confirmed_at, estado)
-       VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+         forma_pago, sucursal, tipo_entrega, canal, holaclick_order, confirmed_at, estado,
+         factura, email_factura, viene_de_carta, observaciones_generales, asesor_intervenido)
+       VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
        RETURNING id`,
       [
         data.numero_orden || null,
@@ -213,6 +229,11 @@ export async function savePedido(data: PedidoData): Promise<number | null> {
         data.holaclick_order || null,
         data.confirmed_at || null,
         data.estado || 'recibido',
+        data.factura || null,
+        data.email_factura || null,
+        data.viene_de_carta ?? false,
+        data.observaciones_generales || null,
+        data.asesor_intervenido ?? false,
       ]
     );
     console.log("✅ Pedido guardado id:", result.rows[0]?.id);
