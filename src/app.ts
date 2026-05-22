@@ -1598,7 +1598,10 @@ if (text.includes("PEDIDO - LAS CREPES")) {
   if (prevTipoEntrega) orderCD.tipoEntrega = prevTipoEntrega;
   if (prevSucursal)    orderCD.sucursal    = prevSucursal;
 
-  const allMenuProdsCD = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+  // Excluir "extras" para evitar colisiones de nombre con crepes (ej. "Nutella" extra vs crepe Nutella)
+  const allMenuProdsCD = (menu.categorias as any[])
+    .filter((c: any) => c.id !== "extras")
+    .reduce((acc: any[], c: any) => acc.concat(c.productos), []);
 
   if (cdParsed.items.length > 0) {
     createOrUpdateOrder(phone, cdParsed.items.map(i => {
@@ -1608,7 +1611,9 @@ if (text.includes("PEDIDO - LAS CREPES")) {
         return candidates.some((c: string) => c === normNombre || normNombre.includes(c));
       });
       let precio = i.precio;
-      if (found) {
+      // Si el item tiene extras, la carta ya incluye su precio total → solo corregir si precio es $0
+      const tieneExtras = i.extras && i.extras.length > 0;
+      if (found && (!tieneExtras || precio === 0)) {
         if (i.variante && found.variantes?.length) {
           const normVariante = normalizeText(i.variante);
           const foundVariant = found.variantes.find((v: any) => {
