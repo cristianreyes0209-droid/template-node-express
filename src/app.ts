@@ -4799,9 +4799,9 @@ app.post('/api/pedidos/:id/estado', async (req, res) => {
   if (pedido?.phone) {
     const nombre = pedido.nombre || "Cliente";
     const msgs: Record<string, string> = {
-      en_preparacion: `🍳 ${nombre}, tu pedido está en preparación. ¡Ya casi!`,
-      en_camino:      `🛵 ${nombre}, tu pedido ya va en camino. Tiempo estimado: 30-40 min.`,
-      entregado:      `✅ ${nombre}, pedido entregado. ¡Gracias por pedir en Las Crepes! 🥞`
+      en_preparacion: `🍳 ¡Hola ${nombre}! Tu pedido está en preparación. ¡Ya casi! 🥞`,
+      en_camino:      `🛵 ¡Hola ${nombre}! Tu pedido está en camino 🛵\nPronto podrás disfrutar de tus deliciosas crepes 🥞`,
+      entregado:      `✅ ¡Hola ${nombre}! Tu pedido fue entregado.\nGracias por tu orden 🥞 ¡Hasta pronto!`
     };
     sendWhatsAppMessage(pedido.phone, msgs[estado])
       .catch(e => console.error("❌ Notif estado:", e));
@@ -4823,10 +4823,11 @@ app.put('/api/pedidos/:id/estado', async (req, res) => {
 
   const pedido = await getPedidoById(id);
   if (pedido?.phone) {
+    const nombre2 = pedido.nombre || "Cliente";
     if (estado === "en_camino") {
-      sendWhatsAppMessage(pedido.phone, "🛵 ¡Tu pedido está en camino! Pronto llegará a tu dirección. Gracias por tu preferencia 🥞").catch(e => console.error("❌ Notif en_camino:", e));
+      sendWhatsAppMessage(pedido.phone, `🛵 ¡Hola ${nombre2}! Tu pedido está en camino 🛵\nPronto podrás disfrutar de tus deliciosas crepes 🥞`).catch(e => console.error("❌ Notif en_camino:", e));
     } else if (estado === "entregado") {
-      sendWhatsAppMessage(pedido.phone, "✅ Tu pedido fue entregado exitosamente. Si tienes alguna inquietud háznosla saber al 📱 315 191 3928. ¡Gracias por preferir Las Crepes de París! 🥞").catch(e => console.error("❌ Notif entregado:", e));
+      sendWhatsAppMessage(pedido.phone, `✅ ¡Hola ${nombre2}! Tu pedido fue entregado.\nGracias por tu orden 🥞 ¡Hasta pronto!`).catch(e => console.error("❌ Notif entregado:", e));
     }
   }
 
