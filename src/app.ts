@@ -1953,6 +1953,21 @@ if (
     } catch (e) { console.error("❌ Error Gemini fallback:", e); }
   }
   if (currentOrder?.step === "armando_pedido") {
+    const quierePedirPorAca =
+      lower.includes("por aca") || lower.includes("por acá") ||
+      lower.includes("por aqui") || lower.includes("por aquí") ||
+      lower.includes("puedo hacerlo") || lower.includes("puedo pedirlo") ||
+      lower.includes("puedo ordenar") || lower.includes("puedo pedir");
+    if (quierePedirPorAca) {
+      await sendWhatsAppMessage(phone,
+        "¡Claro que sí! 😊 Puedes hacer tu pedido aquí mismo.\n\n" +
+        "Escríbeme qué deseas pedir así:\n" +
+        "• 1 Hawaiana\n" +
+        "• 2 Ranchera\n" +
+        "• 1 Especial"
+      );
+      return res.sendStatus(200);
+    }
     currentOrder.armandoFallbacks = (currentOrder.armandoFallbacks || 0) + 1;
     if (currentOrder.armandoFallbacks >= 3) {
       currentOrder.armandoFallbacks = 0;
@@ -2934,6 +2949,35 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     return res.sendStatus(200);
   }
 
+  const quierePedirNuevo = lower.includes("pedido") || lower.includes("pedir") ||
+    lower.includes("quiero pedir") || lower.includes("hacer un pedido");
+  if (quierePedirNuevo && !currentOrder.asesorIntervenido) {
+    clearOrder(phone);
+    createOrUpdateOrder(phone, []);
+    updateOrderStep(phone, "esperando_menu_principal");
+    currentOrder = getOrder(phone)!;
+    if (tieneUltimoPedido) {
+      await sendWhatsAppButtons(phone,
+        MSG_BIENVENIDA_RECURRENTE(customer!.name?.trim() || undefined) + CREBOT_SUFFIX,
+        [
+          { id: "a", title: "Pedido anterior 🔄" },
+          { id: "b", title: "Pedir algo nuevo 🥞" },
+          { id: "3", title: "Otros 💬" }
+        ]
+      );
+    } else {
+      await sendWhatsAppButtons(phone,
+        MSG_BIENVENIDA_NUEVO + CREBOT_SUFFIX,
+        [
+          { id: "1", title: "Hacer un pedido 🥞" },
+          { id: "2", title: "Ver menu 📋" },
+          { id: "3", title: "Otros 💬" }
+        ]
+      );
+    }
+    return res.sendStatus(200);
+  }
+
   // Reenviar al asesor en silencio — el bot no responde al cliente
   const nombreAsesor = currentOrder.nombre || customer?.name || phone;
   const mensajeReenvio =
@@ -3086,8 +3130,8 @@ return res.sendStatus(200);
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
     replyMessage = currentOrder.tipoEntrega === "recoger"
-      ? "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\nSi necesitas contactarnos:\n📞 606 341 3020"
-      : "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 341 3020";
+      ? "Perfecto 👍 *Sucursal: La Villa* 🏠\n\nCuéntame qué deseas pedir 😊\n\nPuedes escribirlo así:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial"
+      : "Perfecto 👍 *Sucursal: La Villa* 🏠\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nCuéntame qué deseas pedir 😊\n\nPuedes escribirlo así:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial";
 
   } else if (
     lower === "b" ||
@@ -3154,8 +3198,8 @@ return res.sendStatus(200);
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
     replyMessage = currentOrder.tipoEntrega === "recoger"
-      ? "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\nSi necesitas contactarnos:\n📞 606 345 0257"
-      : "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 345 0257";
+      ? "Perfecto 👍 *Sucursal: Circunvalar* 📍\n\nCuéntame qué deseas pedir 😊\n\nPuedes escribirlo así:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial"
+      : "Perfecto 👍 *Sucursal: Circunvalar* 📍\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nCuéntame qué deseas pedir 😊\n\nPuedes escribirlo así:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial";
 
   } else {
     await sendWhatsAppButtons(phone,
