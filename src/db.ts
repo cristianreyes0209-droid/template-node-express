@@ -51,6 +51,16 @@ pool.connect()
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `).catch(err => console.error("❌ Error creando tabla pedidos:", err));
+    await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS items JSONB`)
+      .catch(err => console.error("❌ Error agregando columna items:", err));
+    await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS tipo_entrega TEXT`)
+      .catch(err => console.error("❌ Error agregando columna tipo_entrega:", err));
+    await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS canal TEXT`)
+      .catch(err => console.error("❌ Error agregando columna canal:", err));
+    await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS holaclick_order TEXT`)
+      .catch(err => console.error("❌ Error agregando columna holaclick_order:", err));
+    await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMPTZ`)
+      .catch(err => console.error("❌ Error agregando columna confirmed_at:", err));
     await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS factura TEXT`)
       .catch(err => console.error("❌ Error agregando columna factura:", err));
     await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS email_factura TEXT`)

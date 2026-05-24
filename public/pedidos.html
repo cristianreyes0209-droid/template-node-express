@@ -423,6 +423,25 @@ body {
 .chat-msg-wrap { display: flex; flex-direction: column; }
 .chat-msg-wrap.right { align-items: flex-end; }
 .chat-msg-time { font-size: 10px; color: var(--dim); margin-bottom: 2px; font-family: 'DM Mono', monospace; }
+
+/* CONVERSACIONES */
+.conv-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.conv-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px; gap: 10px; cursor: pointer;
+}
+.conv-header:active { background: var(--surface2); }
+.conv-phone { font-size: 13px; font-weight: 600; font-family: 'DM Mono', monospace; }
+.conv-preview { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.conv-time { font-size: 11px; color: var(--dim); font-family: 'DM Mono', monospace; white-space: nowrap; }
+.conv-detail { border-top: 1px solid var(--border); padding: 12px 14px; }
 </style>
 </head>
 <body>
@@ -492,6 +511,10 @@ body {
         <span class="tab-count" id="tc-entregado">0</span>
         <span class="tab-label">✅ Entregados</span>
       </button>
+      <button class="tab-btn" data-tab="chats" onclick="setTab(this)">
+        <span class="tab-count" id="tc-chats">–</span>
+        <span class="tab-label">💬 Chats</span>
+      </button>
     </div>
   </div>
 
@@ -501,12 +524,13 @@ body {
   </div>
 
   <div class="content">
-    <div class="toolbar">
+    <div class="toolbar" id="toolbar-pedidos">
       <span class="section-lbl">Pedidos – últimas 24h</span>
     </div>
     <div class="pedido-list" id="pedido-list">
       <div class="loader">Cargando pedidos...</div>
     </div>
+    <div id="conversacion-list" style="display:none"></div>
   </div>
 </div>
 
@@ -516,10 +540,13 @@ body {
 const API = 'https://crepes-bot.onrender.com';
 let sessionKey = '';
 let allPedidos = [];
+let allConversaciones = [];
 let currentTab = 'todos';
 let openId = null;
 let chatOpenId = null;
 let chatHistorial = {};
+let openConvPhone = null;
+let convHistorial = {};
 let refreshTimer = null;
 
 // --- Auth ---
@@ -578,12 +605,23 @@ async function loadPedidos() {
     document.getElementById('tc-entregado').textContent = entregados;
 
     renderList();
+    loadConversaciones();
   } catch(e) {
     document.getElementById('pedido-list').innerHTML =
       '<div class="empty-state"><div class="empty-ico">⚠️</div>Error: ' + e.message + '<br><small>Verifica que el servidor esté activo</small></div>';
   } finally {
     spin.classList.remove('spinning');
   }
+}
+
+async function loadConversaciones() {
+  try {
+    const r = await fetch(API + '/api/conversaciones?key=' + sessionKey);
+    if (!r.ok) return;
+    allConversaciones = await r.json();
+    document.getElementById('tc-chats').textContent = allConversaciones.length;
+    if (currentTab === 'chats') renderChats();
+  } catch(e) { /* silencioso */ }
 }
 
 function now() {
@@ -607,8 +645,23 @@ function filterByTab(list) {
 }
 
 function renderList() {
-  const list = filterByTab(allPedidos);
+  const pedList = document.getElementById('pedido-list');
+  const convList = document.getElementById('conversacion-list');
+  const toolbar = document.getElementById('toolbar-pedidos');
 
+  if (currentTab === 'chats') {
+    pedList.style.display = 'none';
+    if (toolbar) toolbar.style.display = 'none';
+    convList.style.display = 'block';
+    renderChats();
+    return;
+  }
+
+  pedList.style.display = '';
+  if (toolbar) toolbar.style.display = '';
+  convList.style.display = 'none';
+
+  const list = filterByTab(allPedidos);
   if (!list.length) {
     const msgs = {
       la_villa: 'Sin pedidos activos en La Villa',
@@ -616,17 +669,64 @@ function renderList() {
       entregado: 'Sin pedidos entregados hoy',
       todos: 'Sin pedidos en las últimas 24h'
     };
-    document.getElementById('pedido-list').innerHTML =
-      '<div class="empty-state"><div class="empty-ico">🥞</div>' + (msgs[currentTab] || 'Sin pedidos') + '</div>';
+    pedList.innerHTML = '<div class="empty-state"><div class="empty-ico">🥞</div>' + (msgs[currentTab] || 'Sin pedidos') + '</div>';
     return;
   }
+  pedList.innerHTML = list.map(p => renderCard(p)).join('');
+}
 
-  document.getElementById('pedido-list').innerHTML = list.map(p => renderCard(p)).join('');
+function renderChats() {
+  const el = document.getElementById('conversacion-list');
+  if (!allConversaciones.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-ico">💬</div>Sin conversaciones recientes</div>';
+    return;
+  }
+  el.innerHTML = allConversaciones.map(c => renderConvItem(c)).join('');
+}
+
+function renderConvItem(c) {
+  const isOpen = openConvPhone === c.phone;
+  const t = new Date(c.ultimo_mensaje).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  const hist = convHistorial[c.phone] || [];
+
+  const histHtml = hist.length ? hist.map(m => {
+    const isAsesor = m.rol === 'asesor';
+    const mt = new Date(m.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    return `<div class="chat-msg-wrap${isAsesor ? '' : ' right'}">
+      <div class="chat-msg-time">${isAsesor ? 'Asesor' : 'Cliente'} · ${mt}</div>
+      <div class="chat-msg ${isAsesor ? 'asesor' : 'cliente'}">${esc(m.mensaje).replace(/\n/g,'<br>')}</div>
+    </div>`;
+  }).join('') : '<div style="font-size:12px;color:var(--dim);text-align:center;padding:8px 0">Cargando...</div>';
+
+  const detailHtml = isOpen ? `
+    <div class="conv-detail">
+      <div class="chat-historial" id="conv-hist-${c.phone}">${histHtml}</div>
+      <div class="chat-input-row">
+        <textarea class="chat-textarea" id="conv-txt-${c.phone}"
+          placeholder="Escribe un mensaje..."
+          onkeydown="convKeydown(event,'${c.phone}')"
+          rows="1"
+          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+        <button class="chat-send" id="conv-btn-${c.phone}"
+          onclick="enviarMensajeConv('${c.phone}')">➤</button>
+      </div>
+    </div>` : '';
+
+  return `<div class="conv-item">
+    <div class="conv-header" onclick="toggleConv('${c.phone}')">
+      <div>
+        <div class="conv-phone">${fmtPhone(c.phone)}</div>
+        <div class="conv-preview">${c.total_mensajes} mensajes</div>
+      </div>
+      <div class="conv-time">${t}</div>
+    </div>
+    ${detailHtml}
+  </div>`;
 }
 
 function renderCard(p) {
   const isOpen = openId === p.id;
-  const productos = Array.isArray(p.productos) ? p.productos : [];
+  const productos = Array.isArray(p.items) ? p.items : (Array.isArray(p.productos) ? p.productos : []);
   const hora = new Date(p.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
   const sucBadge = p.sucursal === 'la_villa'
     ? '<span class="badge-small b-villa">La Villa</span>'
@@ -650,7 +750,7 @@ function renderCard(p) {
   const productosHtml = productos.length
     ? productos.map(pr => `
         <div class="producto-row">
-          <div><span class="prod-cant">${pr.cantidad}x</span>${esc(pr.nombre)}</div>
+          <div><span class="prod-cant">${pr.cantidad}x</span>${esc(pr.producto || pr.nombre)}${pr.variante ? ' – ' + esc(pr.variante) : ''}${pr.extras?.length ? ' <span style="color:var(--muted);font-size:11px">+' + pr.extras.map(e=>esc(e.nombre)).join(', +') + '</span>' : ''}</div>
           <div class="prod-precio">${fmt(pr.precio * pr.cantidad)}</div>
         </div>`).join('')
     : '<div style="color:var(--dim);font-size:13px">Sin detalle de productos</div>';
@@ -701,7 +801,7 @@ function renderCard(p) {
     <div class="pedido-top" onclick="toggleCard('${p.id}')">
       <div class="pedido-row1">
         <div>
-          <div class="pedido-num">#${p.numero_pedido || p.id.toString().slice(-4)}</div>
+          <div class="pedido-num">#${p.numero_orden || p.numero_pedido || p.id.toString().slice(-4)}</div>
           <div class="pedido-tipo">${p.direccion ? 'A domicilio' : 'Para recoger'}</div>
         </div>
         <div class="pedido-total">${fmt(p.total)}</div>
@@ -813,10 +913,10 @@ async function enviarMensaje(id, phone) {
   btn.textContent = '...';
 
   try {
-    const r = await fetch(API + '/api/mensaje', {
+    const r = await fetch(API + '/api/enviar-mensaje', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-panel-key': sessionKey },
-      body: JSON.stringify({ phone, mensaje: msg })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, mensaje: msg, key: sessionKey })
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
 
@@ -880,6 +980,84 @@ async function cambiarEstado(id, nuevoEstado, btn, event) {
     showToast('⚠️ Error: ' + e.message);
     btn.disabled = false;
     btn.textContent = nuevoEstado;
+  }
+}
+
+// --- Conversaciones ---
+function toggleConv(phone) {
+  if (openConvPhone === phone) {
+    openConvPhone = null;
+    renderChats();
+    return;
+  }
+  openConvPhone = phone;
+  renderChats();
+  cargarHistorialConv(phone);
+  setTimeout(() => {
+    const hist = document.getElementById('conv-hist-' + phone);
+    if (hist) hist.scrollTop = hist.scrollHeight;
+    const txt = document.getElementById('conv-txt-' + phone);
+    if (txt) txt.focus();
+  }, 50);
+}
+
+async function cargarHistorialConv(phone) {
+  try {
+    const r = await fetch(`${API}/api/conversacion/${phone}?key=${sessionKey}`);
+    if (r.ok) {
+      convHistorial[phone] = await r.json();
+      if (openConvPhone === phone) {
+        renderChats();
+        setTimeout(() => {
+          const hist = document.getElementById('conv-hist-' + phone);
+          if (hist) hist.scrollTop = hist.scrollHeight;
+          const txt = document.getElementById('conv-txt-' + phone);
+          if (txt) txt.focus();
+        }, 30);
+      }
+    }
+  } catch(e) { /* silencioso */ }
+}
+
+async function enviarMensajeConv(phone) {
+  const txt = document.getElementById('conv-txt-' + phone);
+  const btn = document.getElementById('conv-btn-' + phone);
+  const msg = txt.value.trim();
+  if (!msg) return;
+  txt.disabled = true;
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    const r = await fetch(API + '/api/enviar-mensaje', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, mensaje: msg, key: sessionKey })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (!convHistorial[phone]) convHistorial[phone] = [];
+    convHistorial[phone].push({ rol: 'asesor', mensaje: msg, created_at: new Date().toISOString() });
+    txt.value = '';
+    txt.style.height = 'auto';
+    showToast('✅ Mensaje enviado');
+    renderChats();
+    setTimeout(() => {
+      const hist = document.getElementById('conv-hist-' + phone);
+      if (hist) hist.scrollTop = hist.scrollHeight;
+      const t2 = document.getElementById('conv-txt-' + phone);
+      if (t2) t2.focus();
+    }, 40);
+  } catch(e) {
+    showToast('⚠️ Error: ' + e.message);
+  } finally {
+    if (txt) { txt.disabled = false; }
+    if (btn) { btn.disabled = false; btn.textContent = '➤'; }
+  }
+}
+
+function convKeydown(event, phone) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    enviarMensajeConv(phone);
   }
 }
 
