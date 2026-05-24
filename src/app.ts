@@ -3353,8 +3353,18 @@ return res.sendStatus(200);
   return res.sendStatus(200);
 
 } else if (currentOrder?.step === "esperando_nombre") {
-  // Cualquier texto se toma como nombre — nunca rechazar ni mostrar menú de bienvenida
   const nombreRecibido = text.trim();
+  const INVALIDOS_NOMBRE = new Set([
+    "confirmar", "agregar_mas", "agregar", "eliminar", "recoger",
+    "domicilio", "nequi", "efectivo", "bancolombia", "si", "sí", "no",
+    "a", "b", "1", "2", "3", "4", "5", "ok", "dale", "listo",
+    "factura_si", "factura_no", "pedir_algo_nuevo", "hablar_asesor",
+    "con_queso_dulce", "sin_queso_dulce", "con_jalapenos", "sin_jalapenos"
+  ]);
+  if (INVALIDOS_NOMBRE.has(nombreRecibido.toLowerCase()) || nombreRecibido.length < 2) {
+    await sendWhatsAppMessage(phone, "Por favor dime tu nombre 😊 ¿Cómo te llamas?");
+    return res.sendStatus(200);
+  }
   updateOrderName(phone, nombreRecibido);
   currentOrder = getOrder(phone)!;
   await upsertCustomer({ phone, name: nombreRecibido }).catch(err =>
