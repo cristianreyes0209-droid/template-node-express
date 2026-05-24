@@ -1005,7 +1005,8 @@ const skipParsing =
   currentOrder?.step === "post_agregar_producto" ||
   currentOrder?.step === "esperando_confirmacion" ||
   currentOrder?.step === "esperando_datos_factura" ||
-  currentOrder?.step === "esperando_email_factura";
+  currentOrder?.step === "esperando_email_factura" ||
+  currentOrder?.step === "confirmado";
 
 // Palabras clave simples y mensajes de botones que NO deben llamar a Gemini
 
