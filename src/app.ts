@@ -838,6 +838,16 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
           ]
         );
       }
+    } else if (stepActual === "esperando_pago") {
+      const totalsInact = calculateTotal(currentOrder);
+      await sendWhatsAppButtons(phone,
+        `El total de tu pedido es $${totalsInact.total.toLocaleString("es-CO")} 💰\n¿Cómo deseas pagar?`,
+        [
+          { id: "efectivo", title: "Efectivo 💵" },
+          { id: "nequi", title: "Nequi/Daviplata 📱" },
+          { id: "bancolombia", title: "Bancolombia/Llave🏦" }
+        ]
+      );
     } else {
       await sendWhatsAppMessage(phone, "Aquí estoy 😊 ¿En qué te ayudo?");
     }
@@ -1310,7 +1320,7 @@ if (esCorreccionDireccion && currentOrder && currentOrder.step !== "confirmado")
 if (
   currentOrder &&
   currentOrder.step !== "confirmado" &&
-  (lower === "cancelar" || lower === "cancela" || lower === "cancelar pedido" || lower.includes("cancelar pedido"))
+  (lower === "cancelar" || lower === "cancela" || lower.includes("cancelar pedido") || lower.includes("para cancelar"))
 ) {
   clearOrder(phone);
   await sendWhatsAppMessage(phone,
@@ -3740,12 +3750,65 @@ return res.sendStatus(200);
       "Respóndeme con el número del producto a retirar:\n\n" +
       resumen;
   } else {
-    const resumen = order.items
-      .map((item: any, i: number) => `* ${i + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`)
-      .join("\n");
-    replyMessage =
-      "Por favor respóndeme con el número del producto que deseas retirar:\n\n" +
-      resumen;
+    const lowerInput = lower.trim();
+
+    // ¿Coincide con el nombre de un extra de algún producto?
+    const matchExtra = order.items.find((item: any) =>
+      (item.extras || []).some((e: any) => e.nombre.toLowerCase().includes(lowerInput))
+    );
+    if (matchExtra) {
+      const resumen = order.items
+        .map((item: any, i: number) => `* ${i + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`)
+        .join("\n");
+      replyMessage =
+        `Entiendo 😊 Solo puedo retirar productos completos, no extras individuales.\n\n` +
+        `Si deseas quitar ese extra, retira el producto y vuélvelo a agregar sin él.\n\n` +
+        `¿Cuál producto deseas eliminar?\n\n` + resumen;
+    } else {
+      // ¿Coincide con el nombre de un producto?
+      const matchIdx = order.items.findIndex((item: any) =>
+        item.producto.toLowerCase().includes(lowerInput) ||
+        (item.variante || "").toLowerCase().includes(lowerInput)
+      );
+      if (matchIdx !== -1) {
+        order.items.splice(matchIdx, 1);
+        currentOrder = getOrder(phone)!;
+
+        if (!order.items || order.items.length === 0) {
+          updateOrderStep(phone, "armando_pedido");
+          currentOrder = getOrder(phone)!;
+          if (customer?.name) updateOrderName(phone, customer.name);
+          replyMessage =
+            "Listo 👍 Ya retiré ese producto.\n\n" +
+            "Tu pedido quedó vacío.\n\n" +
+            "¿Qué deseas pedir?";
+        } else {
+          const totals = calculateTotal(order);
+          const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
+          updateOrderStep(phone, "esperando_confirmacion");
+          currentOrder = getOrder(phone)!;
+          await sendWhatsAppButtons(phone,
+            "Perfecto 👌\n\nTu pedido actualizado es:\n" +
+            resumen +
+            buildResumenFooter(order, totals, order.domicilioTexto) +
+            "\n\n¿Qué deseas hacer?",
+            [
+              { id: "confirmar",   title: "✅ Confirmar" },
+              { id: "agregar_mas", title: "➕ Agregar" },
+              { id: "4",           title: "📝 Observación" }
+            ]
+          );
+          return res.sendStatus(200);
+        }
+      } else {
+        const resumen = order.items
+          .map((item: any, i: number) => `* ${i + 1}. ${item.producto}${item.variante ? " - " + item.variante : ""}`)
+          .join("\n");
+        replyMessage =
+          "Por favor respóndeme con el número del producto que deseas retirar:\n\n" +
+          resumen;
+      }
+    }
   }
 
 } else if (currentOrder?.step === "esperando_observacion_general") {
@@ -4146,17 +4209,35 @@ return res.sendStatus(200);
       `🔑 Llave: ${bancoLlave}\n\n` +
       "Cuando realices el pago envíame el comprobante 📸";
 
-} else {
-  const totalsElse = calculateTotal(getOrder(phone)!);
-   await sendWhatsAppButtons(phone,
-  `El total de tu pedido es $${totalsElse.total} 💰\n¿Cómo deseas pagar?`,
-  [
-    { id: "efectivo", title: "Efectivo 💵" },
-    { id: "nequi", title: "Nequi/Daviplata 📱" },
-    { id: "bancolombia", title: "Bancolombia/Llave🏦" }
-  ]
-);
-return res.sendStatus(200);
+  } else if (lower === "eliminar" || lower.includes("modificar") || lower.includes("cambiar pedido") || lower.includes("cambiar el pedido")) {
+    const orderVolver = getOrder(phone)!;
+    const totalsVolver = calculateTotal(orderVolver);
+    const resumenVolver = orderVolver.items.map((item: any) => formatLineaItem(item)).join("\n");
+    updateOrderStep(phone, "esperando_confirmacion");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      "Perfecto 👌\n\nTu pedido es:\n" + resumenVolver +
+      buildResumenFooter(orderVolver, totalsVolver, orderVolver.domicilioTexto) +
+      "\n\n¿Qué deseas hacer?",
+      [
+        { id: "confirmar",   title: "✅ Confirmar" },
+        { id: "agregar_mas", title: "➕ Agregar" },
+        { id: "eliminar",    title: "➖ Quitar" },
+        { id: "4",           title: "📝 Observación" }
+      ]
+    );
+    return res.sendStatus(200);
+  } else {
+    const totalsElse = calculateTotal(getOrder(phone)!);
+    await sendWhatsAppButtons(phone,
+      `El total de tu pedido es $${totalsElse.total.toLocaleString("es-CO")} 💰\n¿Cómo deseas pagar?`,
+      [
+        { id: "efectivo", title: "Efectivo 💵" },
+        { id: "nequi", title: "Nequi/Daviplata 📱" },
+        { id: "bancolombia", title: "Bancolombia/Llave🏦" }
+      ]
+    );
+    return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "esperando_factura") {
   const quiereFact = lower === "factura_si" || lower.includes("factura_si") ||
