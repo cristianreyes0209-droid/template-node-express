@@ -3130,8 +3130,8 @@ return res.sendStatus(200);
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
     replyMessage = currentOrder.tipoEntrega === "recoger"
-      ? "Perfecto 👍 *Sucursal: La Villa* 🏠\n\nCuéntame qué deseas pedir 😊\n\nPuedes escribirlo así:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial"
-      : "Perfecto 👍 *Sucursal: La Villa* 🏠\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nCuéntame qué deseas pedir 😊\n\nPuedes escribirlo así:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial";
+      ? "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\nSi necesitas contactarnos:\n📞 606 341 3020"
+      : "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 341 3020";
 
   } else if (
     lower === "b" ||
@@ -3198,8 +3198,8 @@ return res.sendStatus(200);
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
     replyMessage = currentOrder.tipoEntrega === "recoger"
-      ? "Perfecto 👍 *Sucursal: Circunvalar* 📍\n\nCuéntame qué deseas pedir 😊\n\nPuedes escribirlo así:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial"
-      : "Perfecto 👍 *Sucursal: Circunvalar* 📍\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nCuéntame qué deseas pedir 😊\n\nPuedes escribirlo así:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial";
+      ? "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\nSi necesitas contactarnos:\n📞 606 345 0257"
+      : "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 345 0257";
 
   } else {
     await sendWhatsAppButtons(phone,
