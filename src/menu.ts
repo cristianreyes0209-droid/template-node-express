@@ -481,7 +481,6 @@ export const menu = {
       precio: 24500,
       aliases: [
         "ranchera mixta",
-        "ranchera",
         "crepe ranchera mixta"
       ],
       ingredientes: [
