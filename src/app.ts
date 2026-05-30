@@ -907,13 +907,17 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
 
   const _esConsultaHorario =
     _lower.includes("a qué hora") || _lower.includes("a que hora") ||
-    _lower.includes("que hora") || _lower.includes("horario") ||
+    _lower.includes("qué hora") || _lower.includes("que hora") ||
+    _lower.includes("horario") ||
     _lower.includes("abren") || _lower.includes("cierran") ||
     _lower.includes("hasta qué hora") || _lower.includes("hasta que hora") ||
     _lower.includes("desde qué hora") || _lower.includes("desde que hora") ||
+    _lower.includes("desde cuando") || _lower.includes("desde cuándo") ||
+    _lower.includes("a partir de") ||
     _lower.includes("abierto") || _lower.includes("cerrado") ||
     _lower.includes("están abiertos") || _lower.includes("estan abiertos") ||
     _lower.includes("horario de atención") || _lower.includes("horario de atencion") ||
+    _lower.includes("ya tienen servicio") || _lower.includes("tienen servicio") ||
     _lower === "horario" || _lower === "horas";
 
   if (_esConsultaHorario && !_esMsgLargo) {
@@ -2910,6 +2914,18 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   replyMessage = "Gracias por tu mensaje ✅ Un asesor se pondrá en contacto contigo pronto 😊";
 
 } else if (currentOrder?.step === "esperando_ayuda") {
+  // Saludo simple → no escalar, pedir que cuente su consulta
+  const esGreetingAyuda =
+    lower === "hola" || lower === "buenas" || lower === "buenos dias" ||
+    lower === "buenas tardes" || lower === "buenas noches" || lower === "hi" ||
+    lower.startsWith("hola ") || lower.startsWith("buenas ");
+  if (esGreetingAyuda) {
+    await sendWhatsAppMessage(phone,
+      "Hola 😊 ¿En qué te puedo ayudar?\n\nCuéntame tu consulta o si prefieres hablar con un asesor escríbenos al 📱 *315 191 3928*"
+    );
+    return res.sendStatus(200);
+  }
+
   // Si pregunta por el menú, mostrar link en vez de escalar
   if (
     lower.includes("menu") || lower.includes("menú") ||
