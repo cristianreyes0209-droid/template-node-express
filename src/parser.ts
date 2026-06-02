@@ -141,6 +141,11 @@ export function normalizeText(text: string) {
     .replace(/\buna de camarones\b/g, "camarones")
     .replace(/\bde camarones\b/g, "camarones")
     // Typos comunes de productos
+    .replace(/\bcreps\b/g, "crepe")
+    .replace(/\bcreeps\b/g, "crepe")
+    .replace(/\bcrees\b/g, "crepe")
+    .replace(/\bchepes?\b/g, "crepe")
+    .replace(/\bcrep\b/g, "crepe")
     .replace(/\branquera\b/g, "ranchera")
     .replace(/\brancheras\b/g, "ranchera")
     .replace(/\branchero\b/g, "ranchera")
@@ -886,24 +891,18 @@ const fragments = splitIntoFragments(textoLimpio);
     ? (extrasCategory.productos as any[])
     : [];
 
-  // detectar ambigüedad por fragmento
-// detectar ambigüedad por fragmento
-  for (const fragment of fragments) {
-    const ambiguity = detectAmbiguousProduct(fragment, mainProducts);
+  // Parsear fragmentos: si uno es ambiguo, guardarlo y saltar; agregar los demás al carrito
+  let firstAmbiguity: ReturnType<typeof detectAmbiguousProduct> | null = null;
 
-    if (ambiguity) {
-      return {
-        items: [],
-        ambiguousChoice: ambiguity
-      };
-    }
-  }
-
-  // parsear cada fragmento
-  // parsear cada fragmento
 for (const fragment of fragments) {
   // Ignorar fragmentos que son solo observaciones (sin X, poco X, bien X)
   if (/^(sin|poco|bien)\s+/i.test(fragment.trim())) continue;
+
+  const ambiguity = detectAmbiguousProduct(fragment, mainProducts);
+  if (ambiguity) {
+    if (!firstAmbiguity) firstAmbiguity = ambiguity;
+    continue; // saltar este fragmento, parsear los demás
+  }
 
   const fragmentLimpio = fragment
     .replace(/^(\d+|una|uno|un|dos|tres|cuatro|cinco)\s+/i, "")
@@ -948,6 +947,11 @@ for (const fragment of fragments) {
     extras
   });
 }
+  // Si hubo ambigüedad, retornar con los ítems no-ambiguos ya recolectados
+  if (firstAmbiguity) {
+    return { items: mergeParsedItems(items), ambiguousChoice: firstAmbiguity };
+  }
+
   // Upselling básico: si no hay bebida en el pedido, sugerir una
   let upselling: string | undefined;
   if (items.length > 0) {

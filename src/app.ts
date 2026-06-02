@@ -1231,7 +1231,8 @@ const stepActualPago = currentOrder?.step;
 const enStepDePago = stepActualPago === "esperando_pago"
   || stepActualPago === "esperando_comprobante"
   || stepActualPago === "esperando_pago_holaclick"
-  || stepActualPago === "esperando_comprobante_holaclick";
+  || stepActualPago === "esperando_comprobante_holaclick"
+  || stepActualPago === "esperando_asesor";
 if (esPreguntaPago && !esMensajeLargo && !enStepDePago) {
   // Si el cliente está armando pedido con items → avanzar al flujo de confirmación
   if (
@@ -2950,8 +2951,10 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       .trim();
     if (textLimpio.length > 1) {
       const parseResultAyuda = parseOrder(textLimpio);
-      if (parseResultAyuda.items.length > 0) {
-        const itemAyuda = parseResultAyuda.items[0];
+      // Filtrar extras (ej. "Pollo desmechado" extra a $7.000) — solo mostrar productos principales
+      const mainItemsAyuda = parseResultAyuda.items.filter((i: any) => !i.productoId?.startsWith("extra_"));
+      if (mainItemsAyuda.length > 0) {
+        const itemAyuda = mainItemsAyuda[0];
         const nombreMostrar = itemAyuda.variante
           ? `${itemAyuda.producto} - ${itemAyuda.variante}`
           : itemAyuda.producto;
