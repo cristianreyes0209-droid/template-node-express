@@ -2608,11 +2608,8 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   // Intentar parsear el texto como producto antes de mostrar botones
   const parseMenuPrincipal = parseOrder(lower);
   if (parseMenuPrincipal.items.length > 0 && !parseMenuPrincipal.ambiguousChoice) {
-    if (!orders[phone]) {
-      orders[phone] = { telefono: phone, items: [], step: "esperando_menu_principal", lastInteraction: Date.now() };
-    }
     createOrUpdateOrder(phone, parseMenuPrincipal.items);
-    if (customer?.name && !orders[phone].nombre) updateOrderName(phone, customer.name);
+    if (customer?.name && !getOrder(phone)?.nombre) updateOrderName(phone, customer.name);
     updateOrderStep(phone, "esperando_tipo_entrega");
     currentOrder = getOrder(phone)!;
     await sendWhatsAppButtons(phone, "Perfecto 😊 ¿Cómo deseas recibir tu pedido?", [
@@ -3165,7 +3162,11 @@ return res.sendStatus(200);
 
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
-    replyMessage = "Perfecto 👍\n\nEscríbeme tu pedido 😊\n\nPor ejemplo:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial";
+    replyMessage =
+      "Perfecto 👍\n\nPuedes ver nuestro menú aquí:\nhttps://menu.tecmenu.com\n\n" +
+      "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\n" +
+      "Si necesitas contactarnos:\n📞 606 341 3020\n\n" +
+      "Si ya sabes qué ordenar ¡te puedo tomar el pedido por acá! Escríbeme qué deseas 😊";
 
   } else if (
     lower === "b" ||
@@ -3231,7 +3232,11 @@ return res.sendStatus(200);
 
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
-    replyMessage = "Perfecto 👍\n\nEscríbeme tu pedido 😊\n\nPor ejemplo:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial";
+    replyMessage =
+      "Perfecto 👍\n\nPuedes ver nuestro menú aquí:\nhttps://menu.tecmenu.com\n\n" +
+      "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\n" +
+      "Si necesitas contactarnos:\n📞 606 345 0257\n\n" +
+      "Si ya sabes qué ordenar ¡te puedo tomar el pedido por acá! Escríbeme qué deseas 😊";
 
   } else {
     await sendWhatsAppButtons(phone,
