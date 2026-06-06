@@ -914,7 +914,12 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     _lower.includes("desde qué hora") || _lower.includes("desde que hora") ||
     _lower.includes("desde cuando") || _lower.includes("desde cuándo") ||
     _lower.includes("a partir de") ||
-    _lower.includes("abierto") || _lower.includes("cerrado") ||
+    _lower === "cerrado" || _lower === "abierto" ||
+    _lower.includes("están cerrado") || _lower.includes("estan cerrado") ||
+    _lower.includes("están abierto") || _lower.includes("estan abierto") ||
+    _lower.includes("siguen abierto") || _lower.includes("siguen cerrado") ||
+    _lower.includes("ya cerraron") || _lower.includes("ya abrieron") ||
+    _lower.includes("todavía abierto") || _lower.includes("todavia abierto") ||
     _lower.includes("están abiertos") || _lower.includes("estan abiertos") ||
     _lower.includes("horario de atención") || _lower.includes("horario de atencion") ||
     _lower.includes("ya tienen servicio") || _lower.includes("tienen servicio") ||
