@@ -4780,6 +4780,29 @@ return res.sendStatus(200);
     currentOrder = getOrder(phone)!;
     replyMessage =
       "Perfecto 👍\n\nEnvíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
+  } else if (
+    lower.includes("retirar") || lower.includes("paso a recoger") ||
+    lower.includes("voy a recoger") || lower.includes("mejor recojo") ||
+    lower.includes("mejor retiro") || lower.includes("prefiero recoger") ||
+    lower.includes("prefiero retirar") || lower.includes("pasare a retirar") ||
+    lower.includes("pasaré a retirar") || lower.includes("mejor paso")
+  ) {
+    updateOrderDeliveryType(phone, "recoger");
+    currentOrder = getOrder(phone)!;
+    currentOrder.direccion = undefined;
+    currentOrder.valorDomicilio = 0;
+    currentOrder.domicilioTexto = undefined;
+    currentOrder.sucursal = undefined;
+    updateOrderStep(phone, "esperando_sucursal");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      "Perfecto 👍 ¿En cuál sucursal recoges?",
+      [
+        { id: "a", title: "La Villa 🏪" },
+        { id: "b", title: "Av. Circunvalar 🏪" }
+      ]
+    );
+    return res.sendStatus(200);
   } else {
     const orderFB = getOrder(phone)!;
     if (orderFB.direccion) {
