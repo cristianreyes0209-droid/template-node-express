@@ -816,51 +816,58 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
 
   // Si el cliente responde tras el mensaje de inactividad, re-mostrar estado actual sin procesar el texto
   if (currentOrder?.inactivityPending && lower !== "reset" && !text.includes("PEDIDO - LAS CREPES") && !text.includes("Vengo de https://las-crepes.ola.click")) {
-    currentOrder.inactivityPending = false;
-    if (currentOrder.step === "esperando_asesor" || currentOrder.step === "esperando_mensaje_fuera_horario") {
-      return res.sendStatus(200);
-    }
-    const stepActual = currentOrder.step;
-    const resumenActual = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
-    if (
-      stepActual === "post_agregar_producto" ||
-      stepActual === "esperando_confirmacion" ||
-      stepActual === "armando_pedido"
-    ) {
-      if (currentOrder.items.length === 0) {
-        await sendWhatsAppMessage(phone,
-          "Aquí estoy 😊 Aún no tienes productos en tu pedido.\n\n¿Qué deseas pedir?\n• Hawaiana\n• Ranchera\n• Parisina\n• Pollo y Carne..."
-        );
-      } else {
-        const totals = calculateTotal(currentOrder);
+    const stepInact = currentOrder.step;
+    const carritoVacioInact = currentOrder.items.length === 0;
+    // Si el carrito está vacío y el texto parece un pedido → procesar normalmente
+    const stepsConParseo = new Set(["armando_pedido", "post_agregar_producto", "esperando_confirmacion"]);
+    const parseInact = (carritoVacioInact && stepsConParseo.has(stepInact))
+      ? parseOrder(normalizeText(lower))
+      : null;
+    if (parseInact && (parseInact.items.length > 0 || parseInact.ambiguousChoice)) {
+      currentOrder.inactivityPending = false;
+      // Caer al procesamiento normal — el texto se procesará como pedido
+    } else {
+      currentOrder.inactivityPending = false;
+      if (stepInact === "esperando_asesor" || stepInact === "esperando_mensaje_fuera_horario") {
+        return res.sendStatus(200);
+      }
+      const resumenActual = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+      if (stepsConParseo.has(stepInact)) {
+        if (carritoVacioInact) {
+          await sendWhatsAppMessage(phone,
+            "Aquí estoy 😊 Aún no tienes productos en tu pedido.\n\n¿Qué deseas pedir?\n• Hawaiana\n• Ranchera\n• Parisina\n• Pollo y Carne..."
+          );
+        } else {
+          const totals = calculateTotal(currentOrder);
+          await sendWhatsAppButtons(phone,
+            "Tu pedido sigue aquí 😊\n\n" + resumenActual + (currentOrder.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio.toLocaleString("es-CO")}` : "") + `\n💵 Total: $${totals.total.toLocaleString("es-CO")}\n\n¿Qué deseas hacer?`,
+            [
+              { id: "confirmar", title: "Confirmar ✅" },
+              { id: "agregar_mas", title: "Agregar más ➕" },
+              { id: "eliminar", title: "Eliminar ➖" }
+            ]
+          );
+        }
+      } else if (stepInact === "esperando_pago") {
+        const totalsInact = calculateTotal(currentOrder);
         await sendWhatsAppButtons(phone,
-          "Tu pedido sigue aquí 😊\n\n" + resumenActual + (currentOrder.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio.toLocaleString("es-CO")}` : "") + `\n💵 Total: $${totals.total.toLocaleString("es-CO")}\n\n¿Qué deseas hacer?`,
+          `El total de tu pedido es $${totalsInact.total.toLocaleString("es-CO")} 💰\n¿Cómo deseas pagar?`,
           [
-            { id: "confirmar", title: "Confirmar ✅" },
-            { id: "agregar_mas", title: "Agregar más ➕" },
-            { id: "eliminar", title: "Eliminar ➖" }
+            { id: "efectivo", title: "Efectivo 💵" },
+            { id: "nequi", title: "Nequi/Daviplata 📱" },
+            { id: "bancolombia", title: "Bancolombia/Llave🏦" }
           ]
         );
+      } else if (stepInact === "esperando_comprobante" || stepInact === "esperando_comprobante_holaclick") {
+        const totalsInact = calculateTotal(currentOrder);
+        await sendWhatsAppMessage(phone,
+          `Aquí estoy 😊\n\nEl total a pagar es: *$${totalsInact.total.toLocaleString("es-CO")}*\n\nCuando realices el pago envíame el comprobante 📸`
+        );
+      } else {
+        await sendWhatsAppMessage(phone, "Aquí estoy 😊 ¿En qué te ayudo?");
       }
-    } else if (stepActual === "esperando_pago") {
-      const totalsInact = calculateTotal(currentOrder);
-      await sendWhatsAppButtons(phone,
-        `El total de tu pedido es $${totalsInact.total.toLocaleString("es-CO")} 💰\n¿Cómo deseas pagar?`,
-        [
-          { id: "efectivo", title: "Efectivo 💵" },
-          { id: "nequi", title: "Nequi/Daviplata 📱" },
-          { id: "bancolombia", title: "Bancolombia/Llave🏦" }
-        ]
-      );
-    } else if (stepActual === "esperando_comprobante" || stepActual === "esperando_comprobante_holaclick") {
-      const totalsInact = calculateTotal(currentOrder);
-      await sendWhatsAppMessage(phone,
-        `Aquí estoy 😊\n\nEl total a pagar es: *$${totalsInact.total.toLocaleString("es-CO")}*\n\nCuando realices el pago envíame el comprobante 📸`
-      );
-    } else {
-      await sendWhatsAppMessage(phone, "Aquí estoy 😊 ¿En qué te ayudo?");
+      return res.sendStatus(200);
     }
-    return res.sendStatus(200);
   }
 
   // Cancelar timer si el pedido ya está confirmado
