@@ -1237,7 +1237,8 @@ const enStepDePago = stepActualPago === "esperando_pago"
   || stepActualPago === "esperando_comprobante"
   || stepActualPago === "esperando_pago_holaclick"
   || stepActualPago === "esperando_comprobante_holaclick"
-  || stepActualPago === "esperando_asesor";
+  || stepActualPago === "esperando_asesor"
+  || stepActualPago === "esperando_confirmacion";
 if (esPreguntaPago && !esMensajeLargo && !enStepDePago) {
   // Si el cliente está armando pedido con items → avanzar al flujo de confirmación
   if (
@@ -4247,6 +4248,23 @@ return res.sendStatus(200);
     );
     return res.sendStatus(200);
   } else {
+    const quiereAsesorPago =
+      lower.includes("asesor") || lower.includes("comunicarme") ||
+      lower.includes("hablar") || lower.includes("humano") || lower.includes("persona");
+    if (quiereAsesorPago) {
+      updateOrderStep(phone, "esperando_asesor");
+      currentOrder = getOrder(phone)!;
+      const nombreAsesorPago = currentOrder.nombre || customer?.name || phone;
+      try {
+        await sendWhatsAppMessage("573151913928",
+          `💬 CLIENTE NECESITA ASESOR EN PAGO\n👤 ${nombreAsesorPago}\n📞 ${phone}\n💬 "${text}"`
+        );
+      } catch(e) {}
+      await sendWhatsAppMessage(phone,
+        "Con gusto te comunico con un asesor 😊\n\nEn breve te contactamos.\n\nO llámanos directamente:\n📞 La Villa: *606 341 3020*\n📞 Circunvalar: *606 345 0257*"
+      );
+      return res.sendStatus(200);
+    }
     const totalsElse = calculateTotal(getOrder(phone)!);
     await sendWhatsAppButtons(phone,
       `El total de tu pedido es $${totalsElse.total.toLocaleString("es-CO")} 💰\n¿Cómo deseas pagar?`,
