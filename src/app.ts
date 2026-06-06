@@ -2599,6 +2599,22 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     "Con gusto te ayudo 😊\n\nCuéntame en qué puedo ayudarte.\n\nSi necesitas hablar con un asesor puedes escribirnos al 📱 *315 191 3928*\n\no llamar directamente a una de nuestras sedes:\n📞 La Villa: *606 341 3020*\n📞 Circunvalar: *606 345 0257*";
 
 } else {
+  // Intentar parsear el texto como producto antes de mostrar botones
+  const parseMenuPrincipal = parseOrder(lower);
+  if (parseMenuPrincipal.items.length > 0 && !parseMenuPrincipal.ambiguousChoice) {
+    if (!orders[phone]) {
+      orders[phone] = { telefono: phone, items: [], step: "esperando_menu_principal", lastInteraction: Date.now() };
+    }
+    createOrUpdateOrder(phone, parseMenuPrincipal.items);
+    if (customer?.name && !orders[phone].nombre) updateOrderName(phone, customer.name);
+    updateOrderStep(phone, "esperando_tipo_entrega");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone, "Perfecto 😊 ¿Cómo deseas recibir tu pedido?", [
+      { id: "domicilio", title: "Domicilio 🛵" },
+      { id: "recoger",   title: "Recoger en tienda 🏪" }
+    ]);
+    return res.sendStatus(200);
+  }
   await sendWhatsAppButtons(phone,
     "¿Qué deseas hacer?",
     [
@@ -3143,9 +3159,7 @@ return res.sendStatus(200);
 
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
-    replyMessage = currentOrder.tipoEntrega === "recoger"
-      ? "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\nSi necesitas contactarnos:\n📞 606 341 3020"
-      : "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 341 3020";
+    replyMessage = "Perfecto 👍\n\nEscríbeme tu pedido 😊\n\nPor ejemplo:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial";
 
   } else if (
     lower === "b" ||
@@ -3211,9 +3225,7 @@ return res.sendStatus(200);
 
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
-    replyMessage = currentOrder.tipoEntrega === "recoger"
-      ? "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\nSi necesitas contactarnos:\n📞 606 345 0257"
-      : "Perfecto 👍\n\nPuedes hacer tu pedido aquí:\nhttps://menu.tecmenu.com\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 606 345 0257";
+    replyMessage = "Perfecto 👍\n\nEscríbeme tu pedido 😊\n\nPor ejemplo:\n• 1 Hawaiana\n• 2 Ranchera\n• 1 Especial";
 
   } else {
     await sendWhatsAppButtons(phone,
