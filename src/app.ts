@@ -949,11 +949,9 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     _lower.includes("ubicacion") || _lower.includes("ubicación") ||
     _lower.includes("como llegar") || _lower.includes("cómo llegar") ||
     _lower.includes("dónde es") || _lower.includes("donde es") ||
-    _lower.includes("la dirección") || _lower.includes("la direccion") ||
-    _lower.includes("su dirección") || _lower.includes("su direccion") ||
     _lower === "dirección" || _lower === "direccion";
 
-  if (_esConsultaUbicacion && !_esMsgLargo && currentOrder?.step !== "esperando_direccion") {
+  if (_esConsultaUbicacion && !_esMsgLargo && currentOrder?.step !== "esperando_direccion" && currentOrder?.step !== "esperando_asesor") {
     await sendWhatsAppMessage(phone,
       "📍 Nuestras sucursales:\n\n" +
       "🏪 *La Villa*\nCalle 83 #16a-22, Pereira\nhttps://maps.app.goo.gl/KvWtZ9r2vQKdcmXU6\n\n" +
