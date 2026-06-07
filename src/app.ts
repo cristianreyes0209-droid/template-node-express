@@ -117,8 +117,10 @@ function isWithinBusinessHours(_tipoEntrega: "domicilio" | "recoger"): boolean {
   const bogotaStr = new Date().toLocaleString("en-US", { timeZone: "America/Bogota" });
   const bogotaDate = new Date(bogotaStr);
   const totalMinutes = bogotaDate.getHours() * 60 + bogotaDate.getMinutes();
-  const open = 15 * 60;       // 3:00 PM
-  const close = 22 * 60 + 15; // 10:15 PM
+  const dayOfWeek = bogotaDate.getDay(); // 0=domingo, 6=sábado
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  const open = isWeekend ? 12 * 60 : 15 * 60; // 12m fines de semana, 3pm días de semana
+  const close = 22 * 60 + 15; // 10:15 PM todos los días
   return totalMinutes >= open && totalMinutes < close;
 }
 
@@ -934,7 +936,9 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
 
   if (_esConsultaHorario && !_esMsgLargo) {
     await sendWhatsAppMessage(phone,
-      "🕐 Nuestro horario de atención es de 3:00 PM a 10:15 PM todos los días\n\n" +
+      "🕐 Nuestro horario de atención:\n" +
+      "• Lunes a viernes: 3:00 PM – 10:15 PM\n" +
+      "• Sábados, domingos y festivos: 12:00 M – 10:15 PM\n\n" +
       "📍 La Villa - Calle 83 #16a-22\n" +
       "📍 Av. Circunvalar #8-94 local 1\n\n" +
       "📞 *606 341 3020*"
