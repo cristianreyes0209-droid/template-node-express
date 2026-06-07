@@ -1391,6 +1391,24 @@ if (
   return res.sendStatus(200);
 }
 
+// Consulta general de tiempo de entrega — responde antes que la queja de demora
+const esConsultaTiempoEntrega =
+  lower.includes("cuánto tarda") || lower.includes("cuanto tarda") ||
+  lower.includes("cuánto se tarda") || lower.includes("cuanto se tarda") ||
+  lower.includes("cuánto demora") || lower.includes("cuanto demora") ||
+  lower.includes("cuánto se demora") || lower.includes("cuanto se demora") ||
+  lower.includes("cuánto se puede demorar") || lower.includes("cuanto se puede demorar") ||
+  lower.includes("tiempo de entrega") || lower.includes("tiempo del domicilio") ||
+  lower.includes("cuánto tiempo") || lower.includes("cuanto tiempo");
+if (esConsultaTiempoEntrega && !esMensajeLargo) {
+  await sendWhatsAppMessage(phone,
+    "🛵 Los domicilios tardan aproximadamente *40-50 minutos*.\n\n" +
+    "🏪 Si vas a recoger en tienda, tu pedido estará listo en *15-20 minutos*.\n\n" +
+    "Situaciones como el tráfico o el clima pueden hacer que el domicilio demore un poco más."
+  );
+  return res.sendStatus(200);
+}
+
 // Queja de demora — respuesta inmediata en cualquier step
 const esQuejaDedemora =
   lower.includes("no ha llegado") ||
@@ -1401,8 +1419,6 @@ const esQuejaDedemora =
   lower.includes("mucho tiempo") ||
   lower.includes("tarda mucho") ||
   lower.includes("una hora") ||
-  lower.includes("cuánto demora") ||
-  lower.includes("cuanto demora") ||
   lower.includes("cuando llega") ||
   lower.includes("cuándo llega") ||
   lower.includes("cuánto falta") ||
