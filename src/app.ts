@@ -901,12 +901,14 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   const STEPS_NO_INTERCEPTAR = new Set(["esperando_direccion", "esperando_nombre", "esperando_observacion_general", "esperando_datos_factura"]);
   if (
     currentOrder?.direccion &&
-    currentOrder.step !== "confirmado" &&
     !STEPS_NO_INTERCEPTAR.has(currentOrder.step || "") &&
     esObservacionDireccion(text)
   ) {
     updateOrderDireccionNotes(phone, text.trim());
-    await sendWhatsAppMessage(phone, `Anotado ✅ "${text.trim()}"`);
+    const msgAnotado = currentOrder.step === "confirmado"
+      ? `Anotado ✅ "${text.trim()}" — se lo enviamos al repartidor 🛵`
+      : `Anotado ✅ "${text.trim()}"`;
+    await sendWhatsAppMessage(phone, msgAnotado);
     return res.sendStatus(200);
   }
 
@@ -4638,14 +4640,36 @@ return res.sendStatus(200);
     );
     return res.sendStatus(200);
   } else {
-    const nombreHola = currentOrder.nombre || customer?.name || "";
-    await sendWhatsAppButtons(phone,
-      `Hola de nuevo${nombreHola ? " " + nombreHola : ""} 😊 Tu pedido está en proceso 🔥\n\n¿Deseas hacer algo más?`,
-      [
-        { id: "nuevo_pedido_conf", title: "Nuevo pedido 🥞" },
-        { id: "hablar_asesor_conf", title: "Hablar con asesor 💬" }
-      ]
-    );
+    // Probable detalle de dirección no detectado por PALABRAS_DIRECCION (ej. sector, urbanización)
+    if (currentOrder.direccion && text.trim().length > 2 && text.trim().length < 120 && !lower.includes("nuevo") && !lower.includes("asesor")) {
+      updateOrderDireccionNotes(phone, text.trim());
+      await sendWhatsAppMessage(phone, `Anotado ✅ "${text.trim()}" — se lo enviamos al repartidor 🛵`);
+      return res.sendStatus(200);
+    }
+    currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;
+    if (currentOrder.cartFreeTextAttempts >= 3) {
+      currentOrder.cartFreeTextAttempts = 0;
+      updateOrderStep(phone, "esperando_asesor");
+      currentOrder = getOrder(phone)!;
+      const nombreConf = currentOrder.nombre || customer?.name || phone;
+      try {
+        await sendWhatsAppMessage("573151913928",
+          `💬 CLIENTE EN PEDIDO CONFIRMADO NECESITA ATENCIÓN\n👤 ${nombreConf}\n📞 ${phone}\n💬 "${text}"`
+        );
+      } catch(e) {}
+      await sendWhatsAppMessage(phone,
+        "Voy a conectarte con un asesor que puede ayudarte mejor 😊\n\nO llámanos directamente:\n📞 *606 341 3020*"
+      );
+    } else {
+      const nombreHola = currentOrder.nombre || customer?.name || "";
+      await sendWhatsAppButtons(phone,
+        `Hola de nuevo${nombreHola ? " " + nombreHola : ""} 😊 Tu pedido está en proceso 🔥\n\n¿Deseas hacer algo más?`,
+        [
+          { id: "nuevo_pedido_conf", title: "Nuevo pedido 🥞" },
+          { id: "hablar_asesor_conf", title: "Hablar con asesor 💬" }
+        ]
+      );
+    }
     return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "armando_pedido") {
