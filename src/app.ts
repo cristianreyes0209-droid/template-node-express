@@ -898,7 +898,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   }
 
   // Observación de entrega interceptada en cualquier step cuando hay dirección guardada
-  const STEPS_NO_INTERCEPTAR = new Set(["esperando_direccion", "esperando_nombre", "esperando_observacion_general", "esperando_datos_factura"]);
+  const STEPS_NO_INTERCEPTAR = new Set(["esperando_direccion", "esperando_nombre", "esperando_observacion_general", "esperando_datos_factura", "esperando_confirmacion_direccion"]);
   if (
     currentOrder?.direccion &&
     !STEPS_NO_INTERCEPTAR.has(currentOrder.step || "") &&
