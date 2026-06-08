@@ -1595,6 +1595,17 @@ if (lower === "reset") {
 }
 
 if (text.includes("Vengo de https://las-crepes.ola.click")) {
+  if (!isWithinBusinessHours("domicilio") && !customer?.test_mode) {
+    await sendWhatsAppMessage(phone,
+      "Gracias por tu pedido 😊\n\n" +
+      "En este momento estamos fuera de horario de atención.\n\n" +
+      "🕐 Nuestro horario:\n" +
+      "• Lunes a viernes: 3:00 PM – 10:15 PM\n" +
+      "• Sábados, domingos y festivos: 12:00 M – 10:15 PM\n\n" +
+      "Vuelve a enviarnos el pedido cuando abramos y lo procesamos 😊"
+    );
+    return res.sendStatus(200);
+  }
   const sucursalPrevia = currentOrder?.sucursal;
   const hcParsed = parseOlaClickText(text);
 
