@@ -4657,6 +4657,20 @@ return res.sendStatus(200);
     );
     return res.sendStatus(200);
   } else {
+    // Consulta de tiempo de entrega — responder antes que la nota de dirección
+    const esConsultaTiempoConf =
+      lower.includes("demora") || lower.includes("demorar") ||
+      lower.includes("cuanto") || lower.includes("cuánto") ||
+      lower.includes("tarda") || lower.includes("tiempo") ||
+      lower.includes("llega") || lower.includes("falta");
+    if (esConsultaTiempoConf) {
+      if (currentOrder.tipoEntrega === "recoger") {
+        await sendWhatsAppMessage(phone, "Tu pedido estará listo en aproximadamente *15-20 minutos* 👨‍🍳 Te avisaremos cualquier novedad.");
+      } else {
+        await sendWhatsAppMessage(phone, "Nuestros domicilios tardan aproximadamente *40-50 minutos* 🚚\n\nTe avisaremos si hay alguna novedad.");
+      }
+      return res.sendStatus(200);
+    }
     // Probable detalle de dirección no detectado por PALABRAS_DIRECCION (ej. sector, urbanización)
     if (currentOrder.direccion && text.trim().length > 2 && text.trim().length < 120 && !lower.includes("nuevo") && !lower.includes("asesor")) {
       updateOrderDireccionNotes(phone, text.trim());
