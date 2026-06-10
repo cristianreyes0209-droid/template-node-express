@@ -1481,7 +1481,7 @@ if (esChangeToRecoger && currentOrder && currentOrder.step !== "confirmado") {
 // Consulta de toppings/extras disponibles
 const esConsultaToppings =
   lower.includes("topping") ||
-  lower.includes("adicional") ||
+  (lower.includes("adicional") && (lower.includes("qu") || lower.includes("cu") || lower.includes("hay") || lower.includes("tiene") || lower.includes("cuál") || lower.includes("cual"))) ||
   (lower.includes("extra") && (lower.includes("qu") || lower.includes("cu") || lower.includes("hay") || lower.includes("tiene")));
 if (esConsultaToppings && !esMensajeLargo) {
   await sendWhatsAppMessage(phone,

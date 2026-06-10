@@ -74,7 +74,7 @@ export const menu = {
           nombre: "Chile con carne",
           precio: 5500,
           tipo: "proteina",
-          aliases: ["chile con carne", "extra chile"]
+          aliases: ["chile con carne", "extra chile", "frijol", "frijoles", "extra frijoles"]
         },
         {
           id: "extra_queso",
