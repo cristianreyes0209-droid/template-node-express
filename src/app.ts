@@ -3652,10 +3652,16 @@ return res.sendStatus(200);
   updateOrderStep(phone, "esperando_confirmacion_direccion");
   currentOrder = getOrder(phone)!;
 
+  const distanciaGrande = (order.distanciaKm || 0) > 8;
+  const notaGPS = (distanciaGrande && !isGpsPin)
+    ? `\n\n⚠️ _La distancia calculada es de ${order.distanciaKm}km. Si tu barrio está más cerca, compártenos tu ubicación GPS 📍 para mayor precisión._`
+    : "";
+
   await sendWhatsAppButtons(phone,
     `¿Es correcta esta dirección? 📍\n\n*${order.direccion}*` +
     (descripcionDomicilio ? `\n\n${descripcionDomicilio}` : "") +
-    `\n💵 Domicilio: $${valorDomicilio.toLocaleString("es-CO")}`,
+    `\n💵 Domicilio: $${valorDomicilio.toLocaleString("es-CO")}` +
+    notaGPS,
     [
       { id: "a", title: "Confirmar ✅" },
       { id: "b", title: "Corregir ✏️" }
