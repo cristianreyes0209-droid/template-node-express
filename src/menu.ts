@@ -688,7 +688,8 @@ export const menu = {
       ],
       extrasDisponibles: [
         "extra_carne",
-        "extra_queso"
+        "extra_queso",
+        "extra_pina"
       ]
     },
     {

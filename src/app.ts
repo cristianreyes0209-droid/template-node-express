@@ -3793,6 +3793,49 @@ return res.sendStatus(200);
       "Escríbeme la observación para tu pedido 😊";
 
   } else {
+    // Pregunta por el total del pedido → mostrarlo
+    const esPreguntaTotalEC =
+      lower.includes("cuanto seria") || lower.includes("cuánto sería") ||
+      lower.includes("cuanto es") || lower.includes("cuánto es") ||
+      lower.includes("cuanto va") || lower.includes("cuánto va") ||
+      lower.includes("cuanto queda") || lower.includes("cuánto queda") ||
+      lower.includes("cuanto sale") || lower.includes("cuánto sale") ||
+      lower.includes("cuanto cuesta") || lower.includes("cuánto cuesta") ||
+      lower.includes("valor total") || lower.includes("total") ||
+      lower === "cuanto" || lower === "cuánto";
+    if (esPreguntaTotalEC) {
+      const totalsEC2 = calculateTotal(currentOrder);
+      const resumenEC2 = currentOrder.items.map((item: any) => formatLineaItem(item)).join("\n");
+      await sendWhatsAppButtons(phone,
+        "Tu pedido es:\n" + resumenEC2 +
+        buildResumenFooter(currentOrder, totalsEC2, currentOrder.domicilioTexto) +
+        "\n\n¿Qué deseas hacer?",
+        [
+          { id: "confirmar",   title: "✅ Confirmar" },
+          { id: "agregar_mas", title: "➕ Agregar" },
+          { id: "eliminar",    title: "🗑️ Quitar" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
+    // El cliente indica que el pedido está mal → ofrecer corregir
+    const esPedidoMalEC =
+      lower.includes("esta mal") || lower.includes("está mal") ||
+      lower.includes("mal el pedido") || lower.includes("pedido mal") ||
+      lower.includes("incorrecto") || lower.includes("equivocado") ||
+      lower.includes("no es asi") || lower.includes("no es así") ||
+      lower.includes("no es eso") || lower.includes("esta malo");
+    if (esPedidoMalEC) {
+      await sendWhatsAppButtons(phone,
+        "¡Lo corregimos! 😊 ¿Qué deseas hacer con tu pedido?",
+        [
+          { id: "eliminar",    title: "🗑️ Quitar producto" },
+          { id: "agregar_mas", title: "➕ Agregar producto" },
+          { id: "4",           title: "📝 Observación" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
     currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;
     if (currentOrder.cartFreeTextAttempts >= 3) {
       currentOrder.cartFreeTextAttempts = 0;
@@ -4126,6 +4169,49 @@ return res.sendStatus(200);
       "Escríbeme la observación para tu pedido 😊";
 
   } else {
+  // Pregunta por el total del pedido → mostrarlo
+  const esPreguntaTotalPAP =
+    lower.includes("cuanto seria") || lower.includes("cuánto sería") ||
+    lower.includes("cuanto es") || lower.includes("cuánto es") ||
+    lower.includes("cuanto va") || lower.includes("cuánto va") ||
+    lower.includes("cuanto queda") || lower.includes("cuánto queda") ||
+    lower.includes("cuanto sale") || lower.includes("cuánto sale") ||
+    lower.includes("cuanto cuesta") || lower.includes("cuánto cuesta") ||
+    lower.includes("valor total") || lower.includes("total") ||
+    lower === "cuanto" || lower === "cuánto";
+  if (esPreguntaTotalPAP) {
+    const totalsPAP = calculateTotal(currentOrder);
+    const resumenPAP = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+    await sendWhatsAppButtons(phone,
+      "Tu pedido va así 😊\n\n" + resumenPAP +
+      `\n\n💵 Subtotal: $${totalsPAP.subtotal.toLocaleString("es-CO")}` +
+      "\n\n¿Qué deseas hacer?",
+      [
+        { id: "confirmar",   title: "✅ Confirmar" },
+        { id: "agregar_mas", title: "➕ Agregar" },
+        { id: "eliminar",    title: "🗑️ Quitar" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
+  // El cliente indica que el pedido está mal → ofrecer corregir
+  const esPedidoMalPAP =
+    lower.includes("esta mal") || lower.includes("está mal") ||
+    lower.includes("mal el pedido") || lower.includes("pedido mal") ||
+    lower.includes("incorrecto") || lower.includes("equivocado") ||
+    lower.includes("no es asi") || lower.includes("no es así") ||
+    lower.includes("no es eso") || lower.includes("esta malo");
+  if (esPedidoMalPAP) {
+    await sendWhatsAppButtons(phone,
+      "¡Lo corregimos! 😊 ¿Qué deseas hacer con tu pedido?",
+      [
+        { id: "eliminar",    title: "🗑️ Quitar producto" },
+        { id: "agregar_mas", title: "➕ Agregar producto" },
+        { id: "4",           title: "📝 Observación" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
   currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;
   if (currentOrder.cartFreeTextAttempts >= 3) {
     currentOrder.cartFreeTextAttempts = 0;
