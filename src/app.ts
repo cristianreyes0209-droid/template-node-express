@@ -3101,26 +3101,18 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     lower.includes("tienda")
   ) {
     updateOrderDeliveryType(phone, "recoger");
-    updateOrderStep(phone, "esperando_confirmacion");
+    const ordRec = getOrder(phone)!;
+    ordRec.sucursal = undefined; // que elija activamente la sucursal
+    updateOrderStep(phone, "esperando_sucursal");
     currentOrder = getOrder(phone)!;
-
-    const order = getOrder(phone)!;
-    const totals = calculateTotal(order);
-
-    const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
-
-  await sendWhatsAppButtons(phone,
-    "Perfecto 👌\n\nTu pedido es:\n" +
-    resumen +
-    buildResumenFooter(order, totals, order.domicilioTexto) +
-    "\n\n📝 Si deseas hacer una observación escríbela ahora, o elige una opción:",
-    [
-      { id: "confirmar", title: "Confirmar" },
-      { id: "agregar_mas", title: "Agregar mas" },
-      { id: "eliminar", title: "Eliminar" }
-    ]
-  );
-  return res.sendStatus(200);
+    await sendWhatsAppButtons(phone,
+      "Perfecto 🏪 ¿En cuál sucursal deseas recoger?",
+      [
+        { id: "a", title: "La Villa 🏪" },
+        { id: "b", title: "Av. Circunvalar 🏪" }
+      ]
+    );
+    return res.sendStatus(200);
   } else if (
     lower === "b" ||
     lower.includes("domicilio")
@@ -3231,6 +3223,25 @@ return res.sendStatus(200);
       return res.sendStatus(200);
     }
 
+    if (currentOrder.tipoEntrega === "recoger" && currentOrder.items.length > 0) {
+      updateOrderStep(phone, "esperando_confirmacion");
+      currentOrder = getOrder(phone)!;
+      const orderRec = getOrder(phone)!;
+      const totalsRec = calculateTotal(orderRec);
+      const resumenRec = orderRec.items.map((item: any) => formatLineaItem(item)).join("\n");
+      await sendWhatsAppButtons(phone,
+        "Perfecto 👌\n\nTu pedido es:\n" + resumenRec +
+        buildResumenFooter(orderRec, totalsRec, orderRec.domicilioTexto) +
+        "\n\n📝 Si deseas hacer una observación escríbela ahora, o elige una opción:",
+        [
+          { id: "confirmar", title: "Confirmar" },
+          { id: "agregar_mas", title: "Agregar mas" },
+          { id: "eliminar", title: "Eliminar" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
+
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
     replyMessage =
@@ -3298,6 +3309,25 @@ return res.sendStatus(200);
         currentOrder = getOrder(phone)!;
         await sendWhatsAppMessage(phone, "Perfecto 👍\n\nEnvíame tu ubicación 📍 o escríbeme tu dirección de domicilio.");
       }
+      return res.sendStatus(200);
+    }
+
+    if (currentOrder.tipoEntrega === "recoger" && currentOrder.items.length > 0) {
+      updateOrderStep(phone, "esperando_confirmacion");
+      currentOrder = getOrder(phone)!;
+      const orderRec = getOrder(phone)!;
+      const totalsRec = calculateTotal(orderRec);
+      const resumenRec = orderRec.items.map((item: any) => formatLineaItem(item)).join("\n");
+      await sendWhatsAppButtons(phone,
+        "Perfecto 👌\n\nTu pedido es:\n" + resumenRec +
+        buildResumenFooter(orderRec, totalsRec, orderRec.domicilioTexto) +
+        "\n\n📝 Si deseas hacer una observación escríbela ahora, o elige una opción:",
+        [
+          { id: "confirmar", title: "Confirmar" },
+          { id: "agregar_mas", title: "Agregar mas" },
+          { id: "eliminar", title: "Eliminar" }
+        ]
+      );
       return res.sendStatus(200);
     }
 
