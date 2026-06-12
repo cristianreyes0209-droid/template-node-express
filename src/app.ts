@@ -766,6 +766,44 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     return res.sendStatus(200);
   }
 
+  // Reset de sesión inactiva: +2h sin interactuar → empezar flujo nuevo (cualquier step salvo asesor)
+  const esMsgPedidoEntrante =
+    text.includes("PEDIDO - LAS CREPES") ||
+    text.includes("Vengo de https://las-crepes.ola.click");
+  if (currentOrder && currentOrder.step !== "esperando_asesor" && !esMsgPedidoEntrante) {
+    const inactivoMs = Date.now() - (currentOrder.lastInteraction || Date.now());
+    const DOS_HORAS_MS = 2 * 60 * 60 * 1000;
+    if (inactivoMs > DOS_HORAS_MS) {
+      clearOrder(phone);
+      createOrUpdateOrder(phone, []);
+      updateOrderStep(phone, "esperando_menu_principal");
+      currentOrder = getOrder(phone)!;
+      currentOrder.lastInteraction = Date.now();
+      if (tieneUltimoPedido) {
+        await sendWhatsAppButtons(phone,
+          MSG_BIENVENIDA_RECURRENTE(customer?.name?.trim() || undefined) + CREBOT_SUFFIX,
+          [
+            { id: "a", title: "Pedido anterior 🔄" },
+            { id: "b", title: "Pedir algo nuevo 🥞" },
+            { id: "3", title: "Otros 💬" }
+          ]
+        );
+      } else {
+        await sendWhatsAppButtons(phone,
+          MSG_BIENVENIDA_NUEVO + CREBOT_SUFFIX,
+          [
+            { id: "1", title: "Hacer un pedido 🥞" },
+            { id: "2", title: "Ver menu 📋" },
+            { id: "3", title: "Otros 💬" }
+          ]
+        );
+      }
+      return res.sendStatus(200);
+    }
+  }
+  // Marcar actividad para la próxima medición de inactividad
+  if (currentOrder) currentOrder.lastInteraction = Date.now();
+
   // Guard global: sesión activa con items en curso (protege contra flujos de bienvenida incorrectos)
   const sesionActiva = currentOrder != null
     && (currentOrder.items?.length ?? 0) > 0
