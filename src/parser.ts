@@ -861,7 +861,9 @@ export function parseOrder(text: string): ParseResult {
   }
 
  // Primero limpiar palabras de cortesía, luego dividir
-const textoLimpio = lower
+// Saltos de línea → separador de ítems (sobrevive a normalizeText como token, luego pasa a coma)
+const textoConSeparadores = normalizeText(text.replace(/[\r\n]+/g, " xsplitx "));
+const textoLimpio = textoConSeparadores
   .replace(/\bpor favor\b/g, " ")
   .replace(/\bpara pedir\b/g, " ")
   .replace(/\bquiero\b/g, " ")
@@ -873,6 +875,7 @@ const textoLimpio = lower
   .replace(/\bagregarme\b/g, " ")
   .replace(/\bseria\b/g, " ")
   .replace(/\bsería\b/g, " ")
+  .replace(/\bxsplitx\b/g, ",")
   .replace(/[.]/g, ",")
   .replace(/\s+/g, " ")
   .trim();
