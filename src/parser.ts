@@ -161,7 +161,11 @@ export function normalizeText(text: string) {
     .replace(/\bnutela\b/g, "nutella")
     .replace(/\barequipe\b/g, "arequipe")
     .replace(/\barrequipe\b/g, "arequipe")
-    .replace(/\btropinutela\b/g, "tropinutella");
+    .replace(/\btropinutela\b/g, "tropinutella")
+    .replace(/\bburguesias?\b/g, "burguesa")
+    .replace(/\bburgesias?\b/g, "burguesa")
+    .replace(/\bburgesa\b/g, "burguesa")
+    .replace(/\bhamburguesa\b/g, "burguesa");
 }
 
 function splitIntoFragments(text: string) {
