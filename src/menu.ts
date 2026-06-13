@@ -631,7 +631,11 @@ export const menu = {
       ],
       aliases: [
         "pollo y carne",
-        "crepe pollo y carne"
+        "pollo carne",
+        "carne pollo",
+        "pollo con carne",
+        "crepe pollo y carne",
+        "crepe pollo carne"
       ],
       modificadoresComunes: [
         "sin pollo",
