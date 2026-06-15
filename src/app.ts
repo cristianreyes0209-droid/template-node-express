@@ -4208,7 +4208,9 @@ return res.sendStatus(200);
     lower.includes("cuanto sale") || lower.includes("cuánto sale") ||
     lower.includes("cuanto cuesta") || lower.includes("cuánto cuesta") ||
     lower.includes("valor total") || lower.includes("total") ||
-    lower === "cuanto" || lower === "cuánto";
+    lower.includes("la cuenta") || lower.includes("cuenta por favor") ||
+    lower.includes("me cobras") || lower.includes("cuanto le debo") || lower.includes("cuánto le debo") ||
+    lower === "cuanto" || lower === "cuánto" || lower === "cuenta";
   if (esPreguntaTotalPAP) {
     const totalsPAP = calculateTotal(currentOrder);
     const resumenPAP = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
