@@ -1288,6 +1288,24 @@ if (esConsultaCostoDomicilio && !esMensajeLargo) {
   return res.sendStatus(200);
 }
 
+// Pregunta por pago con tarjeta/datáfono → mostrar medios de pago disponibles
+// (en cualquier step salvo los de pago, que ya lo manejan con botones)
+const _stepTarjeta = currentOrder?.step;
+const esPreguntaTarjeta =
+  lower.includes("tarjeta") || lower.includes("datafono") || lower.includes("datáfono") ||
+  lower.includes("credito") || lower.includes("crédito") ||
+  lower.includes("debito") || lower.includes("débito");
+if (
+  esPreguntaTarjeta && !esMensajeLargo &&
+  _stepTarjeta !== "esperando_pago" && _stepTarjeta !== "esperando_pago_holaclick"
+) {
+  await sendWhatsAppMessage(phone,
+    "Por ahora no manejamos pago con tarjeta/datáfono 😊\n\n" +
+    "Aceptamos:\n💵 Efectivo\n📱 Nequi/Daviplata\n🏦 Bancolombia/Llave"
+  );
+  return res.sendStatus(200);
+}
+
 // Pregunta sobre formas de pago — respuesta inmediata en cualquier step
 const esPreguntaPago =
   lower.includes("formas de pago") || lower.includes("forma de pago") ||
