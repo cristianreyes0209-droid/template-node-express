@@ -864,6 +864,10 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
       );
       return res.sendStatus(200);
     }
+    // Botón = acción deliberada del cliente → procesar normalmente (no descartar)
+    if (esBoton) {
+      currentOrder.inactivityPending = false;
+    } else {
     const stepInact = currentOrder.step;
     const carritoVacioInact = currentOrder.items.length === 0;
     // Si el carrito está vacío y el texto parece un pedido → procesar normalmente
@@ -915,6 +919,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
         await sendWhatsAppMessage(phone, "Aquí estoy 😊 ¿En qué te ayudo?");
       }
       return res.sendStatus(200);
+    }
     }
   }
 
