@@ -856,6 +856,14 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
 
   // Si el cliente responde tras el mensaje de inactividad, re-mostrar estado actual sin procesar el texto
   if (currentOrder?.inactivityPending && lower !== "reset" && !text.includes("PEDIDO - LAS CREPES") && !text.includes("Vengo de https://las-crepes.ola.click")) {
+    // Consulta de menú/carta tras inactividad → enviar el menú
+    if (lower.includes("carta") || lower.includes("menu") || lower.includes("menú")) {
+      currentOrder.inactivityPending = false;
+      await sendWhatsAppMessage(phone,
+        "🥞 Aquí puedes ver nuestro menú completo:\n\nhttps://menu.tecmenu.com\n\n¿Deseas hacer un pedido? Escríbeme 😊"
+      );
+      return res.sendStatus(200);
+    }
     const stepInact = currentOrder.step;
     const carritoVacioInact = currentOrder.items.length === 0;
     // Si el carrito está vacío y el texto parece un pedido → procesar normalmente
@@ -975,13 +983,16 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     _lower === "horario" || _lower === "horas";
 
   if (_esConsultaHorario && !_esMsgLargo) {
+    // Si además pregunta por la carta/menú, incluir el link del menú
+    const tambienPideMenu = _lower.includes("carta") || _lower.includes("menu") || _lower.includes("menú");
     await sendWhatsAppMessage(phone,
       "🕐 Nuestro horario de atención:\n" +
       "• Lunes a viernes: 3:00 PM – 10:15 PM\n" +
       "• Sábados, domingos y festivos: 12:00 M – 10:15 PM\n\n" +
       "📍 La Villa - Calle 83 #16a-22\n" +
       "📍 Av. Circunvalar #8-94 local 1\n\n" +
-      "📞 *606 341 3020*"
+      "📞 *606 341 3020*" +
+      (tambienPideMenu ? "\n\n🥞 Y aquí está nuestro menú completo:\nhttps://menu.tecmenu.com" : "")
     );
     return res.sendStatus(200);
   }
@@ -1251,7 +1262,12 @@ if (esPrecioProducto) {
 }
 
 // Pregunta sobre costo de domicilio
+const esPreguntaTiempoDom =
+  lower.includes("tiempo") || lower.includes("demora") || lower.includes("tarda") ||
+  lower.includes("llega") || lower.includes("cuando") || lower.includes("cuándo") ||
+  lower.includes("minutos") || lower.includes("hora");
 const esConsultaCostoDomicilio =
+  !esPreguntaTiempoDom &&
   lower.includes("domicilio") && (
     lower.includes("costo") || lower.includes("cuesta") ||
     lower.includes("cuánto") || lower.includes("cuanto") ||
