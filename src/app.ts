@@ -2031,6 +2031,24 @@ if (
     return res.sendStatus(200);
   }
 
+  // 1b. Detección de helado (1 o 2 bolas) → agregar como extra del último ítem
+  if (currentOrder.items.length > 0 && (lower.includes("helado") || /\bbolas?\b/.test(lower))) {
+    const dosBolas = lower.includes("2 bola") || lower.includes("dos bola") ||
+      lower.includes("2 bolas") || lower.includes("dos bolas");
+    const heladoNombre = dosBolas ? "Helado 2 bolas" : "Helado 1 bola";
+    const heladoPrecio = dosBolas ? 8000 : 5500;
+    const lastItemH = currentOrder.items[currentOrder.items.length - 1];
+    lastItemH.extras = lastItemH.extras || [];
+    if (!lastItemH.extras.find((e: any) => e.nombre === heladoNombre)) {
+      lastItemH.extras.push({ nombre: heladoNombre, precio: heladoPrecio, cantidad: 1 });
+    }
+    await sendWhatsAppButtons(phone,
+      `Agregado ✅ ${heladoNombre} (+$${heladoPrecio.toLocaleString("es-CO")})\n\n¿Algo más?`,
+      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
+    );
+    return res.sendStatus(200);
+  }
+
   // 2. Detección de extra/adición por keyword
   const EXTRAS_MAP: { keywords: string[]; nombre: string; precio: number }[] = [
     { keywords: ["tocineta", "tocino", "bacon"],                       nombre: "Tocineta",     precio: 5500 },
