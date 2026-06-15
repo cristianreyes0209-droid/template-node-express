@@ -3473,6 +3473,20 @@ return res.sendStatus(200);
   }
   currentOrder = getOrder(phone)!;
 
+  // Si el mensaje también pide helado/bolas → agregarlo como extra del último ítem
+  if (lower.includes("helado") || /\bbolas?\b/.test(lower)) {
+    const ultimoHelado = currentOrder.items[currentOrder.items.length - 1];
+    if (ultimoHelado) {
+      const dosBolasH = lower.includes("dos bola") || lower.includes("2 bola");
+      const heladoNom = dosBolasH ? "Helado 2 bolas" : "Helado 1 bola";
+      const heladoPre = dosBolasH ? 8000 : 5500;
+      ultimoHelado.extras = ultimoHelado.extras || [];
+      if (!ultimoHelado.extras.find((e: any) => e.nombre === heladoNom)) {
+        ultimoHelado.extras.push({ nombre: heladoNom, precio: heladoPre, cantidad: 1 });
+      }
+    }
+  }
+
   // Preguntas post-producto
   const lastItem = parsedItems[parsedItems.length - 1];
   const DULCES_IDS = new Set(["nutella_crepe", "chocolate_crepe", "arequipe_crepe"]);
