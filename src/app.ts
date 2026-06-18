@@ -1133,7 +1133,7 @@ if (skipParsing) {
   const ruleResult1 = parseOrder(text);
   if (ruleResult1.productoQuery) {
     parseResult = { items: [], productoQuery: ruleResult1.productoQuery };
-  } else if (!isQuestion(text)) {
+  } else if (!isQuestion(text) || ruleResult1.items.length >= 2 || ruleResult1.ambiguousChoice) {
     parseResult = ruleResult1;
   }
   // 2. Solo si no detectó productos y el texto califica → llamar a Gemini para clasificar
@@ -1154,7 +1154,7 @@ if (skipParsing) {
   const ruleResult2 = parseOrder(text);
   if (ruleResult2.productoQuery) {
     parseResult = { items: [], productoQuery: ruleResult2.productoQuery };
-  } else if (!isQuestion(text)) {
+  } else if (!isQuestion(text) || ruleResult2.items.length >= 2 || ruleResult2.ambiguousChoice) {
     parseResult = ruleResult2;
     if (parseResult.items.length === 0 && !parseResult.ambiguousChoice && shouldCallAI) {
       const aiResult = await parseWithAI(text);
