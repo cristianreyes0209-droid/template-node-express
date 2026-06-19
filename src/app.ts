@@ -1021,6 +1021,29 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     return res.sendStatus(200);
   }
 
+  // Pregunta por opciones de bebidas (malteadas, jugos, limonadas) → listar sabores
+  const _preguntaBebida = (kw: string) => lower.includes(kw) && (
+    lower.includes("que ") || lower.includes("qué ") || lower.includes("cuales") || lower.includes("cuáles") ||
+    lower.includes("cual ") || lower.includes("manej") || lower.includes("tienen") || lower.includes("tiene") ||
+    lower.includes("hay") || lower.includes("sabor") || lower.includes("opcion") || lower.includes("cuanta")
+  );
+  const _bebidasCat = (menu.categorias as any[]).find((c: any) => c.id === "bebidas");
+  if (_bebidasCat && !_esMsgLargo && (_preguntaBebida("malteada") || _preguntaBebida("jugo") || _preguntaBebida("limonada"))) {
+    if (_preguntaBebida("malteada")) {
+      const m = _bebidasCat.productos.find((p: any) => p.id === "malteada");
+      const sabores = (m?.variantes || []).map((v: any) => v.nombre).join(", ");
+      await sendWhatsAppMessage(phone, `🥤 Nuestras malteadas ($${(m?.precio || 17900).toLocaleString("es-CO")}): ${sabores}.\n\n¿Deseas agregar una? 😊`);
+    } else if (_preguntaBebida("limonada")) {
+      const l = _bebidasCat.productos.find((p: any) => p.id === "limonada");
+      const ls = (l?.variantes || []).map((v: any) => `${v.nombre} $${v.precio.toLocaleString("es-CO")}`).join(", ");
+      await sendWhatsAppMessage(phone, `🍋 Nuestras limonadas: ${ls}.\n\n¿Deseas agregar una? 😊`);
+    } else {
+      const jugos = _bebidasCat.productos.filter((p: any) => p.tipo === "jugo").map((p: any) => p.nombre.replace(/^Jugo de /, "")).join(", ");
+      await sendWhatsAppMessage(phone, `🧃 Jugos naturales ($9.900 en agua / $11.500 en leche): ${jugos}.\n\n¿Deseas agregar uno? 😊`);
+    }
+    return res.sendStatus(200);
+  }
+
   const _esConsultaMenu =
     _lower === "menu" || _lower === "menú" || _lower === "carta" ||
     _lower.includes("ver menu") || _lower.includes("ver menú") ||
