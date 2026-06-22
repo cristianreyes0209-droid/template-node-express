@@ -482,6 +482,12 @@ export const menu = {
       aliases: [
         "ranchera mixta",
         "ranchera",
+        "ranchera de carne",
+        "ranchera carne",
+        "ranchera con carne",
+        "ranchera de pollo",
+        "ranchera pollo",
+        "ranchera con pollo",
         "crepe ranchera mixta"
       ],
       ingredientes: [
@@ -502,13 +508,13 @@ export const menu = {
           id: "solo_pollo",
           nombre: "Solo pollo",
           precio: 21000,
-          aliases: ["solo pollo", "con pollo", "de pollo"]
+          aliases: ["solo pollo", "con pollo", "de pollo", "pollo"]
         },
         {
           id: "solo_carne",
           nombre: "Solo carne",
           precio: 24500,
-          aliases: ["solo carne", "con carne", "de carne"]
+          aliases: ["solo carne", "con carne", "de carne", "carne"]
         }
       ],
       modificadoresComunes: [
