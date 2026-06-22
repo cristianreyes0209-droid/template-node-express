@@ -145,6 +145,7 @@ export function normalizeText(text: string) {
     .replace(/\bcreeps\b/g, "crepe")
     .replace(/\bcrees\b/g, "crepe")
     .replace(/\bchepes?\b/g, "crepe")
+    .replace(/\bcrepes\b/g, "crepe")
     .replace(/\bcrep\b/g, "crepe")
     .replace(/\branquera\b/g, "ranchera")
     .replace(/\brancheras\b/g, "ranchera")

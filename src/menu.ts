@@ -633,8 +633,11 @@ export const menu = {
         "pollo y carne",
         "pollo carne",
         "carne pollo",
+        "carne y pollo",
         "pollo con carne",
+        "carne con pollo",
         "crepe pollo y carne",
+        "crepe carne y pollo",
         "crepe pollo carne"
       ],
       modificadoresComunes: [
