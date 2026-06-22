@@ -4538,7 +4538,13 @@ return res.sendStatus(200);
       `🔑 Llave: ${bancoLlave}\n\n` +
       "Cuando realices el pago envíame el comprobante 📸";
 
-  } else if (lower === "eliminar" || lower.includes("modificar") || lower.includes("cambiar pedido") || lower.includes("cambiar el pedido")) {
+  } else if (
+    lower === "eliminar" || lower.includes("modificar") ||
+    lower.includes("cambiar pedido") || lower.includes("cambiar el pedido") ||
+    lower.includes("hacer un cambio") || lower.includes("hacer cambio") || lower.includes("un cambio") ||
+    lower.includes("agregar") || lower.includes("añadir") || lower.includes("anadir") ||
+    lower.includes("otra ") || lower.includes("otro ") || lower.includes("una mas") || lower.includes("una más")
+  ) {
     const orderVolver = getOrder(phone)!;
     const totalsVolver = calculateTotal(orderVolver);
     const resumenVolver = orderVolver.items.map((item: any) => formatLineaItem(item)).join("\n");
