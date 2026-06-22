@@ -3747,7 +3747,17 @@ return res.sendStatus(200);
 
     // Validar que el texto parece una dirección real
     const PALABRAS_INVALIDAS_DIR = new Set(["hola", "si", "sí", "ok", "espera", "espérame", "esperame", "bueno", "bien", "ya", "dale", "listo", "claro", "no", "momento", "ahorita", "ahora", "gracias", "ok gracias", "muchas gracias", "perfecto", "entendido"]);
-    const textoDirLimpio = text.trim();
+    // Quitar cortesías y la palabra "domicilio" para no confundir el geocoding
+    const direccionLimpia = text
+      .replace(/\bbuen[oa]s?\s*(noches?|tardes?|d[ií]as?)\b/gi, " ")
+      .replace(/\b(buen[oa]s|hola|gracias|por\s*favor|porfa(?:vor)?)\b/gi, " ")
+      .replace(/\bun[ao]?\s+domicilio\s+(para|a|en|hacia|hasta)\b/gi, " ")
+      .replace(/\bdomicilio\b/gi, " ")
+      .replace(/^[\s.,:;¡!¿?\-]+/, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const direccionFinal = direccionLimpia.length >= 5 ? direccionLimpia : text.trim();
+    const textoDirLimpio = direccionFinal;
     const tieneDigito = /\d/.test(textoDirLimpio);
     const tieneKeywordDir = /\b(calle|carrera|carr|cll|cra|cr|av\b|avenida|diagonal|transversal|circular|autopista|variante|barrio|conjunto|urbanizacion|urbanización|manzana|km|kilómetro|kilómetros|#|nro|no\.)\b/i.test(textoDirLimpio);
     const esDirInvalida = textoDirLimpio.length < 5 || PALABRAS_INVALIDAS_DIR.has(textoDirLimpio.toLowerCase()) || (!tieneDigito && !tieneKeywordDir);
@@ -3755,7 +3765,7 @@ return res.sendStatus(200);
       await sendWhatsAppMessage(phone, "No encontré una dirección válida 📍 Por favor escríbela así:\n\nCalle 12 #33-10, barrio Los Álamos");
       return res.sendStatus(200);
     }
-    updateOrderAddress(phone, text);
+    updateOrderAddress(phone, direccionFinal);
     // La dirección escrita tiene prioridad sobre coords GPS anteriores
     const orderTxt = getOrder(phone);
     if (orderTxt) orderTxt.locationCoords = undefined;
