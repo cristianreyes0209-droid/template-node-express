@@ -609,8 +609,12 @@ export const menu = {
         "pollo y pina",
         "pollo piña",
         "pollo pina",
+        "piña pollo",
+        "pina pollo",
         "crepe pollo y piña",
-        "crepe pollo piña"
+        "crepe pollo piña",
+        "crepe piña pollo",
+        "crepe pina pollo"
       ],
       modificadoresComunes: [
         "sin pollo",

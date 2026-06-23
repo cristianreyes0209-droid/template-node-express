@@ -514,6 +514,9 @@ function extractExtrasFromFragment(fragment: string, extrasProducts: any[], prod
         `con extra ${normalizedAlias}`,
         `mas ${normalizedAlias}`,
         `adicional ${normalizedAlias}`,
+        `adicional de ${normalizedAlias}`,
+        `adicion ${normalizedAlias}`,
+        `adicion de ${normalizedAlias}`,
         `con ${normalizedAlias}`,
         `agregar ${normalizedAlias}`,
       ];
@@ -902,31 +905,42 @@ const fragments = splitIntoFragments(textoLimpio);
   // Parsear fragmentos: si uno es ambiguo, guardarlo y saltar; agregar los demás al carrito
   let firstAmbiguity: ReturnType<typeof detectAmbiguousProduct> | null = null;
 
+// Helper de limpieza de fragmento para buscar el producto
+const limpiarFrag = (s: string) => s
+  .replace(/^(\d+|una|uno|un|dos|tres|cuatro|cinco)\s+/i, "")
+  .replace(/\bcrepe\s+de\b/g, "")   // "crepe de X" → "X"
+  .replace(/\bcrepe\b/g, "")
+  .replace(/\bun\s+/g, "")          // artículos
+  .replace(/\buna\s+/g, "")
+  .replace(/\bel\s+/g, "")
+  .replace(/\bla\s+/g, "")
+  .replace(/\blos\s+/g, "")
+  .replace(/\blas\s+/g, "")
+  .replace(/\bsin\s+\w+(?:\s+\w+)?\b/g, "")  // quitar "sin X" para buscar producto
+  .replace(/\bpoco\s+\w+\b/g, "")
+  .replace(/\bbien\s+\w+\b/g, "")
+  .replace(/\s+/g, " ")
+  .trim();
+
 for (const fragment of fragments) {
   // Ignorar fragmentos que son solo observaciones (sin X, poco X, bien X)
   if (/^(sin|poco|bien)\s+/i.test(fragment.trim())) continue;
 
-  const ambiguity = detectAmbiguousProduct(fragment, mainProducts);
+  // Quitar las adiciones ("adicion de X", "adicional X") para el match de PRODUCTO;
+  // se extraen aparte como extras desde el fragmento crudo.
+  const fragmentSinAdic = fragment
+    .replace(/\badicion(?:al)?\s+(?:de\s+)?[a-záéíóúñ]+/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const ambiguity = detectAmbiguousProduct(fragmentSinAdic, mainProducts);
   if (ambiguity) {
     if (!firstAmbiguity) firstAmbiguity = ambiguity;
     continue; // saltar este fragmento, parsear los demás
   }
 
-  const fragmentLimpio = fragment
-    .replace(/^(\d+|una|uno|un|dos|tres|cuatro|cinco)\s+/i, "")
-    .replace(/\bcrepe\s+de\b/g, "")   // "crepe de X" → "X"
-    .replace(/\bcrepe\b/g, "")
-    .replace(/\bun\s+/g, "")          // artículos
-    .replace(/\buna\s+/g, "")
-    .replace(/\bel\s+/g, "")
-    .replace(/\bla\s+/g, "")
-    .replace(/\blos\s+/g, "")
-    .replace(/\blas\s+/g, "")
-    .replace(/\bsin\s+\w+(?:\s+\w+)?\b/g, "")  // quitar "sin X" para buscar producto
-    .replace(/\bpoco\s+\w+\b/g, "")
-    .replace(/\bbien\s+\w+\b/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  const fragmentLimpio = limpiarFrag(fragmentSinAdic);       // para buscar producto (sin adiciones)
+  const fragmentLimpioConAdic = limpiarFrag(fragment);       // conserva adiciones, para isExactProductAlias
 
   const cantidad = extractCantidad(fragment);
   const product = findProductInFragment(fragmentLimpio, mainProducts);
@@ -935,11 +949,11 @@ for (const fragment of fragments) {
     continue;
   }
 
-  const variant = findVariantInFragment(fragment, product);
+  const variant = findVariantInFragment(fragmentSinAdic, product);
   const observaciones = extractObservaciones(fragment);
-  // Si el fragmento completo es un alias del producto, no extraer extras
+  // Si el fragmento completo (con adiciones) es un alias del producto, no extraer extras
   // (evita que "pollo con champiñones" agregue champiñones como extra)
-  const fragmentNorm = normalizeText(fragmentLimpio);
+  const fragmentNorm = normalizeText(fragmentLimpioConAdic);
   const isExactProductAlias =
     normalizeText(product.nombre) === fragmentNorm ||
     (product.aliases || []).some((a: string) => normalizeText(a) === fragmentNorm);

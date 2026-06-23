@@ -1143,6 +1143,16 @@ const shouldCallAI =
   (stepNeedsAI ? text.trim().split(/\s+/).length >= 1 : text.trim().split(/\s+/).length > 3) &&
   !SKIP_AI_KEYWORDS.has(lower);
 
+// "A nombre de X" en el mensaje del pedido → tomar como nombre del cliente
+const nombrePedidoMatch = text.match(/a nombre de[:\s]+([^\n,]+)/i);
+if (nombrePedidoMatch && currentOrder && !currentOrder.nombre) {
+  const nombreCap = nombrePedidoMatch[1].trim();
+  if (nombreCap.length >= 2 && nombreCap.length <= 40) {
+    updateOrderName(phone, nombreCap);
+    currentOrder = getOrder(phone)!;
+  }
+}
+
 let parseResult: { items: any[]; ambiguousChoice?: any; upselling?: string; productoQuery?: string } =
   { items: [], ambiguousChoice: undefined, upselling: undefined };
 
