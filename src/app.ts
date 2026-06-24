@@ -1832,6 +1832,22 @@ if (text.includes("PEDIDO - LAS CREPES")) {
     .filter((c: any) => c.id !== "extras")
     .reduce((acc: any[], c: any) => acc.concat(c.productos), []);
 
+  // Si un comentario de la carta digital contiene una BEBIDA (ej. "1 coca cola"), agregarla como ítem aparte
+  const bebidasCatCD = (menu.categorias as any[]).find((c: any) => c.id === "bebidas");
+  const bebidasIdsCD: string[] = bebidasCatCD ? (bebidasCatCD.productos as any[]).map((p: any) => p.id) : [];
+  const bebidasDeObs: any[] = [];
+  for (const it of cdParsed.items) {
+    if (!it.observaciones) continue;
+    const obsParse = parseOrder(it.observaciones);
+    const bebidas = (obsParse.items || []).filter((p: any) => bebidasIdsCD.includes(p.productoId));
+    if (bebidas.length > 0) {
+      for (const b of bebidas) {
+        bebidasDeObs.push({ producto: b.producto, variante: b.variante, cantidad: b.cantidad, precio: b.precio, observaciones: undefined, extras: b.extras || [] });
+      }
+      it.observaciones = undefined; // ya es un ítem aparte, quitar de la observación
+    }
+  }
+
   if (cdParsed.items.length > 0) {
     createOrUpdateOrder(phone, cdParsed.items.map(i => {
       const normNombre = normalizeText(i.producto);
@@ -1866,6 +1882,9 @@ if (text.includes("PEDIDO - LAS CREPES")) {
       };
     }));
   }
+
+  // Agregar las bebidas detectadas en los comentarios como ítems aparte
+  if (bebidasDeObs.length > 0) createOrUpdateOrder(phone, bebidasDeObs);
 
   currentOrder = getOrder(phone)!;
   currentOrder.vieneDeCarta = true;
