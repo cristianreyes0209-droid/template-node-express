@@ -4857,6 +4857,30 @@ return res.sendStatus(200);
 
   // Menos de 2 horas → pedido todavía en proceso
 
+  // Reclamo sobre el pedido (faltó/llegó incompleto/equivocado) → escalar a asesor humano
+  const esReclamoPedido =
+    (lower.includes("solo") && (lower.includes("lleg") || lower.includes("vino") || lower.includes("trajo") || lower.includes("vinieron") || lower.includes("trajeron"))) ||
+    lower.includes("falto") || lower.includes("faltó") || lower.includes("faltaron") || lower.includes("hace falta") || lower.includes("hizo falta") ||
+    lower.includes("incompleto") || lower.includes("incompleta") ||
+    lower.includes("no me llego") || lower.includes("no me llegó") || lower.includes("no llego completo") ||
+    lower.includes("esta mal") || lower.includes("está mal") || lower.includes("mal el pedido") || lower.includes("pedido malo") ||
+    lower.includes("equivocado") || lower.includes("no es lo que ped") || lower.includes("me dieron mal") ||
+    (lower.includes("eran") && /\d/.test(lower));
+  if (esReclamoPedido) {
+    updateOrderStep(phone, "esperando_asesor");
+    currentOrder = getOrder(phone)!;
+    const nombreRec = currentOrder.nombre || customer?.name || phone;
+    try {
+      await sendWhatsAppMessage("573151913928",
+        `⚠️ RECLAMO DE PEDIDO\n👤 ${nombreRec}\n📞 ${phone}\n💬 "${text}"`
+      );
+    } catch (e) {}
+    await sendWhatsAppMessage(phone,
+      "Lamentamos mucho el inconveniente 😔 Ya estoy comunicándote con un asesor para resolverlo de inmediato.\n\nTambién puedes llamarnos:\n📞 La Villa: *606 341 3020*\n📞 Circunvalar: *606 345 0257*"
+    );
+    return res.sendStatus(200);
+  }
+
   // Quiere cancelar pedido ya confirmado
   if (
     lower === "cancelar" || lower === "cancela" ||
