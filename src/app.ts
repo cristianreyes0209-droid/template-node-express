@@ -746,6 +746,15 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   const textoReal = text.replace(/[^\w\sáéíóúüñÁÉÍÓÚÜÑ]/g, "").trim();
   if (!textoReal && !esBoton) return res.sendStatus(200);
 
+  // Mensaje automático de OlaClick sobre el avance de un pedido (Nº CO-XXXX) → ignorar
+  const esConsultaAvanceOlaClick =
+    /\bco-?\d{6,}\b/i.test(text) &&
+    (lower.includes("avance") || lower.includes("informacion") || lower.includes("información") ||
+     lower.includes("estado") || lower.includes("pedido"));
+  if (esConsultaAvanceOlaClick) {
+    return res.sendStatus(200); // no responder — plantilla automática de OlaClick
+  }
+
   console.log("=== PROCESANDO MENSAJE ===");
   console.log("PHONE:", phone);
   console.log("TEXT:", text);
@@ -4274,6 +4283,20 @@ return res.sendStatus(200);
   await sendWhatsAppMessage(phone, replyMessage);
   return res.sendStatus(200);
 }
+
+    // Recoger con pedido completo: el resumen ya se mostró → ir directo a factura (evitar doble confirmación)
+    if (currentOrder.tipoEntrega === "recoger") {
+      updateOrderStep(phone, "esperando_factura");
+      currentOrder = getOrder(phone)!;
+      await sendWhatsAppButtons(phone,
+        "¿Necesitas factura electrónica?",
+        [
+          { id: "factura_si", title: "Sí, la necesito 🧾" },
+          { id: "factura_no", title: "No, gracias" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
 
     updateOrderStep(phone, "esperando_confirmacion");
     currentOrder = getOrder(phone)!;
