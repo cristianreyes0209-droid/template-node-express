@@ -178,6 +178,19 @@ function splitIntoFragments(text: string) {
 
   const result: string[] = [];
 
+  // Productos principales (para proteger frases con "y"/"e" al partir)
+  const allMainProdsForSplit = (menu.categorias as any[])
+    .filter((c: any) => c.id !== "extras")
+    .flatMap((c: any) => c.productos as any[]);
+  // Frases de producto que contienen conector " y "/" e " (ej. "pollo y pina", "pollo y carne")
+  // → se protegen para que el split por "y" no las parta cuando están dentro de una frase larga.
+  const connectorPhrases: string[] = Array.from(new Set(
+    allMainProdsForSplit
+      .flatMap((p: any) => [p.nombre, ...((p.aliases as string[]) || [])])
+      .map((s: string) => normalizeText(s))
+      .filter((s: string) => / (?:y|e) /.test(s))
+  )).sort((a, b) => b.length - a.length);
+
   for (const part of commaParts) {
     // Si tiene "sin X y sin Y" no partir por "y"
     if (/sin\s+\w+.*\s+y\s+sin\s+\w+/i.test(part)) {
@@ -188,9 +201,6 @@ function splitIntoFragments(text: string) {
     // Si la parte completa es un alias de producto conocido, no partir por "y"
     // (ej: "pollo y champiñones" no debe dividirse en ["pollo", "champiñones"])
     {
-      const allMainProdsForSplit = (menu.categorias as any[])
-        .filter((c: any) => c.id !== "extras")
-        .flatMap((c: any) => c.productos as any[]);
       const partNorm = normalizeText(part);
       const partNormSinCantidad = partNorm.replace(/^\d+\s+|^(?:un|una|uno|dos|tres|cuatro|cinco)\s+/i, "").trim();
       // También probar sin prefijo "crepe de " / "crepe " para capturar "una crepe de pollo y carne"
@@ -211,6 +221,15 @@ function splitIntoFragments(text: string) {
       }
     }
 
+    // Proteger frases de producto con conector "y"/"e" (ej. "pollo y pina") dentro de una
+    // parte larga: enmascarar el conector con un centinela para que el split por "y" no las parta.
+    let partProteg = part;
+    for (const ph of connectorPhrases) {
+      if (partProteg.includes(ph)) {
+        partProteg = partProteg.split(ph).join(ph.replace(/ (y|e) /g, "$1"));
+      }
+    }
+
     // Partir por "y", "e", "más", "además", "también", "súmale", "agrégale"
     // PERO solo si lo que sigue NO es una observación ("sin ...", "poco ...", "bien ...")
     const separatorRegex = /\s+(?:y|e|mas|tambien|ademas|sumale|agregale)\s+/gi;
@@ -218,9 +237,9 @@ function splitIntoFragments(text: string) {
     let lastIndex = 0;
     let match: RegExpExecArray | null;
 
-    while ((match = separatorRegex.exec(part)) !== null) {
-      const before = part.slice(lastIndex, match.index);
-      const after = part.slice(match.index + match[0].length);
+    while ((match = separatorRegex.exec(partProteg)) !== null) {
+      const before = partProteg.slice(lastIndex, match.index);
+      const after = partProteg.slice(match.index + match[0].length);
       // Si lo que viene después del separador empieza con una observación, no separar
       if (/^(sin|poco|bien|extra)\s+/i.test(after)) {
         continue;
@@ -233,10 +252,12 @@ function splitIntoFragments(text: string) {
       segments.push(before.trim());
       lastIndex = match.index + match[0].length;
     }
-    segments.push(part.slice(lastIndex).trim());
+    segments.push(partProteg.slice(lastIndex).trim());
 
     for (const seg of segments.filter(Boolean)) {
-      result.push(...splitByInlineNumbers(seg));
+      // Restaurar el centinela del conector protegido
+      const segRestaurado = seg.replace(/(y|e)/g, " $1 ");
+      result.push(...splitByInlineNumbers(segRestaurado));
     }
   }
 
@@ -377,9 +398,9 @@ function findBestProductMatches(fragment: string, products: any[]) {
     let score = 0;
     if (entry.alias === text) {
       score = 3; // coincidencia exacta con el alias
-    } else if (aliasRegex.test(text) || text.includes(entry.alias)) {
-      score = 2; // alias completo encontrado en el texto
-    } else if (entry.alias.includes(text) && text.length >= entry.alias.length * 0.6) {
+    } else if (aliasRegex.test(text) || (entry.alias.length >= 4 && text.includes(entry.alias))) {
+      score = 2; // alias completo encontrado en el texto (subcadena solo para alias de ≥4 chars)
+    } else if (entry.alias.includes(text) && text.length >= 4 && text.length >= entry.alias.length * 0.6) {
       score = 1; // texto es parte significativa del alias
     } else if (similarity(text, entry.alias) > 0.78) {
       score = 1; // similitud difusa
@@ -872,6 +893,12 @@ export function parseOrder(text: string): ParseResult {
 // Saltos de línea → separador de ítems (sobrevive a normalizeText como token, luego pasa a coma)
 const textoConSeparadores = normalizeText(text.replace(/[\r\n]+/g, " xsplitx "));
 const textoLimpio = textoConSeparadores
+  .replace(/\bhola+\b/g, " ")
+  .replace(/\bholi(?:s|is)?\b/g, " ")
+  .replace(/\bbuen[oa]s?(?:\s+(?:dias|tardes|noches))?\b/g, " ")
+  .replace(/\bbuen\s+dia\b/g, " ")
+  .replace(/\bque\s+tal\b/g, " ")
+  .replace(/\bsaludos\b/g, " ")
   .replace(/\bpor favor\b/g, " ")
   .replace(/\bpara pedir\b/g, " ")
   .replace(/\bquiero\b/g, " ")
@@ -943,7 +970,18 @@ for (const fragment of fragments) {
   const fragmentLimpioConAdic = limpiarFrag(fragment);       // conserva adiciones, para isExactProductAlias
 
   const cantidad = extractCantidad(fragment);
-  const product = findProductInFragment(fragmentLimpio, mainProducts);
+  let product = findProductInFragment(fragmentLimpio, mainProducts);
+
+  // "X con <sabor>" donde X es un crepe: el sabor es un topping, no un jugo.
+  // Si el match cayó en un jugo pero antes de "con" hay un crepe, preferir el crepe.
+  if (product && (product as any).tipo === "jugo") {
+    const conIdx = fragmentLimpio.search(/\bcon\b/);
+    if (conIdx > 0) {
+      const antesDeCon = fragmentLimpio.slice(0, conIdx).trim();
+      const prodAntes = antesDeCon ? findProductInFragment(antesDeCon, mainProducts) : null;
+      if (prodAntes && (prodAntes as any).tipo !== "jugo") product = prodAntes;
+    }
+  }
 
   if (!product) {
     continue;

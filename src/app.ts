@@ -1369,6 +1369,32 @@ const enStepDePago = stepActualPago === "esperando_pago"
   || stepActualPago === "esperando_comprobante_holaclick"
   || stepActualPago === "esperando_asesor"
   || stepActualPago === "esperando_confirmacion";
+
+// El cliente indica que YA pagó (en factura/pago/comprobante) → pedir comprobante, no repetir datos de pago
+const esYaPago =
+  /\bya\s+(pagu|pague|transfer|realic|hice|envie|consign|cancel)/i.test(lower) ||
+  lower.includes("acabo de pagar") || lower.includes("acabo de transferir") ||
+  lower.includes("hice el pago") || lower.includes("hice la transferencia") ||
+  lower.includes("realice el pago") || lower.includes("realice la transferencia") ||
+  (lower.includes("listo") && (lower.includes("pag") || lower.includes("transfer")));
+const enPasoPagoAmplio =
+  stepActualPago === "esperando_factura" || stepActualPago === "esperando_pago" ||
+  stepActualPago === "esperando_comprobante";
+if (esYaPago && enPasoPagoAmplio) {
+  if (lower.includes("nequi") || lower.includes("daviplata")) updateOrderPayment(phone, "nequi/daviplata");
+  else if (lower.includes("transfer") || lower.includes("bancolombia")) updateOrderPayment(phone, "bancolombia");
+  updateOrderStep(phone, "esperando_comprobante");
+  currentOrder = getOrder(phone)!;
+  const preguntaTiempo = lower.includes("cuanto") || lower.includes("cuánto") ||
+    lower.includes("demora") || lower.includes("tarda") || lower.includes("tiempo");
+  const tiempoTxt = currentOrder.tipoEntrega === "domicilio" ? "40-50 minutos 🚚" : "unos 15 minutos 🏪";
+  await sendWhatsAppMessage(phone,
+    "¡Perfecto! 🙌 Envíame la foto del comprobante 📸 para confirmar tu pedido." +
+    (preguntaTiempo ? `\n\nUna vez confirmado, tu pedido tarda aproximadamente ${tiempoTxt}.` : "")
+  );
+  return res.sendStatus(200);
+}
+
 if (esPreguntaPago && !esMensajeLargo && !enStepDePago) {
   // Si el cliente está armando pedido con items → avanzar al flujo de confirmación
   if (
@@ -2316,6 +2342,12 @@ return res.sendStatus(200);
   console.log("TOKEN:", process.env.WHATSAPP_TOKEN?.slice(0, 10));
 
   if (parseResult.ambiguousChoice && currentOrder?.step !== "esperando_aclaracion_producto") {
+    // Si estaba eligiendo variante de una bebida y ahora pide otro producto, abandonar la pendiente
+    // (no dejarla colgada para que reaparezca y trabe el cierre)
+    if (currentOrder?.step === "esperando_variante_producto") {
+      currentOrder.pendingProduct = undefined;
+      currentOrder.itemsPendientes = undefined;
+    }
     // Agregar los ítems no-ambiguos al carrito antes de pedir la aclaración
     if (parsedItems.length > 0) {
       createOrUpdateOrder(phone, parsedItems);
@@ -2637,6 +2669,31 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       );
       return res.sendStatus(200);
     } else {
+      // ¿El cliente escribió una dirección? → guardarla y salir del loop (no perderla)
+      const pareceDireccion = /\d/.test(text) &&
+        /\b(calle|carrera|cra|cll|av|avenida|diagonal|transversal|manzana|mz|barrio|conjunto|torre|apto|apartamento|apartaestudio|casa|bloque|etapa|urbanizacion|urbanización|km|autopista|variante|circular)\b/i.test(text);
+      if (pareceDireccion) {
+        if (currentOrder.tipoEntrega === "domicilio") updateOrderAddress(phone, text.trim());
+        const nombrePend = pending.nombre;
+        currentOrder.pendingProduct = undefined;
+        currentOrder.itemsPendientes = undefined;
+        updateOrderStep(phone, "post_agregar_producto");
+        currentOrder = getOrder(phone)!;
+        const resumenEsc = currentOrder.items.map((i: any) => formatLineaItem(i, true)).join("\n");
+        await sendWhatsAppButtons(phone,
+          `📍 Anoté tu dirección. No alcancé a registrar el sabor de tu ${nombrePend}, así que la dejé por fuera 🙏\n\nTu pedido va así:\n${resumenEsc}\n\n¿Qué deseas hacer?`,
+          [
+            { id: "confirmar",   title: "✅ Confirmar" },
+            { id: "agregar_mas", title: "➕ Agregar" },
+            { id: "eliminar",    title: "🗑️ Quitar" }
+          ]
+        );
+        return res.sendStatus(200);
+      }
+      // Si es una observación (texto con letras) → guardarla como nota para no perderla, y re-preguntar
+      if (/[a-záéíóúñ]/i.test(text) && text.trim().length > 3) {
+        updateOrderGeneralNotes(phone, text.trim());
+      }
       const botonesVariantes = variantes.slice(0, 3).map((v: any) => ({
         id: `variante_${v.id}`,
         title: `${v.nombre} $${v.precio.toLocaleString("es-CO")}`
@@ -3635,7 +3692,10 @@ return res.sendStatus(200);
     "factura_si", "factura_no", "pedir_algo_nuevo", "hablar_asesor",
     "con_queso_dulce", "sin_queso_dulce", "con_jalapenos", "sin_jalapenos"
   ]);
-  if (INVALIDOS_NOMBRE.has(nombreRecibido.toLowerCase()) || nombreRecibido.length < 2) {
+  const nombreNorm = nombreRecibido.trim().toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[.,!¡¿?]/g, "").trim();
+  const esSaludoNombre = /^(hola+|holi(?:s|is)?|buen[oa]s?(?:\s+(?:dias|tardes|noches))?|buen dia|hey+|hi|hello|ola+|que tal|saludos|gracias)$/.test(nombreNorm);
+  if (INVALIDOS_NOMBRE.has(nombreRecibido.toLowerCase()) || nombreRecibido.length < 2 || esSaludoNombre) {
     await sendWhatsAppMessage(phone, "Por favor dime tu nombre 😊 ¿Cómo te llamas?");
     return res.sendStatus(200);
   }
@@ -3787,6 +3847,9 @@ return res.sendStatus(200);
     const PALABRAS_INVALIDAS_DIR = new Set(["hola", "si", "sí", "ok", "espera", "espérame", "esperame", "bueno", "bien", "ya", "dale", "listo", "claro", "no", "momento", "ahorita", "ahora", "gracias", "ok gracias", "muchas gracias", "perfecto", "entendido"]);
     // Quitar cortesías y la palabra "domicilio" para no confundir el geocoding
     const direccionLimpia = text
+      // Si el cliente repitió el pedido junto a la dirección ("...domicilio/pedido de <productos> ... para <dirección>")
+      // quitar todo el preámbulo hasta el "para" que introduce la dirección real
+      .replace(/^.*\b(?:domicilio|pedido)\s+de\b.*?\bpara\b/i, " ")
       .replace(/\bbuen[oa]s?\s*(noches?|tardes?|d[ií]as?)\b/gi, " ")
       .replace(/\b(buen[oa]s|hola|gracias|por\s*favor|porfa(?:vor)?)\b/gi, " ")
       .replace(/\bun[ao]?\s+domicilio\s+(para|a|en|hacia|hasta)\b/gi, " ")
@@ -4008,20 +4071,38 @@ return res.sendStatus(200);
       );
       return res.sendStatus(200);
     }
-    currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;
-    if (currentOrder.cartFreeTextAttempts >= 3) {
-      currentOrder.cartFreeTextAttempts = 0;
-      updateOrderStep(phone, "esperando_asesor");
-      currentOrder = getOrder(phone)!;
-      await sendWhatsAppMessage(phone, "Voy a conectarte con un asesor que puede ayudarte mejor 😊");
-      sendWhatsAppMessage("573151913928", `💬 Cliente necesita ayuda con carrito\n👤 ${currentOrder.nombre || phone}\n📞 ${phone}`).catch(() => {});
-    } else {
-      await sendWhatsAppButtons(phone, "¿Qué deseas hacer? 😊", [
-        { id: "agregar_mas", title: "➕ Agregar" },
-        { id: "eliminar",    title: "🗑️ Quitar" },
-        { id: "4",           title: "📝 Observación" }
-      ]);
+    // Si es una pregunta → mantener el conteo/escalada actual
+    const esPreguntaConf = text.includes("?") ||
+      /^(ya|cuándo|cuando|puedo|puedes|me puedes|cual|cuál|donde|dónde|como|cómo|qué |que )/i.test(text.trim());
+    if (esPreguntaConf) {
+      currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;
+      if (currentOrder.cartFreeTextAttempts >= 3) {
+        currentOrder.cartFreeTextAttempts = 0;
+        updateOrderStep(phone, "esperando_asesor");
+        currentOrder = getOrder(phone)!;
+        await sendWhatsAppMessage(phone, "Voy a conectarte con un asesor que puede ayudarte mejor 😊");
+        sendWhatsAppMessage("573151913928", `💬 Cliente necesita ayuda con carrito\n👤 ${currentOrder.nombre || phone}\n📞 ${phone}`).catch(() => {});
+      } else {
+        await sendWhatsAppButtons(phone, "¿Qué deseas hacer? 😊", [
+          { id: "agregar_mas", title: "➕ Agregar" },
+          { id: "eliminar",    title: "🗑️ Quitar" },
+          { id: "4",           title: "📝 Observación" }
+        ]);
+      }
+      return res.sendStatus(200);
     }
+    // Texto libre (no pregunta) → guardarlo como observación del pedido
+    currentOrder.cartFreeTextAttempts = 0;
+    if (esObservacionDireccion(text)) updateOrderDireccionNotes(phone, text);
+    else updateOrderGeneralNotes(phone, text);
+    await sendWhatsAppButtons(phone,
+      `Anotado ✅ "${text}"\n\n¿Qué deseas hacer?`,
+      [
+        { id: "confirmar",   title: "✅ Confirmar" },
+        { id: "agregar_mas", title: "➕ Agregar" },
+        { id: "eliminar",    title: "🗑️ Quitar" }
+      ]
+    );
     return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "retirando_productos") {
@@ -4880,14 +4961,21 @@ return res.sendStatus(200);
 
   // Menos de 2 horas → pedido todavía en proceso
 
-  // Reclamo sobre el pedido (faltó/llegó incompleto/equivocado) → escalar a asesor humano
+  // Reclamo sobre el pedido (faltó/llegó incompleto/equivocado/producto errado) → escalar a asesor humano
   const esReclamoPedido =
+    lower.includes("reclamo") || lower.includes("reclamar") || lower.includes("queja") || lower.includes("quejar") ||
+    lower.includes("en vez de") || lower.includes("en lugar de") ||
+    lower.includes("no era lo que") || lower.includes("no era eso") || lower.includes("no era el") || lower.includes("no era la") ||
+    lower.includes("se equivocaron") || lower.includes("equivocaron") || lower.includes("equivocado") || lower.includes("equivoco") || lower.includes("equivocó") ||
+    lower.includes("cometieron un error") || lower.includes("cometio un error") || lower.includes("cometió un error") ||
+    ((lower.includes("me enviaron") || lower.includes("me mandaron") || lower.includes("me trajeron") || lower.includes("enviaron")) &&
+      (lower.includes("otro") || lower.includes("otra") || lower.includes("mal") || lower.includes("en vez") || lower.includes("cambiado") || lower.includes("distinto") || lower.includes("diferente"))) ||
     (lower.includes("solo") && (lower.includes("lleg") || lower.includes("vino") || lower.includes("trajo") || lower.includes("vinieron") || lower.includes("trajeron"))) ||
     lower.includes("falto") || lower.includes("faltó") || lower.includes("faltaron") || lower.includes("hace falta") || lower.includes("hizo falta") ||
     lower.includes("incompleto") || lower.includes("incompleta") ||
     lower.includes("no me llego") || lower.includes("no me llegó") || lower.includes("no llego completo") ||
     lower.includes("esta mal") || lower.includes("está mal") || lower.includes("mal el pedido") || lower.includes("pedido malo") ||
-    lower.includes("equivocado") || lower.includes("no es lo que ped") || lower.includes("me dieron mal") ||
+    lower.includes("no es lo que ped") || lower.includes("me dieron mal") ||
     (lower.includes("eran") && /\d/.test(lower));
   if (esReclamoPedido) {
     updateOrderStep(phone, "esperando_asesor");

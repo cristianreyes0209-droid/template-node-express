@@ -151,7 +151,7 @@ export const menu = {
           nombre: "Banano",
           precio: 2000,
           tipo: "fruta",
-          aliases: ["banano"]
+          aliases: ["banano", "bananos", "banana", "bananas"]
         },
         {
           id: "extra_durazno",
@@ -696,7 +696,11 @@ export const menu = {
       ],
       aliases: [
         "carne",
-        "crepe carne"
+        "crepe carne",
+        "res",
+        "de res",
+        "crepe de res",
+        "crepe res"
       ],
       modificadoresComunes: [
         "sin carne",
