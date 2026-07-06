@@ -299,7 +299,7 @@ export const menu = {
               id: "mixta",
               nombre: "Mixta",
               precio: 27500,
-              aliases: ["mixta", "pollo y carne", "carne y pollo", "mixta pollo y carne"]
+              aliases: ["mixta", "mixto", "mixtos", "pollo y carne", "carne y pollo", "mixta pollo y carne"]
             },
             {
               id: "solo_pollo",
@@ -317,7 +317,11 @@ export const menu = {
           aliases: [
             "desgranada",
             "degranada",
-            "desgranada mixta"
+            "desgranada mixta",
+            "desgranado mixto",
+            "desgranados mixtos",
+            "desgranado",
+            "desgranados"
           ],
           modificadoresComunes: [
             "solo pollo",
@@ -1453,7 +1457,7 @@ aliases: [
           variantes: [
             { id: "natural", nombre: "Natural", precio: 5000, aliases: ["natural", "limonada natural", "limonada"] },
             { id: "coco", nombre: "De coco", precio: 10500, aliases: ["de coco", "coco", "limonada de coco", "limonada coco"] },
-            { id: "cereza", nombre: "Cerezada", precio: 12500, aliases: ["de cereza", "cereza", "cerezada", "limonada de cereza", "limonada cereza", "limonada cerezada"] }
+            { id: "cereza", nombre: "Cerezada", precio: 12500, aliases: ["de cereza", "cereza", "cerezada", "cerezadas", "limonada de cereza", "limonada cereza", "limonada cerezada", "limonada cerezadas"] }
           ]
         },
         {

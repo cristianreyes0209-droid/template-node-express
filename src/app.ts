@@ -1584,7 +1584,8 @@ if (esQuejaDedemora && !esMensajeLargo) {
 
 // Cortesías — responder y continuar sin detener el flujo
 // Excluir mensajes de carta digital (pueden contener "Mil gracias" en observaciones)
-const esCortesia = !esMensajeLargo && !text.includes("🥞") && (
+const palabrasCort = lower.trim().split(/\s+/).filter(Boolean).length;
+const esCortesia = !esMensajeLargo && !text.includes("🥞") && palabrasCort <= 6 && !/\d/.test(text) && (
   /^(muchas?\s+)?gracia[s]?[!\s]*$|^muy\s+amables?[!\s]*$|^mil\s+gracias[!\s]*$|^(que|qué)\s+amables?[!\s]*$|^de\s+nada[!\s]*$/i.test(lower.trim()) ||
   /\b(muchas?\s+gracias|muy\s+amables?|mil\s+gracias|qu[eé]\s+amables?)\b/i.test(lower)
 );
