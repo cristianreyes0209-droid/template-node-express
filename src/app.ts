@@ -746,11 +746,14 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   const textoReal = text.replace(/[^\w\sáéíóúüñÁÉÍÓÚÜÑ]/g, "").trim();
   if (!textoReal && !esBoton) return res.sendStatus(200);
 
-  // Mensaje automático de OlaClick sobre el avance de un pedido (Nº CO-XXXX) → ignorar
+  // Plantilla automática de OlaClick sobre el AVANCE de un pedido (Nº CO-XXXX) → ignorar.
+  // OJO: NO confundir con un PEDIDO real de OlaClick ("Vengo de https://las-crepes.ola.click"),
+  // que también trae "CO-XXXX" y "Estado del pago" y SÍ debe procesarse.
+  const esPedidoOlaClickEntrante = text.includes("Vengo de https://las-crepes.ola.click");
   const esConsultaAvanceOlaClick =
+    !esPedidoOlaClickEntrante &&
     /\bco-?\d{6,}\b/i.test(text) &&
-    (lower.includes("avance") || lower.includes("informacion") || lower.includes("información") ||
-     lower.includes("estado") || lower.includes("pedido"));
+    (lower.includes("avance") || lower.includes("informacion") || lower.includes("información"));
   if (esConsultaAvanceOlaClick) {
     return res.sendStatus(200); // no responder — plantilla automática de OlaClick
   }
