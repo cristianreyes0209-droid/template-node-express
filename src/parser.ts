@@ -984,6 +984,12 @@ for (const fragment of fragments) {
   }
 
   if (!product) {
+    // El fragmento puede ser ambiguo tras limpiar (ej. "1 crepe ranchera" → "ranchera" = Ranchera / Ranchera Mixta).
+    // Surfacearlo como aclaración en vez de descartarlo en silencio.
+    if (!firstAmbiguity) {
+      const ambiguoLimpio = detectAmbiguousProduct(fragmentLimpio, mainProducts);
+      if (ambiguoLimpio) firstAmbiguity = ambiguoLimpio;
+    }
     continue;
   }
 
