@@ -4111,6 +4111,34 @@ return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "retirando_productos") {
   const order = getOrder(phone)!;
+
+  // El cliente se arrepintió de eliminar → volver a confirmación sin quitar nada
+  const esCancelarRetiro =
+    lower === "confirmar" || lower.includes("confirmar") ||
+    lower === "cancelar" || lower.includes("cancelar") ||
+    lower === "volver" || lower === "atras" || lower === "atrás" ||
+    lower === "ninguno" || lower === "ninguna" || lower === "no" ||
+    lower.includes("no quiero") || lower.includes("dejalo") || lower.includes("dejar asi") ||
+    lower.includes("asi esta bien") || lower.includes("asi esta") || lower.includes("esta bien") || lower.includes("está bien") ||
+    lower === "agregar_mas" || lower === "agregar";
+  if (esCancelarRetiro && order.items.length > 0) {
+    const totals = calculateTotal(order);
+    const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
+    updateOrderStep(phone, "esperando_confirmacion");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      "Perfecto 👌\n\nTu pedido es:\n" + resumen +
+      buildResumenFooter(order, totals, order.domicilioTexto) +
+      "\n\n¿Qué deseas hacer?",
+      [
+        { id: "confirmar",   title: "✅ Confirmar" },
+        { id: "agregar_mas", title: "➕ Agregar" },
+        { id: "eliminar",    title: "🗑️ Quitar" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
+
   const index = Number(lower) - 1;
 
   if (!Number.isNaN(index) && index >= 0 && index < order.items.length) {
