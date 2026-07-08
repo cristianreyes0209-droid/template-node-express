@@ -1218,7 +1218,7 @@ aliases: [
           id: "super_nachos",
           nombre: "Super Nachos",
           precio: 32500,
-          aliases: ["super nachos", "nachos especiales"]
+          aliases: ["super nachos", "supernachos", "supernacho", "nachos especiales"]
         },
         {
           id: "nachos_paris",

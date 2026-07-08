@@ -47,6 +47,8 @@ const STOP_WORDS: Set<string> = new Set([
   "un",
   "una",
   "uno",
+  "unos",
+  "unas",
   "dos",
   "tres",
   "cuatro",
@@ -934,7 +936,7 @@ const fragments = splitIntoFragments(textoLimpio);
 
 // Helper de limpieza de fragmento para buscar el producto
 const limpiarFrag = (s: string) => s
-  .replace(/^(\d+|una|uno|un|dos|tres|cuatro|cinco)\s+/i, "")
+  .replace(/^(\d+|una|unas|uno|unos|un|dos|tres|cuatro|cinco)\s+/i, "")
   .replace(/\bcrepe\s+de\b/g, "")   // "crepe de X" → "X"
   .replace(/\bcrepe\b/g, "")
   .replace(/\bun\s+/g, "")          // artículos
