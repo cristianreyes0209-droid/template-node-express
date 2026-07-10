@@ -552,6 +552,17 @@ function parseCartaDigitalText(text: string) {
       cur.observaciones = content;
       continue;
     }
+
+    // Cualquier otra línea con texto bajo el producto = adición/topping (ej. bullet "• Tocineta"
+    // que no vino con ➕). Se agrega como extra sin costo extra (el precio ya está en la línea $).
+    if (/[a-záéíóúñ]/i.test(content)) {
+      for (const t of content.split(",")) {
+        const nombre = t.trim();
+        if (nombre && /[a-záéíóúñ]/i.test(nombre)) {
+          cur.extras.push({ nombre, precio: 0, cantidad: 1 });
+        }
+      }
+    }
   }
   if (cur) items.push(cur);
 
