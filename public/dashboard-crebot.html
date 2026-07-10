@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CreBot — Dashboard de Órdenes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sidebar-bg:#0d1526;
+    --sidebar-item:#94a3b8;
+    --sidebar-active:#16a34a;
+    --page-bg:#f4f6f9;
+    --card-bg:#ffffff;
+    --border:#e5e9f0;
+    --text:#0f172a;
+    --text-soft:#64748b;
+    --green:#16a34a;
+    --green-soft:#dcfce7;
+    --wa:#25d366;
+    --amber:#d97706;   --amber-soft:#fef3c7;
+    --blue:#2563eb;    --blue-soft:#dbeafe;
+    --red:#dc2626;     --red-soft:#fee2e2;
+    --purple:#7c3aed;  --purple-soft:#ede9fe;
+    --radius:12px;
+    --shadow:0 1px 3px rgba(15,23,42,.06);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--page-bg);color:var(--text);font-size:14px}
+
+  .layout{display:flex;min-height:100vh}
+
+  /* ===== SIDEBAR ===== */
+  .sidebar{width:236px;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0}
+  .brand{display:flex;align-items:center;gap:10px;padding:22px 20px 6px}
+  .brand-logo{width:34px;height:34px;border-radius:9px;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .brand h1{font-size:19px;font-weight:800;letter-spacing:-.3px}
+  .brand h1 span{color:var(--wa)}
+  .brand-sub{padding:0 20px 18px;font-size:11.5px;color:var(--sidebar-item)}
+  .nav{flex:1;padding:6px 12px;display:flex;flex-direction:column;gap:2px}
+  .nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:var(--sidebar-item);text-decoration:none;font-weight:500;font-size:13.5px;transition:background .15s,color .15s}
+  .nav a:hover{background:rgba(255,255,255,.06);color:#e2e8f0}
+  .nav a.active{background:rgba(22,163,74,.18);color:#4ade80;font-weight:600}
+  .nav a:focus-visible{outline:2px solid var(--wa);outline-offset:2px}
+  .nav svg{width:17px;height:17px;flex-shrink:0}
+  .bot-status{margin:10px 12px;padding:12px 14px;background:rgba(255,255,255,.05);border-radius:10px;font-size:12.5px}
+  .bot-status .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ade80;margin-right:7px;box-shadow:0 0 6px #4ade80}
+  .bot-status small{display:block;color:var(--sidebar-item);margin-top:4px;padding-left:15px}
+  .user-box{margin:6px 12px 16px;padding:12px 14px;background:rgba(255,255,255,.05);border-radius:10px;display:flex;align-items:center;gap:10px}
+  .user-box .avatar{width:32px;height:32px;border-radius:50%;background:#fff;color:var(--sidebar-bg);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+  .user-box b{font-size:12.5px;display:block}
+  .user-box small{color:var(--sidebar-item);font-size:11px}
+
+  /* ===== MAIN ===== */
+  .main{flex:1;margin-left:236px;padding:26px 30px 40px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px;flex-wrap:wrap}
+  .title-block{display:flex;align-items:center;gap:12px}
+  .wa-badge{width:38px;height:38px;border-radius:50%;background:var(--wa);display:flex;align-items:center;justify-content:center}
+  .wa-badge svg{width:20px;height:20px;fill:#fff}
+  .title-block h2{font-size:21px;font-weight:800;letter-spacing:-.3px}
+  .title-block p{color:var(--text-soft);font-size:12.5px;margin-top:2px}
+  .topbar-actions{display:flex;gap:10px;align-items:center}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:9px;border:1px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;box-shadow:var(--shadow)}
+  .btn:hover{background:#f8fafc}
+  .btn.primary{background:var(--sidebar-bg);color:#fff;border-color:var(--sidebar-bg)}
+  .btn.primary:hover{background:#1e293b}
+  .btn:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+
+  /* ===== KPI CARDS ===== */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+  .kpi{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);display:flex;gap:13px;align-items:flex-start}
+  .kpi-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .kpi-icon svg{width:20px;height:20px}
+  .kpi h3{font-size:12px;font-weight:600;color:var(--text-soft)}
+  .kpi .num{font-size:24px;font-weight:800;letter-spacing:-.5px;margin:2px 0}
+  .kpi small{font-size:11.5px;color:var(--text-soft)}
+  .ic-purple{background:var(--purple-soft);color:var(--purple)}
+  .ic-green{background:var(--green-soft);color:var(--green)}
+  .ic-blue{background:var(--blue-soft);color:var(--blue)}
+  .ic-amber{background:var(--amber-soft);color:var(--amber)}
+
+  /* ===== TABLE ===== */
+  .table-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px}
+  .table-scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:980px}
+  thead th{text-align:left;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text-soft);padding:13px 16px;border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap}
+  tbody td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#f8fafc}
+  .cell-date b{display:block;font-size:13px}
+  .cell-date span{font-size:11.5px;color:var(--text-soft)}
+  .cell-name{font-weight:600}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:600}
+  .pill.si-green{background:var(--green-soft);color:var(--green)}
+  .pill.si-red{background:var(--red-soft);color:var(--red)}
+  .pill.si-purple{background:var(--purple-soft);color:var(--purple)}
+  .pill.st-lista{background:var(--amber-soft);color:var(--amber)}
+  .pill.st-camino{background:var(--blue-soft);color:var(--blue)}
+  .pill.st-terminada{background:var(--green-soft);color:var(--green)}
+  .pill.st-abandonada{background:var(--red-soft);color:var(--red)}
+  .pill.st-asistente{background:var(--purple-soft);color:var(--purple)}
+  .muted{color:#cbd5e1;font-weight:600}
+  .wa-link{width:30px;height:30px;border-radius:50%;background:var(--green-soft);display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:none;cursor:pointer;padding:0}
+  .wa-link svg{width:15px;height:15px;fill:var(--green)}
+  .wa-link:hover{background:#bbf7d0}
+  .actions{display:flex;gap:6px}
+  .act{width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:#fff}
+  .act svg{width:14px;height:14px}
+  .act.a-green{background:var(--green)}
+  .act.a-amber{background:#f59e0b}
+  .act.a-blue{background:var(--blue)}
+  .act:disabled{opacity:.3;cursor:not-allowed}
+  .table-footer{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;font-size:12.5px;color:var(--text-soft);flex-wrap:wrap;gap:10px}
+  .pager{display:flex;gap:5px}
+  .pager button{min-width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:#fff;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--text)}
+  .pager button.current{background:var(--sidebar-bg);color:#fff;border-color:var(--sidebar-bg)}
+  .pager button:hover:not(.current){background:#f8fafc}
+
+  /* ===== TOTALES SUCURSAL ===== */
+  .totals-title{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+  .totals-title svg{width:15px;height:15px;color:var(--text-soft)}
+  .totals{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .total-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);display:flex;gap:14px;align-items:center}
+  .total-card .kpi-icon{width:46px;height:46px;border-radius:12px}
+  .total-card b{display:block;font-size:13.5px}
+  .total-card small{color:var(--text-soft);font-size:12px;display:block;margin:2px 0 4px}
+  .total-card .money{font-size:20px;font-weight:800;letter-spacing:-.4px}
+  .total-card.highlight{background:linear-gradient(135deg,#0d1526,#173425);color:#fff;border:none}
+  .total-card.highlight small{color:#94a3b8}
+  .total-card.highlight .kpi-icon{background:rgba(74,222,128,.15);color:#4ade80}
+
+  .refresh-note{margin-top:18px;font-size:12px;color:var(--text-soft);display:flex;align-items:center;gap:7px}
+  .refresh-note .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @media (prefers-reduced-motion:reduce){.refresh-note .dot{animation:none}}
+
+  /* ===== LOCK ===== */
+  .lock{position:fixed;inset:0;background:var(--sidebar-bg);display:flex;align-items:center;justify-content:center;z-index:200}
+  .lock-box{background:var(--card-bg);border-radius:var(--radius);padding:30px 28px;width:320px;max-width:90%;box-shadow:0 10px 40px rgba(0,0,0,.3);text-align:center}
+  .lock-box h3{font-size:18px;font-weight:800;margin-bottom:6px}
+  .lock-box p{color:var(--text-soft);font-size:12.5px;margin-bottom:16px}
+  .lock-box input{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:9px;font-family:inherit;font-size:14px;margin-bottom:10px}
+  .lock-box .err{color:var(--red);font-size:12px;margin-bottom:10px;display:none}
+
+  /* ===== MODAL DETALLE ===== */
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;z-index:150;padding:16px}
+  .overlay.open{display:flex}
+  .modal{background:var(--card-bg);border-radius:var(--radius);width:460px;max-width:100%;max-height:88vh;overflow:auto;box-shadow:0 12px 44px rgba(0,0,0,.25)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .modal-head h3{font-size:16px;font-weight:800}
+  .modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-soft);line-height:1}
+  .modal-body{padding:18px 20px}
+  .det-row{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px dashed var(--border);font-size:13px}
+  .det-row:last-child{border-bottom:none}
+  .det-row .ex{color:var(--text-soft);font-size:11.5px}
+  .det-meta{margin-top:12px;font-size:12.5px;color:var(--text-soft);line-height:1.7}
+  .det-total{margin-top:12px;font-size:17px;font-weight:800;text-align:right}
+
+  /* ===== CHAT DRAWER ===== */
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:100%;background:var(--card-bg);box-shadow:-8px 0 30px rgba(0,0,0,.18);z-index:180;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s ease}
+  .drawer.open{transform:translateX(0)}
+  .drawer-head{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .drawer-head b{font-size:14.5px;display:block}
+  .drawer-head small{color:var(--text-soft);font-size:12px}
+  .drawer-body{flex:1;overflow-y:auto;padding:16px;background:#f6f8fb;display:flex;flex-direction:column;gap:8px}
+  .bubble{max-width:80%;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.4;white-space:pre-wrap;word-break:break-word}
+  .bubble.usuario{align-self:flex-start;background:#fff;border:1px solid var(--border);border-bottom-left-radius:3px}
+  .bubble.bot{align-self:flex-end;background:var(--blue-soft);color:#1e3a8a;border-bottom-right-radius:3px}
+  .bubble.asesor{align-self:flex-end;background:var(--green-soft);color:#14532d;border-bottom-right-radius:3px}
+  .bubble .meta{display:block;font-size:10px;opacity:.6;margin-top:3px}
+  .drawer-foot{padding:12px;border-top:1px solid var(--border);display:flex;gap:8px}
+  .drawer-foot textarea{flex:1;resize:none;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-family:inherit;font-size:13px;max-height:90px}
+  .drawer-foot button{background:var(--wa);color:#fff;border:none;border-radius:9px;padding:0 16px;font-weight:700;cursor:pointer;font-family:inherit}
+  .drawer-foot button:disabled{opacity:.5;cursor:not-allowed}
+  .empty{color:var(--text-soft);font-size:13px;text-align:center;margin:auto}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--sidebar-bg);color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:600;z-index:300;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.totals{grid-template-columns:1fr}}
+  @media (max-width:900px){
+    .sidebar{display:none}
+    .main{margin-left:0;padding:18px 14px 30px}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .drawer{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOCK ================= -->
+<div class="lock" id="lock">
+  <div class="lock-box">
+    <div style="font-size:34px;margin-bottom:8px">🔒</div>
+    <h3>CreBot Dashboard</h3>
+    <p>Ingresa la clave de acceso al panel</p>
+    <input type="password" id="pin" placeholder="Clave del panel" autocomplete="off">
+    <div class="err" id="pin-err">Clave incorrecta</div>
+    <button class="btn primary" style="width:100%;justify-content:center" onclick="checkKey()">Entrar</button>
+  </div>
+</div>
+
+<div class="layout" id="app" style="display:none">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">🤖</div>
+      <h1>Cre<span>Bot</span></h1>
+    </div>
+    <div class="brand-sub">Dashboard de Órdenes</div>
+
+    <nav class="nav">
+      <a href="#" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chats entrantes</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>Órdenes</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M12 17.5H8m7.5-9 3 9M6 8h6l2 6"/></svg>Órdenes en camino</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>Órdenes terminadas</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>Solicitudes de asistente</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M18 9l-5 5-4-4-3 3"/></svg>Reportes</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Clientes</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Configuración</a>
+    </nav>
+
+    <div class="bot-status">
+      <span class="dot"></span><b>Bot conectado</b>
+      <small>WhatsApp Cloud API</small>
+    </div>
+
+    <div class="user-box">
+      <div class="avatar">LC</div>
+      <div><b>Las Crepes de París</b><small>Administrador</small></div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+
+    <div class="topbar">
+      <div class="title-block">
+        <div class="wa-badge"><svg viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.11 3.22 5.1 4.51.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2.01-1.41.25-.7.25-1.3.17-1.42-.07-.13-.27-.2-.57-.35z"/><path d="M12 2a10 10 0 0 0-8.62 15.06L2 22l5.08-1.33A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.01.79.8-2.94-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg></div>
+        <div>
+          <h2>Chats entrantes</h2>
+          <p>Gestión en tiempo real de conversaciones y estados de órdenes</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn" id="dateBtn">—</button>
+        <button class="btn primary" onclick="cargarDatos()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Actualizar</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-icon ic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div><h3>Órdenes activas</h3><div class="num" id="kpiChats">—</div><small>Aún no entregadas (hoy)</small></div></div>
+      <div class="kpi"><div class="kpi-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg></div><div><h3>Órdenes confirmadas</h3><div class="num" id="kpiConfirmadas">—</div><small>Hoy</small></div></div>
+      <div class="kpi"><div class="kpi-icon ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M12 17.5H8m7.5-9 3 9M6 8h6l2 6"/></svg></div><div><h3>Órdenes en camino</h3><div class="num" id="kpiCamino">—</div><small>Hoy</small></div></div>
+      <div class="kpi"><div class="kpi-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg></div><div><h3>Órdenes terminadas</h3><div class="num" id="kpiTerminadas">—</div><small>Hoy</small></div></div>
+      <div class="kpi"><div class="kpi-icon ic-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></div><div><h3>Total terminadas (hoy)</h3><div class="num" id="kpiTotal">—</div><small>Ventas entregadas</small></div></div>
+    </div>
+
+    <!-- TABLA -->
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th><th>Teléfono</th><th>Nombre</th>
+              <th>Confirmada</th><th>Abandonada</th><th>Asistente</th>
+              <th>WhatsApp</th><th>Estado de la orden</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="footerInfo">Mostrando 0 órdenes</span>
+        <div class="pager" id="pager"></div>
+      </div>
+    </div>
+
+    <!-- TOTALES -->
+    <div class="totals-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Total valor órdenes terminadas (hoy)</div>
+    <div class="totals" id="totals"></div>
+
+    <div class="refresh-note"><span class="dot"></span>Auto-actualiza cada 10 segundos</div>
+  </main>
+</div>
+
+<!-- ================= MODAL DETALLE ================= -->
+<div class="overlay" id="detOverlay" onclick="if(event.target===this)cerrarDetalle()">
+  <div class="modal">
+    <div class="modal-head"><h3>Detalle de la orden</h3><button class="modal-close" onclick="cerrarDetalle()">&times;</button></div>
+    <div class="modal-body" id="detBody"></div>
+  </div>
+</div>
+
+<!-- ================= CHAT DRAWER ================= -->
+<div class="drawer" id="chatDrawer">
+  <div class="drawer-head">
+    <div><b id="chatNombre">Chat</b><small id="chatTel"></small></div>
+    <button class="modal-close" onclick="cerrarChat()">&times;</button>
+  </div>
+  <div class="drawer-body" id="chatBody"></div>
+  <div class="drawer-foot">
+    <textarea id="chatTxt" rows="1" placeholder="Escribe para asistir al cliente…" onkeydown="chatKeydown(event)"></textarea>
+    <button id="chatSend" onclick="enviarMensaje()">Enviar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== CONFIG / ESTADO ===================== */
+const API = "";                       // mismo origen (Render sirve el panel y la API)
+let sessionKey = "";
+let PEDIDOS = [];                     // pedidos crudos de hoy (del backend)
+let chatPhone = null;                 // teléfono del chat abierto
+let chatTimer = null;
+
+const ESTADOS = {
+  lista:      { txt:"🛍️ Orden lista",        cls:"st-lista" },
+  camino:     { txt:"🛵 Orden en camino",     cls:"st-camino" },
+  terminada:  { txt:"✅ Orden terminada",     cls:"st-terminada" },
+  abandonada: { txt:"✖ Orden abandonada",     cls:"st-abandonada" },
+  asistente:  { txt:"🎧 Solicitud asistente", cls:"st-asistente" }
+};
+const SUC_NOMBRE = { la_villa:"La Villa", circunvalar:"Av. Circunvalar" };
+const fmtCOP = n => "$ " + Number(n||0).toLocaleString("es-CO");
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function mapEstado(e){
+  if(e==="en_camino") return "camino";
+  if(e==="entregado"||e==="finalizado") return "terminada";
+  return "lista"; // recibido, en_preparacion
+}
+const bogotaDate = d => new Date(d).toLocaleDateString("en-CA",{timeZone:"America/Bogota"}); // YYYY-MM-DD
+const fmtFecha = d => new Date(d).toLocaleDateString("es-CO",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Bogota"});
+const fmtHora  = d => new Date(d).toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit",hour12:false,timeZone:"America/Bogota"});
+function fmtTel(p){
+  const d = String(p||"").replace(/[^\d]/g,"");
+  if(d.length===12 && d.startsWith("57")) return "+57 "+d.slice(2,5)+" "+d.slice(5,8)+" "+d.slice(8);
+  return "+"+d;
+}
+
+/* ===================== AUTH ===================== */
+async function validarKey(k){
+  try{ const r = await fetch(API+"/api/pedidos?key="+encodeURIComponent(k)); return r.ok; }
+  catch(e){ return false; }
+}
+async function checkKey(){
+  const v = document.getElementById("pin").value.trim();
+  if(!v) return;
+  if(await validarKey(v)){ arrancar(v); }
+  else { document.getElementById("pin-err").style.display="block"; document.getElementById("pin").value=""; }
+}
+function arrancar(k){
+  sessionKey = k;
+  document.getElementById("lock").style.display="none";
+  document.getElementById("app").style.display="flex";
+  document.getElementById("dateBtn").textContent =
+    new Date().toLocaleDateString("es-CO",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Bogota"});
+  cargarDatos();
+  setInterval(cargarDatos, 10000);
+}
+(function init(){
+  const k = new URLSearchParams(location.search).get("key");
+  document.getElementById("pin").addEventListener("keydown", e=>{ if(e.key==="Enter") checkKey(); });
+  if(k){ validarKey(k).then(ok=>{ if(ok) arrancar(k); }); }
+})();
+
+/* ===================== CARGA DE DATOS ===================== */
+async function cargarDatos(){
+  if(!sessionKey) return;
+  try{
+    const r = await fetch(API+"/api/pedidos?key="+encodeURIComponent(sessionKey));
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const todos = await r.json();
+    const hoy = bogotaDate(new Date());
+    PEDIDOS = todos.filter(p => p.created_at && bogotaDate(p.created_at) === hoy);
+
+    renderTabla(PEDIDOS.map(pedidoAFila));
+    renderResumen(calcularResumen(PEDIDOS));
+    renderPager();
+  }catch(e){ /* silencioso, reintenta en el próximo ciclo */ }
+}
+
+function pedidoAFila(p){
+  return {
+    id: p.id,
+    fecha: fmtFecha(p.created_at),
+    hora: fmtHora(p.created_at),
+    tel: fmtTel(p.phone),
+    phone: String(p.phone||"").replace(/[^\d]/g,""),
+    nombre: p.nombre || "",
+    confirmada: true,
+    abandonada: false,
+    asistente: !!p.asesor_intervenido,
+    estado: mapEstado(p.estado)
+  };
+}
+
+function calcularResumen(peds){
+  const esEntregado = e => e==="entregado" || e==="finalizado";
+  const terminadas = peds.filter(p=>esEntregado(p.estado));
+  const sucMap = {};
+  for(const p of terminadas){
+    const key = p.sucursal || "otra";
+    if(!sucMap[key]) sucMap[key] = { nombre: SUC_NOMBRE[key] || "Sucursal", terminadas:0, total:0 };
+    sucMap[key].terminadas += 1;
+    sucMap[key].total += Number(p.total||0);
+  }
+  return {
+    chatsActivos: peds.filter(p=>!esEntregado(p.estado)).length,
+    confirmadas:  peds.length,
+    enCamino:     peds.filter(p=>p.estado==="en_camino").length,
+    terminadas:   terminadas.length,
+    totalHoy:     terminadas.reduce((s,p)=>s+Number(p.total||0),0),
+    sucursales:   Object.values(sucMap)
+  };
+}
+
+/* ===================== RENDER ===================== */
+function pill(value, type){
+  if(type==="confirmada") return value ? '<span class="pill si-green">Sí ✓</span>' : '<span class="muted">—</span>';
+  if(type==="abandonada") return value ? '<span class="pill si-red">Sí ✕</span>'  : '<span class="muted">—</span>';
+  if(type==="asistente")  return value ? '<span class="pill si-purple">🎧 Sí</span>' : '<span class="muted">—</span>';
+}
+
+function renderTabla(chats){
+  const tbody = document.getElementById("tbody");
+  if(!chats.length){
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--text-soft);padding:34px">Sin órdenes hoy</td></tr>';
+    document.getElementById("footerInfo").textContent = "Mostrando 0 órdenes";
+    return;
+  }
+  tbody.innerHTML = chats.map(c => {
+    const e = ESTADOS[c.estado];
+    const activo = !(c.estado==="terminada");
+    return `<tr>
+      <td class="cell-date"><b>${c.fecha}</b><span>${c.hora}</span></td>
+      <td>${esc(c.tel)}</td>
+      <td class="cell-name">${c.nombre ? esc(c.nombre) : '<span class="muted">—</span>'}</td>
+      <td>${pill(c.confirmada,"confirmada")}</td>
+      <td>${pill(c.abandonada,"abandonada")}</td>
+      <td>${pill(c.asistente,"asistente")}</td>
+      <td><button class="wa-link" title="Abrir chat del bot con el cliente" onclick="abrirChat('${c.phone}','${esc(c.nombre).replace(/'/g,"&#39;")}')"><svg viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.5 0 1.47 1.07 2.9 1.22 3.1.15.2 2.11 3.22 5.1 4.51.71.31 1.27.49 1.7.63.72.23 1.37.2 1.88.12.58-.09 1.76-.72 2.01-1.41.25-.7.25-1.3.17-1.42-.07-.13-.27-.2-.57-.35z"/><path d="M12 2a10 10 0 0 0-8.62 15.06L2 22l5.08-1.33A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.01.79.8-2.94-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg></button></td>
+      <td><span class="pill ${e.cls}">${e.txt}</span></td>
+      <td><div class="actions">
+        <button class="act a-green" title="Ver detalle de la orden" onclick="verDetalle(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
+        <button class="act a-amber" title="Marcar en camino (notifica al cliente)" ${activo?"":"disabled"} onclick="cambiarEstado(${c.id},'en_camino',this)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="5.5" cy="17.5" r="2"/><circle cx="18.5" cy="17.5" r="2"/><path d="M12 17.5H8m7.5-9 3 9M6 8h6l2 6"/></svg></button>
+        <button class="act a-blue" title="Marcar terminada (notifica al cliente)" ${activo?"":"disabled"} onclick="cambiarEstado(${c.id},'entregado',this)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg></button>
+      </div></td>
+    </tr>`;
+  }).join("");
+  document.getElementById("footerInfo").textContent = `Mostrando 1 a ${chats.length} de ${chats.length} órdenes`;
+}
+
+function renderResumen(r){
+  document.getElementById("kpiChats").textContent = r.chatsActivos;
+  document.getElementById("kpiConfirmadas").textContent = r.confirmadas;
+  document.getElementById("kpiCamino").textContent = r.enCamino;
+  document.getElementById("kpiTerminadas").textContent = r.terminadas;
+  document.getElementById("kpiTotal").textContent = fmtCOP(r.totalHoy);
+
+  const cont = document.getElementById("totals");
+  const cards = r.sucursales.map(s => `
+    <div class="total-card">
+      <div class="kpi-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M9 21v-6h6v6"/></svg></div>
+      <div><b>${esc(s.nombre)}</b><small>Órdenes terminadas: ${s.terminadas}</small><span class="money">${fmtCOP(s.total)}</span></div>
+    </div>`).join("");
+  const totalGeneral = `
+    <div class="total-card highlight">
+      <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></div>
+      <div><b>Total del día</b><small>Órdenes terminadas: ${r.terminadas}</small><span class="money">${fmtCOP(r.totalHoy)}</span></div>
+    </div>`;
+  cont.innerHTML = cards + totalGeneral;
+}
+
+function renderPager(){
+  document.getElementById("pager").innerHTML = "";
+}
+
+/* ===================== ACCIONES DE ESTADO ===================== */
+async function cambiarEstado(id, estado, btn){
+  if(btn) btn.disabled = true;
+  try{
+    const r = await fetch(API+"/api/pedidos/"+id+"/estado", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "x-panel-key": sessionKey },
+      body: JSON.stringify({ estado })
+    });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    showToast(estado==="en_camino" ? "🛵 Marcada en camino — cliente notificado" : "✅ Marcada terminada — cliente notificado");
+    await cargarDatos();
+  }catch(e){
+    showToast("❌ No se pudo actualizar el estado");
+    if(btn) btn.disabled = false;
+  }
+}
+
+/* ===================== DETALLE ===================== */
+function verDetalle(id){
+  const p = PEDIDOS.find(x=>x.id===id);
+  if(!p) return;
+  let items = p.items;
+  if(typeof items === "string"){ try{ items = JSON.parse(items); }catch(e){ items = []; } }
+  items = items || [];
+  const filas = items.map(it => {
+    const extras = (it.extras||[]).filter(e=>e&&e.nombre).map(e=>"+"+e.nombre).join(", ");
+    const obs = it.observaciones ? " · 📝 "+esc(it.observaciones) : "";
+    return `<div class="det-row">
+      <div>${esc(it.producto)}${it.variante? " - "+esc(it.variante):""} <b>×${it.cantidad||1}</b>
+        ${extras||obs? `<div class="ex">${esc(extras)}${obs}</div>`:""}</div>
+      <div>${fmtCOP(it.precio||0)}</div>
+    </div>`;
+  }).join("") || '<div class="det-row">Sin ítems</div>';
+  document.getElementById("detBody").innerHTML =
+    filas +
+    `<div class="det-meta">
+      👤 ${p.nombre? esc(p.nombre) : "—"}<br>
+      📞 ${esc(fmtTel(p.phone))}<br>
+      ${p.tipo_entrega==="domicilio" ? "📍 "+esc(p.direccion||"—") : "🏪 Recoger en tienda"}<br>
+      🏬 ${SUC_NOMBRE[p.sucursal] || "—"} · 💳 ${esc(p.forma_pago||"—")}
+    </div>
+    <div class="det-total">Total: ${fmtCOP(p.total)}</div>`;
+  document.getElementById("detOverlay").classList.add("open");
+}
+function cerrarDetalle(){ document.getElementById("detOverlay").classList.remove("open"); }
+
+/* ===================== CHAT DEL BOT ===================== */
+async function abrirChat(phone, nombre){
+  chatPhone = phone;
+  document.getElementById("chatNombre").textContent = nombre || "Cliente";
+  document.getElementById("chatTel").textContent = fmtTel(phone);
+  document.getElementById("chatBody").innerHTML = '<div class="empty">Cargando conversación…</div>';
+  document.getElementById("chatDrawer").classList.add("open");
+  await cargarChat();
+  if(chatTimer) clearInterval(chatTimer);
+  chatTimer = setInterval(cargarChat, 8000);
+  document.getElementById("chatTxt").focus();
+}
+function cerrarChat(){
+  document.getElementById("chatDrawer").classList.remove("open");
+  chatPhone = null;
+  if(chatTimer){ clearInterval(chatTimer); chatTimer = null; }
+}
+async function cargarChat(){
+  if(!chatPhone) return;
+  try{
+    const r = await fetch(API+"/api/conversacion/"+chatPhone+"?key="+encodeURIComponent(sessionKey));
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    renderChat(await r.json());
+  }catch(e){ /* silencioso */ }
+}
+function renderChat(msgs){
+  const body = document.getElementById("chatBody");
+  if(!msgs || !msgs.length){ body.innerHTML = '<div class="empty">Sin mensajes todavía</div>'; return; }
+  body.innerHTML = msgs.map(m => {
+    const rol = m.rol==="usuario" ? "usuario" : (m.rol==="asesor" ? "asesor" : "bot");
+    const hora = m.created_at ? fmtHora(m.created_at) : "";
+    const quien = rol==="usuario" ? "Cliente" : (rol==="asesor" ? "Asesor" : "Bot");
+    return `<div class="bubble ${rol}">${esc(m.mensaje)}<span class="meta">${quien} · ${hora}</span></div>`;
+  }).join("");
+  body.scrollTop = body.scrollHeight;
+}
+function chatKeydown(ev){
+  if(ev.key==="Enter" && !ev.shiftKey){ ev.preventDefault(); enviarMensaje(); }
+}
+async function enviarMensaje(){
+  const txt = document.getElementById("chatTxt");
+  const btn = document.getElementById("chatSend");
+  const msg = txt.value.trim();
+  if(!msg || !chatPhone) return;
+  txt.disabled = true; btn.disabled = true; btn.textContent = "…";
+  try{
+    const r = await fetch(API+"/api/enviar-mensaje", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ phone: chatPhone, mensaje: msg, key: sessionKey })
+    });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    txt.value = "";
+    showToast("✅ Mensaje enviado");
+    await cargarChat();
+  }catch(e){ showToast("❌ No se pudo enviar"); }
+  finally{ txt.disabled = false; btn.disabled = false; btn.textContent = "Enviar"; txt.focus(); }
+}
+
+/* ===================== TOAST ===================== */
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), 2600);
+}
+</script>
+</body>
+</html>

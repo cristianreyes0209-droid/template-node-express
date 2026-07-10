@@ -5515,6 +5515,15 @@ app.get('/pedidos', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/pedidos.html'));
 });
 
+app.get('/dashboard', (req, res) => {
+  const key = req.query.key;
+  if (key !== process.env.PANEL_KEY) {
+    return res.status(401).send('Acceso denegado');
+  }
+  res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
+  res.sendFile(path.join(__dirname, '../public/dashboard-crebot.html'));
+});
+
 app.get('/api/conversaciones', async (req, res) => {
   const key = req.query.key as string | undefined;
   if (!key || key !== process.env.PANEL_KEY) {
