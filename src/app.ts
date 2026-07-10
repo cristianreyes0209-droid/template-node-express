@@ -1129,6 +1129,7 @@ const skipParsing =
   currentOrder?.step === "esperando_direccion" ||
   currentOrder?.step === "esperando_jalapenos" ||
   currentOrder?.step === "esperando_queso_dulce" ||
+  currentOrder?.step === "esperando_sabor_cocacola" ||
   currentOrder?.step === "esperando_confirmacion_direccion" ||
   currentOrder?.step === "post_agregar_producto" ||
   currentOrder?.step === "esperando_confirmacion" ||
@@ -2633,6 +2634,15 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         );
         return res.sendStatus(200);
       }
+      if (pending.id === "coca_cola") {
+        updateOrderStep(phone, "esperando_sabor_cocacola");
+        currentOrder = getOrder(phone)!;
+        await sendWhatsAppButtons(phone,
+          `¿Qué sabor de ${pending.nombre} deseas?`,
+          [{ id: "cocacola_original", title: "Original" }, { id: "cocacola_cero", title: "Cero" }]
+        );
+        return res.sendStatus(200);
+      }
 
       // Si quedan items en la cola que necesitan variante → preguntar el siguiente
       if (currentOrder.itemsPendientes && currentOrder.itemsPendientes.length > 0) {
@@ -3537,7 +3547,7 @@ return res.sendStatus(200);
   const itemNeedingVariant = parsedItems.find(item => {
     if (item.variante) return false;
     const prod = allMenuProducts.find((p: any) => p.id === item.productoId);
-    return prod?.tipo === "jugo" || prod?.id === "vegetariana" || prod?.id === "malteada" || prod?.id === "limonada" || prod?.id === "vegetales_mixta" || prod?.id === "ranchera_mixta" || prod?.id === "desgranada_mixta";
+    return prod?.tipo === "jugo" || prod?.id === "vegetariana" || prod?.id === "malteada" || prod?.id === "limonada" || prod?.id === "vegetales_mixta" || prod?.id === "ranchera_mixta" || prod?.id === "desgranada_mixta" || prod?.id === "coca_cola";
   });
 
   if (itemNeedingVariant) {
@@ -3545,7 +3555,7 @@ return res.sendStatus(200);
     const needsVariant = (item: any) => {
       if (item.variante) return false;
       const p = allMenuProducts.find((mp: any) => mp.id === item.productoId);
-      return p?.tipo === "jugo" || ["vegetariana","malteada","limonada","vegetales_mixta","ranchera_mixta","desgranada_mixta"].includes(p?.id);
+      return p?.tipo === "jugo" || ["vegetariana","malteada","limonada","vegetales_mixta","ranchera_mixta","desgranada_mixta","coca_cola"].includes(p?.id);
     };
     const itemsDirectos = parsedItems.filter((i: any) => !needsVariant(i));
     const itemsConVariante = parsedItems.filter((i: any) => needsVariant(i));
@@ -3683,6 +3693,24 @@ return res.sendStatus(200);
   const resumenQD = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
   await sendWhatsAppButtons(phone,
     "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenQD + "\n\n📝 Si deseas una observación escríbela, o elige:",
+    [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
+  );
+  return res.sendStatus(200);
+
+} else if (currentOrder?.step === "esperando_sabor_cocacola") {
+  const esCero = lower === "cocacola_cero" || lower.includes("cero") || lower.includes("zero") || lower.includes("light") || lower.includes("dieta") || lower.includes("sin azucar") || lower.includes("sin azúcar");
+  const saborCC = esCero ? "Cero" : "Original";
+  const orderCC = getOrder(phone)!;
+  const lastCC = orderCC.items[orderCC.items.length - 1];
+  if (lastCC) {
+    const obsCC = lastCC.observaciones ? lastCC.observaciones + ", " : "";
+    lastCC.observaciones = obsCC + saborCC;
+  }
+  updateOrderStep(phone, "post_agregar_producto");
+  currentOrder = getOrder(phone)!;
+  const resumenCC = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+  await sendWhatsAppButtons(phone,
+    "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenCC + "\n\n📝 Si deseas una observación escríbela, o elige:",
     [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
   );
   return res.sendStatus(200);

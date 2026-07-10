@@ -1481,7 +1481,11 @@ aliases: [
           id: "coca_cola",
           nombre: "Coca Cola",
           precio: 5900,
-          aliases: ["coca cola", "cocacola"]
+          aliases: ["coca cola", "cocacola", "coca"],
+          variantes: [
+            { id: "personal", nombre: "Personal", precio: 5900, aliases: ["personal", "pequena", "pequeña", "chica"] },
+            { id: "familiar", nombre: "Familiar", precio: 9500, aliases: ["familiar", "grande"] }
+          ]
         },
         {
           id: "gaseosa",
