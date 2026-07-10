@@ -1792,17 +1792,23 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
   if (sucursalPrevia) {
     currentOrder.sucursal = sucursalPrevia;
 
-    // Calcular domicilio con coordenadas GPS
-    if (orderHC.tipoEntrega === "domicilio" && orderHC.locationCoords) {
-      try {
-        const coordStr = `${orderHC.locationCoords.latitude},${orderHC.locationCoords.longitude}`;
-        const calculo = await calcularDomicilio(coordStr, sucursalPrevia, hcParsed.totalAPagar);
-        orderHC.valorDomicilio = calculo.valorDomicilio;
-        orderHC.distanciaKm = calculo.distanciaKm;
-        orderHC.domicilioTexto = calculo.descripcion;
-      } catch (e) {
-        console.error("❌ Error calculando domicilio HC:", e);
-        orderHC.valorDomicilio = 4500;
+    // Calcular domicilio: por coordenadas GPS si vienen, si no geocodificando la dirección de texto
+    if (orderHC.tipoEntrega === "domicilio") {
+      const addrCalc = orderHC.locationCoords
+        ? `${orderHC.locationCoords.latitude},${orderHC.locationCoords.longitude}`
+        : (orderHC.direccion || hcParsed.direccion || "").split("—")[0].trim();
+      if (addrCalc && addrCalc.length >= 5) {
+        try {
+          const calculo = await calcularDomicilio(addrCalc, sucursalPrevia, hcParsed.totalAPagar);
+          orderHC.valorDomicilio = calculo.valorDomicilio;
+          orderHC.distanciaKm = calculo.distanciaKm;
+          orderHC.domicilioTexto = calculo.descripcion;
+        } catch (e) {
+          console.error("❌ Error calculando domicilio HC:", e);
+          orderHC.valorDomicilio = 4500;
+        }
+      } else {
+        orderHC.valorDomicilio = 4500; // sin dirección utilizable → tarifa base
       }
     }
 
@@ -2912,17 +2918,23 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   const orderHCSuc = getOrder(phone)!;
   const hcParsedSuc = parseOlaClickText(orderHCSuc.holaclick_order || "");
 
-  // Calcular domicilio con coordenadas GPS
-  if (orderHCSuc.tipoEntrega === "domicilio" && orderHCSuc.locationCoords) {
-    try {
-      const coordStr = `${orderHCSuc.locationCoords.latitude},${orderHCSuc.locationCoords.longitude}`;
-      const calculo = await calcularDomicilio(coordStr, orderHCSuc.sucursal || "la_villa", hcParsedSuc.totalAPagar);
-      orderHCSuc.valorDomicilio = calculo.valorDomicilio;
-      orderHCSuc.distanciaKm = calculo.distanciaKm;
-      orderHCSuc.domicilioTexto = calculo.descripcion;
-    } catch (e) {
-      console.error("❌ Error calculando domicilio HC sucursal:", e);
-      orderHCSuc.valorDomicilio = 4500;
+  // Calcular domicilio: por coordenadas GPS si vienen, si no geocodificando la dirección de texto
+  if (orderHCSuc.tipoEntrega === "domicilio") {
+    const addrCalcSuc = orderHCSuc.locationCoords
+      ? `${orderHCSuc.locationCoords.latitude},${orderHCSuc.locationCoords.longitude}`
+      : (orderHCSuc.direccion || hcParsedSuc.direccion || "").split("—")[0].trim();
+    if (addrCalcSuc && addrCalcSuc.length >= 5) {
+      try {
+        const calculo = await calcularDomicilio(addrCalcSuc, orderHCSuc.sucursal || "la_villa", hcParsedSuc.totalAPagar);
+        orderHCSuc.valorDomicilio = calculo.valorDomicilio;
+        orderHCSuc.distanciaKm = calculo.distanciaKm;
+        orderHCSuc.domicilioTexto = calculo.descripcion;
+      } catch (e) {
+        console.error("❌ Error calculando domicilio HC sucursal:", e);
+        orderHCSuc.valorDomicilio = 4500;
+      }
+    } else {
+      orderHCSuc.valorDomicilio = 4500; // sin dirección utilizable → tarifa base
     }
   }
 
