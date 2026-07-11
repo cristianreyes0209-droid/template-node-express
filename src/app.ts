@@ -765,6 +765,25 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   // true cuando el mensaje viene de un clic en botón de WhatsApp (no texto escrito a mano)
   const esBoton = tipoMensaje === "interactive";
 
+  // Reenviar SIEMPRE cualquier imagen recibida al WhatsApp de la sucursal (comprobantes,
+  // fachadas, fotos de producto), incluso si el asesor intervino o el bot está en silencio.
+  const imgReenvioId = messageData.image?.id;
+  if (imgReenvioId) {
+    const ordImg = getOrder(phone);
+    const stepImg = ordImg?.step;
+    // Evitar doble envío: el flujo de comprobante ya reenvía (salvo que el asesor haya intervenido)
+    const yaLoManejaComprobante =
+      (stepImg === "esperando_comprobante" || stepImg === "esperando_comprobante_holaclick") &&
+      !ordImg?.asesorIntervenido;
+    if (!yaLoManejaComprobante) {
+      const numeroSuc = ordImg?.sucursal === "circunvalar" ? "573217233342" : "573151913928";
+      const nombreImg = ordImg?.nombre || customer?.name || "";
+      sendWhatsAppMessage(numeroSuc, `📸 Imagen recibida${nombreImg ? " de " + nombreImg : ""}\n📞 ${phone}`)
+        .then(() => sendWhatsAppImageById(numeroSuc, imgReenvioId))
+        .catch(e => console.error("❌ Reenvío imagen a sucursal:", e));
+    }
+  }
+
   // Ignorar mensajes que son solo emojis o símbolos sin texto procesable
   const textoReal = text.replace(/[^\w\sáéíóúüñÁÉÍÓÚÜÑ]/g, "").trim();
   if (!textoReal && !esBoton) return res.sendStatus(200);
