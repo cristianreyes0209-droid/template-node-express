@@ -123,7 +123,12 @@
   .totals-title{font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:7px}
   .totals-title svg{width:15px;height:15px;color:var(--text-soft)}
   .totals{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-  .total-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);display:flex;gap:14px;align-items:center}
+  .total-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);display:flex;gap:14px;align-items:flex-start}
+  .pay-split{display:flex;flex-direction:column;gap:3px;margin-top:9px;padding-top:8px;border-top:1px dashed var(--border);font-size:11.5px;color:var(--text-soft)}
+  .pay-split span{display:flex;justify-content:space-between;gap:12px}
+  .pay-split b{font-weight:700;color:var(--text)}
+  .total-card.highlight .pay-split{border-top-color:rgba(255,255,255,.15);color:#cbd5e1}
+  .total-card.highlight .pay-split b{color:#fff}
   .total-card .kpi-icon{width:46px;height:46px;border-radius:12px}
   .total-card b{display:block;font-size:13.5px}
   .total-card small{color:var(--text-soft);font-size:12px;display:block;margin:2px 0 4px}
@@ -458,11 +463,15 @@ function calcularResumen(peds, sesiones){
   const pagos = { efectivo:{ n:0, total:0 }, comprobante:{ n:0, total:0 } };
   for(const p of terminadas){
     const key = p.sucursal || "otra";
-    if(!sucMap[key]) sucMap[key] = { nombre: SUC_NOMBRE[key] || "Sucursal", terminadas:0, total:0 };
+    if(!sucMap[key]) sucMap[key] = { nombre: SUC_NOMBRE[key] || "Sucursal", terminadas:0, total:0,
+                                     efectivo:{n:0,total:0}, comprobante:{n:0,total:0} };
     sucMap[key].terminadas += 1;
     sucMap[key].total += Number(p.total||0);
-    const dst = esEfectivo(p.forma_pago) ? pagos.efectivo : pagos.comprobante;
-    dst.n += 1; dst.total += Number(p.total||0);
+    const esEf = esEfectivo(p.forma_pago);
+    const g = esEf ? pagos.efectivo : pagos.comprobante;              // global
+    const s = esEf ? sucMap[key].efectivo : sucMap[key].comprobante;  // por sucursal
+    g.n += 1; g.total += Number(p.total||0);
+    s.n += 1; s.total += Number(p.total||0);
   }
   return {
     chatsActivos: (sesiones||[]).length,
@@ -519,28 +528,30 @@ function renderResumen(r){
   document.getElementById("kpiTotal").textContent = fmtCOP(r.totalHoy);
 
   const cont = document.getElementById("totals");
+  const payLines = pg => `
+    <div class="pay-split">
+      <span><i>💵 Efectivo (${pg.efectivo.n})</i><b>${fmtCOP(pg.efectivo.total)}</b></span>
+      <span><i>📸 Comprobante (${pg.comprobante.n})</i><b>${fmtCOP(pg.comprobante.total)}</b></span>
+    </div>`;
   const cards = r.sucursales.map(s => `
     <div class="total-card">
-      <div class="kpi-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M9 21v-6h6v6"/></svg></div>
-      <div><b>${esc(s.nombre)}</b><small>Órdenes terminadas: ${s.terminadas}</small><span class="money">${fmtCOP(s.total)}</span></div>
+      <div class="kpi-icon ic-green" style="font-size:20px">🏬</div>
+      <div style="flex:1">
+        <b>${esc(s.nombre)}</b><small>Órdenes terminadas: ${s.terminadas}</small>
+        <span class="money">${fmtCOP(s.total)}</span>
+        ${payLines(s)}
+      </div>
     </div>`).join("");
-  const p = r.pagos || { efectivo:{n:0,total:0}, comprobante:{n:0,total:0} };
-  const cardEfectivo = `
-    <div class="total-card">
-      <div class="kpi-icon ic-green" style="font-size:20px">💵</div>
-      <div><b>Efectivo</b><small>Órdenes: ${p.efectivo.n}</small><span class="money">${fmtCOP(p.efectivo.total)}</span></div>
-    </div>`;
-  const cardComprobante = `
-    <div class="total-card">
-      <div class="kpi-icon ic-blue" style="font-size:20px">📸</div>
-      <div><b>Con comprobante</b><small>Órdenes: ${p.comprobante.n}</small><span class="money">${fmtCOP(p.comprobante.total)}</span></div>
-    </div>`;
   const totalGeneral = `
     <div class="total-card highlight">
       <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></div>
-      <div><b>Total del día</b><small>Órdenes terminadas: ${r.terminadas}</small><span class="money">${fmtCOP(r.totalHoy)}</span></div>
+      <div style="flex:1">
+        <b>Total del día</b><small>Órdenes terminadas: ${r.terminadas}</small>
+        <span class="money">${fmtCOP(r.totalHoy)}</span>
+        ${payLines(r.pagos || { efectivo:{n:0,total:0}, comprobante:{n:0,total:0} })}
+      </div>
     </div>`;
-  cont.innerHTML = cards + cardEfectivo + cardComprobante + totalGeneral;
+  cont.innerHTML = cards + totalGeneral;
 }
 
 function renderFiltrado(){
