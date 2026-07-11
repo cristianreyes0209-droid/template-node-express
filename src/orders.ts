@@ -168,6 +168,10 @@ export function getOrder(phone: string): CustomerOrder | undefined {
   return orders[phone];
 }
 
+export function getAllOrders(): (CustomerOrder & { phone: string })[] {
+  return Object.entries(orders).map(([phone, o]) => ({ phone, ...o }));
+}
+
 export function createOrUpdateOrder(phone: string, items: OrderItem[]) {
   if (!orders[phone]) {
     orders[phone] = {

@@ -28,6 +28,7 @@ import {
   clearOrder,
   createOrUpdateOrder,
   getOrder,
+  getAllOrders,
   updateOrderName,
   updateOrderStep,
   updateOrderAddress,
@@ -5586,6 +5587,31 @@ app.get('/api/pedidos', async (req, res) => {
   }
   const rows = await getPedidosUltimas24h();
   res.json(rows);
+});
+
+app.get('/api/sesiones', async (req, res) => {
+  const key = req.query.key as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) {
+    return res.status(401).json({ error: "Acceso no autorizado" });
+  }
+  const sesiones = getAllOrders().map((o: any) => {
+    const t = calculateTotal(o);
+    return {
+      phone: o.phone,
+      nombre: o.nombre || null,
+      step: o.step,
+      tipo_entrega: o.tipoEntrega || null,
+      sucursal: o.sucursal || null,
+      asesor_intervenido: !!o.asesorIntervenido,
+      last_interaction: o.lastInteraction || null,
+      confirmed_at: o.confirmedAt || null,
+      items: o.items || [],
+      total: t.total,
+      direccion: o.direccion || null,
+      forma_pago: o.formaPago || null
+    };
+  });
+  res.json(sesiones);
 });
 
 app.get('/api/pedidos/archivados', async (req, res) => {
