@@ -166,7 +166,7 @@
   .drawer-head small{color:var(--text-soft);font-size:12px}
   .drawer-body{flex:1;overflow-y:auto;padding:16px;background:#f6f8fb;display:flex;flex-direction:column;gap:8px}
   .bubble{max-width:80%;padding:8px 12px;border-radius:12px;font-size:13px;line-height:1.4;white-space:pre-wrap;word-break:break-word}
-  .bubble.usuario{align-self:flex-start;background:#fff;border:1px solid var(--border);border-bottom-left-radius:3px}
+  .bubble.usuario{align-self:flex-start;background:#e6eaf1;color:#0f172a;border:1px solid #d5dbe6;border-bottom-left-radius:3px}
   .bubble.bot{align-self:flex-end;background:var(--blue-soft);color:#1e3a8a;border-bottom-right-radius:3px}
   .bubble.asesor{align-self:flex-end;background:var(--green-soft);color:#14532d;border-bottom-right-radius:3px}
   .bubble .meta{display:block;font-size:10px;opacity:.6;margin-top:3px}
@@ -446,11 +446,15 @@ function calcularResumen(peds, sesiones){
   const esEntregado = e => e==="entregado" || e==="finalizado";
   const terminadas = peds.filter(p=>esEntregado(p.estado));
   const sucMap = {};
+  const esEfectivo = fp => (fp||"").toLowerCase() === "efectivo";
+  const pagos = { efectivo:{ n:0, total:0 }, comprobante:{ n:0, total:0 } };
   for(const p of terminadas){
     const key = p.sucursal || "otra";
     if(!sucMap[key]) sucMap[key] = { nombre: SUC_NOMBRE[key] || "Sucursal", terminadas:0, total:0 };
     sucMap[key].terminadas += 1;
     sucMap[key].total += Number(p.total||0);
+    const dst = esEfectivo(p.forma_pago) ? pagos.efectivo : pagos.comprobante;
+    dst.n += 1; dst.total += Number(p.total||0);
   }
   return {
     chatsActivos: (sesiones||[]).length,
@@ -458,7 +462,8 @@ function calcularResumen(peds, sesiones){
     enCamino:     peds.filter(p=>p.estado==="en_camino").length,
     terminadas:   terminadas.length,
     totalHoy:     terminadas.reduce((s,p)=>s+Number(p.total||0),0),
-    sucursales:   Object.values(sucMap)
+    sucursales:   Object.values(sucMap),
+    pagos
   };
 }
 
@@ -511,12 +516,23 @@ function renderResumen(r){
       <div class="kpi-icon ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9M9 21v-6h6v6"/></svg></div>
       <div><b>${esc(s.nombre)}</b><small>Órdenes terminadas: ${s.terminadas}</small><span class="money">${fmtCOP(s.total)}</span></div>
     </div>`).join("");
+  const p = r.pagos || { efectivo:{n:0,total:0}, comprobante:{n:0,total:0} };
+  const cardEfectivo = `
+    <div class="total-card">
+      <div class="kpi-icon ic-green" style="font-size:20px">💵</div>
+      <div><b>Efectivo</b><small>Órdenes: ${p.efectivo.n}</small><span class="money">${fmtCOP(p.efectivo.total)}</span></div>
+    </div>`;
+  const cardComprobante = `
+    <div class="total-card">
+      <div class="kpi-icon ic-blue" style="font-size:20px">📸</div>
+      <div><b>Con comprobante</b><small>Órdenes: ${p.comprobante.n}</small><span class="money">${fmtCOP(p.comprobante.total)}</span></div>
+    </div>`;
   const totalGeneral = `
     <div class="total-card highlight">
       <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></div>
       <div><b>Total del día</b><small>Órdenes terminadas: ${r.terminadas}</small><span class="money">${fmtCOP(r.totalHoy)}</span></div>
     </div>`;
-  cont.innerHTML = cards + totalGeneral;
+  cont.innerHTML = cards + cardEfectivo + cardComprobante + totalGeneral;
 }
 
 function renderPager(){
