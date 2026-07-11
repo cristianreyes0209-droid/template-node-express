@@ -46,6 +46,7 @@ export type OrderStep =
   | "esperando_jalapenos"
   | "esperando_queso_dulce"
   | "esperando_sabor_cocacola"
+  | "esperando_complemento_direccion"
   | "confirmado";
 
 export type CustomerOrder = {
