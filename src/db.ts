@@ -323,6 +323,22 @@ export async function getPedidosUltimas24h() {
   }
 }
 
+export async function getPedidosPorFecha(fecha: string) {  // fecha = "YYYY-MM-DD" (Bogotá)
+  try {
+    const result = await pool.query(
+      `SELECT * FROM pedidos
+       WHERE created_at >= ($1::date)::timestamp AT TIME ZONE 'America/Bogota'
+         AND created_at <  (($1::date) + INTERVAL '1 day')::timestamp AT TIME ZONE 'America/Bogota'
+       ORDER BY created_at DESC`,
+      [fecha]
+    );
+    return result.rows;
+  } catch (error) {
+    console.error("❌ Error getPedidosPorFecha:", error);
+    return [];
+  }
+}
+
 export async function upsertCustomer({
   phone,
   name,

@@ -62,6 +62,8 @@
   .title-block p{color:var(--text-soft);font-size:12.5px;margin-top:2px}
   .topbar-actions{display:flex;gap:10px;align-items:center}
   .suc-filter{display:flex;gap:6px;flex-wrap:wrap}
+  .date-nav{display:flex;gap:4px;align-items:center}
+  .date-nav input[type="date"]{font-family:inherit;color:var(--text);cursor:pointer}
   .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:9px;border:1px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;box-shadow:var(--shadow)}
   .btn:hover{background:#f8fafc}
   .btn.primary{background:var(--sidebar-bg);color:#fff;border-color:var(--sidebar-bg)}
@@ -257,7 +259,11 @@
           <button class="btn" data-suc="la_villa" onclick="setFiltro('la_villa')">La Villa</button>
           <button class="btn" data-suc="circunvalar" onclick="setFiltro('circunvalar')">Circunvalar</button>
         </div>
-        <button class="btn" id="dateBtn">—</button>
+        <div class="date-nav">
+          <button class="btn" onclick="cambiarDia(-1)" title="Día anterior">◀</button>
+          <input type="date" id="fechaSel" class="btn" onchange="setFecha(this.value)">
+          <button class="btn" id="nextDayBtn" onclick="cambiarDia(1)" title="Día siguiente">▶</button>
+        </div>
         <button class="btn primary" onclick="cargarDatos()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Actualizar</button>
       </div>
     </div>
@@ -292,7 +298,7 @@
     </div>
 
     <!-- TOTALES -->
-    <div class="totals-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Total valor órdenes terminadas (hoy)</div>
+    <div class="totals-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>Total valor órdenes terminadas <span id="totalsFecha">(hoy)</span></div>
     <div class="totals" id="totals"></div>
 
     <div class="refresh-note"><span class="dot"></span>Auto-actualiza cada 10 segundos</div>
@@ -330,6 +336,8 @@ let PEDIDOS = [];                     // pedidos crudos de hoy (del backend)
 let SESIONES = [];                    // sesiones activas (chats sin pedido confirmado)
 let ALLROWS = [];                     // filas fusionadas (para filtrar sin refetch)
 let sucursalFiltro = "todos";         // filtro de sucursal activo
+let fechaSel = "";                    // fecha visualizada (YYYY-MM-DD, Bogotá)
+let esHoyVista = true;                // ¿la fecha vista es hoy?
 let chatPhone = null;                 // teléfono del chat abierto
 let chatTimer = null;
 
@@ -373,10 +381,28 @@ function arrancar(k){
   sessionKey = k;
   document.getElementById("lock").style.display="none";
   document.getElementById("app").style.display="flex";
-  document.getElementById("dateBtn").textContent =
-    new Date().toLocaleDateString("es-CO",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Bogota"});
+  fechaSel = bogotaDate(new Date());
+  const fi = document.getElementById("fechaSel");
+  fi.value = fechaSel; fi.max = fechaSel;
+  document.getElementById("nextDayBtn").disabled = true;
   cargarDatos();
   setInterval(cargarDatos, 10000);
+}
+function setFecha(v){
+  if(!v) return;
+  const hoy = bogotaDate(new Date());
+  if(v > hoy) v = hoy;                       // no permitir fechas futuras
+  fechaSel = v;
+  const fi = document.getElementById("fechaSel"); fi.value = v; fi.max = hoy;
+  document.getElementById("nextDayBtn").disabled = (v >= hoy);
+  cargarDatos();
+}
+function cambiarDia(delta){
+  const base = fechaSel || bogotaDate(new Date());
+  const [y,m,d] = base.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m-1, d));
+  dt.setUTCDate(dt.getUTCDate() + delta);
+  setFecha(dt.toISOString().slice(0,10));
 }
 (function init(){
   const k = new URLSearchParams(location.search).get("key");
@@ -390,20 +416,22 @@ const normPhone = p => String(p||"").replace(/[^\d]/g,"");
 async function cargarDatos(){
   if(!sessionKey) return;
   try{
-    const [rp, rs] = await Promise.all([
-      fetch(API+"/api/pedidos?key="+encodeURIComponent(sessionKey)),
-      fetch(API+"/api/sesiones?key="+encodeURIComponent(sessionKey))
-    ]);
-    if(!rp.ok) throw new Error("HTTP pedidos "+rp.status);
-    const todos = await rp.json();
-    const sesionesRaw = rs.ok ? await rs.json() : [];
     const hoy = bogotaDate(new Date());
+    if(!fechaSel) fechaSel = hoy;
+    const esHoy = fechaSel === hoy;
+    esHoyVista = esHoy;
 
-    // Órdenes confirmadas de hoy
-    PEDIDOS = todos.filter(p => p.created_at && bogotaDate(p.created_at) === hoy);
+    const reqs = [ fetch(API+"/api/pedidos?key="+encodeURIComponent(sessionKey)+"&fecha="+fechaSel) ];
+    if(esHoy) reqs.push(fetch(API+"/api/sesiones?key="+encodeURIComponent(sessionKey)));
+    const resps = await Promise.all(reqs);
+    if(!resps[0].ok) throw new Error("HTTP pedidos "+resps[0].status);
+
+    // Órdenes del día seleccionado (el servidor ya acota por fecha)
+    PEDIDOS = await resps[0].json();
+    const sesionesRaw = (esHoy && resps[1] && resps[1].ok) ? await resps[1].json() : [];
     const phonesConOrden = new Set(PEDIDOS.map(p => normPhone(p.phone)));
 
-    // Chats activos = sesiones sin pedido confirmado, con actividad hoy, y sin orden ya listada
+    // Chats activos solo aplican a "hoy" (son en memoria)
     SESIONES = (sesionesRaw||[]).filter(s =>
       s.step !== "confirmado" &&
       s.last_interaction && bogotaDate(s.last_interaction) === hoy &&
@@ -417,6 +445,9 @@ async function cargarDatos(){
     renderFiltrado();
     renderResumen(calcularResumen(PEDIDOS, SESIONES));
     renderPager();
+
+    const tf = document.getElementById("totalsFecha");
+    if(tf) tf.textContent = esHoy ? "(hoy)" : "(" + fechaSel.split("-").reverse().join("/") + ")";
   }catch(e){ /* silencioso, reintenta en el próximo ciclo */ }
 }
 
@@ -429,7 +460,7 @@ function pedidoAFila(p){
     tel: fmtTel(p.phone), phone: normPhone(p.phone), nombre: p.nombre || "",
     confirmada: true, abandonada: false, asistente: !!p.asesor_intervenido,
     estadoTxt: e.txt, estadoCls: e.cls,
-    activo: est !== "terminada"   // botones en camino / terminada
+    activo: est !== "terminada" && esHoyVista   // botones en camino/terminada solo en la vista de hoy
   };
 }
 

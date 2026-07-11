@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "./db";
 import cron from "node-cron";
-import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h } from "./db";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha } from "./db";
 import path from "path";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -5584,6 +5584,10 @@ app.get('/api/pedidos', async (req, res) => {
   const key = req.query.key as string | undefined;
   if (!key || key !== process.env.PANEL_KEY) {
     return res.status(401).json({ error: "Acceso no autorizado" });
+  }
+  const fecha = req.query.fecha as string | undefined;
+  if (fecha && /^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    return res.json(await getPedidosPorFecha(fecha));
   }
   const rows = await getPedidosUltimas24h();
   res.json(rows);
