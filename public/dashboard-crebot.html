@@ -604,6 +604,13 @@ function verDetalle(key){
       <div>${fmtCOP(it.precio||0)}</div>
     </div>`;
   }).join("") || '<div class="det-row">Sin ítems</div>';
+  const esOrden = String(key).charAt(0)==="o";
+  const idOrden = esOrden ? String(key).slice(1) : null;
+  const btnImprimir = esOrden
+    ? `<div style="margin-top:14px;display:flex;justify-content:flex-end">
+         <button class="btn primary" onclick="imprimirComanda(${idOrden})">🖨️ Imprimir comanda</button>
+       </div>`
+    : "";
   document.getElementById("detBody").innerHTML =
     filas +
     `<div class="det-meta">
@@ -612,10 +619,21 @@ function verDetalle(key){
       ${p.tipo_entrega==="domicilio" ? "📍 "+esc(p.direccion||"—") : "🏪 Recoger en tienda"}<br>
       🏬 ${SUC_NOMBRE[p.sucursal] || "—"} · 💳 ${esc(p.forma_pago||"—")}
     </div>
-    <div class="det-total">Total: ${fmtCOP(p.total)}</div>`;
+    <div class="det-total">Total: ${fmtCOP(p.total)}</div>` +
+    btnImprimir;
   document.getElementById("detOverlay").classList.add("open");
 }
 function cerrarDetalle(){ document.getElementById("detOverlay").classList.remove("open"); }
+
+async function imprimirComanda(id){
+  showToast("🖨️ Enviando a la impresora…");
+  try{
+    const r = await fetch(API+"/api/pedidos/"+id+"/imprimir", { method:"POST", headers:{ "x-panel-key": sessionKey } });
+    const j = await r.json().catch(()=>({}));
+    if(r.ok && j.ok) showToast("🖨️ Comanda enviada a la impresora");
+    else showToast("⚠️ "+(j.error||"No se pudo imprimir"));
+  }catch(e){ showToast("❌ Error al imprimir"); }
+}
 
 /* ===================== CHAT DEL BOT ===================== */
 async function abrirChat(phone, nombre){

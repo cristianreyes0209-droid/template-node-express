@@ -5649,6 +5649,57 @@ app.post('/api/pedidos/:id/estado', async (req, res) => {
   res.json({ ok: true, id, estado });
 });
 
+app.post('/api/pedidos/:id/imprimir', async (req, res) => {
+  const key = req.headers['x-panel-key'] as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) {
+    return res.status(401).json({ error: "Acceso no autorizado" });
+  }
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ ok: false, error: "id inválido" });
+  const pedido = await getPedidoById(id);
+  if (!pedido) return res.status(404).json({ ok: false, error: "Pedido no encontrado" });
+  if (pedido.sucursal !== "la_villa") {
+    return res.status(400).json({ ok: false, error: "Esta sucursal no tiene impresora configurada" });
+  }
+  let items = pedido.items;
+  if (typeof items === "string") { try { items = JSON.parse(items); } catch { items = []; } }
+  items = items || [];
+  try {
+    const r = await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nombre: pedido.nombre || "Cliente",
+        telefono: pedido.phone,
+        pedidoTexto: items.map((i: any) => {
+          const obs = i.observaciones ? ` (${i.observaciones})` : "";
+          const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
+          return `${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs} ×${i.cantidad}`;
+        }),
+        subtotal: pedido.subtotal,
+        domicilio: pedido.domicilio,
+        total: pedido.total,
+        direccion: pedido.direccion || "Recoger en tienda",
+        pago: pedido.forma_pago || "No definido",
+        tiempoEstimado: pedido.tipo_entrega === "domicilio" ? "50 min" : "15 min",
+        observacion: pedido.observaciones_generales || "",
+        horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
+        sucursal: "La Villa"
+      })
+    });
+    if (!r.ok) {
+      const b = await r.text().catch(() => "");
+      console.error(`❌ Reimpresión pedido ${id}: HTTP ${r.status} → ${b}`);
+      return res.status(502).json({ ok: false, error: `Impresora HTTP ${r.status}` });
+    }
+    console.log(`🖨️ Reimpresión OK pedido ${id}`);
+    return res.json({ ok: true });
+  } catch (e: any) {
+    console.error(`❌ Reimpresión pedido ${id} (red):`, e);
+    return res.status(500).json({ ok: false, error: e?.message || "Error de red con la impresora" });
+  }
+});
+
 app.put('/api/pedidos/:id/estado', async (req, res) => {
   const key = (req.query.key || req.body?.key) as string | undefined;
   if (!key || key !== process.env.PANEL_KEY) {
