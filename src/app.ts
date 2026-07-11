@@ -171,6 +171,7 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
   distanciaKm: number;
   valorDomicilio: number;
   descripcion: string;
+  fueraDeRango?: boolean;
 }> {
   const sucursales: Record<string, string> = {
     "la_villa": "Calle 83 #16a-22, Pereira, Risaralda, Colombia",
@@ -206,6 +207,16 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
 
   const distanciaMetros = elemento.distance.value;
   const distanciaKm = distanciaMetros / 1000;
+
+  // Tope de distancia: más lejos = geocoding poco fiable (probable otra ciudad) → no cotizar
+  const MAX_KM_DOMICILIO = 40;
+  if (distanciaKm > MAX_KM_DOMICILIO) {
+    const kmR = Math.round(distanciaKm * 10) / 10;
+    console.log(`⚠️ Domicilio fuera de rango (${kmR}km) — geocoding poco fiable`);
+    console.log("========================");
+    return { distanciaKm: kmR, valorDomicilio: 4500, descripcion: "Domicilio por confirmar", fueraDeRango: true };
+  }
+
   const MINIMO = 4500;
   const VALOR_POR_KM = 500;
   const KM_MINIMO = 2;
@@ -3938,11 +3949,13 @@ return res.sendStatus(200);
   const isGpsPin = !!order.locationCoords;
   let valorDomicilio = 4500;
   let descripcionDomicilio = "";
+  let fueraDeRango = false;
   try {
     const addressToCalc = order.locationCoords
       ? `${order.locationCoords.latitude},${order.locationCoords.longitude}`
       : (order.direccion || text);
     const calculo = await calcularDomicilio(addressToCalc, order.sucursal || "la_villa", calculateTotal(order).subtotal);
+    fueraDeRango = !!calculo.fueraDeRango;
     valorDomicilio = calculo.valorDomicilio;
     descripcionDomicilio = calculo.descripcion;
     order.valorDomicilio = valorDomicilio;
@@ -3950,6 +3963,21 @@ return res.sendStatus(200);
     order.domicilioTexto = calculo.descripcion;
   } catch (e) {
     console.log("Error calculando domicilio:", e);
+  }
+
+  // Tope de distancia: geocoding poco fiable en dirección de texto → no cotizar, pedir GPS/reescribir
+  if (fueraDeRango && !isGpsPin) {
+    order.valorDomicilio = undefined;
+    order.distanciaKm = undefined;
+    order.domicilioTexto = undefined;
+    updateOrderStep(phone, "esperando_direccion");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppMessage(phone,
+      "No pude calcular bien el domicilio para esa dirección 📍 (me da una distancia muy lejana, parece de otra ciudad).\n\n" +
+      "Por favor compárteme tu *ubicación GPS* 📍 o escríbeme la dirección de nuevo con barrio y ciudad.\n\n" +
+      "Si continúa, un asesor te confirma el valor 😊"
+    );
+    return res.sendStatus(200);
   }
 
   if (isGpsPin) {
