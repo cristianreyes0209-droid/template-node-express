@@ -611,15 +611,19 @@ function verDetalle(key){
          <button class="btn primary" onclick="imprimirComanda(${idOrden})">🖨️ Imprimir comanda</button>
        </div>`
     : "";
+  const esDom = p.tipo_entrega === "domicilio";
+  const montos =
+    (p.subtotal!=null ? `<div class="det-row"><div>Subtotal</div><div>${fmtCOP(p.subtotal)}</div></div>` : "") +
+    (esDom && p.domicilio!=null ? `<div class="det-row"><div>🛵 Domicilio</div><div>${fmtCOP(p.domicilio)}</div></div>` : "") +
+    `<div class="det-total">Total: ${fmtCOP(p.total)}</div>`;
   document.getElementById("detBody").innerHTML =
-    filas +
+    filas + montos +
     `<div class="det-meta">
       👤 ${p.nombre? esc(p.nombre) : "—"}<br>
       📞 ${esc(fmtTel(p.phone))}<br>
-      ${p.tipo_entrega==="domicilio" ? "📍 "+esc(p.direccion||"—") : "🏪 Recoger en tienda"}<br>
+      ${esDom ? "📍 "+esc(p.direccion||"—") : "🏪 Recoger en tienda"}<br>
       🏬 ${SUC_NOMBRE[p.sucursal] || "—"} · 💳 ${esc(p.forma_pago||"—")}
-    </div>
-    <div class="det-total">Total: ${fmtCOP(p.total)}</div>` +
+    </div>` +
     btnImprimir;
   document.getElementById("detOverlay").classList.add("open");
 }

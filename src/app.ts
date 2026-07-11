@@ -5606,6 +5606,8 @@ app.get('/api/sesiones', async (req, res) => {
       last_interaction: o.lastInteraction || null,
       confirmed_at: o.confirmedAt || null,
       items: o.items || [],
+      subtotal: t.subtotal,
+      domicilio: t.domicilio,
       total: t.total,
       direccion: o.direccion || null,
       forma_pago: o.formaPago || null
