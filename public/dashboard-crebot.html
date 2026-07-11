@@ -61,6 +61,7 @@
   .title-block h2{font-size:21px;font-weight:800;letter-spacing:-.3px}
   .title-block p{color:var(--text-soft);font-size:12.5px;margin-top:2px}
   .topbar-actions{display:flex;gap:10px;align-items:center}
+  .suc-filter{display:flex;gap:6px;flex-wrap:wrap}
   .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:9px;border:1px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;box-shadow:var(--shadow)}
   .btn:hover{background:#f8fafc}
   .btn.primary{background:var(--sidebar-bg);color:#fff;border-color:var(--sidebar-bg)}
@@ -246,6 +247,11 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <div class="suc-filter">
+          <button class="btn primary" data-suc="todos" onclick="setFiltro('todos')">Todas</button>
+          <button class="btn" data-suc="la_villa" onclick="setFiltro('la_villa')">La Villa</button>
+          <button class="btn" data-suc="circunvalar" onclick="setFiltro('circunvalar')">Circunvalar</button>
+        </div>
         <button class="btn" id="dateBtn">—</button>
         <button class="btn primary" onclick="cargarDatos()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Actualizar</button>
       </div>
@@ -317,6 +323,8 @@ const API = "";                       // mismo origen (Render sirve el panel y l
 let sessionKey = "";
 let PEDIDOS = [];                     // pedidos crudos de hoy (del backend)
 let SESIONES = [];                    // sesiones activas (chats sin pedido confirmado)
+let ALLROWS = [];                     // filas fusionadas (para filtrar sin refetch)
+let sucursalFiltro = "todos";         // filtro de sucursal activo
 let chatPhone = null;                 // teléfono del chat abierto
 let chatTimer = null;
 
@@ -397,11 +405,11 @@ async function cargarDatos(){
       !phonesConOrden.has(normPhone(s.phone))
     );
 
-    const filas = PEDIDOS.map(pedidoAFila)
+    ALLROWS = PEDIDOS.map(pedidoAFila)
       .concat(SESIONES.map(sesionAFila))
       .sort((a,b) => b.ts - a.ts);
 
-    renderTabla(filas);
+    renderFiltrado();
     renderResumen(calcularResumen(PEDIDOS, SESIONES));
     renderPager();
   }catch(e){ /* silencioso, reintenta en el próximo ciclo */ }
@@ -411,7 +419,7 @@ function pedidoAFila(p){
   const est = mapEstado(p.estado);
   const e = ESTADOS[est];
   return {
-    kind:"order", id:p.id, key:"o"+p.id, ts: Date.parse(p.created_at)||0,
+    kind:"order", id:p.id, key:"o"+p.id, ts: Date.parse(p.created_at)||0, sucursal: p.sucursal || null,
     fecha: fmtFecha(p.created_at), hora: fmtHora(p.created_at),
     tel: fmtTel(p.phone), phone: normPhone(p.phone), nombre: p.nombre || "",
     confirmada: true, abandonada: false, asistente: !!p.asesor_intervenido,
@@ -433,7 +441,7 @@ function stepToEstado(step){
 function sesionAFila(s){
   const e = stepToEstado(s.step);
   return {
-    kind:"sesion", id:null, key:"s"+normPhone(s.phone), ts: Number(s.last_interaction)||0,
+    kind:"sesion", id:null, key:"s"+normPhone(s.phone), ts: Number(s.last_interaction)||0, sucursal: s.sucursal || null,
     fecha: fmtFecha(s.last_interaction), hora: fmtHora(s.last_interaction),
     tel: fmtTel(s.phone), phone: normPhone(s.phone), nombre: s.nombre || "",
     confirmada: false, abandonada: false, asistente: !!s.asesor_intervenido,
@@ -533,6 +541,16 @@ function renderResumen(r){
       <div><b>Total del día</b><small>Órdenes terminadas: ${r.terminadas}</small><span class="money">${fmtCOP(r.totalHoy)}</span></div>
     </div>`;
   cont.innerHTML = cards + cardEfectivo + cardComprobante + totalGeneral;
+}
+
+function renderFiltrado(){
+  const vis = sucursalFiltro === "todos" ? ALLROWS : ALLROWS.filter(r => r.sucursal === sucursalFiltro);
+  renderTabla(vis);
+}
+function setFiltro(s){
+  sucursalFiltro = s;
+  document.querySelectorAll(".suc-filter .btn").forEach(b => b.classList.toggle("primary", b.dataset.suc === s));
+  renderFiltrado();
 }
 
 function renderPager(){
