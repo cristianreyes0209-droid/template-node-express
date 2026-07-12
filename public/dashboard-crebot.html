@@ -699,9 +699,10 @@ function renderChat(msgs){
   const body = document.getElementById("chatBody");
   if(!msgs || !msgs.length){ body.innerHTML = '<div class="empty">Sin mensajes todavía</div>'; return; }
   body.innerHTML = msgs.map(m => {
-    const rol = m.rol==="usuario" ? "usuario" : (m.rol==="asesor" ? "asesor" : "bot");
+    const esCliente = m.rol==="cliente" || m.rol==="usuario";
+    const rol = esCliente ? "usuario" : (m.rol==="asesor" ? "asesor" : "bot");
     const hora = m.created_at ? fmtHora(m.created_at) : "";
-    const quien = rol==="usuario" ? "Cliente" : (rol==="asesor" ? "Asesor" : "Bot");
+    const quien = esCliente ? "Cliente" : (m.rol==="asesor" ? "Asesor" : "Bot");
     return `<div class="bubble ${rol}">${esc(m.mensaje)}<span class="meta">${quien} · ${hora}</span></div>`;
   }).join("");
   body.scrollTop = body.scrollHeight;
