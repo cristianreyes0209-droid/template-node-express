@@ -442,8 +442,7 @@ async function cargarDatos(){
       .concat(SESIONES.map(sesionAFila))
       .sort((a,b) => b.ts - a.ts);
 
-    renderFiltrado();
-    renderResumen(calcularResumen(PEDIDOS, SESIONES));
+    renderFiltrado();   // tabla + KPIs/totales, respetando el filtro de sucursal
     renderPager();
 
     const tf = document.getElementById("totalsFecha");
@@ -586,8 +585,14 @@ function renderResumen(r){
 }
 
 function renderFiltrado(){
-  const vis = sucursalFiltro === "todos" ? ALLROWS : ALLROWS.filter(r => r.sucursal === sucursalFiltro);
+  const f = sucursalFiltro;
+  // Tabla
+  const vis = f === "todos" ? ALLROWS : ALLROWS.filter(r => r.sucursal === f);
   renderTabla(vis);
+  // KPIs y totales: también se acotan a la sucursal seleccionada
+  const pedsF = f === "todos" ? PEDIDOS  : PEDIDOS.filter(p => p.sucursal === f);
+  const sesF  = f === "todos" ? SESIONES : SESIONES.filter(s => s.sucursal === f);
+  renderResumen(calcularResumen(pedsF, sesF));
 }
 function setFiltro(s){
   sucursalFiltro = s;
