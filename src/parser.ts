@@ -390,6 +390,9 @@ function buildAliasEntries(products: any[]) {
 function findBestProductMatches(fragment: string, products: any[]) {
   const text = normalizeText(fragment);
   const aliasEntries = buildAliasEntries(products);
+  // Palabras comunes (para, con, sin, por, del…) NO deben matchear productos por typo/similitud
+  // (ej. "para" ≈ "paris" → registraba una Crepe de Paris fantasma)
+  const esStopWord = STOP_WORDS.has(text);
 
   const matches: { product: any; alias: string; score: number }[] = [];
 
@@ -404,9 +407,10 @@ function findBestProductMatches(fragment: string, products: any[]) {
       score = 2; // alias completo encontrado en el texto (subcadena solo para alias de ≥4 chars)
     } else if (entry.alias.includes(text) && text.length >= 4 && text.length >= entry.alias.length * 0.6) {
       score = 1; // texto es parte significativa del alias
-    } else if (similarity(text, entry.alias) > 0.78) {
+    } else if (!esStopWord && similarity(text, entry.alias) > 0.78) {
       score = 1; // similitud difusa
     } else if (
+      !esStopWord &&
       text.length >= 4 &&
       entry.alias.length >= 4 &&
       editDistance(text, entry.alias) <= 2

@@ -1002,6 +1002,33 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     }
   }
 
+  // El complemento de dirección se captura ANTES de cualquier FAQ/interceptor
+  // (suele contener "dirección"/"ubicación" y lo secuestraba el FAQ de sucursales)
+  if (currentOrder?.step === "esperando_complemento_direccion") {
+    const complemento = text.trim();
+    const orderC = getOrder(phone)!;
+    if (complemento && complemento.length > 1 && orderC.direccion) {
+      orderC.direccion = orderC.direccion + " — " + complemento;
+    }
+    const valorDomC = orderC.valorDomicilio || 4500;
+    const descDomC = orderC.domicilioTexto || "";
+    updateOrderStep(phone, "esperando_confirmacion");
+    currentOrder = getOrder(phone)!;
+    const totalsC = calculateTotal(orderC, valorDomC);
+    const resumenC = orderC.items.map((item: any) => formatLineaItem(item)).join("\n");
+    await sendWhatsAppButtons(phone,
+      "Perfecto 👌\n\nTu pedido es:\n" + resumenC +
+      buildResumenFooter(orderC, totalsC, descDomC) +
+      "\n\n📝 Si deseas una observación escríbela, o elige:",
+      [
+        { id: "confirmar", title: "Confirmar" },
+        { id: "agregar_mas", title: "Agregar mas" },
+        { id: "eliminar", title: "Eliminar" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
+
   // Observación de entrega interceptada en cualquier step cuando hay dirección guardada
   const STEPS_NO_INTERCEPTAR = new Set(["esperando_direccion", "esperando_nombre", "esperando_observacion_general", "esperando_datos_factura", "esperando_confirmacion_direccion", "esperando_complemento_direccion"]);
   if (
@@ -1173,7 +1200,6 @@ const skipParsing =
   currentOrder?.step === "esperando_queso_dulce" ||
   currentOrder?.step === "esperando_sabor_cocacola" ||
   currentOrder?.step === "esperando_confirmacion_direccion" ||
-  currentOrder?.step === "esperando_complemento_direccion" ||
   currentOrder?.step === "post_agregar_producto" ||
   currentOrder?.step === "esperando_confirmacion" ||
   currentOrder?.step === "esperando_datos_factura" ||
@@ -5477,29 +5503,6 @@ return res.sendStatus(200);
     }
     return res.sendStatus(200);
   }
-} else if (currentOrder?.step === "esperando_complemento_direccion") {
-  const complemento = text.trim();
-  const order = getOrder(phone)!;
-  if (complemento && complemento.length > 1 && order.direccion) {
-    order.direccion = order.direccion + " — " + complemento;
-  }
-  const valorDomicilio = order.valorDomicilio || 4500;
-  const descripcionDomicilio = order.domicilioTexto || "";
-  updateOrderStep(phone, "esperando_confirmacion");
-  currentOrder = getOrder(phone)!;
-  const totals = calculateTotal(order, valorDomicilio);
-  const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
-  await sendWhatsAppButtons(phone,
-    "Perfecto 👌\n\nTu pedido es:\n" + resumen +
-    buildResumenFooter(order, totals, descripcionDomicilio) +
-    "\n\n📝 Si deseas una observación escríbela, o elige:",
-    [
-      { id: "confirmar", title: "Confirmar" },
-      { id: "agregar_mas", title: "Agregar mas" },
-      { id: "eliminar", title: "Eliminar" }
-    ]
-  );
-  return res.sendStatus(200);
 } else if (
   lower.includes("hola") ||
   lower.includes("buenas") ||
