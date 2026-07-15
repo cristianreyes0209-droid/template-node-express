@@ -3101,7 +3101,18 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     const orderEfHC = getOrder(phone)!;
     const holaclickResumenEf = orderEfHC.holaclick_order || "";
     const hcParsedEf = parseOlaClickText(holaclickResumenEf);
-    savePedido({ phone, nombre: orderEfHC.nombre || customer?.name, sucursal: orderEfHC.sucursal, forma_pago: "efectivo", canal: "holaclick", holaclick_order: holaclickResumenEf, confirmed_at: orderEfHC.confirmedAt, estado: 'recibido' }).catch(e => console.error("❌ savePedido HC:", e));
+    const domicilioEfHC = orderEfHC.valorDomicilio ?? 0;
+    savePedido({
+      phone, nombre: orderEfHC.nombre || customer?.name,
+      direccion: hcParsedEf.direccion || orderEfHC.direccion || undefined,
+      items: hcParsedEf.items,
+      subtotal: hcParsedEf.totalAPagar,
+      domicilio: domicilioEfHC,
+      total: hcParsedEf.totalAPagar + domicilioEfHC,
+      forma_pago: "efectivo", sucursal: orderEfHC.sucursal,
+      tipo_entrega: orderEfHC.tipoEntrega, canal: "holaclick",
+      holaclick_order: holaclickResumenEf, confirmed_at: orderEfHC.confirmedAt, estado: 'recibido'
+    }).catch(e => console.error("❌ savePedido HC:", e));
     const hcItemsTextoEf = hcParsedEf.items.length > 0
       ? hcParsedEf.items.map(i =>
           `• ${i.producto} ×${i.cantidad} — $${i.precio.toLocaleString("es-CO")}` +
@@ -3146,7 +3157,18 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     const holaclickResumen = order.holaclick_order || "";
     const sucursalTexto = order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar";
     const hcParsedComp = parseOlaClickText(holaclickResumen);
-    savePedido({ phone, nombre: order.nombre || customer?.name, sucursal: order.sucursal, forma_pago: order.formaPago, canal: "holaclick", holaclick_order: holaclickResumen, confirmed_at: order.confirmedAt, estado: 'recibido' }).catch(e => console.error("❌ savePedido HC:", e));
+    const domicilioComp = order.valorDomicilio ?? 0;
+    savePedido({
+      phone, nombre: order.nombre || customer?.name,
+      direccion: hcParsedComp.direccion || order.direccion || undefined,
+      items: hcParsedComp.items,
+      subtotal: hcParsedComp.totalAPagar,
+      domicilio: domicilioComp,
+      total: hcParsedComp.totalAPagar + domicilioComp,
+      forma_pago: order.formaPago, sucursal: order.sucursal,
+      tipo_entrega: order.tipoEntrega, canal: "holaclick",
+      holaclick_order: holaclickResumen, confirmed_at: order.confirmedAt, estado: 'recibido'
+    }).catch(e => console.error("❌ savePedido HC:", e));
     const hcItemsTextoComp = hcParsedComp.items.length > 0
       ? hcParsedComp.items.map(i =>
           `• ${i.producto} ×${i.cantidad} — $${i.precio.toLocaleString("es-CO")}` +
