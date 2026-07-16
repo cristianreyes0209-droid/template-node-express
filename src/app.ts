@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "./db";
 import cron from "node-cron";
-import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha } from "./db";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento } from "./db";
 import path from "path";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -437,8 +437,25 @@ function buildResumenFooter(order: any, totals: { subtotal: number; domicilio: n
   const entregaLinea = order.tipoEntrega === "domicilio"
     ? "\n📍 Dirección: " + (order.direccion || "No aplica") + obsDir
     : "\n🏪 Recoger en tienda";
-  return "\n\nSubtotal: $" + totals.subtotal.toLocaleString("es-CO") + domicilioLinea + "\nTotal: $" + totals.total.toLocaleString("es-CO") + (obsLinea ? "\n" + obsLinea : "") + entregaLinea;
+  const descuentoLinea = (totals as any).descuento > 0
+    ? "\n🎁 Descuento " + order.descuentoPct + "%: -$" + (totals as any).descuento.toLocaleString("es-CO")
+    : "";
+  return "\n\nSubtotal: $" + totals.subtotal.toLocaleString("es-CO") + domicilioLinea + descuentoLinea + "\nTotal: $" + totals.total.toLocaleString("es-CO") + (obsLinea ? "\n" + obsLinea : "") + entregaLinea;
 }
+// Ofrece el botón de canje de descuento en el step de pago (si el cliente tiene acumulado y no lo ha usado)
+async function ofrecerDescuentoEnPago(phone: string) {
+  const order = getOrder(phone);
+  if (!order || order.descuentoPct) return;
+  const disp = await getDescuento(phone);
+  order.descuentoDisponible = disp;
+  if (disp > 0) {
+    await sendWhatsAppButtons(phone,
+      `🎁 Tienes *${disp}%* de descuento acumulado. ¿Lo usas en este pedido?`,
+      [{ id: "usar_descuento", title: `🎁 Usar mi ${disp}%` }]
+    );
+  }
+}
+
 function parseOlaClickText(text: string) {
   const toNum = (s: string | undefined) =>
     parseInt((s || "0").replace(/\./g, ""), 10) || 0;
@@ -4680,7 +4697,30 @@ return res.sendStatus(200);
 }
 
 } else if (currentOrder?.step === "esperando_pago") {
-      
+
+  // Canje de descuento acumulado (botón o palabra clave)
+  if (lower === "usar_descuento" || /(usar|aplicar|canjear)\s*(mi\s*)?(descuento|puntos)|mi descuento/i.test(lower)) {
+    const orderD = getOrder(phone)!;
+    const disp = orderD.descuentoPct ? 0 : await getDescuento(phone);
+    if (disp > 0) {
+      orderD.descuentoPct = disp;
+      const t = calculateTotal(getOrder(phone)!);
+      await sendWhatsAppButtons(phone,
+        `🎁 ¡Listo! Apliqué tu *${disp}%* de descuento (−$${t.descuento.toLocaleString("es-CO")}).\n\nNuevo total: *$${t.total.toLocaleString("es-CO")}* 💰\n¿Cómo deseas pagar?`,
+        [
+          { id: "efectivo", title: "Efectivo 💵" },
+          { id: "nequi", title: "Nequi/Daviplata 📱" },
+          { id: "bancolombia", title: "Bancolombia/Llave🏦" }
+        ]
+      );
+    } else {
+      await sendWhatsAppMessage(phone, orderD.descuentoPct
+        ? "Ya aplicaste tu descuento en este pedido 😊"
+        : "Aún no tienes descuento acumulado 😊 Cada pedido entregado suma 1%.");
+    }
+    return res.sendStatus(200);
+  }
+
   if (
     lower.includes("cuanto es") ||
     lower.includes("cuánto es") ||
@@ -4730,6 +4770,12 @@ return res.sendStatus(200);
 
     const orderEf = getOrder(phone)!;
     const totalsEf = calculateTotal(orderEf);
+
+    // Consumir el descuento acumulado si se aplicó en este pedido
+    if (orderEf.descuentoPct) {
+      orderEf.observacionesGenerales = ((orderEf.observacionesGenerales || "") + ` [Descuento ${orderEf.descuentoPct}% aplicado]`).trim();
+      resetDescuento(phone).catch(() => {});
+    }
 
     await upsertCustomer({ phone, name: orderEf.nombre, last_address: orderEf.direccion, last_order: orderEf.items, last_order_at: new Date().toISOString(), last_sucursal: orderEf.sucursal });
     savePedido({ numero_orden: orderEf.numeroOrden, phone, nombre: orderEf.nombre, direccion: orderEf.direccion, items: orderEf.items, subtotal: totalsEf.subtotal, domicilio: totalsEf.domicilio, total: totalsEf.total, forma_pago: "efectivo", sucursal: orderEf.sucursal, tipo_entrega: orderEf.tipoEntrega, canal: orderEf.canal, confirmed_at: orderEf.confirmedAt, estado: 'recibido', factura: orderEf.factura, email_factura: orderEf.emailFactura, viene_de_carta: orderEf.vieneDeCarta, observaciones_generales: orderEf.observacionesGenerales, asesor_intervenido: orderEf.asesorIntervenido }).catch(e => console.error("❌ savePedido:", e));
@@ -4940,6 +4986,7 @@ return res.sendStatus(200);
         { id: "bancolombia", title: "Bancolombia/Llave🏦" }
       ]
     );
+    await ofrecerDescuentoEnPago(phone);
     return res.sendStatus(200);
   }
 
@@ -4967,6 +5014,7 @@ return res.sendStatus(200);
         { id: "bancolombia", title: "Bancolombia/Llave🏦" }
       ]
     );
+    await ofrecerDescuentoEnPago(phone);
     return res.sendStatus(200);
   }
 
@@ -4994,6 +5042,12 @@ return res.sendStatus(200);
 
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
+
+    // Consumir el descuento acumulado si se aplicó en este pedido
+    if (order.descuentoPct) {
+      order.observacionesGenerales = ((order.observacionesGenerales || "") + ` [Descuento ${order.descuentoPct}% aplicado]`).trim();
+      resetDescuento(phone).catch(() => {});
+    }
 
     await upsertCustomer({
       phone: phone,
@@ -5598,6 +5652,20 @@ cron.schedule("0 16 * * *", async () => {
 }, { timezone: "America/Bogota" });
 console.log("🕓 Cron registrado – job 4pm America/Bogota activo");
 
+// Recordatorio de descuento acumulado (cada cliente ~cada 15 días)
+cron.schedule("0 10 * * *", async () => {
+  const clientes = await getClientesParaRecordarDescuento();
+  console.log(`🎁 Recordatorio descuento: ${clientes.length} cliente(s)`);
+  for (const c of clientes) {
+    try {
+      await sendWhatsAppMessage(c.phone,
+        `🎁 ¡Hola ${c.name || ""}! En LAS CREPES tienes *${c.descuento_acumulado}%* de descuento acumulado 🥞\nÚsalo escribiendo *usar descuento* en tu próximo pedido. ¡Te esperamos! 😋`);
+      await marcarRecordatorioDescuento(c.phone);
+    } catch (e) { console.error("❌ Recordatorio descuento:", e); }
+  }
+}, { timezone: "America/Bogota" });
+console.log("🎁 Cron registrado – recordatorio de descuento (10am America/Bogota)");
+
 // ── Panel web de conversaciones ──────────────────────────────────────────────
 app.get('/panel', (req, res) => {
   const key = req.query.key;
@@ -5742,14 +5810,23 @@ app.post('/api/pedidos/:id/estado', async (req, res) => {
   if (!estado || isNaN(id) || !ESTADOS_VALIDOS.includes(estado)) {
     return res.status(400).json({ error: "Parámetros inválidos" });
   }
+  const pedidoAntes = await getPedidoById(id);
+  const yaEntregado = pedidoAntes?.estado === "entregado";
   await updatePedidoEstado(id, estado);
   const pedido = await getPedidoById(id);
   if (pedido?.phone) {
     const nombre = pedido.nombre || "Cliente";
+    let msgEntregado = `✅ ¡Hola ${nombre}! Tu pedido fue entregado.\nGracias por tu orden 🥞`;
+    if (estado === "entregado" && !yaEntregado) {
+      const nuevoDesc = await incrementarDescuento(pedido.phone);
+      if (nuevoDesc > 0) {
+        msgEntregado += `\n\n🎁 Acumulaste *${nuevoDesc}%* de descuento para tu próximo pedido. Escríbenos *usar descuento* cuando quieras aplicarlo 😊`;
+      }
+    }
     const msgs: Record<string, string> = {
       en_preparacion: `🍳 ¡Hola ${nombre}! Tu pedido está en preparación. ¡Ya casi! 🥞`,
       en_camino:      `🛵 ¡Hola ${nombre}! Tu pedido está en camino 🛵\nPronto podrás disfrutar de tus deliciosas crepes 🥞`,
-      entregado:      `✅ ¡Hola ${nombre}! Tu pedido fue entregado.\nGracias por tu orden 🥞 ¡Hasta pronto!`
+      entregado:      msgEntregado
     };
     sendWhatsAppMessage(pedido.phone, msgs[estado])
       .catch(e => console.error("❌ Notif estado:", e));

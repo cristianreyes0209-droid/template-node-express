@@ -88,6 +88,8 @@ export type CustomerOrder = {
   cartFreeTextAttempts?: number;
   armandoFallbacks?: number;
   asesorIntervenido?: boolean;
+  descuentoPct?: number;          // % de descuento aplicado a ESTE pedido
+  descuentoDisponible?: number;   // cache del descuento acumulado del cliente
   upsellingFrutasMostrado?: boolean;
   upsellingTocinetaMostrado?: boolean;
   upsellingToppingsMostrado?: boolean;
@@ -140,9 +142,12 @@ export function calculateTotal(order: CustomerOrder, valorDomicilioOverride?: nu
   // Domicilio gratis cuando subtotal >= $100.000
   const domicilio = (subtotal >= 100000 && domicilioBase > 0) ? 0 : domicilioBase;
 
-  const total = subtotal + domicilio;
+  // Descuento acumulado (aplica solo sobre el subtotal de productos)
+  const descuento = order.descuentoPct ? Math.round(subtotal * order.descuentoPct / 100) : 0;
 
-  return { subtotal, domicilio, total };
+  const total = subtotal + domicilio - descuento;
+
+  return { subtotal, domicilio, descuento, total };
 }
 
 export function setPendingClarification(

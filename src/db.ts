@@ -71,6 +71,10 @@ pool.connect()
       .catch(err => console.error("❌ Error agregando columna observaciones_generales:", err));
     await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS asesor_intervenido BOOLEAN DEFAULT false`)
       .catch(err => console.error("❌ Error agregando columna asesor_intervenido:", err));
+    await client.query(`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS descuento_acumulado INTEGER DEFAULT 0`)
+      .catch(err => console.error("❌ Error agregando columna descuento_acumulado:", err));
+    await client.query(`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS descuento_recordatorio_at TIMESTAMPTZ`)
+      .catch(err => console.error("❌ Error agregando columna descuento_recordatorio_at:", err));
     client.release();
   })
   .catch((err) => {
@@ -262,6 +266,62 @@ export async function updatePedidoEstado(id: number, estado: string): Promise<vo
     );
   } catch (error) {
     console.error("❌ Error updatePedidoEstado:", error);
+  }
+}
+
+// ── Programa de descuento acumulable ────────────────────────────────────────
+export async function getDescuento(phone: string): Promise<number> {
+  try {
+    const r = await pool.query(`SELECT descuento_acumulado FROM clientes WHERE phone = $1 LIMIT 1`, [normalizePhone(phone)]);
+    return r.rows[0]?.descuento_acumulado ?? 0;
+  } catch (error) {
+    console.error("❌ Error getDescuento:", error);
+    return 0;
+  }
+}
+
+export async function incrementarDescuento(phone: string): Promise<number> {
+  try {
+    const r = await pool.query(
+      `INSERT INTO clientes (phone, descuento_acumulado) VALUES ($1, 1)
+       ON CONFLICT (phone) DO UPDATE SET descuento_acumulado = LEAST(clientes.descuento_acumulado + 1, 30), updated_at = NOW()
+       RETURNING descuento_acumulado`,
+      [normalizePhone(phone)]
+    );
+    return r.rows[0]?.descuento_acumulado ?? 1;
+  } catch (error) {
+    console.error("❌ Error incrementarDescuento:", error);
+    return 0;
+  }
+}
+
+export async function resetDescuento(phone: string): Promise<void> {
+  try {
+    await pool.query(`UPDATE clientes SET descuento_acumulado = 0, updated_at = NOW() WHERE phone = $1`, [normalizePhone(phone)]);
+  } catch (error) {
+    console.error("❌ Error resetDescuento:", error);
+  }
+}
+
+export async function getClientesParaRecordarDescuento() {
+  try {
+    const r = await pool.query(
+      `SELECT phone, name, descuento_acumulado FROM clientes
+       WHERE descuento_acumulado > 0
+         AND (descuento_recordatorio_at IS NULL OR descuento_recordatorio_at < NOW() - INTERVAL '15 days')`
+    );
+    return r.rows;
+  } catch (error) {
+    console.error("❌ Error getClientesParaRecordarDescuento:", error);
+    return [];
+  }
+}
+
+export async function marcarRecordatorioDescuento(phone: string): Promise<void> {
+  try {
+    await pool.query(`UPDATE clientes SET descuento_recordatorio_at = NOW() WHERE phone = $1`, [normalizePhone(phone)]);
+  } catch (error) {
+    console.error("❌ Error marcarRecordatorioDescuento:", error);
   }
 }
 
