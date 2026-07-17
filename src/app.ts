@@ -20,7 +20,7 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
-import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion } from './parser';
+import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, extractExtrasFromFragment, extractObservaciones } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
@@ -410,6 +410,31 @@ function formatLineaItem(item: any, withPrice = false): string {
   const linea = `* ${item.producto}${item.variante ? " - " + item.variante : ""}${extrasTexto} ×${item.cantidad}${precioTexto}`;
   const obsLinea = item.observaciones ? `\n  📝 ${formatObservaciones(item.observaciones)}` : "";
   return linea + obsLinea;
+}
+
+// Aplica adiciones ("adicional de X"/"con X") y observaciones ("sin X"/"poco X") escritas como
+// texto libre al ÚLTIMO ítem del carrito. Reutiliza los extractores del parser (basados en
+// disparadores, que NO toman "sin X" como extra). Devuelve el resumen aplicado o null.
+function modificarItemPorTexto(order: any, textoRaw: string): { agregados: string[]; obs?: string } | null {
+  if (!order?.items?.length) return null;
+  const lastItem = order.items[order.items.length - 1];
+  const extraProducts = ((menu.categorias as any[]).find((c: any) => c.id === "extras")?.productos) || [];
+  const prod = (menu.categorias as any[]).flatMap((c: any) => c.productos).find((p: any) => p.id === lastItem.productoId);
+
+  const extras = extractExtrasFromFragment(textoRaw, extraProducts, prod); // ignora "sin X", respeta extrasDisponibles
+  const obs = extractObservaciones(textoRaw.toLowerCase());                // "sin champiñones", "poco queso", etc.
+
+  const agregados: string[] = [];
+  lastItem.extras = lastItem.extras || [];
+  for (const e of extras) {
+    if (!lastItem.extras.find((x: any) => x.nombre === e.nombre)) {
+      lastItem.extras.push(e);
+      agregados.push(e.nombre);
+    }
+  }
+  if (obs) lastItem.observaciones = lastItem.observaciones ? `${lastItem.observaciones}, ${obs}` : obs;
+
+  return (agregados.length || obs) ? { agregados, obs } : null;
 }
 
 function getObservacionGeneralTexto(order: any) {
@@ -2251,6 +2276,23 @@ if (
     return res.sendStatus(200);
   }
 
+  // 1c. Adiciones ("adicional de X") + observaciones ("sin X") como texto libre → al último ítem
+  if (currentOrder.items.length > 0) {
+    const mod = modificarItemPorTexto(currentOrder, text);
+    if (mod) {
+      currentOrder = getOrder(phone)!;
+      const partes: string[] = [];
+      if (mod.agregados.length) partes.push("➕ " + mod.agregados.join(", "));
+      if (mod.obs) partes.push("📝 " + mod.obs);
+      const resumenMod = currentOrder.items.map((i: any) => formatLineaItem(i, true)).join("\n");
+      await sendWhatsAppButtons(phone,
+        `Anotado ✅ ${partes.join(" · ")}\n\n${resumenMod}\n\n¿Qué deseas hacer?`,
+        [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
+      );
+      return res.sendStatus(200);
+    }
+  }
+
   // 2. Detección de extra/adición por keyword
   const EXTRAS_MAP: { keywords: string[]; nombre: string; precio: number }[] = [
     { keywords: ["tocineta", "tocino", "bacon"],                       nombre: "Tocineta",     precio: 5500 },
@@ -2266,7 +2308,8 @@ if (
   const esAdicion = lower.includes("con ") || lower.includes("adicion") || lower.includes("adición") ||
     lower.includes("agregar ") || lower.includes("añadir") || lower.includes("añade") || lower.startsWith("extra ");
   if (currentOrder.items.length > 0) {
-    const extraMatch = EXTRAS_MAP.find(e => e.keywords.some(k => lower.includes(k)));
+    const extraMatch = EXTRAS_MAP.find(e => e.keywords.some(k =>
+      lower.includes(k) && !new RegExp(`\\b(sin|no)\\s+${k}`, "i").test(lower)));
     if (extraMatch && (esAdicion || lower.split(" ").length <= 3)) {
       const lastItem = currentOrder.items[currentOrder.items.length - 1];
       lastItem.extras = lastItem.extras || [];
@@ -4261,8 +4304,26 @@ return res.sendStatus(200);
       }
       return res.sendStatus(200);
     }
-    // Texto libre (no pregunta) → guardarlo como observación del pedido
+    // Adiciones ("adicional de X") + observaciones ("sin X") como texto libre → al último ítem
     currentOrder.cartFreeTextAttempts = 0;
+    const modConf = modificarItemPorTexto(currentOrder, text);
+    if (modConf) {
+      currentOrder = getOrder(phone)!;
+      const partesConf: string[] = [];
+      if (modConf.agregados.length) partesConf.push("➕ " + modConf.agregados.join(", "));
+      if (modConf.obs) partesConf.push("📝 " + modConf.obs);
+      const resumenConf = currentOrder.items.map((i: any) => formatLineaItem(i, true)).join("\n");
+      await sendWhatsAppButtons(phone,
+        `Anotado ✅ ${partesConf.join(" · ")}\n\n${resumenConf}\n\n¿Qué deseas hacer?`,
+        [
+          { id: "confirmar",   title: "✅ Confirmar" },
+          { id: "agregar_mas", title: "➕ Agregar" },
+          { id: "eliminar",    title: "🗑️ Quitar" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
+    // Texto libre (no pregunta) → guardarlo como observación del pedido
     if (esObservacionDireccion(text)) updateOrderDireccionNotes(phone, text);
     else updateOrderGeneralNotes(phone, text);
     await sendWhatsAppButtons(phone,

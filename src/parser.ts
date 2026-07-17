@@ -355,23 +355,26 @@ function escapeRegex(text: string) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function extractObservaciones(fragment: string): string | undefined {
+export function extractObservaciones(fragment: string): string | undefined {
   const text = fragment.toLowerCase();
   const observaciones: string[] = [];
 
-  // Captura "sin X" o "sin X Y" pero NO incluye palabras de unión como "con", "y", "de" en la obs
-  const sinRegex = /\bsin\s+(\w+(?:\s+(?!con\b|y\b|de\b|o\b)\w+)?)/g;
+  // Captura "sin X" o "sin X Y" pero NO incluye conectores ("con","y","de","o") ni disparadores
+  // de adición ("adicional","extra","mas"...) como parte de la observación (ej. "sin champiñones adicional de piña").
+  // Nota: [\wáéíóúüñ] incluye ñ/acentos, que \w de JS excluye (evita truncar "champiñones" → "champi")
+  const STOP2 = /^(con|y|e|de|o|u|adicional|adicion|adición|extra|mas|más|agregar|añadir|añade|anadir)$/i;
+  const sinRegex = /\bsin\s+([\wáéíóúüñ]+)(?:\s+([\wáéíóúüñ]+))?/gi;
   let m: RegExpExecArray | null;
   while ((m = sinRegex.exec(text)) !== null) {
-    // Quitar trailing stop words que se hayan colado
-    const obs = m[1].replace(/\s+(con|y|de|o)$/i, "").trim();
-    observaciones.push(`sin ${obs}`);
+    let obs = m[1];
+    if (m[2] && !STOP2.test(m[2])) obs += ` ${m[2]}`;
+    observaciones.push(`sin ${obs.trim()}`);
   }
 
-  const pocoMatch = text.match(/\bpoco\s+(\w+)/);
+  const pocoMatch = text.match(/\bpoco\s+([\wáéíóúüñ]+)/i);
   if (pocoMatch) observaciones.push(`poco ${pocoMatch[1]}`);
 
-  const bienMatch = text.match(/\bbien\s+(\w+)/);
+  const bienMatch = text.match(/\bbien\s+([\wáéíóúüñ]+)/i);
   if (bienMatch) observaciones.push(`bien ${bienMatch[1]}`);
 
   return observaciones.length > 0 ? observaciones.join(", ") : undefined;
@@ -518,7 +521,7 @@ function findVariantInFragment(fragment: string, product: any) {
   return strongest[0].variante;
 }
 
-function extractExtrasFromFragment(fragment: string, extrasProducts: any[], product?: any) {
+export function extractExtrasFromFragment(fragment: string, extrasProducts: any[], product?: any) {
   const text = normalizeText(fragment);
   const extrasFound: ParsedExtra[] = [];
 
