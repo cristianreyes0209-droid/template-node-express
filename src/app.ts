@@ -114,6 +114,19 @@ async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: st
   console.log("RESPUESTA BOTONES META:", data);
   saveMessage(phone, "bot", safeBody).catch(() => {});
 }
+// Link de la carta digital. Para clientes recurrentes se le agregan nombre y dirección
+// guardados como parámetros, para que la carta pre-llene esos campos.
+const CARTA_URL = process.env.CARTA_URL || "https://menu.tecmenu.com";
+function cartaLink(customer: any): string {
+  const n = customer?.name?.trim();
+  const d = customer?.last_address?.trim();
+  if (!n && !d) return CARTA_URL;
+  const p = new URLSearchParams();
+  if (n) p.set("nombre", n);
+  if (d) p.set("direccion", d);
+  return `${CARTA_URL}?${p.toString()}`;
+}
+
 function isWithinBusinessHours(_tipoEntrega: "domicilio" | "recoger"): boolean {
   const bogotaStr = new Date().toLocaleString("en-US", { timeZone: "America/Bogota" });
   const bogotaDate = new Date(bogotaStr);
@@ -3689,7 +3702,7 @@ return res.sendStatus(200);
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
     replyMessage =
-      "Perfecto 👍\n\nPuedes ver nuestro menú aquí:\nhttps://menu.tecmenu.com\n\n" +
+      `Perfecto 👍\n\nPuedes ver nuestro menú aquí:\n${cartaLink(customer)}\n\n` +
       "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\n" +
       "Si necesitas contactarnos:\n📞 606 341 3020\n\n" +
       "Si ya sabes qué ordenar ¡te puedo tomar el pedido por acá! Escríbeme qué deseas 😊";
@@ -3781,7 +3794,7 @@ return res.sendStatus(200);
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
     replyMessage =
-      "Perfecto 👍\n\nPuedes ver nuestro menú aquí:\nhttps://menu.tecmenu.com\n\n" +
+      `Perfecto 👍\n\nPuedes ver nuestro menú aquí:\n${cartaLink(customer)}\n\n` +
       "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\n" +
       "Si necesitas contactarnos:\n📞 606 345 0257\n\n" +
       "Si ya sabes qué ordenar ¡te puedo tomar el pedido por acá! Escríbeme qué deseas 😊";
