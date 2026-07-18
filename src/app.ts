@@ -2070,6 +2070,31 @@ console.log("CURRENT ORDER:", currentOrder?.step);
 console.log("LOWER:", lower);
 console.log("===================");
 
+// Escalar a un asesor real cuando el cliente pide EXPLÍCITAMENTE hablar con una persona/humano/asesor
+const pideHumano =
+  lower.includes("hablar con una persona") || lower.includes("hablar con alguien") ||
+  lower.includes("hablar con un humano") || lower.includes("hablar con humano") ||
+  lower.includes("con una persona") || lower.includes("una persona real") ||
+  lower.includes("un humano") || lower.includes("un agente") || lower.includes("un operador") ||
+  lower.includes("quiero hablar con") || lower.includes("hablar con asesor") ||
+  lower.includes("hablar con un asesor") || lower.includes("quiero un asesor") ||
+  lower.includes("necesito una persona") || lower.includes("atienda una persona") ||
+  lower === "asesor" || lower === "humano" || lower === "persona" || lower === "agente";
+
+if (
+  (currentOrder?.step === "armando_pedido" || currentOrder?.step === "post_agregar_producto" ||
+   currentOrder?.step === "esperando_confirmacion") && pideHumano
+) {
+  updateOrderStep(phone, "esperando_asesor");
+  currentOrder = getOrder(phone)!;
+  const nombreH = currentOrder.nombre || customer?.name || phone;
+  try { await sendWhatsAppMessage("573151913928", `💬 CLIENTE PIDE ASESOR\n\n👤 ${nombreH}\n📞 ${phone}\n💬 "${text}"`); } catch (e) {}
+  await sendWhatsAppMessage(phone,
+    "Te comunico con un asesor 😊 En breve alguien te ayudará.\n\nO llámanos directamente:\n📞 La Villa: 606 341 3020 | Circunvalar: 606 345 0257"
+  );
+  return res.sendStatus(200);
+}
+
 // Redirigir a asesor cuando el cliente pide ayuda durante el pedido
 if (
   (currentOrder?.step === "armando_pedido" || currentOrder?.step === "post_agregar_producto") &&

@@ -584,7 +584,21 @@ export const menu = {
         "pollo con champinones",
         "crepe pollo champiñon",
         "crepe de pollo y champiñones",
-        "crepe pollo champiñones"
+        "crepe pollo champiñones",
+        "champiñon con pollo",
+        "champinon con pollo",
+        "champiñones con pollo",
+        "champinones con pollo",
+        "champiñon y pollo",
+        "champinon y pollo",
+        "champiñones y pollo",
+        "champinones y pollo",
+        "champiñon pollo",
+        "champinon pollo",
+        "champiñones pollo",
+        "champinones pollo",
+        "crepe de champiñon con pollo",
+        "crepe champiñon con pollo"
       ],
       modificadoresComunes: [
         "sin pollo",
