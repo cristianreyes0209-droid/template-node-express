@@ -621,10 +621,54 @@ function parseCartaDigitalText(text: string) {
   if (cur) items.push(cur);
 
   const totalMatch = text.match(/\*TOTAL:\s*\$\s*([\d.,]+)\*/);
+  const nombreM = text.match(/Nombre:\*?\s*(.+)/i);
+  const dirM    = text.match(/Direcci[oó]n:\*?\s*(.+)/i);
   return {
     items,
-    total: toNum(totalMatch?.[1] || "0")
+    total: toNum(totalMatch?.[1] || "0"),
+    nombre:    nombreM?.[1]?.replace(/\*+$/, "").trim() || undefined,
+    direccion: dirM?.[1]?.replace(/\*+$/, "").trim() || undefined
   };
+}
+
+// Liquida el domicilio para la dirección ya guardada (pedido de carta digital) y muestra la
+// confirmación de dirección. Reutiliza calcularDomicilio y el step esperando_confirmacion_direccion.
+async function liquidarDomicilioCartaYConfirmar(phone: string, res: any) {
+  const order = getOrder(phone)!;
+  order.valorDomicilio = undefined; order.distanciaKm = undefined; order.domicilioTexto = undefined;
+  let valorDomicilio = 4500, descripcionDomicilio = "", fueraDeRango = false;
+  try {
+    const calculo = await calcularDomicilio(order.direccion || "", order.sucursal || "la_villa", calculateTotal(order).subtotal);
+    fueraDeRango = !!calculo.fueraDeRango;
+    valorDomicilio = calculo.valorDomicilio;
+    descripcionDomicilio = calculo.descripcion;
+    order.valorDomicilio = valorDomicilio;
+    order.distanciaKm = calculo.distanciaKm;
+    order.domicilioTexto = calculo.descripcion;
+  } catch (e) { console.log("Error calculando domicilio carta:", e); }
+
+  if (fueraDeRango) {
+    // Dirección de texto poco fiable (probable otra ciudad) → pedir GPS o reescribir
+    order.valorDomicilio = undefined; order.distanciaKm = undefined; order.domicilioTexto = undefined;
+    updateOrderStep(phone, "esperando_direccion");
+    await sendWhatsAppMessage(phone,
+      "No pude calcular bien el domicilio para esa dirección 📍 Compárteme tu *ubicación GPS* o escríbela de nuevo con barrio y ciudad 😊"
+    );
+    return res.sendStatus(200);
+  }
+
+  updateOrderStep(phone, "esperando_confirmacion_direccion");
+  await sendWhatsAppButtons(phone,
+    `¿Es correcta esta dirección? 📍\n\n*${order.direccion}*` +
+    (descripcionDomicilio ? `\n\n${descripcionDomicilio}` : "") +
+    `\n💵 Domicilio: $${valorDomicilio.toLocaleString("es-CO")}`,
+    [
+      { id: "a", title: "Confirmar ✅" },
+      { id: "b", title: "Corregir ✏️" },
+      { id: "c", title: "Complementar 📝" }
+    ]
+  );
+  return res.sendStatus(200);
 }
 async function handleOperationalRouting(order: any, totals: any) {
   const numeroOrden = await getNextOrderNumberForDay();
@@ -2045,6 +2089,26 @@ if (text.includes("PEDIDO - LAS CREPES")) {
 
   currentOrder = getOrder(phone)!;
   currentOrder.vieneDeCarta = true;
+
+  // Si la carta trae nombre + dirección → guardarlos y saltar directo a rectificar dirección + liquidar domicilio
+  if (cdParsed.nombre && cdParsed.direccion) {
+    updateOrderName(phone, cdParsed.nombre);
+    updateOrderDeliveryType(phone, "domicilio");
+    updateOrderAddress(phone, cdParsed.direccion);
+    currentOrder = getOrder(phone)!;
+    if (currentOrder.sucursal) {
+      // Caso normal: la sede ya fue elegida antes de mandar el link → salto directo
+      return await liquidarDomicilioCartaYConfirmar(phone, res);
+    }
+    // Caso borde: carta como primer mensaje, sin sede → preguntar (una sola vez)
+    updateOrderStep(phone, "esperando_sucursal");
+    await sendWhatsAppButtons(phone, "Antes de continuar, ¿en cuál sucursal? 🏪", [
+      { id: "a", title: "La Villa 🏪" },
+      { id: "b", title: "Av. Circunvalar 🏪" }
+    ]);
+    return res.sendStatus(200);
+  }
+
   updateOrderStep(phone, "post_agregar_producto");
   currentOrder = getOrder(phone)!;
 
@@ -3560,7 +3624,10 @@ return res.sendStatus(200);
             { id: "recoger",   title: "Recoger en tienda 🏪" }
           ]);
         } else if (currentOrder.tipoEntrega === "domicilio") {
-          if (tieneUltimaDir) {
+          if (currentOrder.direccion) {
+            // La carta ya trajo la dirección → liquidar domicilio y confirmar directamente
+            return await liquidarDomicilioCartaYConfirmar(phone, res);
+          } else if (tieneUltimaDir) {
             updateOrderStep(phone, "esperando_confirmacion_direccion");
             currentOrder = getOrder(phone)!;
             await sendWhatsAppButtons(phone,
@@ -3649,7 +3716,10 @@ return res.sendStatus(200);
             { id: "recoger",   title: "Recoger en tienda 🏪" }
           ]);
         } else if (currentOrder.tipoEntrega === "domicilio") {
-          if (tieneUltimaDir) {
+          if (currentOrder.direccion) {
+            // La carta ya trajo la dirección → liquidar domicilio y confirmar directamente
+            return await liquidarDomicilioCartaYConfirmar(phone, res);
+          } else if (tieneUltimaDir) {
             updateOrderStep(phone, "esperando_confirmacion_direccion");
             currentOrder = getOrder(phone)!;
             await sendWhatsAppButtons(phone,
