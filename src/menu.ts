@@ -1440,7 +1440,7 @@ aliases: [
           nombre: "Jugo de Fresa",
           precio: 9900,
           tipo: "jugo",
-          aliases: ["fresa", "jugo fresa", "jugo de fresa", "jugo", "jugo natural"],
+          aliases: ["jugo fresa", "jugo de fresa", "jugo", "jugo natural"],
           variantes: [
             { id: "agua", nombre: "En agua", precio: 9900, aliases: ["en agua", "agua"] },
             { id: "leche", nombre: "En leche", precio: 11500, aliases: ["en leche", "leche"] }
