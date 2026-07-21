@@ -88,6 +88,7 @@ export type CustomerOrder = {
   cartFreeTextAttempts?: number;
   armandoFallbacks?: number;
   asesorIntervenido?: boolean;
+  botPausado?: boolean;           // asesor desconectó el bot desde el panel (silencio, conserva el paso)
   descuentoPct?: number;          // % de descuento aplicado a ESTE pedido
   descuentoDisponible?: number;   // cache del descuento acumulado del cliente
   upsellingFrutasMostrado?: boolean;

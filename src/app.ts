@@ -931,6 +931,13 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     return res.sendStatus(200);
   }
 
+  // Bot desconectado por el asesor desde el panel: silencio total y SIN cambiar el paso,
+  // para que al reconectar el bot retome el flujo justo donde iba. El mensaje del cliente ya
+  // quedó guardado (se ve en el panel) y las imágenes ya se reenviaron a la sucursal.
+  if (currentOrder?.botPausado) {
+    return res.sendStatus(200);
+  }
+
   // Reset de sesión inactiva: +2h sin interactuar → empezar flujo nuevo (cualquier step salvo asesor)
   const esMsgPedidoEntrante =
     text.includes("PEDIDO - LAS CREPES") ||
@@ -5929,18 +5936,42 @@ app.post('/api/enviar-mensaje', async (req, res) => {
     await saveMessage(phone, "asesor", mensaje);
     const sessionOrder = getOrder(phone);
     if (sessionOrder) {
-      sessionOrder.asesorIntervenido = true;
-      // Cambiar step a esperando_asesor para que el timer de inactividad se cancele
-      // y el bot quede en silencio mientras el asesor maneja la conversación
-      if (sessionOrder.step !== "confirmado") {
-        updateOrderStep(phone, "esperando_asesor");
-      }
+      // Auto-pausa: al escribir desde el panel, el bot se desconecta (silencio) pero conserva
+      // su paso, para que al reconectar retome el flujo. Se cancela el timer de inactividad.
+      sessionOrder.botPausado = true;
+      clearTimeout(inactivityTimers.get(phone));
+      inactivityTimers.delete(phone);
     }
     return res.json({ ok: true });
   } catch (err: any) {
     console.error("❌ Error enviando mensaje desde panel:", err);
     return res.status(500).json({ ok: false, error: err?.message || "Error interno" });
   }
+});
+
+// Conectar / desconectar el bot para una conversación (intervención manual del asesor)
+app.post('/api/bot-toggle', async (req, res) => {
+  const { phone, pausar, key } = req.body || {};
+  if (!key || key !== process.env.PANEL_KEY) {
+    return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  }
+  if (!phone) {
+    return res.status(400).json({ ok: false, error: "Falta phone" });
+  }
+  const order = getOrder(phone);
+  if (!order) {
+    return res.status(404).json({ ok: false, error: "No hay sesión activa para ese número" });
+  }
+  if (pausar) {
+    order.botPausado = true;
+    clearTimeout(inactivityTimers.get(phone));
+    inactivityTimers.delete(phone);
+  } else {
+    // Reconectar: el bot retoma el flujo en el paso donde quedó (silencio hasta el próximo mensaje)
+    order.botPausado = false;
+    order.asesorIntervenido = false;
+  }
+  return res.json({ ok: true, pausado: !!order.botPausado });
 });
 
 // ── Panel de operaciones ──────────────────────────────────────────────────────
@@ -5980,6 +6011,7 @@ app.get('/api/sesiones', async (req, res) => {
       tipo_entrega: o.tipoEntrega || null,
       sucursal: o.sucursal || null,
       asesor_intervenido: !!o.asesorIntervenido,
+      bot_pausado: !!o.botPausado,
       last_interaction: o.lastInteraction || null,
       confirmed_at: o.confirmedAt || null,
       items: o.items || [],
