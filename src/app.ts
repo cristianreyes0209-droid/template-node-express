@@ -683,6 +683,18 @@ async function liquidarDomicilioCartaYConfirmar(phone: string, res: any) {
   );
   return res.sendStatus(200);
 }
+// Datos de pago (Nequi/Daviplata o Bancolombia) del método ya elegido, con los números por sucursal.
+function instruccionesPago(order: any): string {
+  const total = calculateTotal(order).total;
+  if (order.formaPago === "bancolombia") {
+    const num = order.sucursal === "circunvalar" ? "27000004514" : "27033825108";
+    const llave = order.sucursal === "circunvalar" ? "0040652828" : "@niet661";
+    return `El total a pagar es: $${total.toLocaleString("es-CO")}\n\nTransferencia Bancolombia/Llave:\n🏦 Cuenta de ahorros\n💳 ${num}\n🔑 Llave: ${llave}\n\nCuando realices el pago envíame el comprobante 📸`;
+  }
+  const nequiNum = order.sucursal === "circunvalar" ? "3205839477" : "3207218267";
+  return `El total a pagar es: $${total.toLocaleString("es-CO")}\n\nPago por Nequi/Daviplata:\n📱 ${nequiNum}\n\nCuando realices el pago envíame el comprobante 📸`;
+}
+
 async function handleOperationalRouting(order: any, totals: any) {
   const numeroOrden = await getNextOrderNumberForDay();
   order.numeroOrden = numeroOrden;
@@ -3361,24 +3373,37 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     }
 
     replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
-  } else if (
-    lower.includes("efectivo") || lower.includes("nequi") || lower.includes("daviplata") ||
-    lower.includes("bancolombia") || lower.includes("cambiar pago") ||
-    lower.includes("cambio de pago") || lower.includes("otro metodo") || lower.includes("otro método")
-  ) {
-    updateOrderStep(phone, "esperando_pago_holaclick");
-    await sendWhatsAppButtons(phone,
-      "Claro 😊 ¿Cómo deseas pagar?",
-      [
-        { id: "efectivo", title: "Efectivo 💵" },
-        { id: "nequi", title: "Nequi/Daviplata 📱" },
-        { id: "bancolombia", title: "Bancolombia/Llave🏦" }
-      ]
-    );
-    return res.sendStatus(200);
   } else {
-    // Llegó texto en lugar de imagen — pedir foto
-    replyMessage = "Por favor envía una foto del comprobante 📸";
+    // Igual que en esperando_comprobante: re-escribir el mismo método no debe resetear el flujo.
+    const metodoActualHC = (getOrder(phone)!.formaPago || "");
+    const cambioIntentHC =
+      lower.includes("cambiar") || lower.includes("cambio de pago") ||
+      lower.includes("otro metodo") || lower.includes("otro método") || lower.includes("otra forma");
+    const pideNequiHC = lower.includes("nequi") || lower.includes("daviplata");
+    const pideBancoHC = lower.includes("bancolombia") || lower.includes("transferencia");
+    const pideDistintoHC = lower.includes("efectivo") ||
+      (pideNequiHC && !metodoActualHC.includes("nequi")) ||
+      (pideBancoHC && metodoActualHC !== "bancolombia");
+
+    if (cambioIntentHC || pideDistintoHC) {
+      updateOrderStep(phone, "esperando_pago_holaclick");
+      await sendWhatsAppButtons(phone,
+        "Claro 😊 ¿Cómo deseas pagar?",
+        [
+          { id: "efectivo", title: "Efectivo 💵" },
+          { id: "nequi", title: "Nequi/Daviplata 📱" },
+          { id: "bancolombia", title: "Bancolombia/Llave🏦" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
+    if (pideNequiHC || pideBancoHC) {
+      // Mismo método re-escrito → recordatorio, sin salir del step
+      replyMessage = "Ya tienes seleccionado el pago 😊 Cuando realices el pago envíame el comprobante 📸";
+    } else {
+      // Llegó texto en lugar de imagen — pedir foto
+      replyMessage = "Por favor envía una foto del comprobante 📸";
+    }
   }
 
 } else if (currentOrder?.step === "esperando_mensaje_fuera_horario") {
@@ -5040,9 +5065,8 @@ return res.sendStatus(200);
     const totalsNequi = calculateTotal(orderNequi);
     try { await handleOperationalRouting(orderNequi, totalsNequi); } catch (e) { console.error(e); }
 
-    const nequiNum = orderNequi.sucursal === "circunvalar" ? "3205839477" : "3207218267";
     await sendWhatsAppButtons(phone,
-      `Perfecto 👌\n\nEl total a pagar es: $${totalsNequi.total.toLocaleString("es-CO")}\n\nPago por Nequi/Daviplata:\n📱 ${nequiNum}\n\nCuando realices el pago envíame el comprobante 📸`,
+      `Perfecto 👌\n\n${instruccionesPago(orderNequi)}`,
       [{ id: "listo", title: "Listo, ya pagué ✅" }]
     );
     return res.sendStatus(200);
@@ -5056,16 +5080,7 @@ return res.sendStatus(200);
     const totalsBanco = calculateTotal(orderBanco);
     try { await handleOperationalRouting(orderBanco, totalsBanco); } catch (e) { console.error(e); }
 
-    const bancoNum = orderBanco.sucursal === "circunvalar" ? "27000004514" : "27033825108";
-    const bancoLlave = orderBanco.sucursal === "circunvalar" ? "0040652828" : "@niet661";
-    replyMessage =
-      "Perfecto 👌\n\n" +
-      `El total a pagar es: $${totalsBanco.total.toLocaleString("es-CO")}\n\n` +
-      "Transferencia Bancolombia/Llave:\n" +
-      "🏦 Cuenta de ahorros\n" +
-      `💳 ${bancoNum}\n` +
-      `🔑 Llave: ${bancoLlave}\n\n` +
-      "Cuando realices el pago envíame el comprobante 📸";
+    replyMessage = `Perfecto 👌\n\n${instruccionesPago(orderBanco)}`;
 
   } else if (
     lower === "eliminar" || lower.includes("modificar") ||
@@ -5313,22 +5328,41 @@ return res.sendStatus(200);
     await sendWhatsAppMessage(phone, resumenComprobante);
     replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
 
-  } else if (
-    lower.includes("efectivo") || lower.includes("nequi") || lower.includes("daviplata") ||
-    lower.includes("bancolombia") || lower.includes("cambiar pago") ||
-    lower.includes("cambio de pago") || lower.includes("otro metodo") || lower.includes("otro método")
-  ) {
-    updateOrderStep(phone, "esperando_pago");
-    await sendWhatsAppButtons(phone,
-      "Claro 😊 ¿Cómo deseas pagar?",
-      [
-        { id: "efectivo", title: "Efectivo 💵" },
-        { id: "nequi", title: "Nequi/Daviplata 📱" },
-        { id: "bancolombia", title: "Bancolombia/Llave🏦" }
-      ]
-    );
-    return res.sendStatus(200);
   } else {
+    // Distinguir "cambiar de método" (o pedir uno distinto) de "re-escribir el mismo método ya elegido".
+    // Re-escribir el mismo método NO debe resetear el flujo (si no, el cliente sale de este step y su
+    // comprobante deja de reconocerse).
+    const metodoActual = (getOrder(phone)!.formaPago || "");
+    const cambioIntent =
+      lower.includes("cambiar") || lower.includes("cambio de pago") ||
+      lower.includes("otro metodo") || lower.includes("otro método") || lower.includes("otra forma");
+    const pideNequi = lower.includes("nequi") || lower.includes("daviplata");
+    const pideBanco = lower.includes("bancolombia") || lower.includes("transferencia");
+    const pideEfectivo = lower.includes("efectivo");
+    const pideDistinto = pideEfectivo ||
+      (pideNequi && !metodoActual.includes("nequi")) ||
+      (pideBanco && metodoActual !== "bancolombia");
+
+    if (cambioIntent || pideDistinto) {
+      updateOrderStep(phone, "esperando_pago");
+      await sendWhatsAppButtons(phone,
+        "Claro 😊 ¿Cómo deseas pagar?",
+        [
+          { id: "efectivo", title: "Efectivo 💵" },
+          { id: "nequi", title: "Nequi/Daviplata 📱" },
+          { id: "bancolombia", title: "Bancolombia/Llave🏦" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
+    if (pideNequi || pideBanco) {
+      // Mismo método re-escrito → re-mostrar sus datos, sin salir de esperando_comprobante
+      await sendWhatsAppButtons(phone,
+        instruccionesPago(getOrder(phone)!),
+        [{ id: "listo", title: "Listo, ya pagué ✅" }]
+      );
+      return res.sendStatus(200);
+    }
     replyMessage = "Por favor envía una foto del comprobante 📸";
   }
 
