@@ -488,7 +488,9 @@ async function ofrecerDescuentoEnPago(phone: string) {
   order.descuentoDisponible = disp;
   if (disp > 0) {
     await sendWhatsAppButtons(phone,
-      `🎁 Tienes *${disp}%* de descuento acumulado. ¿Lo usas en este pedido?`,
+      `🎁 Tienes *${disp}%* de descuento acumulado.\n\n` +
+      `Con cada pedido que recibas sumas *+1%* más (hasta 30%). Puedes usarlo ahora o seguir acumulando para un descuento mayor 😊\n\n` +
+      `¿Lo usas en este pedido?`,
       [{ id: "usar_descuento", title: `🎁 Usar mi ${disp}%` }]
     );
   }
