@@ -467,12 +467,15 @@ async function cargarDatos(){
 
 function pedidoAFila(p){
   const est = mapEstado(p.estado);
-  const e = ESTADOS[est];
+  let e = ESTADOS[est];
+  const esRecoger = p.tipo_entrega === "recoger";
+  if (est === "camino" && esRecoger) e = { txt:"🛍️ Lista para recoger", cls:"st-camino" };
   return {
     kind:"order", id:p.id, key:"o"+p.id, ts: Date.parse(p.created_at)||0, sucursal: p.sucursal || null,
     fecha: fmtFecha(p.created_at), hora: fmtHora(p.created_at),
     tel: fmtTel(p.phone), phone: normPhone(p.phone), nombre: p.nombre || "",
     confirmada: true, abandonada: false, asistente: !!p.asesor_intervenido,
+    esRecoger,
     estadoTxt: e.txt, estadoCls: e.cls,
     activo: est !== "terminada" && esHoyVista   // botones en camino/terminada solo en la vista de hoy
   };
@@ -547,6 +550,11 @@ function renderTabla(chats){
   tbody.innerHTML = chats.map(c => {
     const activo = c.activo;
     const nombreAttr = esc(c.nombre).replace(/'/g,"&#39;");
+    const esRecogerC = !!c.esRecoger;
+    const amberTitle = esRecogerC ? "Marcar orden lista (notifica al cliente)" : "Marcar en camino (notifica al cliente)";
+    const amberIcon = esRecogerC
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="5.5" cy="17.5" r="2"/><circle cx="18.5" cy="17.5" r="2"/><path d="M12 17.5H8m7.5-9 3 9M6 8h6l2 6"/></svg>`;
     return `<tr>
       <td class="cell-date"><b>${c.fecha}</b><span>${c.hora}</span></td>
       <td>${esc(c.tel)}</td>
@@ -558,7 +566,7 @@ function renderTabla(chats){
       <td><span class="pill ${c.estadoCls}">${c.estadoTxt}</span></td>
       <td><div class="actions">
         <button class="act a-green" title="Ver detalle" onclick="verDetalle('${c.key}')"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></button>
-        <button class="act a-amber" title="Marcar en camino (notifica al cliente)" ${activo?"":"disabled"} ${activo?`onclick="cambiarEstado(${c.id},'en_camino',this)"`:""}><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><circle cx="5.5" cy="17.5" r="2"/><circle cx="18.5" cy="17.5" r="2"/><path d="M12 17.5H8m7.5-9 3 9M6 8h6l2 6"/></svg></button>
+        <button class="act a-amber" title="${amberTitle}" ${activo?"":"disabled"} ${activo?`onclick="cambiarEstado(${c.id},'en_camino',this,${esRecogerC})"`:""}>${amberIcon}</button>
         <button class="act a-blue" title="Marcar terminada (notifica al cliente)" ${activo?"":"disabled"} ${activo?`onclick="cambiarEstado(${c.id},'entregado',this)"`:""}><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg></button>
       </div></td>
     </tr>`;
@@ -634,7 +642,7 @@ function closeMenu(){
 }
 
 /* ===================== ACCIONES DE ESTADO ===================== */
-async function cambiarEstado(id, estado, btn){
+async function cambiarEstado(id, estado, btn, esRecoger){
   if(btn) btn.disabled = true;
   try{
     const r = await fetch(API+"/api/pedidos/"+id+"/estado", {
@@ -643,7 +651,10 @@ async function cambiarEstado(id, estado, btn){
       body: JSON.stringify({ estado })
     });
     if(!r.ok) throw new Error("HTTP "+r.status);
-    showToast(estado==="en_camino" ? "🛵 Marcada en camino — cliente notificado" : "✅ Marcada terminada — cliente notificado");
+    showToast(
+      estado==="entregado" ? "✅ Marcada terminada — cliente notificado"
+      : (esRecoger ? "🛍️ Orden lista — cliente notificado" : "🛵 Marcada en camino — cliente notificado")
+    );
     await cargarDatos();
   }catch(e){
     showToast("❌ No se pudo actualizar el estado");

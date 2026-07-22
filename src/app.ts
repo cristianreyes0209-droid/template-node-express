@@ -6060,9 +6060,12 @@ app.post('/api/pedidos/:id/estado', async (req, res) => {
         msgEntregado += `\n\n🎁 Acumulaste *${nuevoDesc}%* de descuento para tu próximo pedido. Escríbenos *usar descuento* cuando quieras aplicarlo 😊`;
       }
     }
+    const esRecoger = pedido.tipo_entrega === "recoger";
     const msgs: Record<string, string> = {
       en_preparacion: `🍳 ¡Hola ${nombre}! Tu pedido está en preparación. ¡Ya casi! 🥞`,
-      en_camino:      `🛵 ¡Hola ${nombre}! Tu pedido está en camino 🛵\nPronto podrás disfrutar de tus deliciosas crepes 🥞`,
+      en_camino:      esRecoger
+        ? `🛍️ ¡Hola ${nombre}! Tu orden está lista para recoger 🥞\n¡Te esperamos!`
+        : `🛵 ¡Hola ${nombre}! Tu pedido está en camino 🛵\nPronto podrás disfrutar de tus deliciosas crepes 🥞`,
       entregado:      msgEntregado
     };
     sendWhatsAppMessage(pedido.phone, msgs[estado])
@@ -6138,7 +6141,10 @@ app.put('/api/pedidos/:id/estado', async (req, res) => {
   if (pedido?.phone) {
     const nombre2 = pedido.nombre || "Cliente";
     if (estado === "en_camino") {
-      sendWhatsAppMessage(pedido.phone, `🛵 ¡Hola ${nombre2}! Tu pedido está en camino 🛵\nPronto podrás disfrutar de tus deliciosas crepes 🥞`).catch(e => console.error("❌ Notif en_camino:", e));
+      const msgEnCamino = pedido.tipo_entrega === "recoger"
+        ? `🛍️ ¡Hola ${nombre2}! Tu orden está lista para recoger 🥞\n¡Te esperamos!`
+        : `🛵 ¡Hola ${nombre2}! Tu pedido está en camino 🛵\nPronto podrás disfrutar de tus deliciosas crepes 🥞`;
+      sendWhatsAppMessage(pedido.phone, msgEnCamino).catch(e => console.error("❌ Notif en_camino:", e));
     } else if (estado === "entregado") {
       sendWhatsAppMessage(pedido.phone, `✅ ¡Hola ${nombre2}! Tu pedido fue entregado.\nGracias por tu orden 🥞 ¡Hasta pronto!`).catch(e => console.error("❌ Notif entregado:", e));
     }
