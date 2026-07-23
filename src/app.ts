@@ -991,41 +991,69 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     inactivityTimers.delete(phone);
   }
 
-  // Si el cliente confirma tras ver ingredientes de un producto, agregarlo al pedido
-  if (
-    currentOrder?.pendingProductQuery &&
-    (lower === "si" || lower === "sí" || lower === "dale" || lower === "sí quiero" ||
-     lower === "si quiero" || lower === "quiero" || lower === "sí, pedirlo" || lower === "pedirlo")
-  ) {
+  // Respuesta del cliente tras una oferta "¿Lo agrego?" / "¿Deseas pedirlo?"
+  if (currentOrder?.pendingProductQuery) {
     const ppq = currentOrder.pendingProductQuery;
-    currentOrder.pendingProductQuery = undefined;
-    const allProdsPPQ = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
-    const prodPPQ = allProdsPPQ.find((p: any) => p.id === ppq.id);
-    // Si tiene variantes, flujo normal de variante
-    if (prodPPQ?.variantes && prodPPQ.variantes.length > 0) {
-      currentOrder.pendingProduct = { id: ppq.id, nombre: ppq.nombre, precio: ppq.precio };
-      updateOrderStep(phone, "esperando_variante_producto");
-      currentOrder = getOrder(phone)!;
-      const botonesVar = prodPPQ.variantes.slice(0, 3).map((v: any) => ({
-        id: `variante_${v.id}`,
-        title: `${v.nombre} $${v.precio.toLocaleString("es-CO")}`
-      }));
-      await sendWhatsAppButtons(phone, `¿Cómo lo deseas?\n\n${ppq.nombre}`, botonesVar);
-    } else {
-      createOrUpdateOrder(phone, [{ producto: ppq.nombre, cantidad: 1, precio: ppq.precio, extras: [] }]);
-      updateOrderStep(phone, "post_agregar_producto");
-      currentOrder = getOrder(phone)!;
-      const resumenPPQ = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
-      await sendWhatsAppButtons(phone,
-        "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenPPQ + "\n\n📝 Si deseas una observación escríbela, o elige:",
-        [
-          { id: "confirmar", title: "Confirmar ✅" },
-          { id: "agregar_mas", title: "Agregar más ➕" },
-          { id: "eliminar", title: "Eliminar ➖" }
-        ]
-      );
+    const declina = lower === "no" || lower.startsWith("no ") || lower.includes("no gracias") ||
+                    lower.includes("mejor no") || lower.includes("asi no") || lower.includes("no quiero");
+    const parsedGuard = parseOrder(text);
+    const pideOtro = parsedGuard.items.length > 0 || !!parsedGuard.ambiguousChoice;   // nombró otro producto → no usar el pendiente
+    const afirma = !declina && !pideOtro && (
+      lower === "si" || lower === "sí" || lower === "dale" || lower === "ok" || lower === "okay" ||
+      lower === "listo" || lower === "eso" || lower === "por favor" || lower === "porfa" ||
+      lower.includes("quiero") || lower.includes("pedirlo") || lower.includes("agrega") ||
+      lower.includes("añad") || lower.includes("anad") || lower.includes("me da") ||
+      lower.includes("dame") || lower.includes("regala") || /^\s*\d{1,2}\s*$/.test(lower)
+    );
+
+    if (declina) {
+      currentOrder.pendingProductQuery = undefined;
+      await sendWhatsAppMessage(phone, "¡Listo! 😊 ¿Deseas algo más o ver el menú?");
+      return res.sendStatus(200);
     }
-    return res.sendStatus(200);
+
+    if (afirma) {
+      currentOrder.pendingProductQuery = undefined;
+      // Cantidad: número (3) o palabra (un/uno/una/dos…diez), tope 20
+      const palabrasNum: Record<string, number> = { un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10 };
+      let cant = 1;
+      const numMatch = lower.match(/\b(\d{1,2})\b/);
+      if (numMatch) cant = parseInt(numMatch[1]);
+      else for (const [w, n] of Object.entries(palabrasNum)) { if (new RegExp(`\\b${w}\\b`).test(lower)) { cant = n; break; } }
+      cant = Math.max(1, Math.min(20, cant));
+
+      const allProdsPPQ = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+      const prodPPQ = allProdsPPQ.find((p: any) => p.id === ppq.id);
+      // Si tiene variantes, flujo normal de variante
+      if (prodPPQ?.variantes && prodPPQ.variantes.length > 0) {
+        currentOrder.pendingProduct = { id: ppq.id, nombre: ppq.nombre, precio: ppq.precio };
+        updateOrderStep(phone, "esperando_variante_producto");
+        currentOrder = getOrder(phone)!;
+        const botonesVar = prodPPQ.variantes.slice(0, 3).map((v: any) => ({
+          id: `variante_${v.id}`,
+          title: `${v.nombre} $${v.precio.toLocaleString("es-CO")}`
+        }));
+        await sendWhatsAppButtons(phone, `¿Cómo lo deseas?\n\n${ppq.nombre}`, botonesVar);
+      } else {
+        createOrUpdateOrder(phone, [{ producto: ppq.nombre, cantidad: cant, precio: ppq.precio, extras: [] }]);
+        updateOrderStep(phone, "post_agregar_producto");
+        currentOrder = getOrder(phone)!;
+        const resumenPPQ = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+        await sendWhatsAppButtons(phone,
+          "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenPPQ + "\n\n📝 Si deseas una observación escríbela, o elige:",
+          [
+            { id: "confirmar", title: "Confirmar ✅" },
+            { id: "agregar_mas", title: "Agregar más ➕" },
+            { id: "eliminar", title: "Eliminar ➖" }
+          ]
+        );
+      }
+      return res.sendStatus(200);
+    }
+
+    // Pidió otro producto → limpiar la oferta y seguir al parser normal (lo agregará abajo)
+    if (pideOtro) currentOrder.pendingProductQuery = undefined;
+    // Si no fue ni sí, ni no, ni otro producto → cae al flujo normal conservando la oferta
   }
 
   // Si el cliente responde tras el mensaje de inactividad, re-mostrar estado actual sin procesar el texto
@@ -1682,15 +1710,21 @@ if (esConsultaDisponibilidad) {
     return res.sendStatus(200);
   }
   const allProdsDisp = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+  const normLower = normalizeText(lower);
   let matchedProd: any = null;
   for (const prod of allProdsDisp) {
     const candidates = [prod.nombre, ...(prod.aliases || [])].map((a: string) => normalizeText(a));
-    if (candidates.some((c: string) => normalizeText(lower).includes(c) && c.length >= 3)) {
+    // Match por palabra completa (\b…\b) para no confundir substrings: ej. "res" (Carne) dentro de "colores"
+    if (candidates.some((c: string) =>
+        c.length >= 3 &&
+        new RegExp(`\\b${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(normLower))) {
       matchedProd = prod;
       break;
     }
   }
   if (matchedProd) {
+    if (!currentOrder) { createOrUpdateOrder(phone, []); currentOrder = getOrder(phone)!; }
+    currentOrder.pendingProductQuery = { id: matchedProd.id, nombre: matchedProd.nombre, precio: matchedProd.precio };
     await sendWhatsAppMessage(phone,
       `Sí, tenemos *${matchedProd.nombre}* a $${matchedProd.precio.toLocaleString("es-CO")} 😊\n\n¿Lo agrego a tu pedido?`
     );
