@@ -759,8 +759,9 @@ function verDetalle(key){
   const esOrden = String(key).charAt(0)==="o";
   const idOrden = esOrden ? String(key).slice(1) : null;
   const btnImprimir = esOrden
-    ? `<div style="margin-top:14px;display:flex;justify-content:flex-end">
-         <button class="btn primary" onclick="imprimirComanda(${idOrden})">🖨️ Imprimir comanda</button>
+    ? `<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+         ${p.sucursal === "la_villa" ? `<button class="btn" onclick="imprimirComanda(${idOrden})">🖨️ Impresora automática</button>` : ""}
+         <button class="btn primary" onclick="imprimirLocal(${idOrden})">🖨️ Imprimir (local)</button>
        </div>`
     : "";
   const esDom = p.tipo_entrega === "domicilio";
@@ -789,6 +790,69 @@ async function imprimirComanda(id){
     if(r.ok && j.ok) showToast("🖨️ Comanda enviada a la impresora");
     else showToast("⚠️ "+(j.error||"No se pudo imprimir"));
   }catch(e){ showToast("❌ Error al imprimir"); }
+}
+
+/* Impresión LOCAL desde el navegador (para Circunvalar o como respaldo) */
+function buildComandaHTML(p, items){
+  const esDom = p.tipo_entrega === "domicilio";
+  const num = p.numero_orden || p.id || "";
+  let hora = "";
+  try{ if(p.created_at) hora = new Date(p.created_at).toLocaleString("es-CO",{timeZone:"America/Bogota",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",hour12:true}); }catch(e){}
+  const linea = "--------------------------------";
+  const filas = (items||[]).map(it => {
+    const extras = (it.extras||[]).filter(e=>e&&e.nombre).map(e=>"+"+e.nombre).join(", ");
+    const obs = it.observaciones ? "📝 "+esc(it.observaciones) : "";
+    return `<div class="it"><b>${it.cantidad||1}x ${esc(it.producto)}${it.variante? " - "+esc(it.variante):""}</b>`
+      + (extras? `<div class="sub">${esc(extras)}</div>`:"")
+      + (obs? `<div class="sub">${obs}</div>`:"")
+      + `</div>`;
+  }).join("") || "<div class='it'>Sin ítems</div>";
+  const montos =
+    (p.subtotal!=null ? `<div class="row"><span>Subtotal</span><span>${fmtCOP(p.subtotal)}</span></div>`:"")
+    + (esDom && p.domicilio!=null ? `<div class="row"><span>Domicilio</span><span>${fmtCOP(p.domicilio)}</span></div>`:"")
+    + `<div class="row total"><span>TOTAL</span><span>${fmtCOP(p.total)}</span></div>`;
+  const obsGen = p.observaciones_generales && String(p.observaciones_generales).trim()
+    ? `<div class="meta">📝 ${esc(p.observaciones_generales)}</div>` : "";
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Comanda #${num}</title><style>
+    @page{ margin:4mm; }
+    *{ box-sizing:border-box; }
+    body{ font-family:'Courier New',monospace; color:#000; margin:0; padding:6px; width:76mm; }
+    .center{ text-align:center; }
+    h1{ font-size:16px; margin:0; letter-spacing:1px; }
+    .suc{ font-size:13px; font-weight:bold; margin:2px 0; }
+    .num{ font-size:20px; font-weight:bold; margin:4px 0; }
+    .hr{ border-top:1px dashed #000; margin:6px 0; }
+    .it{ font-size:13px; margin:3px 0; }
+    .it b{ font-size:14px; }
+    .sub{ font-size:12px; padding-left:12px; }
+    .row{ display:flex; justify-content:space-between; font-size:13px; }
+    .row.total{ font-size:16px; font-weight:bold; margin-top:4px; }
+    .meta{ font-size:12px; margin-top:6px; word-break:break-word; }
+  </style></head><body>
+    <div class="center"><h1>LAS CREPES 🥞</h1><div class="suc">${SUC_NOMBRE[p.sucursal]||"Sucursal"}</div>
+      <div class="num">Pedido #${num}</div>${hora? `<div style="font-size:12px">${esc(hora)}</div>`:""}</div>
+    <div class="hr"></div>
+    ${filas}
+    <div class="hr"></div>
+    ${montos}
+    <div class="hr"></div>
+    <div class="meta">👤 ${p.nombre? esc(p.nombre):"—"}<br>📞 ${esc(fmtTel(p.phone))}<br>
+      ${esDom ? "📍 "+esc(p.direccion||"—") : "🏪 Recoger en tienda"}<br>💳 ${esc(p.forma_pago||"—")}</div>
+    ${obsGen}
+  </body></html>`;
+}
+function imprimirLocal(id){
+  const p = PEDIDOS.find(x => String(x.id) === String(id));
+  if(!p){ showToast("No encontré el pedido"); return; }
+  let items = p.items; if(typeof items==="string"){ try{items=JSON.parse(items);}catch(e){items=[];} }
+  const ifr = document.createElement("iframe");
+  ifr.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+  document.body.appendChild(ifr);
+  const doc = ifr.contentWindow.document;
+  doc.open(); doc.write(buildComandaHTML(p, items||[])); doc.close();
+  ifr.contentWindow.focus();
+  showToast("🖨️ Abriendo impresión…");
+  setTimeout(()=>{ try{ ifr.contentWindow.print(); }catch(e){} setTimeout(()=>ifr.remove(), 1500); }, 350);
 }
 
 /* ===================== CHAT DEL BOT ===================== */
