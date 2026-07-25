@@ -272,6 +272,7 @@
           <input type="date" id="fechaSel" class="btn" onchange="setFecha(this.value)">
           <button class="btn" id="nextDayBtn" onclick="cambiarDia(1)" title="Día siguiente">▶</button>
         </div>
+        <button class="btn" id="soundBtn" onclick="toggleSonido()" title="Activar/silenciar alertas de sonido">🔔 Alertas</button>
         <button class="btn primary" onclick="cargarDatos()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Actualizar</button>
       </div>
     </div>
@@ -399,6 +400,7 @@ function arrancar(k){
   const fi = document.getElementById("fechaSel");
   fi.value = fechaSel; fi.max = fechaSel;
   document.getElementById("nextDayBtn").disabled = true;
+  actualizarSonidoBtn();
   cargarDatos();
   setInterval(cargarDatos, 10000);
 }
@@ -424,6 +426,78 @@ function cambiarDia(delta){
   document.querySelectorAll(".nav a").forEach(a => a.addEventListener("click", closeMenu));
   if(k){ validarKey(k).then(ok=>{ if(ok) arrancar(k); }); }
 })();
+
+/* ===================== ALERTAS DE SONIDO ===================== */
+let sonidoOn = (localStorage.getItem("lc_sonido") !== "0");   // por defecto activado
+let audioCtx = null;
+function initAudio(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }catch(e){}
+}
+// Desbloquear el audio con la primera interacción del operador (requisito de los navegadores)
+document.addEventListener("click", initAudio);
+document.addEventListener("keydown", initAudio);
+
+function beep(freq, startOffset, dur, vol){
+  if(!audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = "square";                 // onda cuadrada = fuerte
+  o.frequency.value = freq;
+  o.connect(g); g.connect(audioCtx.destination);
+  const t = audioCtx.currentTime + startOffset;
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+  o.start(t); o.stop(t + dur);
+}
+function playAlert(tipo){
+  if(!sonidoOn) return;
+  initAudio();
+  if(!audioCtx) return;
+  if(tipo === "pedido"){
+    // Timbre alegre "ding-ding" (dos veces, fuerte)
+    beep(880,0,0.18,0.65); beep(1245,0.2,0.3,0.65);
+    beep(880,0.6,0.18,0.65); beep(1245,0.8,0.3,0.65);
+  } else {
+    // Solicitud de asesor: alarma urgente (beeps repetidos)
+    for(let i=0;i<4;i++) beep(700,i*0.28,0.16,0.8);
+    beep(990,4*0.28,0.4,0.8);
+  }
+}
+function toggleSonido(){
+  sonidoOn = !sonidoOn;
+  localStorage.setItem("lc_sonido", sonidoOn ? "1" : "0");
+  actualizarSonidoBtn();
+  if(sonidoOn){ initAudio(); playAlert("pedido"); showToast("🔔 Alertas de sonido activadas"); }
+  else showToast("🔕 Alertas de sonido silenciadas");
+}
+function actualizarSonidoBtn(){
+  const b = document.getElementById("soundBtn");
+  if(b) b.textContent = sonidoOn ? "🔔 Alertas" : "🔕 Silenciado";
+}
+
+let seenPedidoIds = new Set();
+let seenAsesor = new Set();
+let alertBaseline = false;            // false → re-basear en silencio en la próxima carga de "hoy"
+function detectarAlertas(esHoy){
+  if(!esHoy){ alertBaseline = false; return; }   // fuera de hoy no se alerta; re-basea al volver
+  const ids = new Set(PEDIDOS.map(p => p.id));
+  const asesor = SESIONES.filter(s => s.step === "esperando_asesor").map(s => normPhone(s.phone));
+  if(!alertBaseline){                            // primera carga / regreso a hoy: registrar sin sonar
+    seenPedidoIds = ids;
+    seenAsesor = new Set(asesor);
+    alertBaseline = true;
+    return;
+  }
+  let nuevosPed = 0; ids.forEach(id => { if(!seenPedidoIds.has(id)) nuevosPed++; });
+  if(nuevosPed > 0){ playAlert("pedido"); showToast(`🔔 ${nuevosPed} pedido(s) confirmado(s) nuevo(s)`); }
+  seenPedidoIds = ids;
+  let nuevosAse = 0; asesor.forEach(p => { if(!seenAsesor.has(p)) nuevosAse++; });
+  if(nuevosAse > 0){ playAlert("asesor"); showToast(`🎧 ${nuevosAse} solicitud(es) de asesor`); }
+  seenAsesor = new Set(asesor);
+}
 
 /* ===================== CARGA DE DATOS ===================== */
 const normPhone = p => String(p||"").replace(/[^\d]/g,"");
@@ -452,6 +526,8 @@ async function cargarDatos(){
       s.last_interaction && bogotaDate(s.last_interaction) === hoy &&
       !phonesConOrden.has(normPhone(s.phone))
     );
+
+    detectarAlertas(esHoy);   // sonido en pedidos confirmados nuevos y solicitudes de asesor
 
     ALLROWS = PEDIDOS.map(pedidoAFila)
       .concat(SESIONES.map(sesionAFila))
