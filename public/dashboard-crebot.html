@@ -273,6 +273,7 @@
           <button class="btn" id="nextDayBtn" onclick="cambiarDia(1)" title="Día siguiente">▶</button>
         </div>
         <button class="btn" id="soundBtn" onclick="toggleSonido()" title="Activar/silenciar alertas de sonido">🔔 Alertas</button>
+        <button class="btn" id="autoPrintBtn" onclick="toggleAutoPrint()" title="Auto-imprimir localmente los pedidos nuevos de Circunvalar">🖨️ Auto Circ.</button>
         <button class="btn primary" onclick="cargarDatos()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Actualizar</button>
       </div>
     </div>
@@ -401,6 +402,7 @@ function arrancar(k){
   fi.value = fechaSel; fi.max = fechaSel;
   document.getElementById("nextDayBtn").disabled = true;
   actualizarSonidoBtn();
+  actualizarAutoPrintBtn();
   cargarDatos();
   setInterval(cargarDatos, 10000);
 }
@@ -429,6 +431,7 @@ function cambiarDia(delta){
 
 /* ===================== ALERTAS DE SONIDO ===================== */
 let sonidoOn = (localStorage.getItem("lc_sonido") !== "0");   // por defecto activado
+let autoPrintOn = (localStorage.getItem("lc_autoprint") !== "0"); // auto-imprimir Circunvalar (por defecto activado)
 let audioCtx = null;
 function initAudio(){
   try{
@@ -477,6 +480,16 @@ function actualizarSonidoBtn(){
   const b = document.getElementById("soundBtn");
   if(b) b.textContent = sonidoOn ? "🔔 Alertas" : "🔕 Silenciado";
 }
+function toggleAutoPrint(){
+  autoPrintOn = !autoPrintOn;
+  localStorage.setItem("lc_autoprint", autoPrintOn ? "1" : "0");
+  actualizarAutoPrintBtn();
+  showToast(autoPrintOn ? "🖨️ Auto-impresión Circunvalar activada" : "🚫 Auto-impresión desactivada");
+}
+function actualizarAutoPrintBtn(){
+  const b = document.getElementById("autoPrintBtn");
+  if(b) b.textContent = autoPrintOn ? "🖨️ Auto Circ." : "🚫 Auto Circ.";
+}
 
 let seenPedidoIds = new Set();
 let seenAsesor = new Set();
@@ -491,8 +504,15 @@ function detectarAlertas(esHoy){
     alertBaseline = true;
     return;
   }
-  let nuevosPed = 0; ids.forEach(id => { if(!seenPedidoIds.has(id)) nuevosPed++; });
-  if(nuevosPed > 0){ playAlert("pedido"); showToast(`🔔 ${nuevosPed} pedido(s) confirmado(s) nuevo(s)`); }
+  const nuevosPedidos = PEDIDOS.filter(p => !seenPedidoIds.has(p.id));
+  if(nuevosPedidos.length > 0){
+    playAlert("pedido");
+    showToast(`🔔 ${nuevosPedidos.length} pedido(s) confirmado(s) nuevo(s)`);
+    if(autoPrintOn){
+      // Auto-imprimir localmente los nuevos de Circunvalar (secuencial para no encimar diálogos)
+      nuevosPedidos.filter(p => p.sucursal === "circunvalar").forEach((p, i) => setTimeout(() => imprimirLocal(p.id), i*1300));
+    }
+  }
   seenPedidoIds = ids;
   let nuevosAse = 0; asesor.forEach(p => { if(!seenAsesor.has(p)) nuevosAse++; });
   if(nuevosAse > 0){ playAlert("asesor"); showToast(`🎧 ${nuevosAse} solicitud(es) de asesor`); }
