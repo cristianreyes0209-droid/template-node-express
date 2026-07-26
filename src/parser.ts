@@ -1,8 +1,10 @@
 import { menu } from "./menu";
 
-// Modelo Gemini (sobrescribible por env si Google descontinúa uno). gemini-2.5-flash es
-// el flash vigente y multimodal (soporta audio para transcripción).
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+// Modelo Gemini (sobrescribible por env si Google descontinúa/restringe uno).
+// Se usa el alias "gemini-flash-latest": apunta siempre al flash vigente, es multimodal
+// (soporta audio para transcripción) y está disponible también para cuentas nuevas
+// (las versiones fijas como gemini-2.0/2.5-flash dan 404 "no longer available to new users").
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
 type ParsedExtra = {
   id: string;
