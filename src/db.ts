@@ -101,6 +101,28 @@ export async function getCustomerByPhone(phone: string) {
   }
 }
 
+export async function getConfig(key: string): Promise<string | null> {
+  try {
+    const r = await pool.query(`SELECT value FROM config WHERE key = $1`, [key]);
+    return r.rows[0]?.value ?? null;
+  } catch (error) {
+    console.error("❌ Error getConfig:", error);
+    return null;
+  }
+}
+
+export async function setConfig(key: string, value: string): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO config (key, value) VALUES ($1, $2)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+      [key, value]
+    );
+  } catch (error) {
+    console.error("❌ Error setConfig:", error);
+  }
+}
+
 export async function getNextOrderNumber(): Promise<number> {
   try {
     const result = await pool.query(`

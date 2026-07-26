@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "./db";
 import cron from "node-cron";
-import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento } from "./db";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig } from "./db";
 import path from "path";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -125,6 +125,40 @@ function cartaLink(customer: any): string {
   if (n) p.set("nombre", n);
   if (d) p.set("direccion", d);
   return `${CARTA_URL}?${p.toString()}`;
+}
+
+// ── Pausa / alta demanda por sucursal ─────────────────────────────────────────
+type SucKey = "la_villa" | "circunvalar";
+const pausaSuc:   Record<SucKey, boolean> = { la_villa: false, circunvalar: false };
+const demandaSuc: Record<SucKey, boolean> = { la_villa: false, circunvalar: false };
+const nombreSucursal = (s: string) => s === "circunvalar" ? "Av. Circunvalar" : "La Villa";
+
+// Cargar estado persistido al arrancar (sobrevive redeploys)
+(async () => {
+  try {
+    for (const s of ["la_villa", "circunvalar"] as SucKey[]) {
+      pausaSuc[s]   = (await getConfig(`pausa_${s}`))   === "1";
+      demandaSuc[s] = (await getConfig(`demanda_${s}`)) === "1";
+    }
+    console.log("⏸️ Estado sedes:", { pausaSuc, demandaSuc });
+  } catch (e) { console.error("❌ Error cargando estado de pausa:", e); }
+})();
+
+// Lista de espera (para avisar al reanudar) guardada en config como JSON por sede
+async function agregarEspera(suc: SucKey, phone: string) {
+  try {
+    const raw = await getConfig(`espera_${suc}`);
+    const arr: string[] = raw ? JSON.parse(raw) : [];
+    if (!arr.includes(phone)) { arr.push(phone); await setConfig(`espera_${suc}`, JSON.stringify(arr)); }
+  } catch (e) { console.error("❌ Error agregarEspera:", e); }
+}
+async function tomarEspera(suc: SucKey): Promise<string[]> {
+  try {
+    const raw = await getConfig(`espera_${suc}`);
+    const arr: string[] = raw ? JSON.parse(raw) : [];
+    await setConfig(`espera_${suc}`, "[]");
+    return arr;
+  } catch (e) { console.error("❌ Error tomarEspera:", e); return []; }
 }
 
 function isWithinBusinessHours(_tipoEntrega: "domicilio" | "recoger"): boolean {
@@ -3774,6 +3808,17 @@ return res.sendStatus(200);
     currentOrder.sucursal = "la_villa";
     currentOrder = getOrder(phone)!;
 
+    if (pausaSuc["la_villa"]) {
+      await sendWhatsAppMessage(phone,
+        `🙏 ¡Gracias por escribirnos! En este momento la sede *${nombreSucursal("la_villa")}* no está tomando pedidos por un inconveniente temporal. Apenas se normalice te avisaremos por aquí para tomar tu orden 😊🥞`);
+      await agregarEspera("la_villa", phone);
+      return res.sendStatus(200);
+    }
+    if (demandaSuc["la_villa"]) {
+      await sendWhatsAppMessage(phone,
+        `⚠️ Por *alta demanda* en este momento la sede *${nombreSucursal("la_villa")}* está tardando un poco más de lo habitual. Igual tomamos tu pedido con gusto 🙏🥞 ¡Gracias por tu paciencia!`);
+    }
+
     if (currentOrder.vieneDeCarta) {
       if (!currentOrder.nombre && !customer?.name) {
         updateOrderStep(phone, "esperando_nombre");
@@ -3865,6 +3910,17 @@ return res.sendStatus(200);
   ) {
     currentOrder.sucursal = "circunvalar";
     currentOrder = getOrder(phone)!;
+
+    if (pausaSuc["circunvalar"]) {
+      await sendWhatsAppMessage(phone,
+        `🙏 ¡Gracias por escribirnos! En este momento la sede *${nombreSucursal("circunvalar")}* no está tomando pedidos por un inconveniente temporal. Apenas se normalice te avisaremos por aquí para tomar tu orden 😊🥞`);
+      await agregarEspera("circunvalar", phone);
+      return res.sendStatus(200);
+    }
+    if (demandaSuc["circunvalar"]) {
+      await sendWhatsAppMessage(phone,
+        `⚠️ Por *alta demanda* en este momento la sede *${nombreSucursal("circunvalar")}* está tardando un poco más de lo habitual. Igual tomamos tu pedido con gusto 🙏🥞 ¡Gracias por tu paciencia!`);
+    }
 
     if (currentOrder.vieneDeCarta) {
       if (!currentOrder.nombre && !customer?.name) {
@@ -6068,6 +6124,46 @@ app.post('/api/enviar-mensaje', async (req, res) => {
 });
 
 // Conectar / desconectar el bot para una conversación (intervención manual del asesor)
+// Estado de pausa / alta demanda por sucursal
+app.get('/api/pausa', (req, res) => {
+  const key = req.query.key as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) {
+    return res.status(401).json({ error: "Acceso no autorizado" });
+  }
+  res.json({ pausa: { ...pausaSuc }, demanda: { ...demandaSuc } });
+});
+
+// Activar/desactivar pausa o alta demanda de una sede
+app.post('/api/pausa', async (req, res) => {
+  const { tipo, sucursal, activar, key } = req.body || {};
+  const panelKey = (req.headers['x-panel-key'] as string | undefined) || key;
+  if (!panelKey || panelKey !== process.env.PANEL_KEY) {
+    return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  }
+  if ((tipo !== "pausa" && tipo !== "demanda") || (sucursal !== "la_villa" && sucursal !== "circunvalar")) {
+    return res.status(400).json({ ok: false, error: "Parámetros inválidos" });
+  }
+  const suc = sucursal as SucKey;
+  const on = !!activar;
+  const cache = tipo === "pausa" ? pausaSuc : demandaSuc;
+  cache[suc] = on;
+  await setConfig(`${tipo}_${suc}`, on ? "1" : "0");
+
+  let avisados = 0;
+  if (tipo === "pausa" && !on) {
+    // Reanudar: avisar a los que quedaron esperando y limpiar la lista
+    const espera = await tomarEspera(suc);
+    for (const tel of espera) {
+      try {
+        await sendWhatsAppMessage(tel,
+          `🎉 ¡Ya estamos listos para tomar tu pedido en *${nombreSucursal(suc)}*! Si aún estás interesado/a, escríbeme y con gusto continuamos 🥞😊`);
+        avisados++;
+      } catch (e) { console.error("❌ Aviso reanudación:", e); }
+    }
+  }
+  return res.json({ ok: true, pausa: { ...pausaSuc }, demanda: { ...demandaSuc }, avisados });
+});
+
 app.post('/api/bot-toggle', async (req, res) => {
   const { phone, pausar, key } = req.body || {};
   if (!key || key !== process.env.PANEL_KEY) {

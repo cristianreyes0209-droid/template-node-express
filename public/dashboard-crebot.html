@@ -274,6 +274,10 @@
         </div>
         <button class="btn" id="soundBtn" onclick="toggleSonido()" title="Activar/silenciar alertas de sonido">🔔 Alertas</button>
         <button class="btn" id="autoPrintBtn" onclick="toggleAutoPrint()" title="Auto-imprimir localmente los pedidos nuevos de Circunvalar">🖨️ Auto Circ.</button>
+        <button class="btn" id="pauseVillaBtn" onclick="togglePausa('pausa','la_villa')" title="Pausar/reanudar pedidos de La Villa">⏸️ Pausar Villa</button>
+        <button class="btn" id="pauseCircBtn" onclick="togglePausa('pausa','circunvalar')" title="Pausar/reanudar pedidos de Circunvalar">⏸️ Pausar Circ.</button>
+        <button class="btn" id="demVillaBtn" onclick="togglePausa('demanda','la_villa')" title="Avisar alta demanda (demora) en La Villa">🔥 Demanda Villa</button>
+        <button class="btn" id="demCircBtn" onclick="togglePausa('demanda','circunvalar')" title="Avisar alta demanda (demora) en Circunvalar">🔥 Demanda Circ.</button>
         <button class="btn primary" onclick="cargarDatos()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Actualizar</button>
       </div>
     </div>
@@ -403,6 +407,7 @@ function arrancar(k){
   document.getElementById("nextDayBtn").disabled = true;
   actualizarSonidoBtn();
   actualizarAutoPrintBtn();
+  cargarEstadoSede();
   cargarDatos();
   setInterval(cargarDatos, 10000);
 }
@@ -491,6 +496,51 @@ function actualizarAutoPrintBtn(){
   if(b) b.textContent = autoPrintOn ? "🖨️ Auto Circ." : "🚫 Auto Circ.";
 }
 
+/* ===== Pausa / Alta demanda por sucursal ===== */
+let estadoSede = { pausa:{la_villa:false,circunvalar:false}, demanda:{la_villa:false,circunvalar:false} };
+async function cargarEstadoSede(){
+  if(!sessionKey) return;
+  try{
+    const r = await fetch(API+"/api/pausa?key="+encodeURIComponent(sessionKey));
+    if(r.ok) estadoSede = await r.json();
+    actualizarBotonesSede();
+  }catch(e){}
+}
+function actualizarBotonesSede(){
+  const set = (id, on, txtOn, txtOff, colorOn) => {
+    const b = document.getElementById(id);
+    if(!b) return;
+    b.textContent = on ? txtOn : txtOff;
+    b.style.background = on ? colorOn : "";
+    b.style.color = on ? "#fff" : "";
+    b.style.borderColor = on ? colorOn : "";
+  };
+  set("pauseVillaBtn", estadoSede.pausa.la_villa,    "▶️ Reanudar Villa",  "⏸️ Pausar Villa",  "#dc2626");
+  set("pauseCircBtn",  estadoSede.pausa.circunvalar, "▶️ Reanudar Circ.",  "⏸️ Pausar Circ.",  "#dc2626");
+  set("demVillaBtn",   estadoSede.demanda.la_villa,    "🔥 Demanda Villa ON",  "🔥 Demanda Villa",  "#ea580c");
+  set("demCircBtn",    estadoSede.demanda.circunvalar, "🔥 Demanda Circ. ON",  "🔥 Demanda Circ.",  "#ea580c");
+}
+async function togglePausa(tipo, suc){
+  const activar = !estadoSede[tipo][suc];
+  try{
+    const r = await fetch(API+"/api/pausa", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "x-panel-key": sessionKey },
+      body: JSON.stringify({ tipo, sucursal: suc, activar, key: sessionKey })
+    });
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok || !j.ok) throw new Error(j.error||"HTTP "+r.status);
+    estadoSede = { pausa: j.pausa, demanda: j.demanda };
+    actualizarBotonesSede();
+    const nom = suc === "circunvalar" ? "Circunvalar" : "La Villa";
+    if(tipo === "pausa"){
+      showToast(activar ? `⏸️ ${nom} pausada` : `▶️ ${nom} reanudada${j.avisados?` — avisados ${j.avisados}`:""}`);
+    } else {
+      showToast(activar ? `🔥 Alta demanda ${nom} activada` : `✅ Alta demanda ${nom} desactivada`);
+    }
+  }catch(e){ showToast("❌ "+(e.message||"No se pudo cambiar")); }
+}
+
 let seenPedidoIds = new Set();
 let seenAsesor = new Set();
 let alertBaseline = false;            // false → re-basear en silencio en la próxima carga de "hoy"
@@ -548,6 +598,7 @@ async function cargarDatos(){
     );
 
     detectarAlertas(esHoy);   // sonido en pedidos confirmados nuevos y solicitudes de asesor
+    cargarEstadoSede();       // refrescar estado de pausa/alta demanda por sede
 
     ALLROWS = PEDIDOS.map(pedidoAFila)
       .concat(SESIONES.map(sesionAFila))
