@@ -1683,6 +1683,27 @@ if (/^\d[\d\s.?,]*$/.test(lower.trim()) && currentOrder?.step === "armando_pedid
   return res.sendStatus(200);
 }
 
+// Pregunta de cobertura de domicilio ("¿tienen domicilio a X?", "¿hacen domicilio hasta Y?"),
+// incluso con saludo delante ("Hola tienen domicilio via altagracia") que rompe el ancla de abajo.
+const _stepDom = currentOrder?.step;
+const _enPasoDirEntrega = _stepDom === "esperando_tipo_entrega" || _stepDom === "esperando_direccion" ||
+  _stepDom === "esperando_confirmacion_direccion" || _stepDom === "esperando_complemento_direccion" ||
+  _stepDom === "esperando_sucursal";
+const esPreguntaCoberturaDomicilio =
+  !esMensajeLargo && !_enPasoDirEntrega &&
+  parsedItems.length === 0 && !parseResult.ambiguousChoice &&        // no es un pedido
+  (lower.includes("domicilio") || lower.includes("delivery") || lower.includes("reparto")) &&
+  (lower.includes("tienen") || lower.includes("tiene") || lower.includes("hacen") || lower.includes("hace") ||
+   lower.includes("llegan") || lower.includes("llega") || lower.includes("cubren") || lower.includes("manejan") ||
+   lower.includes("hasta") || lower.includes(" a ") || lower.includes("via") || lower.includes("vía") ||
+   lower.includes("barrio") || lower.includes("sector") || lower.includes("?"));
+if (esPreguntaCoberturaDomicilio) {
+  await sendWhatsAppMessage(phone,
+    "¡Sí! 🛵 Hacemos domicilios en Pereira. El costo se calcula por la distancia (Google Maps) cuando me compartas tu dirección.\n\n" +
+    "¿Qué te gustaría pedir? 😊 Escríbeme tu crepe y seguimos con la dirección.");
+  return res.sendStatus(200);
+}
+
 // Consulta de disponibilidad: "tiene Coca-Cola", "hay jugos", "tienen malteadas"
 const esConsultaDisponibilidad =
   !esMensajeLargo && (
