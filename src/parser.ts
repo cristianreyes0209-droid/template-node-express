@@ -1,5 +1,9 @@
 import { menu } from "./menu";
 
+// Modelo Gemini (sobrescribible por env si Google descontinúa uno). gemini-2.5-flash es
+// el flash vigente y multimodal (soporta audio para transcripción).
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+
 type ParsedExtra = {
   id: string;
   nombre: string;
@@ -693,7 +697,7 @@ export async function classifyWithAI(
   try {
     console.log(`🤖 LLAMANDO GEMINI (classifyWithAI) con texto: "${text}"`);
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -813,7 +817,7 @@ export async function parseWithAI(text: string): Promise<ParseResult> {
   try {
     console.log(`🤖 LLAMANDO GEMINI (parseWithAI) con texto: "${text}"`);
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {

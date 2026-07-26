@@ -20,7 +20,7 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
-import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, extractExtrasFromFragment, extractObservaciones } from './parser';
+import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, extractExtrasFromFragment, extractObservaciones, GEMINI_MODEL } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
@@ -183,7 +183,7 @@ async function transcribirAudioWhatsApp(mediaId: string, mimeType?: string): Pro
 
     // 3) Transcribir con Gemini (2.0 Flash acepta audio inline)
     const gemRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,
       {
         method: "POST",
         headers: { "content-type": "application/json" },
