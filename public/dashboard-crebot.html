@@ -836,18 +836,18 @@ function buildComandaHTML(p, items){
   return `<!doctype html><html><head><meta charset="utf-8"><title>Comanda #${num}</title><style>
     @page{ margin:4mm; }
     *{ box-sizing:border-box; }
-    body{ font-family:'Courier New',monospace; color:#000; margin:0; padding:6px; width:76mm; }
+    body{ font-family:'Courier New',monospace; color:#000; margin:0; padding:6px; width:76mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .center{ text-align:center; }
     h1{ font-size:16px; margin:0; letter-spacing:1px; }
     .suc{ font-size:13px; font-weight:bold; margin:2px 0; }
     .num{ font-size:20px; font-weight:bold; margin:4px 0; }
     .hr{ border-top:1px dashed #000; margin:6px 0; }
-    .it{ font-size:13px; margin:3px 0; }
+    .it{ font-size:13px; margin:3px 0; color:#000; }
     .it b{ font-size:14px; }
-    .sub{ font-size:12px; padding-left:12px; }
-    .row{ display:flex; justify-content:space-between; font-size:13px; }
+    .sub{ font-size:12px; padding-left:12px; color:#000; }
+    .row{ display:flex; justify-content:space-between; font-size:13px; color:#000; }
     .row.total{ font-size:16px; font-weight:bold; margin-top:4px; }
-    .meta{ font-size:12px; margin-top:6px; word-break:break-word; }
+    .meta{ font-size:13px; font-weight:bold; color:#000; margin-top:6px; line-height:1.5; word-break:break-word; }
   </style></head><body>
     <div class="center"><h1>LAS CREPES 🥞</h1><div class="suc">${SUC_NOMBRE[p.sucursal]||"Sucursal"}</div>
       <div class="num">Pedido #${num}</div>${hora? `<div style="font-size:12px">${esc(hora)}</div>`:""}</div>
