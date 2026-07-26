@@ -159,6 +159,54 @@ async function sendWhatsAppImageById(phone: string, mediaId: string) {
   console.log("RESPUESTA IMAGEN META:", data);
 }
 
+// Descarga una nota de voz de WhatsApp y la transcribe con Gemini. Devuelve el texto o undefined.
+async function transcribirAudioWhatsApp(mediaId: string, mimeType?: string): Promise<string | undefined> {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) { console.error("🎤 Sin GEMINI_API_KEY, no se puede transcribir"); return undefined; }
+  const token = (process.env.WHATSAPP_TOKEN || "").trim();
+  try {
+    // 1) Obtener la URL del medio a partir del id
+    const metaRes = await fetch(`https://graph.facebook.com/v18.0/${mediaId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!metaRes.ok) { console.error(`🎤 Error meta media HTTP ${metaRes.status}:`, await metaRes.text()); return undefined; }
+    const metaData = await metaRes.json() as any;
+    const mediaUrl: string | undefined = metaData?.url;
+    const mime = (metaData?.mime_type || mimeType || "audio/ogg").split(";")[0].trim();
+    if (!mediaUrl) { console.error("🎤 Media sin url"); return undefined; }
+
+    // 2) Descargar los bytes del audio
+    const audioRes = await fetch(mediaUrl, { headers: { Authorization: `Bearer ${token}` } });
+    if (!audioRes.ok) { console.error(`🎤 Error descargando audio HTTP ${audioRes.status}`); return undefined; }
+    const audioBuf = Buffer.from(await audioRes.arrayBuffer());
+    const audioB64 = audioBuf.toString("base64");
+
+    // 3) Transcribir con Gemini (2.0 Flash acepta audio inline)
+    const gemRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [
+            { inline_data: { mime_type: mime, data: audioB64 } },
+            { text: "Transcribe este audio en español. Devuelve SOLO el texto de lo que dice, sin comillas ni explicaciones." }
+          ]}],
+          generationConfig: { temperature: 0, maxOutputTokens: 512 }
+        })
+      }
+    );
+    if (!gemRes.ok) { console.error(`🎤 Error Gemini transcripción HTTP ${gemRes.status}:`, await gemRes.text()); return undefined; }
+    const gemData = await gemRes.json() as any;
+    const texto: string = (gemData?.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
+    console.log(`🎤 TRANSCRIPCIÓN: "${texto.slice(0, 200)}"`);
+    return texto || undefined;
+  } catch (e) {
+    console.error("🎤 Error transcribiendo audio:", e);
+    return undefined;
+  }
+}
+
 async function sendWhatsAppLocation(phone: string, latitude: number, longitude: number, name?: string) {
   const response = await fetch(
     `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
@@ -866,12 +914,25 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     customer.last_address.trim() !== "null" &&
     !COORDS_REGEX.test(customer.last_address.trim())
   );
+  // Nota de voz → transcribir y tratarla como si fuera un mensaje de texto normal
+  let vinoDeAudio = false;
+  if (messageData.type === "audio" && messageData.audio?.id) {
+    const transcripcion = await transcribirAudioWhatsApp(messageData.audio.id, messageData.audio.mime_type);
+    if (!transcripcion) {
+      await sendWhatsAppMessage(phone, "No pude entender el audio 🙈 ¿Me lo escribes por favor? 😊");
+      return res.sendStatus(200);   // el finally libera el lock
+    }
+    messageData.type = "text";
+    messageData.text = { body: transcripcion };
+    vinoDeAudio = true;
+  }
+
   const text = messageData.text?.body
   || messageData.interactive?.button_reply?.id
   || messageData.interactive?.list_reply?.id
   || "mensaje";
 
-  saveMessage(phone, "cliente", text).catch(() => {});
+  saveMessage(phone, "cliente", (vinoDeAudio ? "🎤 " : "") + text).catch(() => {});
   const lower = text.toLowerCase().trim();
 
   const tipoMensaje = messageData.type || "desconocido";
