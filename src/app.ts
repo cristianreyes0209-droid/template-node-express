@@ -1972,12 +1972,14 @@ if (esChangeToRecoger && currentOrder && currentOrder.step !== "confirmado") {
   return res.sendStatus(200);
 }
 
-// Consulta de toppings/extras disponibles
+// Consulta de toppings/extras disponibles (solo cuando PREGUNTAN, no cuando piden un producto)
+const esPreguntaExtras =
+  lower.includes("?") ||
+  /\b(que|qué|cuales|cuáles|cual|cuál|cuanto|cuánto|cuantos|cuántos|hay|tienen|tiene|muestrame|muéstrame|ver|lista|listado)\b/.test(lower);
 const esConsultaToppings =
-  lower.includes("topping") ||
-  (lower.includes("adicional") && (lower.includes("qu") || lower.includes("cu") || lower.includes("hay") || lower.includes("tiene") || lower.includes("cuál") || lower.includes("cual"))) ||
-  (lower.includes("extra") && (lower.includes("qu") || lower.includes("cu") || lower.includes("hay") || lower.includes("tiene")));
-if (esConsultaToppings && !esMensajeLargo) {
+  (lower.includes("topping") || lower.includes("adicional") || lower.includes("adición") || lower.includes("extra")) &&
+  esPreguntaExtras;
+if (esConsultaToppings && !esMensajeLargo && parsedItems.length === 0) {
   await sendWhatsAppMessage(phone,
     "🍽️ Nuestros toppings y extras disponibles:\n\n" +
     "🥓 Tocineta $5.500\n" +
