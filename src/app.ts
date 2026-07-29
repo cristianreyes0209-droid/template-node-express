@@ -1200,6 +1200,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
             ]
           );
         }
+        return res.sendStatus(200);
       } else if (stepInact === "esperando_pago") {
         const totalsInact = calculateTotal(currentOrder);
         await sendWhatsAppButtons(phone,
@@ -1210,15 +1211,16 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
             { id: "bancolombia", title: "Bancolombia/Llave🏦" }
           ]
         );
+        return res.sendStatus(200);
       } else if (stepInact === "esperando_comprobante" || stepInact === "esperando_comprobante_holaclick") {
         const totalsInact = calculateTotal(currentOrder);
         await sendWhatsAppMessage(phone,
           `Aquí estoy 😊\n\nEl total a pagar es: *$${totalsInact.total.toLocaleString("es-CO")}*\n\nCuando realices el pago envíame el comprobante 📸`
         );
-      } else {
-        await sendWhatsAppMessage(phone, "Aquí estoy 😊 ¿En qué te ayudo?");
+        return res.sendStatus(200);
       }
-      return res.sendStatus(200);
+      // Otros steps (captura de dato: nombre, dirección, factura, variante, aclaración, etc.):
+      // la respuesta ES el dato que se pidió → continuar al flujo normal, sin descartar el mensaje.
     }
     }
   }
