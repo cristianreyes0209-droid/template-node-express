@@ -326,15 +326,21 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
     valorDomicilio = 4500;
   }
 
-  // Domicilio gratis en pedidos >= $100.000
+  // Recargo por Dosquebradas (municipio vecino, un poco más lejos)
+  const RECARGO_DOSQUEBRADAS = 1000;
+  const esDosquebradas = /dosquebradas|dos\s*quebradas/i.test(direccionCliente);
+
+  // Domicilio gratis en pedidos >= $100.000 (la promo gana sobre el recargo)
   if (subtotalPedido && subtotalPedido >= 100000) {
     valorDomicilio = 0;
+  } else if (esDosquebradas) {
+    valorDomicilio += RECARGO_DOSQUEBRADAS;
   }
 
   const distKmRedondeado = Math.round(distanciaKm * 10) / 10;
   const descripcion = valorDomicilio === 0
     ? `${distKmRedondeado}km → 🎉 Domicilio gratis`
-    : `${distKmRedondeado}km → $${valorDomicilio.toLocaleString("es-CO")}`;
+    : `${distKmRedondeado}km → $${valorDomicilio.toLocaleString("es-CO")}${esDosquebradas ? " (incluye recargo Dosquebradas)" : ""}`;
 
   console.log("DISTANCIA KM:", distanciaKm);
   console.log("VALOR DOMICILIO:", valorDomicilio);
