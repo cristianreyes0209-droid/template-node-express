@@ -562,16 +562,19 @@ function buildResumenFooter(order: any, totals: { subtotal: number; domicilio: n
     : "";
   return "\n\nSubtotal: $" + totals.subtotal.toLocaleString("es-CO") + domicilioLinea + descuentoLinea + "\nTotal: $" + totals.total.toLocaleString("es-CO") + (obsLinea ? "\n" + obsLinea : "") + entregaLinea;
 }
-// Ofrece el botón de canje de descuento en el step de pago (si el cliente tiene acumulado y no lo ha usado)
+// El descuento se puede canjear cuando el acumulado supera este porcentaje
+const UMBRAL_CANJE = 5;
+
+// Ofrece el botón de canje de descuento en el step de pago (solo si ya supera el umbral)
 async function ofrecerDescuentoEnPago(phone: string) {
   const order = getOrder(phone);
   if (!order || order.descuentoPct) return;
   const disp = await getDescuento(phone);
   order.descuentoDisponible = disp;
-  if (disp > 0) {
+  if (disp > UMBRAL_CANJE) {
     await sendWhatsAppButtons(phone,
       `🎁 Tienes *${disp}%* de descuento acumulado.\n\n` +
-      `Con cada pedido que recibas sumas *+1%* más (hasta 30%). Puedes usarlo ahora o seguir acumulando para un descuento mayor 😊\n\n` +
+      `Sumas *1% por cada pedido* (hasta 30%). Puedes usarlo ahora o seguir acumulando para un descuento mayor 😊\n\n` +
       `¿Lo usas en este pedido?`,
       [{ id: "usar_descuento", title: `🎁 Usar mi ${disp}%` }]
     );
@@ -4006,6 +4009,16 @@ return res.sendStatus(200);
       "Si ya sabes qué ordenar ¡te puedo tomar el pedido por acá! Escríbeme qué deseas 😊";
 
   } else {
+    // Si ya había elegido sede (p.ej. estaba pausada y se reanudó) y no está pausada,
+    // no volver a preguntar la sucursal: avanzar a tomar el pedido.
+    if (currentOrder?.sucursal && !pausaSuc[currentOrder.sucursal as SucKey]) {
+      const sucElegida = currentOrder.sucursal;
+      updateOrderStep(phone, "armando_pedido");
+      currentOrder = getOrder(phone)!;
+      await sendWhatsAppMessage(phone,
+        `¡Listo! Ya puedes hacer tu pedido en *${nombreSucursal(sucElegida)}* 😊\n\nEscríbeme qué deseas 🥞`);
+      return res.sendStatus(200);
+    }
     await sendWhatsAppButtons(phone,
       "Elige la sucursal más cercana a tu destino. Esto hace tu domicilio más económico 🛵",
       [
@@ -5076,12 +5089,13 @@ return res.sendStatus(200);
   // Canje de descuento acumulado (botón o palabra clave)
   if (lower === "usar_descuento" || /(usar|aplicar|canjear)\s*(mi\s*)?(descuento|puntos)|mi descuento/i.test(lower)) {
     const orderD = getOrder(phone)!;
-    const disp = orderD.descuentoPct ? 0 : await getDescuento(phone);
-    if (disp > 0) {
-      orderD.descuentoPct = disp;
+    const yaAplicado = !!orderD.descuentoPct;
+    const real = await getDescuento(phone);
+    if (!yaAplicado && real > UMBRAL_CANJE) {
+      orderD.descuentoPct = real;
       const t = calculateTotal(getOrder(phone)!);
       await sendWhatsAppButtons(phone,
-        `🎁 ¡Listo! Apliqué tu *${disp}%* de descuento (−$${t.descuento.toLocaleString("es-CO")}).\n\nNuevo total: *$${t.total.toLocaleString("es-CO")}* 💰\n¿Cómo deseas pagar?`,
+        `🎁 ¡Listo! Apliqué tu *${real}%* de descuento (−$${t.descuento.toLocaleString("es-CO")}).\n\nNuevo total: *$${t.total.toLocaleString("es-CO")}* 💰\n¿Cómo deseas pagar?`,
         [
           { id: "efectivo", title: "Efectivo 💵" },
           { id: "nequi", title: "Nequi/Daviplata 📱" },
@@ -5089,9 +5103,11 @@ return res.sendStatus(200);
         ]
       );
     } else {
-      await sendWhatsAppMessage(phone, orderD.descuentoPct
-        ? "Ya aplicaste tu descuento en este pedido 😊"
-        : "Aún no tienes descuento acumulado 😊 Cada pedido entregado suma 1%.");
+      await sendWhatsAppMessage(phone,
+        yaAplicado ? "Ya aplicaste tu descuento en este pedido 😊"
+        : real > 0
+          ? `Tu descuento se activa al superar el *5%* y ahora tienes *${real}%* acumulado. ¡Sigue pidiendo, sumas *1% por cada pedido*! 🥞`
+          : "Aún no tienes descuento acumulado 😊 Ganas *1% por cada pedido* entregado.");
     }
     return res.sendStatus(200);
   }
@@ -6041,9 +6057,11 @@ cron.schedule("0 10 * * *", async () => {
   const clientes = await getClientesParaRecordarDescuento();
   console.log(`🎁 Recordatorio descuento: ${clientes.length} cliente(s)`);
   for (const c of clientes) {
+    // Solo recordar a quienes ya pueden canjear (acumulado > 5%)
+    if (!(Number(c.descuento_acumulado) > UMBRAL_CANJE)) continue;
     try {
       await sendWhatsAppMessage(c.phone,
-        `🎁 ¡Hola ${c.name || ""}! En LAS CREPES tienes *${c.descuento_acumulado}%* de descuento acumulado 🥞\nÚsalo escribiendo *usar descuento* en tu próximo pedido. ¡Te esperamos! 😋`);
+        `🎁 ¡Hola ${c.name || ""}! En LAS CREPES tienes *${c.descuento_acumulado}%* de descuento acumulado 🥞\nGanas *1% por cada pedido* y ya puedes canjearlo: escríbenos *usar descuento* en tu próximo pedido. ¡Te esperamos! 😋`);
       await marcarRecordatorioDescuento(c.phone);
     } catch (e) { console.error("❌ Recordatorio descuento:", e); }
   }
@@ -6269,7 +6287,10 @@ app.post('/api/pedidos/:id/estado', async (req, res) => {
     if (estado === "entregado" && !yaEntregado) {
       const nuevoDesc = await incrementarDescuento(pedido.phone);
       if (nuevoDesc > 0) {
-        msgEntregado += `\n\n🎁 Acumulaste *${nuevoDesc}%* de descuento para tu próximo pedido. Escríbenos *usar descuento* cuando quieras aplicarlo 😊`;
+        msgEntregado += `\n\n🎁 ¡Sumaste *+1%*! Ya tienes *${nuevoDesc}%* de descuento acumulado (ganas *1% por cada pedido*).`;
+        msgEntregado += nuevoDesc > 5
+          ? `\nYa puedes canjearlo: escríbenos *usar descuento* en tu próximo pedido 😊`
+          : `\nPodrás canjearlo cuando superes el *5%*. ¡Sigue pidiendo! 🥞`;
       }
     }
     const esRecoger = pedido.tipo_entrega === "recoger";
