@@ -618,7 +618,10 @@ function mergeParsedItems(items: ParsedItem[]) {
 export function isQuestion(text: string): boolean {
   if (text.includes("?")) return true;
   const norm = normalizeText(text);
-  return /^(que|que|como|cual|cuanto|cuanta|tiene|trae|incluye|lleva|hay)\b/.test(norm);
+  if (/^(que|que|como|cual|cuanto|cuanta|tiene|trae|incluye|lleva|hay)\b/.test(norm)) return true;
+  // Consultas de opciones / ingredientes / recomendaciones → no son pedidos
+  if (/\b(opciones|opcion|ingredientes|cuales|recomiendame|recomienda|recomiendas)\b/.test(norm)) return true;
+  return false;
 }
 
 export function isAmbiguousText(text: string): boolean {
