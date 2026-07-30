@@ -70,7 +70,11 @@ const STOP_WORDS: Set<string> = new Set([
   "sin",
   "para",
   "por",
-  "favor"
+  "favor",
+  "otra",
+  "otro",
+  "otras",
+  "otros"
 ]);
 
 function getMeaningfulTokens(text: string) {
@@ -422,9 +426,9 @@ function findBestProductMatches(fragment: string, products: any[]) {
       !esStopWord &&
       text.length >= 4 &&
       entry.alias.length >= 4 &&
-      editDistance(text, entry.alias) <= 2
+      editDistance(text, entry.alias) <= (text.length >= 6 ? 2 : 1)
     ) {
-      score = 1; // Levenshtein ≤ 2 (typos)
+      score = 1; // Levenshtein (≤2 palabras largas, ≤1 cortas: evita "otra"↔"mora")
     }
 
     if (score > 0) {

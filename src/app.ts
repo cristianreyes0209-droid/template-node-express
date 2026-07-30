@@ -3104,6 +3104,23 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       );
       return res.sendStatus(200);
     } else {
+      // El cliente cancela/omite este producto, o nombra otro → salir del paso (no quedar atascado)
+      const esCancelarVar = ["no","noo","nou","ninguno","ninguna","nada","cancelar"].includes(lower) ||
+        lower.includes("no quiero") || lower.includes("asi no") || lower.includes("mejor no") ||
+        lower.includes("cancela") || lower.includes("quita");
+      const nombraOtroProducto = parseOrder(text).items.length > 0;
+      if (esCancelarVar || nombraOtroProducto) {
+        currentOrder.pendingProduct = undefined;
+        currentOrder.itemsPendientes = undefined;
+        updateOrderStep(phone, "post_agregar_producto");
+        currentOrder = getOrder(phone)!;
+        const resumenC = currentOrder.items.map((i: any) => formatLineaItem(i, true)).join("\n") || "(sin productos aún)";
+        await sendWhatsAppButtons(phone,
+          `Listo 👍\n\nTu pedido va así:\n${resumenC}\n\n¿Qué deseas hacer?`,
+          [{ id: "confirmar", title: "✅ Confirmar" }, { id: "agregar_mas", title: "➕ Agregar" }, { id: "eliminar", title: "🗑️ Quitar" }]
+        );
+        return res.sendStatus(200);
+      }
       // ¿El cliente escribió una dirección? → guardarla y salir del loop (no perderla)
       const pareceDireccion = /\d/.test(text) &&
         /\b(calle|carrera|cra|cll|av|avenida|diagonal|transversal|manzana|mz|barrio|conjunto|torre|apto|apartamento|apartaestudio|casa|bloque|etapa|urbanizacion|urbanización|km|autopista|variante|circular)\b/i.test(text);

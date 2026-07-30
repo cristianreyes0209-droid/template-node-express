@@ -809,7 +809,11 @@ export const menu = {
         "costillas bbq",
         "costillas",
         "crepe costillas bbq",
-        "costilla bbq"
+        "costilla bbq",
+        "costilla",
+        "crepe costilla",
+        "costilla de cerdo",
+        "costillas de cerdo"
       ],
       modificadoresComunes: [
         "sin maiz",
