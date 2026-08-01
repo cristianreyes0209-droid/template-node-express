@@ -4,10 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Las Crepes 🥞</title>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
     body{background:#FFF5D0;font-family:'Nunito',sans-serif;color:#3B1A0A;min-height:100vh;overflow-x:hidden;}
@@ -242,596 +243,456 @@
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
-const {useState,useEffect,useRef} = React;
-
+<script>
+const { useState, useEffect, useRef } = React;
 // ============================================================
 // DATA
 // ============================================================
 const CATEGORIES = [
-  {id:'favoritas', name:'Favoritas',     emoji:'⭐', color:'#C41E3A'},
-  {id:'clasicas',  name:'Clásicas',      emoji:'🥞', color:'#E8872A'},
-  {id:'fastfood',  name:'Fast Food',     emoji:'🍔', color:'#D4622A'},
-  {id:'delmar',    name:'Del Mar',       emoji:'🦐', color:'#0284C7'},
-  {id:'gourmet',   name:'Gourmet',       emoji:'🍽️', color:'#7C3AED'},
-  {id:'veggie',    name:'Vegetarianas',  emoji:'🥦', color:'#16A34A'},
-  {id:'frutas',    name:'Con Frutas',    emoji:'🍓', color:'#DB2777'},
-  {id:'dulces',    name:'Dulces',        emoji:'🍫', color:'#92400E'},
-  {id:'entradas',  name:'Entradas',      emoji:'🧀', color:'#D97706'},
-  {id:'armatu',    name:'Arma Tu Crepe', emoji:'🛠️', color:'#475569'},
-  {id:'bebidas',   name:'Bebidas',       emoji:'🥤', color:'#0891B2'},
+    { id: 'favoritas', name: 'Favoritas', emoji: '⭐', color: '#C41E3A' },
+    { id: 'clasicas', name: 'Clásicas', emoji: '🥞', color: '#E8872A' },
+    { id: 'fastfood', name: 'Fast Food', emoji: '🍔', color: '#D4622A' },
+    { id: 'delmar', name: 'Del Mar', emoji: '🦐', color: '#0284C7' },
+    { id: 'gourmet', name: 'Gourmet', emoji: '🍽️', color: '#7C3AED' },
+    { id: 'veggie', name: 'Vegetarianas', emoji: '🥦', color: '#16A34A' },
+    { id: 'frutas', name: 'Con Frutas', emoji: '🍓', color: '#DB2777' },
+    { id: 'dulces', name: 'Dulces', emoji: '🍫', color: '#92400E' },
+    { id: 'entradas', name: 'Entradas', emoji: '🧀', color: '#D97706' },
+    { id: 'armatu', name: 'Arma Tu Crepe', emoji: '🛠️', color: '#475569' },
+    { id: 'bebidas', name: 'Bebidas', emoji: '🥤', color: '#0891B2' },
 ];
-
 const ITEMS = [
-  // FAVORITAS
-  {id:1,cat:'favoritas',name:'Crepe de Paris',photo:(window.__resources&&window.__resources['crepdeparis'])||'uploads/CREPE DE PARIS.jpeg',price:29500,badge:'⭐ FAVORITA',
-   desc:'Pollo y carne desmechados, champiñones, jamón premium, extra queso doble crema, salsa paris (bechamel), maíz y salchicha ranchera.',
-   ingredients:['🍗 Pollo','🥩 Carne','🍄 Champiñones','🥓 Jamón premium','🧀 Doble crema','🌽 Maíz','🌭 Salchicha','🫙 Salsa Paris']},
-  {id:2,cat:'favoritas',name:'Desgranada Mixta',photo:(window.__resources&&window.__resources['desgranada'])||'uploads/DESGRANADA MIXTA.jpeg',price:27500,badge:'⭐ FAVORITA',
-   modifiers:[{name:'Proteína',options:['Mixta (res y pollo)','Solo Pollo','Solo Carne'],default:'Mixta (res y pollo)'}],
-   desc:'Trozos de res y pollo salteados, maíz tierno, lechuga, tocineta, queso cuajada, doble crema, fosforitos, huevos de codorniz y salsa de ajo.',
-   ingredients:['🥩 Res','🍗 Pollo','🌽 Maíz','🥬 Lechuga','🥓 Tocineta','🧀 Cuajada','🥚 Codorniz','🧄 Salsa ajo']},
-  {id:3,cat:'favoritas',name:'Mexicana',photo:(window.__resources&&window.__resources['mexicana'])||'uploads/MEXICANA.jpeg',price:27900,badge:'⭐ FAVORITA',
-   modifiers:[{name:'Jalapeños',options:['Con Jalapeños','Sin Jalapeños'],default:'Con Jalapeños'}],
-   desc:'Carne desmechada, frijol, chile, pico de gallo, nachos, queso doble crema.',
-   ingredients:['🥩 Carne','🫘 Frijol','🌶️ Chile','🍅 Pico de gallo','🌮 Nachos','🧀 Doble crema']},
-  // CLÁSICAS
-  {id:4,cat:'clasicas',name:'Especial',photo:(window.__resources&&window.__resources['especial'])||'uploads/ESPECIAL.jpg',price:26500,
-   desc:'Pollo y carne desmechados, champiñones, jamón premium, extra queso doble crema, salsa paris (bechamel).',
-   ingredients:['🍗 Pollo','🥩 Carne','🍄 Champiñones','🥓 Jamón','🧀 Doble crema','🫙 Salsa Paris']},
-  {id:5,cat:'clasicas',name:'Vegetales Mixta',photo:(window.__resources&&window.__resources['vegmixta'])||'uploads/Crepe vegetales mixta (1).jpg',price:24500,
-   variants:[{name:'Mixta (pollo y carne)',price:24500},{name:'Solo Pollo',price:21000},{name:'Solo Carne',price:24500}],
-   desc:'Carne desmechada y/o pollo desmechado, champiñones, pico de gallo, maíz, salsa paris.',
-   ingredients:['🥩 Carne/Pollo','🍄 Champiñones','🍅 Pico de gallo','🌽 Maíz','🫙 Salsa Paris']},
-  {id:6,cat:'clasicas',name:'Ranchera Mixta',photo:(window.__resources&&window.__resources['rancheramixta'])||'uploads/DSC09947 (2).jpg',price:24500,
-   variants:[{name:'Mixta (pollo y carne)',price:24500},{name:'Solo Pollo',price:21000},{name:'Solo Carne',price:24500}],
-   desc:'Carne desmechada y/o pollo desmechado, maíz, jamón premium, salsa paris y queso doble crema.',
-   ingredients:['🥩 Carne/Pollo','🌽 Maíz','🥓 Jamón','🫙 Salsa Paris','🧀 Doble crema']},
-  {id:7,cat:'clasicas',name:'Bolognesa',photo:(window.__resources&&window.__resources['bolognesa'])||'uploads/BOLOGNESA.jpeg',price:26500,
-   desc:'Exquisitas albóndigas mixtas de res y cerdo en espectacular salsa bolognesa con queso parmesano y doble crema.',
-   ingredients:['🥩 Albóndigas res','🐷 Albóndigas cerdo','🫙 Salsa bolognesa','🧀 Parmesano','🧀 Doble crema']},
-  {id:8,cat:'clasicas',name:'Pollo Champiñón',photo:(window.__resources&&window.__resources['vegpollo'])||'uploads/pollo champiñones.jpg',price:16500,
-   desc:'Pollo desmechado, champiñones, queso doble crema, salsa paris.',
-   ingredients:['🍗 Pollo','🍄 Champiñones','🧀 Doble crema','🫙 Salsa Paris']},
-  {id:9,cat:'clasicas',name:'Pollo y Piña',photo:(window.__resources&&window.__resources['pollopina'])||'uploads/POLLO Y PIÑA.jpg',price:15500,
-   desc:'Pollo desmechado, piña calada, queso doble crema, salsa paris.',
-   ingredients:['🍗 Pollo','🍍 Piña calada','🧀 Doble crema','🫙 Salsa Paris']},
-  {id:10,cat:'clasicas',name:'Pollo y Carne',photo:(window.__resources&&window.__resources['pollocarne'])||'uploads/DSC09943.jpg',price:17000,
-   desc:'Pollo y carne desmechados, queso doble crema, salsa paris.',
-   ingredients:['🍗 Pollo','🥩 Carne','🧀 Doble crema','🫙 Salsa Paris']},
-  {id:11,cat:'clasicas',name:'Pollo',photo:(window.__resources&&window.__resources['pollo'])||'uploads/pollo.jpg',price:14500,
-   desc:'Pollo desmechado, queso doble crema, salsa paris (bechamel).',
-   ingredients:['🍗 Pollo','🧀 Doble crema','🫙 Salsa Paris']},
-  {id:12,cat:'clasicas',name:'Carne',photo:(window.__resources&&window.__resources['carne'])||'uploads/CARNE.jpg',price:17000,
-   desc:'Carne desmechada, queso doble crema, salsa paris (bechamel).',
-   ingredients:['🥩 Carne','🧀 Doble crema','🫙 Salsa Paris']},
-  {id:13,cat:'clasicas',name:'Hawaiana',photo:(window.__resources&&window.__resources['hawaiana'])||'uploads/HAWAIANA.jpg',price:14000,
-   desc:'Jamón premium, piña calada y queso doble crema.',
-   ingredients:['🥓 Jamón','🍍 Piña calada','🧀 Doble crema']},
-  {id:14,cat:'clasicas',name:'Ranchera',photo:(window.__resources&&window.__resources['ranchera'])||'uploads/RANCHERA.jpeg',price:14500,
-   desc:'Salchicha ranchera, maíz tierno, queso doble crema y salsa de queso cheddar.',
-   ingredients:['🌭 Salchicha','🌽 Maíz','🧀 Doble crema','🧀 Cheddar']},
-  // FAST FOOD
-  {id:15,cat:'fastfood',name:'Costillas BBQ',photo:(window.__resources&&window.__resources['bbq'])||'uploads/BBQ.jpg',price:28500,
-   desc:'Costillas de cerdo en salsa BBQ artesanal, maíz, lechuga, aguacate, tomate y queso doble crema.',
-   ingredients:['🍖 Costillas cerdo','🫙 Salsa BBQ','🌽 Maíz','🥬 Lechuga','🥑 Aguacate','🍅 Tomate','🧀 Doble crema']},
-  {id:16,cat:'fastfood',name:'Americana',photo:(window.__resources&&window.__resources['americana'])||'uploads/AMERICANA.jpeg',price:19900,
-   desc:'Perro caliente versión crepe: salchicha, queso cuajada, huevos de codorniz, piña calada, fosforitos y queso doble crema.',
-   ingredients:['🌭 Salchicha perro','🧀 Cuajada','🥚 Codorniz','🍍 Piña','🧀 Doble crema']},
-  {id:17,cat:'fastfood',name:'Crepe Burguesa',photo:(window.__resources&&window.__resources['burguesa'])||'uploads/BURGUESA.jpeg',price:24500,
-   desc:'180g de lomo de res madurado con queso americano y doble crema, tocineta, cebolla salteada, tomate y lechuga.',
-   ingredients:['🥩 Lomo res 180g','🧀 Americano','🧀 Doble crema','🥓 Tocineta','🧅 Cebolla','🍅 Tomate','🥬 Lechuga']},
-  {id:18,cat:'fastfood',name:'Italiana',photo:(window.__resources&&window.__resources['italiana'])||'uploads/ITALIANA.jpeg',price:23500,
-   desc:'Pepperoni, salami, tomate, queso parmesano y salsa italiana.',
-   ingredients:['🍕 Pepperoni','🥩 Salami','🍅 Tomate','🧀 Parmesano','🫙 Salsa italiana']},
-  // DEL MAR
-  {id:19,cat:'delmar',name:'Mediterránea Camarones',photo:(window.__resources&&window.__resources['medcamaron'])||'uploads/MEDITERRANEA DE CAMARON.jpg',price:33500,
-   desc:'Camarones tigre salteados al ajillo con pimentón y finas hierbas, con queso doble crema y parmesano.',
-   ingredients:['🦐 Camarones tigre','🧄 Ajillo','🫑 Pimentón','🌿 Finas hierbas','🧀 Doble crema','🧀 Parmesano']},
-  {id:20,cat:'delmar',name:'Mediterránea Mariscos',photo:(window.__resources&&window.__resources['medmixta'])||'uploads/MEDITERRANEA MIXTA.jpeg',price:35500,
-   desc:'Camarones, pulpo, calamar y pescado salteados al ajillo con pimentón y finas hierbas, con queso doble crema y parmesano.',
-   ingredients:['🦐 Camarones','🐙 Pulpo','🦑 Calamar','🐟 Pescado','🧄 Ajillo','🧀 Doble crema']},
-  {id:21,cat:'delmar',name:'Atún',photo:(window.__resources&&window.__resources['atun'])||'uploads/ATUN.jpeg',price:23500,
-   desc:'180g de lomitos de atún con mayo ajo, pico de gallo, lechuga y queso doble crema.',
-   ingredients:['🐟 Atún 180g','🧄 Mayo ajo','🍅 Pico de gallo','🥬 Lechuga','🧀 Doble crema']},
-  // GOURMET
-  {id:22,cat:'gourmet',name:'Strogonoff de Pollo',photo:(window.__resources&&window.__resources['strogpollo'])||'uploads/STROGANOFF DE POLLO.jpeg',price:29900,
-   desc:'Suculentos trozos de pechuga salteados con champiñones en salsa strogonoff y vino blanco, con queso doble crema.',
-   ingredients:['🍗 Pechuga','🍄 Champiñones','🫙 Salsa strogonoff','🍷 Vino blanco','🧀 Doble crema']},
-  {id:23,cat:'gourmet',name:'Strogonoff de Carne',photo:(window.__resources&&window.__resources['strogcarne'])||'uploads/STROGANOFF CARNE.jpg',price:34500,
-   desc:'Tiras de lomo de res salteadas con champiñones en salsa strogonoff y vino blanco, con queso doble crema.',
-   ingredients:['🥩 Lomo res','🍄 Champiñones','🫙 Salsa strogonoff','🍷 Vino blanco','🧀 Doble crema']},
-  {id:24,cat:'gourmet',name:'Crepe Mignon',photo:(window.__resources&&window.__resources['mignon'])||'uploads/CREPE MIGNON.jpg',price:36500,
-   desc:'Lomo de res salteado con tocineta y champiñones en salsa con vino tinto y queso doble crema.',
-   ingredients:['🥩 Lomo res','🥓 Tocineta','🍄 Champiñones','🍷 Vino tinto','🧀 Doble crema']},
-  {id:25,cat:'gourmet',name:'Marinera',photo:(window.__resources&&window.__resources['marinera'])||'uploads/MARINERA.jpeg',price:37500,
-   desc:'Combinación de mariscos en deliciosa salsa marinera, servido con queso doble crema.',
-   ingredients:['🦐 Mariscos mixtos','🫙 Salsa marinera','🧀 Doble crema']},
-  {id:26,cat:'gourmet',name:'Camarones Gourmet',photo:(window.__resources&&window.__resources['gourmetcamar'])||'uploads/Crepe GOURMET CAMARONES.jpg',price:35500,
-   desc:'Camarones en deliciosa salsa marinera, servido con queso doble crema.',
-   ingredients:['🦐 Camarones','🫙 Salsa marinera','🧀 Doble crema']},
-  // VEGETARIANAS
-  {id:27,cat:'veggie',name:'Stroganoff Veggie',photo:(window.__resources&&window.__resources['strogveggi'])||'uploads/STROGANOFF VEGGI.jpg',price:36500,
-   desc:'Albóndigas de proteína de soya y huevo salteadas con champiñones en salsa al vino tinto.',
-   ingredients:['🌱 Proteína soya','🥚 Huevo','🍄 Champiñones','🍷 Vino tinto','🫙 Salsa strogonoff']},
-  {id:28,cat:'veggie',name:'Vegetariana',photo:(window.__resources&&window.__resources['vegetariana'])||'uploads/VEGETARIANA.jpeg',price:13900,
-   variants:[{name:'Con Salsa Paris',price:13900},{name:'Con Salsa Italiana de Olivos',price:14500},{name:'Con Salsa de Albahaca',price:14500}],
-   desc:'Champiñón, maíz tierno, pico de gallo y queso doble crema. Con salsa paris $13.900 / Con salsa italiana de olivos o albahaca $14.500',
-   ingredients:['🍄 Champiñón','🌽 Maíz','🍅 Pico de gallo','🧀 Doble crema','🫙 Salsa a escoger']},
-  {id:29,cat:'veggie',name:'Burguessa Veggie',photo:(window.__resources&&window.__resources['burgveggi'])||'uploads/burguesa veggi.jpg',price:25500,
-   desc:'Proteína de soya y huevo, tomate, dos tipos de queso, lechuga, cebolla salteada y tomate.',
-   ingredients:['🌱 Proteína soya','🥚 Huevo','🍅 Tomate','🧀 Americano','🧀 Doble crema','🥬 Lechuga','🧅 Cebolla']},
-  // CON FRUTAS
-  {id:30,cat:'frutas',name:'Tropinutella',photo:(window.__resources&&window.__resources['tropinutella'])||'uploads/DSC09992.jpg',price:19900,
-   desc:'Nutella, durazno, fresa, banano, manzana, queso cuajada, queso doble crema y crema de leche.',
-   ingredients:['🍫 Nutella','🍑 Durazno','🍓 Fresa','🍌 Banano','🍎 Manzana','🧀 Cuajada','🧀 Doble crema','🥛 Crema de leche']},
-  {id:31,cat:'frutas',name:'Tropical',photo:(window.__resources&&window.__resources['tropical'])||'uploads/Crepe tropical.jpg',price:16900,
-   desc:'Durazno, fresa, banano, manzana, queso cuajada, queso doble crema y crema de leche.',
-   ingredients:['🍑 Durazno','🍓 Fresa','🍌 Banano','🍎 Manzana','🧀 Cuajada','🥛 Crema de leche']},
-  {id:32,cat:'frutas',name:'Crepostre',photo:(window.__resources&&window.__resources['crepostre'])||'uploads/CREPOSTRE.jpeg',price:9500,
-   desc:'Deliciosa crepe fría con Nutella, fresa y durazno.',
-   ingredients:['🍫 Nutella','🍓 Fresa','🍑 Durazno']},
-  // DULCES
-  {id:33,cat:'dulces',name:'Nutella',photo:(window.__resources&&window.__resources['nutella'])||'uploads/NUTELLA.jpg',price:11500,
-   modifiers:[{name:'Queso',emoji:'🧀',options:['Con Queso','Sin Queso'],default:'Con Queso'}],
-   desc:'Nutella con queso doble crema (opcional).',
-   ingredients:['🍫 Nutella','🧀 Doble crema']},
-  {id:34,cat:'dulces',name:'Chocolate',photo:(window.__resources&&window.__resources['chocolate'])||'uploads/Crepe de chocolate (1).jpg',price:10500,
-   modifiers:[{name:'Queso',emoji:'🧀',options:['Con Queso','Sin Queso'],default:'Con Queso'}],
-   desc:'Chocolate de leche con queso doble crema (opcional).',
-   ingredients:['🍫 Chocolate','🧀 Doble crema']},
-  {id:35,cat:'dulces',name:'Arequipe',photo:(window.__resources&&window.__resources['arequipe'])||'uploads/Crepe arequipe.jpg',price:10500,
-   modifiers:[{name:'Queso',emoji:'🧀',options:['Con Queso','Sin Queso'],default:'Con Queso'}],
-   desc:'Arequipe con queso doble crema (opcional).',
-   ingredients:['🍮 Arequipe','🧀 Doble crema']},
-  {id:36,cat:'dulces',name:'Crepe Oblea',photo:(window.__resources&&window.__resources['oblea'])||'uploads/OBLEA.jpg',price:11900,
-   desc:'Arequipe, queso cuajada, salsa de mora y crema de leche.',
-   ingredients:['🍮 Arequipe','🧀 Cuajada','🫐 Salsa mora','🥛 Crema de leche']},
-  // ENTRADAS
-  {id:37,cat:'entradas',name:'Super Nachos',price:32500,
-   desc:'Crujientes nachos de maíz con pico de gallo, frijol, chile, carne desmechada y salsa de queso cheddar.',
-   ingredients:['🌮 Nachos','🍅 Pico de gallo','🫘 Frijol','🌶️ Chile','🥩 Carne','🧀 Cheddar']},
-  {id:38,cat:'entradas',name:'Nachos Paris',price:27000,
-   desc:'Crujientes nachos con pico de gallo, frijol, chile y salsa de queso cheddar.',
-   ingredients:['🌮 Nachos','🍅 Pico de gallo','🫘 Frijol','🌶️ Chile','🧀 Cheddar']},
-  {id:39,cat:'entradas',name:'Nachos con Cheddar',price:18000,photo:(window.__resources&&window.__resources['nachosCheddar'])||'uploads/NACHOS_CHEDDAR.jpeg',
-   desc:'Nachos con salsa de queso cheddar.',
-   ingredients:['🌮 Nachos','🧀 Cheddar']},
+    // FAVORITAS
+    { id: 1, cat: 'favoritas', name: 'Crepe de Paris', photo: (window.__resources && window.__resources['crepdeparis']) || 'uploads/CREPE DE PARIS.jpeg', price: 29500, badge: '⭐ FAVORITA',
+        desc: 'Pollo y carne desmechados, champiñones, jamón premium, extra queso doble crema, salsa paris (bechamel), maíz y salchicha ranchera.',
+        ingredients: ['🍗 Pollo', '🥩 Carne', '🍄 Champiñones', '🥓 Jamón premium', '🧀 Doble crema', '🌽 Maíz', '🌭 Salchicha', '🫙 Salsa Paris'] },
+    { id: 2, cat: 'favoritas', name: 'Desgranada Mixta', photo: (window.__resources && window.__resources['desgranada']) || 'uploads/DESGRANADA MIXTA.jpeg', price: 27500, badge: '⭐ FAVORITA',
+        modifiers: [{ name: 'Proteína', options: ['Mixta (res y pollo)', 'Solo Pollo', 'Solo Carne'], default: 'Mixta (res y pollo)' }],
+        desc: 'Trozos de res y pollo salteados, maíz tierno, lechuga, tocineta, queso cuajada, doble crema, fosforitos, huevos de codorniz y salsa de ajo.',
+        ingredients: ['🥩 Res', '🍗 Pollo', '🌽 Maíz', '🥬 Lechuga', '🥓 Tocineta', '🧀 Cuajada', '🥚 Codorniz', '🧄 Salsa ajo'] },
+    { id: 3, cat: 'favoritas', name: 'Mexicana', photo: (window.__resources && window.__resources['mexicana']) || 'uploads/MEXICANA.jpeg', price: 27900, badge: '⭐ FAVORITA',
+        modifiers: [{ name: 'Jalapeños', options: ['Con Jalapeños', 'Sin Jalapeños'], default: 'Con Jalapeños' }],
+        desc: 'Carne desmechada, frijol, chile, pico de gallo, nachos, queso doble crema.',
+        ingredients: ['🥩 Carne', '🫘 Frijol', '🌶️ Chile', '🍅 Pico de gallo', '🌮 Nachos', '🧀 Doble crema'] },
+    // CLÁSICAS
+    { id: 4, cat: 'clasicas', name: 'Especial', photo: (window.__resources && window.__resources['especial']) || 'uploads/ESPECIAL.jpg', price: 26500,
+        desc: 'Pollo y carne desmechados, champiñones, jamón premium, extra queso doble crema, salsa paris (bechamel).',
+        ingredients: ['🍗 Pollo', '🥩 Carne', '🍄 Champiñones', '🥓 Jamón', '🧀 Doble crema', '🫙 Salsa Paris'] },
+    { id: 5, cat: 'clasicas', name: 'Vegetales Mixta', photo: (window.__resources && window.__resources['vegmixta']) || 'uploads/Crepe vegetales mixta (1).jpg', price: 24500,
+        variants: [{ name: 'Mixta (pollo y carne)', price: 24500 }, { name: 'Solo Pollo', price: 21000 }, { name: 'Solo Carne', price: 24500 }],
+        desc: 'Carne desmechada y/o pollo desmechado, champiñones, pico de gallo, maíz, salsa paris.',
+        ingredients: ['🥩 Carne/Pollo', '🍄 Champiñones', '🍅 Pico de gallo', '🌽 Maíz', '🫙 Salsa Paris'] },
+    { id: 6, cat: 'clasicas', name: 'Ranchera Mixta', photo: (window.__resources && window.__resources['rancheramixta']) || 'uploads/DSC09947 (2).jpg', price: 24500,
+        variants: [{ name: 'Mixta (pollo y carne)', price: 24500 }, { name: 'Solo Pollo', price: 21000 }, { name: 'Solo Carne', price: 24500 }],
+        desc: 'Carne desmechada y/o pollo desmechado, maíz, jamón premium, salsa paris y queso doble crema.',
+        ingredients: ['🥩 Carne/Pollo', '🌽 Maíz', '🥓 Jamón', '🫙 Salsa Paris', '🧀 Doble crema'] },
+    { id: 7, cat: 'clasicas', name: 'Bolognesa', photo: (window.__resources && window.__resources['bolognesa']) || 'uploads/BOLOGNESA.jpeg', price: 26500,
+        desc: 'Exquisitas albóndigas mixtas de res y cerdo en espectacular salsa bolognesa con queso parmesano y doble crema.',
+        ingredients: ['🥩 Albóndigas res', '🐷 Albóndigas cerdo', '🫙 Salsa bolognesa', '🧀 Parmesano', '🧀 Doble crema'] },
+    { id: 8, cat: 'clasicas', name: 'Pollo Champiñón', photo: (window.__resources && window.__resources['vegpollo']) || 'uploads/pollo champiñones.jpg', price: 16500,
+        desc: 'Pollo desmechado, champiñones, queso doble crema, salsa paris.',
+        ingredients: ['🍗 Pollo', '🍄 Champiñones', '🧀 Doble crema', '🫙 Salsa Paris'] },
+    { id: 9, cat: 'clasicas', name: 'Pollo y Piña', photo: (window.__resources && window.__resources['pollopina']) || 'uploads/POLLO Y PIÑA.jpg', price: 15500,
+        desc: 'Pollo desmechado, piña calada, queso doble crema, salsa paris.',
+        ingredients: ['🍗 Pollo', '🍍 Piña calada', '🧀 Doble crema', '🫙 Salsa Paris'] },
+    { id: 10, cat: 'clasicas', name: 'Pollo y Carne', photo: (window.__resources && window.__resources['pollocarne']) || 'uploads/DSC09943.jpg', price: 17000,
+        desc: 'Pollo y carne desmechados, queso doble crema, salsa paris.',
+        ingredients: ['🍗 Pollo', '🥩 Carne', '🧀 Doble crema', '🫙 Salsa Paris'] },
+    { id: 11, cat: 'clasicas', name: 'Pollo', photo: (window.__resources && window.__resources['pollo']) || 'uploads/pollo.jpg', price: 14500,
+        desc: 'Pollo desmechado, queso doble crema, salsa paris (bechamel).',
+        ingredients: ['🍗 Pollo', '🧀 Doble crema', '🫙 Salsa Paris'] },
+    { id: 12, cat: 'clasicas', name: 'Carne', photo: (window.__resources && window.__resources['carne']) || 'uploads/CARNE.jpg', price: 17000,
+        desc: 'Carne desmechada, queso doble crema, salsa paris (bechamel).',
+        ingredients: ['🥩 Carne', '🧀 Doble crema', '🫙 Salsa Paris'] },
+    { id: 13, cat: 'clasicas', name: 'Hawaiana', photo: (window.__resources && window.__resources['hawaiana']) || 'uploads/HAWAIANA.jpg', price: 14000,
+        desc: 'Jamón premium, piña calada y queso doble crema.',
+        ingredients: ['🥓 Jamón', '🍍 Piña calada', '🧀 Doble crema'] },
+    { id: 14, cat: 'clasicas', name: 'Ranchera', photo: (window.__resources && window.__resources['ranchera']) || 'uploads/RANCHERA.jpeg', price: 14500,
+        desc: 'Salchicha ranchera, maíz tierno, queso doble crema y salsa de queso cheddar.',
+        ingredients: ['🌭 Salchicha', '🌽 Maíz', '🧀 Doble crema', '🧀 Cheddar'] },
+    // FAST FOOD
+    { id: 15, cat: 'fastfood', name: 'Costillas BBQ', photo: (window.__resources && window.__resources['bbq']) || 'uploads/BBQ.jpg', price: 28500,
+        desc: 'Costillas de cerdo en salsa BBQ artesanal, maíz, lechuga, aguacate, tomate y queso doble crema.',
+        ingredients: ['🍖 Costillas cerdo', '🫙 Salsa BBQ', '🌽 Maíz', '🥬 Lechuga', '🥑 Aguacate', '🍅 Tomate', '🧀 Doble crema'] },
+    { id: 16, cat: 'fastfood', name: 'Americana', photo: (window.__resources && window.__resources['americana']) || 'uploads/AMERICANA.jpeg', price: 19900,
+        desc: 'Perro caliente versión crepe: salchicha, queso cuajada, huevos de codorniz, piña calada, fosforitos y queso doble crema.',
+        ingredients: ['🌭 Salchicha perro', '🧀 Cuajada', '🥚 Codorniz', '🍍 Piña', '🧀 Doble crema'] },
+    { id: 17, cat: 'fastfood', name: 'Crepe Burguesa', photo: (window.__resources && window.__resources['burguesa']) || 'uploads/BURGUESA.jpeg', price: 24500,
+        desc: '180g de lomo de res madurado con queso americano y doble crema, tocineta, cebolla salteada, tomate y lechuga.',
+        ingredients: ['🥩 Lomo res 180g', '🧀 Americano', '🧀 Doble crema', '🥓 Tocineta', '🧅 Cebolla', '🍅 Tomate', '🥬 Lechuga'] },
+    { id: 18, cat: 'fastfood', name: 'Italiana', photo: (window.__resources && window.__resources['italiana']) || 'uploads/ITALIANA.jpeg', price: 23500,
+        desc: 'Pepperoni, salami, tomate, queso parmesano y salsa italiana.',
+        ingredients: ['🍕 Pepperoni', '🥩 Salami', '🍅 Tomate', '🧀 Parmesano', '🫙 Salsa italiana'] },
+    // DEL MAR
+    { id: 19, cat: 'delmar', name: 'Mediterránea Camarones', photo: (window.__resources && window.__resources['medcamaron']) || 'uploads/MEDITERRANEA DE CAMARON.jpg', price: 33500,
+        desc: 'Camarones tigre salteados al ajillo con pimentón y finas hierbas, con queso doble crema y parmesano.',
+        ingredients: ['🦐 Camarones tigre', '🧄 Ajillo', '🫑 Pimentón', '🌿 Finas hierbas', '🧀 Doble crema', '🧀 Parmesano'] },
+    { id: 20, cat: 'delmar', name: 'Mediterránea Mariscos', photo: (window.__resources && window.__resources['medmixta']) || 'uploads/MEDITERRANEA MIXTA.jpeg', price: 35500,
+        desc: 'Camarones, pulpo, calamar y pescado salteados al ajillo con pimentón y finas hierbas, con queso doble crema y parmesano.',
+        ingredients: ['🦐 Camarones', '🐙 Pulpo', '🦑 Calamar', '🐟 Pescado', '🧄 Ajillo', '🧀 Doble crema'] },
+    { id: 21, cat: 'delmar', name: 'Atún', photo: (window.__resources && window.__resources['atun']) || 'uploads/ATUN.jpeg', price: 23500,
+        desc: '180g de lomitos de atún con mayo ajo, pico de gallo, lechuga y queso doble crema.',
+        ingredients: ['🐟 Atún 180g', '🧄 Mayo ajo', '🍅 Pico de gallo', '🥬 Lechuga', '🧀 Doble crema'] },
+    // GOURMET
+    { id: 22, cat: 'gourmet', name: 'Strogonoff de Pollo', photo: (window.__resources && window.__resources['strogpollo']) || 'uploads/STROGANOFF DE POLLO.jpeg', price: 29900,
+        desc: 'Suculentos trozos de pechuga salteados con champiñones en salsa strogonoff y vino blanco, con queso doble crema.',
+        ingredients: ['🍗 Pechuga', '🍄 Champiñones', '🫙 Salsa strogonoff', '🍷 Vino blanco', '🧀 Doble crema'] },
+    { id: 23, cat: 'gourmet', name: 'Strogonoff de Carne', photo: (window.__resources && window.__resources['strogcarne']) || 'uploads/STROGANOFF CARNE.jpg', price: 34500,
+        desc: 'Tiras de lomo de res salteadas con champiñones en salsa strogonoff y vino blanco, con queso doble crema.',
+        ingredients: ['🥩 Lomo res', '🍄 Champiñones', '🫙 Salsa strogonoff', '🍷 Vino blanco', '🧀 Doble crema'] },
+    { id: 24, cat: 'gourmet', name: 'Crepe Mignon', photo: (window.__resources && window.__resources['mignon']) || 'uploads/CREPE MIGNON.jpg', price: 36500,
+        desc: 'Lomo de res salteado con tocineta y champiñones en salsa con vino tinto y queso doble crema.',
+        ingredients: ['🥩 Lomo res', '🥓 Tocineta', '🍄 Champiñones', '🍷 Vino tinto', '🧀 Doble crema'] },
+    { id: 25, cat: 'gourmet', name: 'Marinera', photo: (window.__resources && window.__resources['marinera']) || 'uploads/MARINERA.jpeg', price: 37500,
+        desc: 'Combinación de mariscos en deliciosa salsa marinera, servido con queso doble crema.',
+        ingredients: ['🦐 Mariscos mixtos', '🫙 Salsa marinera', '🧀 Doble crema'] },
+    { id: 26, cat: 'gourmet', name: 'Camarones Gourmet', photo: (window.__resources && window.__resources['gourmetcamar']) || 'uploads/Crepe GOURMET CAMARONES.jpg', price: 35500,
+        desc: 'Camarones en deliciosa salsa marinera, servido con queso doble crema.',
+        ingredients: ['🦐 Camarones', '🫙 Salsa marinera', '🧀 Doble crema'] },
+    // VEGETARIANAS
+    { id: 27, cat: 'veggie', name: 'Stroganoff Veggie', photo: (window.__resources && window.__resources['strogveggi']) || 'uploads/STROGANOFF VEGGI.jpg', price: 36500,
+        desc: 'Albóndigas de proteína de soya y huevo salteadas con champiñones en salsa al vino tinto.',
+        ingredients: ['🌱 Proteína soya', '🥚 Huevo', '🍄 Champiñones', '🍷 Vino tinto', '🫙 Salsa strogonoff'] },
+    { id: 28, cat: 'veggie', name: 'Vegetariana', photo: (window.__resources && window.__resources['vegetariana']) || 'uploads/VEGETARIANA.jpeg', price: 13900,
+        variants: [{ name: 'Con Salsa Paris', price: 13900 }, { name: 'Con Salsa Italiana de Olivos', price: 14500 }, { name: 'Con Salsa de Albahaca', price: 14500 }],
+        desc: 'Champiñón, maíz tierno, pico de gallo y queso doble crema. Con salsa paris $13.900 / Con salsa italiana de olivos o albahaca $14.500',
+        ingredients: ['🍄 Champiñón', '🌽 Maíz', '🍅 Pico de gallo', '🧀 Doble crema', '🫙 Salsa a escoger'] },
+    { id: 29, cat: 'veggie', name: 'Burguessa Veggie', photo: (window.__resources && window.__resources['burgveggi']) || 'uploads/burguesa veggi.jpg', price: 25500,
+        desc: 'Proteína de soya y huevo, tomate, dos tipos de queso, lechuga, cebolla salteada y tomate.',
+        ingredients: ['🌱 Proteína soya', '🥚 Huevo', '🍅 Tomate', '🧀 Americano', '🧀 Doble crema', '🥬 Lechuga', '🧅 Cebolla'] },
+    // CON FRUTAS
+    { id: 30, cat: 'frutas', name: 'Tropinutella', photo: (window.__resources && window.__resources['tropinutella']) || 'uploads/DSC09992.jpg', price: 19900,
+        desc: 'Nutella, durazno, fresa, banano, manzana, queso cuajada, queso doble crema y crema de leche.',
+        ingredients: ['🍫 Nutella', '🍑 Durazno', '🍓 Fresa', '🍌 Banano', '🍎 Manzana', '🧀 Cuajada', '🧀 Doble crema', '🥛 Crema de leche'] },
+    { id: 31, cat: 'frutas', name: 'Tropical', photo: (window.__resources && window.__resources['tropical']) || 'uploads/Crepe tropical.jpg', price: 16900,
+        desc: 'Durazno, fresa, banano, manzana, queso cuajada, queso doble crema y crema de leche.',
+        ingredients: ['🍑 Durazno', '🍓 Fresa', '🍌 Banano', '🍎 Manzana', '🧀 Cuajada', '🥛 Crema de leche'] },
+    { id: 32, cat: 'frutas', name: 'Crepostre', photo: (window.__resources && window.__resources['crepostre']) || 'uploads/CREPOSTRE.jpeg', price: 9500,
+        desc: 'Deliciosa crepe fría con Nutella, fresa y durazno.',
+        ingredients: ['🍫 Nutella', '🍓 Fresa', '🍑 Durazno'] },
+    // DULCES
+    { id: 33, cat: 'dulces', name: 'Nutella', photo: (window.__resources && window.__resources['nutella']) || 'uploads/NUTELLA.jpg', price: 11500,
+        modifiers: [{ name: 'Queso', emoji: '🧀', options: ['Con Queso', 'Sin Queso'], default: 'Con Queso' }],
+        desc: 'Nutella con queso doble crema (opcional).',
+        ingredients: ['🍫 Nutella', '🧀 Doble crema'] },
+    { id: 34, cat: 'dulces', name: 'Chocolate', photo: (window.__resources && window.__resources['chocolate']) || 'uploads/Crepe de chocolate (1).jpg', price: 10500,
+        modifiers: [{ name: 'Queso', emoji: '🧀', options: ['Con Queso', 'Sin Queso'], default: 'Con Queso' }],
+        desc: 'Chocolate de leche con queso doble crema (opcional).',
+        ingredients: ['🍫 Chocolate', '🧀 Doble crema'] },
+    { id: 35, cat: 'dulces', name: 'Arequipe', photo: (window.__resources && window.__resources['arequipe']) || 'uploads/Crepe arequipe.jpg', price: 10500,
+        modifiers: [{ name: 'Queso', emoji: '🧀', options: ['Con Queso', 'Sin Queso'], default: 'Con Queso' }],
+        desc: 'Arequipe con queso doble crema (opcional).',
+        ingredients: ['🍮 Arequipe', '🧀 Doble crema'] },
+    { id: 36, cat: 'dulces', name: 'Crepe Oblea', photo: (window.__resources && window.__resources['oblea']) || 'uploads/OBLEA.jpg', price: 11900,
+        desc: 'Arequipe, queso cuajada, salsa de mora y crema de leche.',
+        ingredients: ['🍮 Arequipe', '🧀 Cuajada', '🫐 Salsa mora', '🥛 Crema de leche'] },
+    // ENTRADAS
+    { id: 37, cat: 'entradas', name: 'Super Nachos', price: 32500,
+        desc: 'Crujientes nachos de maíz con pico de gallo, frijol, chile, carne desmechada y salsa de queso cheddar.',
+        ingredients: ['🌮 Nachos', '🍅 Pico de gallo', '🫘 Frijol', '🌶️ Chile', '🥩 Carne', '🧀 Cheddar'] },
+    { id: 38, cat: 'entradas', name: 'Nachos Paris', price: 27000,
+        desc: 'Crujientes nachos con pico de gallo, frijol, chile y salsa de queso cheddar.',
+        ingredients: ['🌮 Nachos', '🍅 Pico de gallo', '🫘 Frijol', '🌶️ Chile', '🧀 Cheddar'] },
+    { id: 39, cat: 'entradas', name: 'Nachos con Cheddar', price: 18000, photo: (window.__resources && window.__resources['nachosCheddar']) || 'uploads/NACHOS_CHEDDAR.jpeg',
+        desc: 'Nachos con salsa de queso cheddar.',
+        ingredients: ['🌮 Nachos', '🧀 Cheddar'] },
 ];
-
 const ADICIONALES_SALADAS = [
-  {group:'🥩 Carnes', items:[
-    {name:'Carne desmechada',price:7500},{name:'Pollo desmechado',price:7000},
-    {name:'Tocineta',price:5500},{name:'Pepperoni',price:5000},
-    {name:'Salami',price:5000},{name:'Jamón',price:5000},
-    {name:'Salchicha ranchera',price:5500},{name:'Chile con carne',price:5500},
-  ]},
-  {group:'🧀 Quesos', items:[
-    {name:'Doble crema',price:5000},{name:'Americano',price:5000},
-    {name:'Cuajada',price:4500},{name:'Parmesano',price:5000},
-    {name:'Salsa cheddar',price:5000},
-  ]},
-  {group:'🥦 Verduras', items:[
-    {name:'Champiñón',price:4500},{name:'Maíz tierno',price:3500},
-    {name:'Pico de gallo',price:2000},{name:'Jalapeños',price:2000},
-  ]},
-  {group:'🍍 Extra', items:[
-    {name:'Piña calada',price:2000},
-  ]},
+    { group: '🥩 Carnes', items: [
+            { name: 'Carne desmechada', price: 7500 }, { name: 'Pollo desmechado', price: 7000 },
+            { name: 'Tocineta', price: 5500 }, { name: 'Pepperoni', price: 5000 },
+            { name: 'Salami', price: 5000 }, { name: 'Jamón', price: 5000 },
+            { name: 'Salchicha ranchera', price: 5500 }, { name: 'Chile con carne', price: 5500 },
+        ] },
+    { group: '🧀 Quesos', items: [
+            { name: 'Doble crema', price: 5000 }, { name: 'Americano', price: 5000 },
+            { name: 'Cuajada', price: 4500 }, { name: 'Parmesano', price: 5000 },
+            { name: 'Salsa cheddar', price: 5000 },
+        ] },
+    { group: '🥦 Verduras', items: [
+            { name: 'Champiñón', price: 4500 }, { name: 'Maíz tierno', price: 3500 },
+            { name: 'Pico de gallo', price: 2000 }, { name: 'Jalapeños', price: 2000 },
+        ] },
+    { group: '🍍 Extra', items: [
+            { name: 'Piña calada', price: 2000 },
+        ] },
 ];
-
 const ADICIONALES_DULCES = [
-  {group:'🍓 Frutas', items:[
-    {name:'Fresa',price:3000},{name:'Banano',price:2000},{name:'Durazno',price:3900},{name:'Manzana',price:2500},{name:'Piña calada',price:2000}
-  ]},
-  {group:'🍫 Dulces', items:[
-    {name:'Nutella',price:6900},{name:'Chocolate',price:3500},{name:'Arequipe',price:3000},{name:'Crema de maní',price:4500}
-  ]},
-  {group:'🍦 Helado', items:[
-    {name:'Helado 1 bola',price:5500},{name:'Helado 2 bolas',price:8000}
-  ]},
+    { group: '🍓 Frutas', items: [
+            { name: 'Fresa', price: 3000 }, { name: 'Banano', price: 2000 }, { name: 'Durazno', price: 3900 }, { name: 'Manzana', price: 2500 }, { name: 'Piña calada', price: 2000 }
+        ] },
+    { group: '🍫 Dulces', items: [
+            { name: 'Nutella', price: 6900 }, { name: 'Chocolate', price: 3500 }, { name: 'Arequipe', price: 3000 }, { name: 'Crema de maní', price: 4500 }
+        ] },
+    { group: '🍦 Helado', items: [
+            { name: 'Helado 1 bola', price: 5500 }, { name: 'Helado 2 bolas', price: 8000 }
+        ] },
 ];
-
-const CATS_SALADAS = ['favoritas','clasicas','fastfood','delmar','gourmet','veggie','entradas'];
-
+const CATS_SALADAS = ['favoritas', 'clasicas', 'fastfood', 'delmar', 'gourmet', 'veggie', 'entradas'];
 const getAdicionales = (cat) => CATS_SALADAS.includes(cat) ? ADICIONALES_SALADAS : ADICIONALES_DULCES;
-
-const SABORES_JUGO = ['🫐 Mora','🥭 Mango','🍈 Guanábana','🍋 Maracuyá','🍓 Fresa'];
-
+const SABORES_JUGO = ['🫐 Mora', '🥭 Mango', '🍈 Guanábana', '🍋 Maracuyá', '🍓 Fresa'];
 const BEBIDAS = [
-  {id:'b0',name:'Jugo Natural',price:9900,photo:(window.__resources&&window.__resources['jugosnat'])||'uploads/JUGOS NATURALES.jpeg',
-   jugo:true,
-   variants:[{name:'En Agua',price:9900},{name:'En Leche',price:11500}],
-   desc:'Mora · Mango · Guanábana · Maracuyá · Fresa'},
-  {id:'b3',name:'Batido de Frutas',price:11500,preparada:true,desc:'Fresa, banano, crema de maní, leche deslactosada'},
-  {id:'b4',name:'Limonada Natural',price:5000,preparada:true,photo:(window.__resources&&window.__resources['limonat'])||'uploads/LIMONADA NATURAL.jpg'},
-  {id:'b5',name:'Limonada de Coco',price:10500,preparada:true,photo:(window.__resources&&window.__resources['limococo'])||'uploads/LIMONADA DE COCO.jpg'},
-  {id:'b6',name:'Limonada Cerezada',price:12500,preparada:true,photo:(window.__resources&&window.__resources['limocereza'])||'uploads/LIMONADA DE CEREZA.jpg'},
-  {id:'b7',name:'Malteada',price:17900,preparada:true,photo:(window.__resources&&window.__resources['malteada'])||'uploads/MALTEADA DE FRESA.jpg',
-   sabores:['🍓 Fresa','🍦 Vainilla','🍫 Brownie'],
-   desc:'Fresa · Vainilla · Brownie'},
-  {id:'b8',name:'Agua',price:3900,preparada:true,noAzucar:true,sabores:['💧 Sin Gas','🥊 Con Gas']},
-  {id:'b9',name:'Gaseosa Personal',price:5900,preparada:true,noAzucar:true,
-   sabores:['🔴 Coca-Cola Original','⚫ Coca-Cola Zero','🟡 Cuatro','🟢 Sprite','🏆 Premio']},
-  {id:'b11',name:'Jugo Hit',price:5900,preparada:true,noAzucar:true,
-   sabores:['🥭 Mango','🫐 Mora','🌴 Tropical','🍊 Naranja','🍍 Piña']},
-  {id:'b13',name:'Mr. Te Pet 500',price:5900,preparada:true,noAzucar:true,sabores:['🍑 Durazno','🍋 Limón']},
-  {id:'b14',name:'Bretaña',price:4900,noAzucar:true},
-  {id:'b15',name:'H2O Pet 400',price:5900,noAzucar:true},
-  {id:'b16',name:'Saborizadas Pet 400',price:5900,preparada:true,noAzucar:true,sabores:['🍎 Manzana','🍋 Lima Limón','🍋 Maracuyá']},
-  {id:'b17',name:'Té Hatsu',price:9900,preparada:true,noAzucar:true,sabores:['⚪ Blanco','🟣 Lila','🟢 Verde','⚫ Negro','🔵 Azul','🟡 Amarillo','🟣 Morado']},
-  {id:'b19',name:'Gaseosa Familiar 1.25L',price:9500,preparada:true,noAzucar:true,
-   sabores:['🔴 Coca-Cola Original','⚫ Coca-Cola Zero','🟡 Manzana Brisa']},
+    { id: 'b0', name: 'Jugo Natural', price: 9900, photo: (window.__resources && window.__resources['jugosnat']) || 'uploads/JUGOS NATURALES.jpeg',
+        jugo: true,
+        variants: [{ name: 'En Agua', price: 9900 }, { name: 'En Leche', price: 11500 }],
+        desc: 'Mora · Mango · Guanábana · Maracuyá · Fresa' },
+    { id: 'b3', name: 'Batido de Frutas', price: 11500, preparada: true, desc: 'Fresa, banano, crema de maní, leche deslactosada' },
+    { id: 'b4', name: 'Limonada Natural', price: 5000, preparada: true, photo: (window.__resources && window.__resources['limonat']) || 'uploads/LIMONADA NATURAL.jpg' },
+    { id: 'b5', name: 'Limonada de Coco', price: 10500, preparada: true, photo: (window.__resources && window.__resources['limococo']) || 'uploads/LIMONADA DE COCO.jpg' },
+    { id: 'b6', name: 'Limonada Cerezada', price: 12500, preparada: true, photo: (window.__resources && window.__resources['limocereza']) || 'uploads/LIMONADA DE CEREZA.jpg' },
+    { id: 'b7', name: 'Malteada', price: 17900, preparada: true, photo: (window.__resources && window.__resources['malteada']) || 'uploads/MALTEADA DE FRESA.jpg',
+        sabores: ['🍓 Fresa', '🍦 Vainilla', '🍫 Brownie'],
+        desc: 'Fresa · Vainilla · Brownie' },
+    { id: 'b8', name: 'Agua', price: 3900, preparada: true, noAzucar: true, sabores: ['💧 Sin Gas', '🥊 Con Gas'] },
+    { id: 'b9', name: 'Gaseosa Personal', price: 5900, preparada: true, noAzucar: true,
+        sabores: ['🔴 Coca-Cola Original', '⚫ Coca-Cola Zero', '🟡 Cuatro', '🟢 Sprite', '🏆 Premio'] },
+    { id: 'b11', name: 'Jugo Hit', price: 5900, preparada: true, noAzucar: true,
+        sabores: ['🥭 Mango', '🫐 Mora', '🌴 Tropical', '🍊 Naranja', '🍍 Piña'] },
+    { id: 'b13', name: 'Mr. Te Pet 500', price: 5900, preparada: true, noAzucar: true, sabores: ['🍑 Durazno', '🍋 Limón'] },
+    { id: 'b14', name: 'Bretaña', price: 4900, noAzucar: true },
+    { id: 'b15', name: 'H2O Pet 400', price: 5900, noAzucar: true },
+    { id: 'b16', name: 'Saborizadas Pet 400', price: 5900, preparada: true, noAzucar: true, sabores: ['🍎 Manzana', '🍋 Lima Limón', '🍋 Maracuyá'] },
+    { id: 'b17', name: 'Té Hatsu', price: 9900, preparada: true, noAzucar: true, sabores: ['⚪ Blanco', '🟣 Lila', '🟢 Verde', '⚫ Negro', '🔵 Azul', '🟡 Amarillo', '🟣 Morado'] },
+    { id: 'b19', name: 'Gaseosa Familiar 1.25L', price: 9500, preparada: true, noAzucar: true,
+        sabores: ['🔴 Coca-Cola Original', '⚫ Coca-Cola Zero', '🟡 Manzana Brisa'] },
 ];
-
 const ARMA_BASE = 6000;
 const ARMA_CARNES = [
-  {name:'Carne desmechada',price:7500},{name:'Pollo desmechado',price:7000},
-  {name:'Tocineta',price:5500},{name:'Pepperoni',price:5000},
-  {name:'Salami',price:5000},{name:'Jamón',price:5000},
-  {name:'Salchicha ranchera',price:5500},{name:'Chile con carne',price:5500},
+    { name: 'Carne desmechada', price: 7500 }, { name: 'Pollo desmechado', price: 7000 },
+    { name: 'Tocineta', price: 5500 }, { name: 'Pepperoni', price: 5000 },
+    { name: 'Salami', price: 5000 }, { name: 'Jamón', price: 5000 },
+    { name: 'Salchicha ranchera', price: 5500 }, { name: 'Chile con carne', price: 5500 },
 ];
 const ARMA_QUESOS = [
-  {name:'Doble crema',price:5000},{name:'Americano',price:5000},
-  {name:'Cuajada',price:4500},{name:'Parmesano',price:5000},{name:'Salsa cheddar',price:5000},
+    { name: 'Doble crema', price: 5000 }, { name: 'Americano', price: 5000 },
+    { name: 'Cuajada', price: 4500 }, { name: 'Parmesano', price: 5000 }, { name: 'Salsa cheddar', price: 5000 },
 ];
 const ARMA_VERDURAS = [
-  {name:'Champiñón',price:4500},{name:'Maíz tierno',price:3500},
-  {name:'Pico de gallo',price:2000},{name:'Jalapeños',price:2000},
+    { name: 'Champiñón', price: 4500 }, { name: 'Maíz tierno', price: 3500 },
+    { name: 'Pico de gallo', price: 2000 }, { name: 'Jalapeños', price: 2000 },
 ];
 const ARMA_FRUTAS = [
-  {name:'Fresa',price:3000},{name:'Banano',price:2000},
-  {name:'Durazno',price:3900},{name:'Manzana',price:2500},{name:'Piña',price:2000},
+    { name: 'Fresa', price: 3000 }, { name: 'Banano', price: 2000 },
+    { name: 'Durazno', price: 3900 }, { name: 'Manzana', price: 2500 }, { name: 'Piña', price: 2000 },
 ];
 const ARMA_DULCES = [
-  {name:'Nutella',price:6900},{name:'Chocolate',price:3500},
-  {name:'Arequipe',price:3000},{name:'Crema de maní',price:4500},
+    { name: 'Nutella', price: 6900 }, { name: 'Chocolate', price: 3500 },
+    { name: 'Arequipe', price: 3000 }, { name: 'Crema de maní', price: 4500 },
 ];
-
 // ============================================================
 // HELPERS
 // ============================================================
 const fmtP = p => '$' + p.toLocaleString('es-CO');
-const catColor = id => (CATEGORIES.find(c=>c.id===id)||{color:'#C41E3A'}).color;
-const catEmoji = id => (CATEGORIES.find(c=>c.id===id)||{emoji:'🥞'}).emoji;
-
+const catColor = id => (CATEGORIES.find(c => c.id === id) || { color: '#C41E3A' }).color;
+const catEmoji = id => (CATEGORIES.find(c => c.id === id) || { emoji: '🥞' }).emoji;
 // ============================================================
 // INGREDIENT EXPLOSION
 // ============================================================
 // Parse "🍗 Pollo desmechado" → { emoji: "🍗", label: "Pollo desmechado" }
 function parseIng(ing) {
-  const m = ing.match(/^([\p{Emoji_Presentation}\p{Extended_Pictographic}]+)\s+(.+)$/u);
-  if (m) return { emoji: m[1].trim(), label: m[2].trim() };
-  return { emoji: '🥞', label: ing };
+    const m = ing.match(/^([\p{Emoji_Presentation}\p{Extended_Pictographic}]+)\s+(.+)$/u);
+    if (m)
+        return { emoji: m[1].trim(), label: m[2].trim() };
+    return { emoji: '🥞', label: ing };
 }
-
 // Category-based colors for ingredient bubbles
 const ING_COLORS = [
-  '#FFF0E0','#E8F5FF','#F0FFE8','#FFF0F5','#F5F0FF',
-  '#FFFBE0','#E0F5FF','#FFE8F0','#E8FFE8','#FFE0E0',
+    '#FFF0E0', '#E8F5FF', '#F0FFE8', '#FFF0F5', '#F5F0FF',
+    '#FFFBE0', '#E0F5FF', '#FFE8F0', '#E8FFE8', '#FFE0E0',
 ];
-
-function Explosion({ingredients, onDone, centerEmoji, centerPhoto}) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 1600);
-    return () => clearTimeout(t);
-  }, []);
-
-  const total = ingredients.length;
-  // Spiral outward with varied distances for more dramatic effect
-  const positions = ingredients.map((_, i) => {
-    const angle = (2 * Math.PI * i / total) - Math.PI / 2;
-    const dist = 100 + (i % 3) * 20; // 100–140px
-    return {
-      tx: Math.cos(angle) * dist,
-      ty: Math.sin(angle) * dist,
-      rot: ((i * 47) % 40 - 20) + 'deg',
-      delay: (i * 0.07) + 's',
-      color: ING_COLORS[i % ING_COLORS.length],
-    };
-  });
-
-  return (
-    <div className="expl-wrap" style={{height:230}}>
-      {/* Center: photo circle or emoji shaking */}
-      {centerEmoji
-        ? <span className="boom" style={{fontSize:72, position:'absolute', zIndex:5}}>{centerEmoji}</span>
-        : centerPhoto
-          ? <img className="boom" src={centerPhoto} alt="" style={{width:80,height:80,borderRadius:'50%',objectFit:'cover',position:'absolute',zIndex:5,border:'3px solid #F4C430',boxShadow:'0 4px 20px rgba(0,0,0,.25)'}}/>
-          : <span className="boom" style={{fontSize:72, position:'absolute', zIndex:5}}>🥞</span>
-      }
-      {ingredients.map((ing, i) => {
-        const {emoji, label} = parseIng(ing);
-        return (
-          <div
-            key={i}
-            className="ing-bubble"
-            style={{
-              '--tx': positions[i].tx + 'px',
-              '--ty': positions[i].ty + 'px',
-              '--rot': positions[i].rot,
-              animationDelay: positions[i].delay,
-              background: positions[i].color,
-              borderColor: '#F4C430',
-            }}
-          >
-            <div className="ing-emoji">{emoji}</div>
-            <div className="ing-label">{label}</div>
-          </div>
-        );
-      })}
-    </div>
-  );
+function Explosion({ ingredients, onDone, centerEmoji, centerPhoto }) {
+    useEffect(() => {
+        const t = setTimeout(onDone, 1600);
+        return () => clearTimeout(t);
+    }, []);
+    const total = ingredients.length;
+    // Spiral outward with varied distances for more dramatic effect
+    const positions = ingredients.map((_, i) => {
+        const angle = (2 * Math.PI * i / total) - Math.PI / 2;
+        const dist = 100 + (i % 3) * 20; // 100–140px
+        return {
+            tx: Math.cos(angle) * dist,
+            ty: Math.sin(angle) * dist,
+            rot: ((i * 47) % 40 - 20) + 'deg',
+            delay: (i * 0.07) + 's',
+            color: ING_COLORS[i % ING_COLORS.length],
+        };
+    });
+    return (React.createElement("div", { className: "expl-wrap", style: { height: 230 } },
+        centerEmoji
+            ? React.createElement("span", { className: "boom", style: { fontSize: 72, position: 'absolute', zIndex: 5 } }, centerEmoji)
+            : centerPhoto
+                ? React.createElement("img", { className: "boom", src: centerPhoto, alt: "", style: { width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', position: 'absolute', zIndex: 5, border: '3px solid #F4C430', boxShadow: '0 4px 20px rgba(0,0,0,.25)' } })
+                : React.createElement("span", { className: "boom", style: { fontSize: 72, position: 'absolute', zIndex: 5 } }, "\uD83E\uDD5E"),
+        ingredients.map((ing, i) => {
+            const { emoji, label } = parseIng(ing);
+            return (React.createElement("div", { key: i, className: "ing-bubble", style: {
+                    '--tx': positions[i].tx + 'px',
+                    '--ty': positions[i].ty + 'px',
+                    '--rot': positions[i].rot,
+                    animationDelay: positions[i].delay,
+                    background: positions[i].color,
+                    borderColor: '#F4C430',
+                } },
+                React.createElement("div", { className: "ing-emoji" }, emoji),
+                React.createElement("div", { className: "ing-label" }, label)));
+        })));
 }
-
 // ============================================================
 // PRODUCT MODAL
 // ============================================================
-function ProductModal({item, onClose, onAdd}) {
-  const [phase, setPhase] = useState('photo'); // photo | exploding | revealed
-  const [qty, setQty] = useState(1);
-  const [ads, setAds] = useState({});
-  const [obs, setObs] = useState('');
-  const [retirados, setRetirados] = useState({});
-  const [showRetiro, setShowRetiro] = useState(false);
-  const [variant, setVariant] = useState(item.variants ? item.variants[0] : null);
-  const [mods, setMods] = useState(() => {
-    const m = {};
-    (item.modifiers||[]).forEach(mod => { m[mod.name] = mod.default || mod.options[0]; });
-    return m;
-  });
-
-  const basePrice = variant ? variant.price : item.price;
-
-  const color = catColor(item.cat);
-  const emoji = catEmoji(item.cat);
-  const ADICIONALES = getAdicionales(item.cat);
-
-  const changeAdQty = (ad, delta) => {
-    setAds(prev => {
-      const cur = prev[ad.name]?.qty || 0;
-      const next = Math.max(0, cur + delta);
-      if (next === 0) { const n={...prev}; delete n[ad.name]; return n; }
-      return {...prev, [ad.name]: {...ad, qty: next}};
+function ProductModal({ item, onClose, onAdd }) {
+    const [phase, setPhase] = useState('photo'); // photo | exploding | revealed
+    const [qty, setQty] = useState(1);
+    const [ads, setAds] = useState({});
+    const [obs, setObs] = useState('');
+    const [retirados, setRetirados] = useState({});
+    const [showRetiro, setShowRetiro] = useState(false);
+    const [variant, setVariant] = useState(item.variants ? item.variants[0] : null);
+    const [mods, setMods] = useState(() => {
+        const m = {};
+        (item.modifiers || []).forEach(mod => { m[mod.name] = mod.default || mod.options[0]; });
+        return m;
     });
-  };
-
-  const adsTotal = Object.values(ads).reduce((s,a)=>s+(a.price*(a.qty||1)), 0);
-  const total = (basePrice + adsTotal) * qty;
-
-  const handleAdd = () => {
-    const retiradosList = Object.keys(retirados).filter(k=>retirados[k]);
-    const modsList = Object.entries(mods).map(([k,v])=>v).join(', ');
-    const obsFinal = [obs, retiradosList.length ? `SIN: ${retiradosList.join(', ')}` : '', modsList].filter(Boolean).join(' | ');
-    const itemName = variant ? `${item.name} (${variant.name})` : item.name;
-    onAdd({item:{...item,name:itemName}, qty, additions:Object.values(ads), obs:obsFinal, totalPrice:total});
-    onClose();
-  };
-
-  return (
-    <div className="overlay" onClick={e => e.target===e.currentTarget && onClose()}>
-      <div className="modal">
-        <div className="modal-handle"/>
-        <button className="close-x" onClick={onClose}>← Volver</button>
-
-        {/* PHOTO / EXPLOSION / REVEALED */}
-        {phase === 'photo' && (
-          <div
-            className="photo-zone"
-            style={item.photo ? {background:'#000'} : {background:`linear-gradient(135deg,${color}22,${color}55)`}}
-            onClick={() => setPhase('exploding')}
-          >
-            {item.photo
-              ? <img src={item.photo} alt={item.name} style={{width:'100%',height:'100%',objectFit:'cover',position:'absolute',inset:0,borderRadius:20,opacity:.92}}/>
-              : <span>{emoji}</span>
+    const basePrice = variant ? variant.price : item.price;
+    const color = catColor(item.cat);
+    const emoji = catEmoji(item.cat);
+    const ADICIONALES = getAdicionales(item.cat);
+    const changeAdQty = (ad, delta) => {
+        setAds(prev => {
+            var _a;
+            const cur = ((_a = prev[ad.name]) === null || _a === void 0 ? void 0 : _a.qty) || 0;
+            const next = Math.max(0, cur + delta);
+            if (next === 0) {
+                const n = { ...prev };
+                delete n[ad.name];
+                return n;
             }
-            <div className="tap-hint" style={{zIndex:2,position:'relative'}}>👆 Toca para ver los ingredientes</div>
-          </div>
-        )}
-        {phase === 'exploding' && (
-          <Explosion
-            ingredients={item.ingredients}
-            onDone={() => setPhase('revealed')}
-            centerEmoji={item.photo ? null : emoji}
-            centerPhoto={item.photo || null}
-          />
-        )}
-        {phase === 'revealed' && (
-          <div style={{paddingTop:14}}>
-            <div style={{textAlign:'center',fontSize:13,fontWeight:800,color:'#aaa',marginBottom:8}}>
-              ✨ Ingredientes de tu crepe
-            </div>
-            <div className="ing-grid">
-              {item.ingredients.map((ing,i) => {
-                const {emoji:e, label} = parseIng(ing);
-                return (
-                  <div key={i} className="ing-pill" style={{animationDelay:(i*0.07)+'s',display:'flex',alignItems:'center',gap:5}}>
-                    <span style={{fontSize:18}}>{e}</span>
-                    <span style={{fontSize:12,fontWeight:700}}>{label}</span>
-                  </div>
-                );
-              })}
-            </div>
-            {/* BOTÓN RETIRAR INGREDIENTES */}
-            <div style={{padding:'0 16px',marginTop:10}}>
-              <button
-                onClick={()=>setShowRetiro(r=>!r)}
-                style={{
-                  width:'100%',padding:'10px 14px',
-                  background: showRetiro ? '#FFF0F0' : '#FFF6E0',
-                  border:`2px solid ${showRetiro ? '#C41E3A' : '#F4C430'}`,
-                  borderRadius:12,cursor:'pointer',
-                  display:'flex',alignItems:'center',justifyContent:'space-between',
-                  fontFamily:"'Nunito',sans-serif",fontWeight:800,fontSize:13,color:'#2C1810'
-                }}
-              >
-                <span>🚫 ¿Deseas retirar algún ingrediente?</span>
-                <span style={{fontSize:16}}>{showRetiro ? '▲' : '▼'}</span>
-              </button>
-
-              {showRetiro && (
-                <div style={{background:'#FFF0F0',borderRadius:'0 0 12px 12px',padding:'10px 12px',border:'2px solid #C41E3A',borderTop:'none',display:'flex',flexWrap:'wrap',gap:8}}>
-                  {item.ingredients.map((ing,i) => {
-                    const {emoji:e, label} = parseIng(ing);
-                    const removed = !!retirados[label];
-                    return (
-                      <div
-                        key={i}
-                        onClick={()=>setRetirados(p=>({...p,[label]:!p[label]}))}
-                        style={{
-                          display:'flex',alignItems:'center',gap:5,
-                          padding:'6px 12px',borderRadius:50,cursor:'pointer',
-                          background: removed ? '#C41E3A' : '#fff',
-                          border:`2px solid ${removed ? '#C41E3A' : '#ddd'}`,
-                          color: removed ? '#fff' : '#2C1810',
-                          fontSize:13,fontWeight:700,
-                          textDecoration: removed ? 'line-through' : 'none',
-                          transition:'all .15s'
-                        }}
-                      >
-                        <span style={{fontSize:16,opacity:removed?.4:1}}>{e}</span>
-                        <span>{label}</span>
-                        {removed && <span style={{fontSize:11,marginLeft:2}}>✕</span>}
-                      </div>
-                    );
-                  })}
-                  {Object.values(retirados).some(Boolean) && (
-                    <button
-                      onClick={()=>setRetirados({})}
-                      style={{background:'none',border:'none',color:'#C41E3A',fontSize:12,fontWeight:800,cursor:'pointer',width:'100%',textAlign:'right',marginTop:4}}
-                    >
-                      Restablecer todo ↺
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <button onClick={()=>setPhase('photo')} style={{background:'none',border:'none',color:'#bbb',fontSize:11,marginTop:10,cursor:'pointer',display:'block',marginLeft:'auto',marginRight:16}}>
-              ← ver foto
-            </button>
-          </div>
-        )}
-
-        {/* BODY */}
-        <div className="mbody">
-          <div className="mname">{item.name}</div>
-          <div className="mprice">{fmtP(basePrice)}</div>
-
-          {/* VARIANTES */}
-          {item.variants && (
-            <div style={{marginTop:10}}>
-              <div className="sec-title">🍽️ ¿Cómo la prefieres?</div>
-              <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                {item.variants.map((v,i) => (
-                  <div
-                    key={i}
-                    onClick={()=>setVariant(v)}
-                    style={{
-                      display:'flex',justifyContent:'space-between',alignItems:'center',
-                      padding:'11px 14px',borderRadius:12,cursor:'pointer',
-                      background: variant?.name===v.name ? '#FFF0C0' : '#FFF5D0',
-                      border: `2.5px solid ${variant?.name===v.name ? '#C41E3A' : '#E8C89A'}`,
-                      transition:'all .15s'
-                    }}
-                  >
-                    <div style={{display:'flex',alignItems:'center',gap:8}}>
-                      <div style={{
-                        width:20,height:20,borderRadius:'50%',flexShrink:0,
-                        border:`2.5px solid ${variant?.name===v.name ? '#C41E3A' : '#C8A96A'}`,
-                        background: variant?.name===v.name ? '#C41E3A' : 'transparent',
-                        display:'flex',alignItems:'center',justifyContent:'center'
-                      }}>
-                        {variant?.name===v.name && <div style={{width:8,height:8,borderRadius:'50%',background:'#fff'}}/>}
-                      </div>
-                      <span style={{fontWeight:800,fontSize:14,color:'#3B1A0A'}}>{v.name}</span>
-                    </div>
-                    <span style={{fontFamily:"'Anton',sans-serif",fontSize:18,color:'#C41E3A'}}>{fmtP(v.price)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="mdesc">{item.desc}</div>
-
-          {/* MODIFICADORES */}
-          {item.modifiers && item.modifiers.length > 0 && (
-            <div>
-              {item.modifiers.map(mod => (
-                <div key={mod.name}>
-                  <div className="sec-title">{mod.emoji||'🌶️'} {mod.name}</div>
-                  <div style={{display:'flex',gap:8}}>
-                    {mod.options.map(opt => (
-                      <div
-                        key={opt}
-                        onClick={()=>setMods(p=>({...p,[mod.name]:opt}))}
-                        style={{
-                          flex:1,padding:'10px 8px',borderRadius:12,cursor:'pointer',textAlign:'center',
-                          background:mods[mod.name]===opt?'#C41E3A':'#FFF5D0',
-                          border:`2px solid ${mods[mod.name]===opt?'#C41E3A':'#E8C89A'}`,
-                          transition:'all .15s'
-                        }}
-                      >
-                        <div style={{fontWeight:800,fontSize:13,color:mods[mod.name]===opt?'#fff':'#3B1A0A'}}>{opt}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* CANTIDAD */}
-          <div className="sec-title">🔢 Cantidad</div>
-          <div className="qty-row">
-            <button className="qty-btn" onClick={()=>setQty(q=>Math.max(1,q-1))}>−</button>
-            <span className="qty-num">{qty}</span>
-            <button className="qty-btn" onClick={()=>setQty(q=>q+1)}>+</button>
-          </div>
-
-          {/* ADICIONALES */}
-          <div className="sec-title">➕ Adicionales</div>
-          {ADICIONALES.map(g => (
-            <div key={g.group}>
-              <div className="ad-group-title">{g.group}</div>
-              {g.items.map(ad => {
-                const qty_ad = ads[ad.name]?.qty || 0;
-                return (
-                  <div key={ad.name} className={`ad-item ${qty_ad>0?'on':''}`}>
-                    <div className="ad-left">
-                      <div className="ad-name">{ad.name}</div>
-                      <div className="ad-price">+ {fmtP(ad.price)}{qty_ad>1 ? ` × ${qty_ad} = ${fmtP(ad.price*qty_ad)}` : ''}</div>
-                    </div>
-                    <div className="ad-qty-row">
-                      <button className="ad-qty-btn" onClick={()=>changeAdQty(ad,-1)} style={{opacity:qty_ad===0?.3:1}}>−</button>
-                      <span className="ad-qty-num">{qty_ad}</span>
-                      <button className="ad-qty-btn" onClick={()=>changeAdQty(ad,1)}>+</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-
-          {/* OBSERVACIONES */}
-          <div className="sec-title">📝 Observaciones</div>
-          <textarea
-            className="obs"
-            rows={3}
-            placeholder="Sin cebolla, extra salsa, por favor sin piña... ¡Lo que necesites!"
-            value={obs}
-            onChange={e=>setObs(e.target.value)}
-          />
-
-          <button className="add-btn" onClick={handleAdd}>
-            🛒 Agregar — {fmtP(total)}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+            return { ...prev, [ad.name]: { ...ad, qty: next } };
+        });
+    };
+    const adsTotal = Object.values(ads).reduce((s, a) => s + (a.price * (a.qty || 1)), 0);
+    const total = (basePrice + adsTotal) * qty;
+    const handleAdd = () => {
+        const retiradosList = Object.keys(retirados).filter(k => retirados[k]);
+        const modsList = Object.entries(mods).map(([k, v]) => v).join(', ');
+        const obsFinal = [obs, retiradosList.length ? `SIN: ${retiradosList.join(', ')}` : '', modsList].filter(Boolean).join(' | ');
+        const itemName = variant ? `${item.name} (${variant.name})` : item.name;
+        onAdd({ item: { ...item, name: itemName }, qty, additions: Object.values(ads), obs: obsFinal, totalPrice: total });
+        onClose();
+    };
+    return (React.createElement("div", { className: "overlay", onClick: e => e.target === e.currentTarget && onClose() },
+        React.createElement("div", { className: "modal" },
+            React.createElement("div", { className: "modal-handle" }),
+            React.createElement("button", { className: "close-x", onClick: onClose }, "\u2190 Volver"),
+            phase === 'photo' && (React.createElement("div", { className: "photo-zone", style: item.photo ? { background: '#000' } : { background: `linear-gradient(135deg,${color}22,${color}55)` }, onClick: () => setPhase('exploding') },
+                item.photo
+                    ? React.createElement("img", { src: item.photo, alt: item.name, style: { width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0, borderRadius: 20, opacity: .92 } })
+                    : React.createElement("span", null, emoji),
+                React.createElement("div", { className: "tap-hint", style: { zIndex: 2, position: 'relative' } }, "\uD83D\uDC46 Toca para ver los ingredientes"))),
+            phase === 'exploding' && (React.createElement(Explosion, { ingredients: item.ingredients, onDone: () => setPhase('revealed'), centerEmoji: item.photo ? null : emoji, centerPhoto: item.photo || null })),
+            phase === 'revealed' && (React.createElement("div", { style: { paddingTop: 14 } },
+                React.createElement("div", { style: { textAlign: 'center', fontSize: 13, fontWeight: 800, color: '#aaa', marginBottom: 8 } }, "\u2728 Ingredientes de tu crepe"),
+                React.createElement("div", { className: "ing-grid" }, item.ingredients.map((ing, i) => {
+                    const { emoji: e, label } = parseIng(ing);
+                    return (React.createElement("div", { key: i, className: "ing-pill", style: { animationDelay: (i * 0.07) + 's', display: 'flex', alignItems: 'center', gap: 5 } },
+                        React.createElement("span", { style: { fontSize: 18 } }, e),
+                        React.createElement("span", { style: { fontSize: 12, fontWeight: 700 } }, label)));
+                })),
+                React.createElement("div", { style: { padding: '0 16px', marginTop: 10 } },
+                    React.createElement("button", { onClick: () => setShowRetiro(r => !r), style: {
+                            width: '100%', padding: '10px 14px',
+                            background: showRetiro ? '#FFF0F0' : '#FFF6E0',
+                            border: `2px solid ${showRetiro ? '#C41E3A' : '#F4C430'}`,
+                            borderRadius: 12, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: 13, color: '#2C1810'
+                        } },
+                        React.createElement("span", null, "\uD83D\uDEAB \u00BFDeseas retirar alg\u00FAn ingrediente?"),
+                        React.createElement("span", { style: { fontSize: 16 } }, showRetiro ? '▲' : '▼')),
+                    showRetiro && (React.createElement("div", { style: { background: '#FFF0F0', borderRadius: '0 0 12px 12px', padding: '10px 12px', border: '2px solid #C41E3A', borderTop: 'none', display: 'flex', flexWrap: 'wrap', gap: 8 } },
+                        item.ingredients.map((ing, i) => {
+                            const { emoji: e, label } = parseIng(ing);
+                            const removed = !!retirados[label];
+                            return (React.createElement("div", { key: i, onClick: () => setRetirados(p => ({ ...p, [label]: !p[label] })), style: {
+                                    display: 'flex', alignItems: 'center', gap: 5,
+                                    padding: '6px 12px', borderRadius: 50, cursor: 'pointer',
+                                    background: removed ? '#C41E3A' : '#fff',
+                                    border: `2px solid ${removed ? '#C41E3A' : '#ddd'}`,
+                                    color: removed ? '#fff' : '#2C1810',
+                                    fontSize: 13, fontWeight: 700,
+                                    textDecoration: removed ? 'line-through' : 'none',
+                                    transition: 'all .15s'
+                                } },
+                                React.createElement("span", { style: { fontSize: 16, opacity: removed ? .4 : 1 } }, e),
+                                React.createElement("span", null, label),
+                                removed && React.createElement("span", { style: { fontSize: 11, marginLeft: 2 } }, "\u2715")));
+                        }),
+                        Object.values(retirados).some(Boolean) && (React.createElement("button", { onClick: () => setRetirados({}), style: { background: 'none', border: 'none', color: '#C41E3A', fontSize: 12, fontWeight: 800, cursor: 'pointer', width: '100%', textAlign: 'right', marginTop: 4 } }, "Restablecer todo \u21BA"))))),
+                React.createElement("button", { onClick: () => setPhase('photo'), style: { background: 'none', border: 'none', color: '#bbb', fontSize: 11, marginTop: 10, cursor: 'pointer', display: 'block', marginLeft: 'auto', marginRight: 16 } }, "\u2190 ver foto"))),
+            React.createElement("div", { className: "mbody" },
+                React.createElement("div", { className: "mname" }, item.name),
+                React.createElement("div", { className: "mprice" }, fmtP(basePrice)),
+                item.variants && (React.createElement("div", { style: { marginTop: 10 } },
+                    React.createElement("div", { className: "sec-title" }, "\uD83C\uDF7D\uFE0F \u00BFC\u00F3mo la prefieres?"),
+                    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 8 } }, item.variants.map((v, i) => (React.createElement("div", { key: i, onClick: () => setVariant(v), style: {
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '11px 14px', borderRadius: 12, cursor: 'pointer',
+                            background: (variant === null || variant === void 0 ? void 0 : variant.name) === v.name ? '#FFF0C0' : '#FFF5D0',
+                            border: `2.5px solid ${(variant === null || variant === void 0 ? void 0 : variant.name) === v.name ? '#C41E3A' : '#E8C89A'}`,
+                            transition: 'all .15s'
+                        } },
+                        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                            React.createElement("div", { style: {
+                                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                                    border: `2.5px solid ${(variant === null || variant === void 0 ? void 0 : variant.name) === v.name ? '#C41E3A' : '#C8A96A'}`,
+                                    background: (variant === null || variant === void 0 ? void 0 : variant.name) === v.name ? '#C41E3A' : 'transparent',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                } }, (variant === null || variant === void 0 ? void 0 : variant.name) === v.name && React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff' } })),
+                            React.createElement("span", { style: { fontWeight: 800, fontSize: 14, color: '#3B1A0A' } }, v.name)),
+                        React.createElement("span", { style: { fontFamily: "'Anton',sans-serif", fontSize: 18, color: '#C41E3A' } }, fmtP(v.price)))))))),
+                React.createElement("div", { className: "mdesc" }, item.desc),
+                item.modifiers && item.modifiers.length > 0 && (React.createElement("div", null, item.modifiers.map(mod => (React.createElement("div", { key: mod.name },
+                    React.createElement("div", { className: "sec-title" },
+                        mod.emoji || '🌶️',
+                        " ",
+                        mod.name),
+                    React.createElement("div", { style: { display: 'flex', gap: 8 } }, mod.options.map(opt => (React.createElement("div", { key: opt, onClick: () => setMods(p => ({ ...p, [mod.name]: opt })), style: {
+                            flex: 1, padding: '10px 8px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
+                            background: mods[mod.name] === opt ? '#C41E3A' : '#FFF5D0',
+                            border: `2px solid ${mods[mod.name] === opt ? '#C41E3A' : '#E8C89A'}`,
+                            transition: 'all .15s'
+                        } },
+                        React.createElement("div", { style: { fontWeight: 800, fontSize: 13, color: mods[mod.name] === opt ? '#fff' : '#3B1A0A' } }, opt)))))))))),
+                React.createElement("div", { className: "sec-title" }, "\uD83D\uDD22 Cantidad"),
+                React.createElement("div", { className: "qty-row" },
+                    React.createElement("button", { className: "qty-btn", onClick: () => setQty(q => Math.max(1, q - 1)) }, "\u2212"),
+                    React.createElement("span", { className: "qty-num" }, qty),
+                    React.createElement("button", { className: "qty-btn", onClick: () => setQty(q => q + 1) }, "+")),
+                React.createElement("div", { className: "sec-title" }, "\u2795 Adicionales"),
+                ADICIONALES.map(g => (React.createElement("div", { key: g.group },
+                    React.createElement("div", { className: "ad-group-title" }, g.group),
+                    g.items.map(ad => {
+                        var _a;
+                        const qty_ad = ((_a = ads[ad.name]) === null || _a === void 0 ? void 0 : _a.qty) || 0;
+                        return (React.createElement("div", { key: ad.name, className: `ad-item ${qty_ad > 0 ? 'on' : ''}` },
+                            React.createElement("div", { className: "ad-left" },
+                                React.createElement("div", { className: "ad-name" }, ad.name),
+                                React.createElement("div", { className: "ad-price" },
+                                    "+ ",
+                                    fmtP(ad.price),
+                                    qty_ad > 1 ? ` × ${qty_ad} = ${fmtP(ad.price * qty_ad)}` : '')),
+                            React.createElement("div", { className: "ad-qty-row" },
+                                React.createElement("button", { className: "ad-qty-btn", onClick: () => changeAdQty(ad, -1), style: { opacity: qty_ad === 0 ? .3 : 1 } }, "\u2212"),
+                                React.createElement("span", { className: "ad-qty-num" }, qty_ad),
+                                React.createElement("button", { className: "ad-qty-btn", onClick: () => changeAdQty(ad, 1) }, "+"))));
+                    })))),
+                React.createElement("div", { className: "sec-title" }, "\uD83D\uDCDD Observaciones"),
+                React.createElement("textarea", { className: "obs", rows: 3, placeholder: "Sin cebolla, extra salsa, por favor sin pi\u00F1a... \u00A1Lo que necesites!", value: obs, onChange: e => setObs(e.target.value) }),
+                React.createElement("button", { className: "add-btn", onClick: handleAdd },
+                    "\uD83D\uDED2 Agregar \u2014 ",
+                    fmtP(total))))));
 }
-
 // ============================================================
 // SPLASH SCREEN
 // ============================================================
@@ -840,682 +701,504 @@ function ProductModal({item, onClose, onAdd}) {
 //    OPCIÓN B: en Google Drive abre el video → Compartir → Copiar link → pega el ID en VIDEO_DRIVE_ID
 const VIDEO_SRC = null;
 const VIDEO_DRIVE_ID = null;
-
-function Splash({onEnter}) {
-  const [leaving, setLeaving] = useState(false);
-  const [countdown, setCountdown] = useState(4);
-
-  const handleEnter = () => {
-    setLeaving(true);
-    setTimeout(onEnter, 450);
-  };
-
-  // Auto-advance after 6 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCountdown(c => {
-        if (c <= 1) { clearInterval(interval); handleEnter(); return 0; }
-        return c - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const embedSrc = VIDEO_DRIVE_ID
-    ? `https://drive.google.com/file/d/${VIDEO_DRIVE_ID}/preview`
-    : null;
-
-  return (
-    <div className={`splash ${leaving ? 'out' : ''}`} style={{padding:'24px 16px',gap:14,background:'#fff'}}>
-      {/* Decorative SVG corners like the original menu */}
-      <svg style={{position:'absolute',top:0,left:0,width:140,opacity:.08}} viewBox="0 0 200 200"><path d="M20 80 Q40 20 80 40 Q60 80 20 80Z" fill="#3B1A0A"/><circle cx="50" cy="30" r="18" fill="none" stroke="#3B1A0A" strokeWidth="3"/><path d="M10 120 Q30 90 60 110 Q40 130 10 120Z" fill="#3B1A0A"/></svg>
-      <svg style={{position:'absolute',top:0,right:0,width:140,opacity:.06}} viewBox="0 0 200 200"><path d="M180 60 Q160 10 130 30 Q150 70 180 60Z" fill="#3B1A0A"/><ellipse cx="155" cy="110" rx="30" ry="20" fill="none" stroke="#3B1A0A" strokeWidth="3"/></svg>
-      <svg style={{position:'absolute',bottom:0,right:0,width:180,opacity:.07}} viewBox="0 0 200 200"><path d="M200 200 Q160 140 120 160 Q140 200 200 200Z" fill="#3B1A0A"/><path d="M150 140 Q180 120 190 150 Q170 165 150 140Z" fill="#3B1A0A"/></svg>
-      <svg style={{position:'absolute',bottom:60,left:0,width:120,opacity:.07}} viewBox="0 0 200 200"><path d="M0 180 Q30 140 60 160 Q30 190 0 180Z" fill="#3B1A0A"/></svg>
-
-      {/* Logo grande centrado */}
-      <div className="splash-logo" style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14}}>
-        <img
-          className="splash-logo-img"
-          src="uploads/logo-9cc2bf2c.jpeg"
-          alt="Las Crepes"
-          style={{width:150,height:150,borderRadius:'50%',objectFit:'cover',border:'5px solid #C41E3A',boxShadow:'0 8px 32px rgba(196,30,58,.30)',background:'#fff'}}
-        />
-        <div style={{textAlign:'center'}}>
-          <div style={{fontFamily:"'Anton',sans-serif",fontSize:44,color:'#C41E3A',letterSpacing:3,lineHeight:1,textShadow:'none'}}>LAS CREPES</div>
-          <div style={{fontSize:12,color:'#3B1A0A',letterSpacing:2,textTransform:'uppercase',fontWeight:800,marginTop:4}}>Rápidas, Exquisitas y Saludables</div>
-        </div>
-      </div>
-
-      {/* VIDEO compacto */}
-      {(VIDEO_SRC || embedSrc) && (
-        <div style={{
-          width:'100%',maxWidth:360,borderRadius:18,overflow:'hidden',
-          boxShadow:'0 8px 32px rgba(0,0,0,.18)',
-          border:'3px solid #C41E3A',
-          background:'#000',
-          animation:'videoIn .7s .3s ease both',
-          position:'relative',
-          marginTop:20
-        }}>
-          {VIDEO_SRC
-            ? <video
-                src={VIDEO_SRC}
-                autoPlay muted playsInline
-                style={{width:'100%',maxHeight:280,objectFit:'cover',display:'block'}}
-                onEnded={handleEnter}
-              />
-            : <iframe
-                src={embedSrc + '&autoplay=1'}
-                allowFullScreen
-                allow="autoplay; encrypted-media"
-                frameBorder="0"
-                style={{width:'100%',border:'none',height:'56vw',maxHeight:280,display:'block'}}
-              />
-          }
-        </div>
-      )}
-
-      {/* Botón + countdown */}
-      <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,marginTop:20,animation:'btnIn .5s .8s ease both',opacity:0,animationFillMode:'both'}}>
-        <button
-          onClick={handleEnter}
-          style={{
-            background:'#C41E3A',border:'none',borderRadius:50,
-            padding:'14px 44px',fontFamily:"'Anton',sans-serif",
-            fontSize:22,letterSpacing:2,color:'#fff',cursor:'pointer',
-            boxShadow:'0 4px 16px rgba(196,30,58,.35)',transition:'transform .15s'
-          }}
-        >
-          🥞 VER MENÚ
-        </button>
-        <div style={{fontSize:11,color:'#C8A96A',fontWeight:800,letterSpacing:1}}>
-          {countdown > 0 ? `Continúa en ${countdown}s` : ''}
-        </div>
-      </div>
-    </div>
-  );
+function Splash({ onEnter }) {
+    const [leaving, setLeaving] = useState(false);
+    const [countdown, setCountdown] = useState(4);
+    const handleEnter = () => {
+        setLeaving(true);
+        setTimeout(onEnter, 450);
+    };
+    // Auto-advance after 6 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCountdown(c => {
+                if (c <= 1) {
+                    clearInterval(interval);
+                    handleEnter();
+                    return 0;
+                }
+                return c - 1;
+            });
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+    const embedSrc = VIDEO_DRIVE_ID
+        ? `https://drive.google.com/file/d/${VIDEO_DRIVE_ID}/preview`
+        : null;
+    return (React.createElement("div", { className: `splash ${leaving ? 'out' : ''}`, style: { padding: '24px 16px', gap: 14, background: '#fff' } },
+        React.createElement("svg", { style: { position: 'absolute', top: 0, left: 0, width: 140, opacity: .08 }, viewBox: "0 0 200 200" },
+            React.createElement("path", { d: "M20 80 Q40 20 80 40 Q60 80 20 80Z", fill: "#3B1A0A" }),
+            React.createElement("circle", { cx: "50", cy: "30", r: "18", fill: "none", stroke: "#3B1A0A", strokeWidth: "3" }),
+            React.createElement("path", { d: "M10 120 Q30 90 60 110 Q40 130 10 120Z", fill: "#3B1A0A" })),
+        React.createElement("svg", { style: { position: 'absolute', top: 0, right: 0, width: 140, opacity: .06 }, viewBox: "0 0 200 200" },
+            React.createElement("path", { d: "M180 60 Q160 10 130 30 Q150 70 180 60Z", fill: "#3B1A0A" }),
+            React.createElement("ellipse", { cx: "155", cy: "110", rx: "30", ry: "20", fill: "none", stroke: "#3B1A0A", strokeWidth: "3" })),
+        React.createElement("svg", { style: { position: 'absolute', bottom: 0, right: 0, width: 180, opacity: .07 }, viewBox: "0 0 200 200" },
+            React.createElement("path", { d: "M200 200 Q160 140 120 160 Q140 200 200 200Z", fill: "#3B1A0A" }),
+            React.createElement("path", { d: "M150 140 Q180 120 190 150 Q170 165 150 140Z", fill: "#3B1A0A" })),
+        React.createElement("svg", { style: { position: 'absolute', bottom: 60, left: 0, width: 120, opacity: .07 }, viewBox: "0 0 200 200" },
+            React.createElement("path", { d: "M0 180 Q30 140 60 160 Q30 190 0 180Z", fill: "#3B1A0A" })),
+        React.createElement("div", { className: "splash-logo", style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 } },
+            React.createElement("img", { className: "splash-logo-img", src: "uploads/logo-9cc2bf2c.jpeg", alt: "Las Crepes", style: { width: 150, height: 150, borderRadius: '50%', objectFit: 'cover', border: '5px solid #C41E3A', boxShadow: '0 8px 32px rgba(196,30,58,.30)', background: '#fff' } }),
+            React.createElement("div", { style: { textAlign: 'center' } },
+                React.createElement("div", { style: { fontFamily: "'Anton',sans-serif", fontSize: 44, color: '#C41E3A', letterSpacing: 3, lineHeight: 1, textShadow: 'none' } }, "LAS CREPES"),
+                React.createElement("div", { style: { fontSize: 12, color: '#3B1A0A', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 800, marginTop: 4 } }, "R\u00E1pidas, Exquisitas y Saludables"))),
+        (VIDEO_SRC || embedSrc) && (React.createElement("div", { style: {
+                width: '100%', maxWidth: 360, borderRadius: 18, overflow: 'hidden',
+                boxShadow: '0 8px 32px rgba(0,0,0,.18)',
+                border: '3px solid #C41E3A',
+                background: '#000',
+                animation: 'videoIn .7s .3s ease both',
+                position: 'relative',
+                marginTop: 20
+            } }, VIDEO_SRC
+            ? React.createElement("video", { src: VIDEO_SRC, autoPlay: true, muted: true, playsInline: true, style: { width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }, onEnded: handleEnter })
+            : React.createElement("iframe", { src: embedSrc + '&autoplay=1', allowFullScreen: true, allow: "autoplay; encrypted-media", frameBorder: "0", style: { width: '100%', border: 'none', height: '56vw', maxHeight: 280, display: 'block' } }))),
+        React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 20, animation: 'btnIn .5s .8s ease both', opacity: 0, animationFillMode: 'both' } },
+            React.createElement("button", { onClick: handleEnter, style: {
+                    background: '#C41E3A', border: 'none', borderRadius: 50,
+                    padding: '14px 44px', fontFamily: "'Anton',sans-serif",
+                    fontSize: 22, letterSpacing: 2, color: '#fff', cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(196,30,58,.35)', transition: 'transform .15s'
+                } }, "\uD83E\uDD5E VER MEN\u00DA"),
+            React.createElement("div", { style: { fontSize: 11, color: '#C8A96A', fontWeight: 800, letterSpacing: 1 } }, countdown > 0 ? `Continúa en ${countdown}s` : ''))));
 }
-
-
-function CartDrawer({cart, onClose, onRemove, onSend}) {
-  const total = cart.reduce((s,c)=>s+c.totalPrice, 0);
-
-  const sendWA = () => {
-    const lines = ['🥞 *PEDIDO - LAS CREPES*\n'];
-    cart.forEach((c,i) => {
-      lines.push(`*${i+1}. ${c.item.name}* ×${c.qty}`);
-      if (c.additions.length) lines.push(`   ➕ ${c.additions.map(a=>`${a.name}${a.qty>1?' ×'+a.qty:''}`).join(', ')}`);
-      if (c.obs) lines.push(`   📝 ${c.obs}`);
-      lines.push(`   💰 ${fmtP(c.totalPrice)}\n`);
-    });
-    lines.push(`*TOTAL: ${fmtP(total)}*`);
-    window.open(`https://wa.me/573137160625?text=${encodeURIComponent(lines.join('\n'))}`,'_blank');
-    if (onSend) onSend();
-  };
-
-  return (
-    <div className="cart-overlay" onClick={e=>e.target===e.currentTarget && onClose()}>
-      <div className="cart-draw">
-        <div className="modal-handle"/>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div className="cart-title">🛒 Tu Pedido</div>
-          <button onClick={onClose} style={{background:'none',border:'none',fontSize:22,cursor:'pointer',color:'#aaa'}}>✕</button>
-        </div>
-
-        {cart.length === 0 ? (
-          <div className="empty-cart">
-            <div style={{fontSize:60}}>🥞</div>
-            <div style={{fontWeight:800,marginTop:12,fontSize:16}}>¡El carrito está vacío!</div>
-            <div style={{fontSize:13,marginTop:4}}>Agrega tus crepes favoritas</div>
-          </div>
-        ) : (
-          <>
-            {cart.map((c,i) => (
-              <div key={i} className="ci-row">
-                <div className="ci-emoji">{catEmoji(c.item.cat)}</div>
-                <div className="ci-info">
-                  <div className="ci-name">{c.item.name} ×{c.qty}</div>
-                  {c.additions.length>0 && <div className="ci-detail">➕ {c.additions.map(a=>`${a.name}${a.qty>1?' ×'+a.qty:''}`).join(', ')}</div>}
-                  {c.obs && <div className="ci-detail">📝 {c.obs}</div>}
-                  <button className="ci-del" onClick={()=>onRemove(i)}>✕ quitar</button>
-                </div>
-                <div className="ci-price">{fmtP(c.totalPrice)}</div>
-              </div>
-            ))}
-            <div className="total-row">
-              <div className="total-label">Total del pedido</div>
-              <div className="total-price">{fmtP(total)}</div>
-            </div>
-            <button className="wa-btn" onClick={sendWA}>
-              <svg width="24" height="24" viewBox="0 0 32 32" fill="white">
-                <path d="M16 3C8.82 3 3 8.82 3 16c0 2.3.6 4.47 1.65 6.35L3 29l6.82-1.6A13 13 0 0016 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.35 18.35c-.27.76-1.57 1.44-2.15 1.53-.55.08-1.25.12-2.02-.13-.47-.15-1.07-.35-1.84-.68-3.23-1.4-5.33-4.6-5.49-4.81-.15-.21-1.27-1.69-1.27-3.22 0-1.53.8-2.28 1.08-2.59.28-.3.6-.38.8-.38h.58c.19 0 .44-.07.68.52.27.62.9 2.2.98 2.36.08.15.13.33.03.53-.1.2-.15.32-.29.5-.15.17-.31.38-.44.51-.15.14-.3.3-.13.58.17.28.77 1.27 1.65 2.06 1.13 1.01 2.08 1.32 2.37 1.47.29.14.46.12.63-.07.17-.2.74-.86.93-1.15.2-.29.4-.24.67-.14.27.1 1.74.82 2.04.97.3.15.5.22.57.34.07.12.07.7-.2 1.46z"/>
-              </svg>
-              Enviar por WhatsApp
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
+function CartDrawer({ cart, onClose, onRemove, onSend }) {
+    const total = cart.reduce((s, c) => s + c.totalPrice, 0);
+    const sendWA = () => {
+        const lines = ['🥞 *PEDIDO - LAS CREPES*\n'];
+        cart.forEach((c, i) => {
+            lines.push(`*${i + 1}. ${c.item.name}* ×${c.qty}`);
+            if (c.additions.length)
+                lines.push(`   ➕ ${c.additions.map(a => `${a.name}${a.qty > 1 ? ' ×' + a.qty : ''}`).join(', ')}`);
+            if (c.obs)
+                lines.push(`   📝 ${c.obs}`);
+            lines.push(`   💰 ${fmtP(c.totalPrice)}\n`);
+        });
+        lines.push(`*TOTAL: ${fmtP(total)}*`);
+        window.open(`https://wa.me/573137160625?text=${encodeURIComponent(lines.join('\n'))}`, '_blank');
+        if (onSend)
+            onSend();
+    };
+    return (React.createElement("div", { className: "cart-overlay", onClick: e => e.target === e.currentTarget && onClose() },
+        React.createElement("div", { className: "cart-draw" },
+            React.createElement("div", { className: "modal-handle" }),
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+                React.createElement("div", { className: "cart-title" }, "\uD83D\uDED2 Tu Pedido"),
+                React.createElement("button", { onClick: onClose, style: { background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#aaa' } }, "\u2715")),
+            cart.length === 0 ? (React.createElement("div", { className: "empty-cart" },
+                React.createElement("div", { style: { fontSize: 60 } }, "\uD83E\uDD5E"),
+                React.createElement("div", { style: { fontWeight: 800, marginTop: 12, fontSize: 16 } }, "\u00A1El carrito est\u00E1 vac\u00EDo!"),
+                React.createElement("div", { style: { fontSize: 13, marginTop: 4 } }, "Agrega tus crepes favoritas"))) : (React.createElement(React.Fragment, null,
+                cart.map((c, i) => (React.createElement("div", { key: i, className: "ci-row" },
+                    React.createElement("div", { className: "ci-emoji" }, catEmoji(c.item.cat)),
+                    React.createElement("div", { className: "ci-info" },
+                        React.createElement("div", { className: "ci-name" },
+                            c.item.name,
+                            " \u00D7",
+                            c.qty),
+                        c.additions.length > 0 && React.createElement("div", { className: "ci-detail" },
+                            "\u2795 ",
+                            c.additions.map(a => `${a.name}${a.qty > 1 ? ' ×' + a.qty : ''}`).join(', ')),
+                        c.obs && React.createElement("div", { className: "ci-detail" },
+                            "\uD83D\uDCDD ",
+                            c.obs),
+                        React.createElement("button", { className: "ci-del", onClick: () => onRemove(i) }, "\u2715 quitar")),
+                    React.createElement("div", { className: "ci-price" }, fmtP(c.totalPrice))))),
+                React.createElement("div", { className: "total-row" },
+                    React.createElement("div", { className: "total-label" }, "Total del pedido"),
+                    React.createElement("div", { className: "total-price" }, fmtP(total))),
+                React.createElement("button", { className: "wa-btn", onClick: sendWA },
+                    React.createElement("svg", { width: "24", height: "24", viewBox: "0 0 32 32", fill: "white" },
+                        React.createElement("path", { d: "M16 3C8.82 3 3 8.82 3 16c0 2.3.6 4.47 1.65 6.35L3 29l6.82-1.6A13 13 0 0016 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.35 18.35c-.27.76-1.57 1.44-2.15 1.53-.55.08-1.25.12-2.02-.13-.47-.15-1.07-.35-1.84-.68-3.23-1.4-5.33-4.6-5.49-4.81-.15-.21-1.27-1.69-1.27-3.22 0-1.53.8-2.28 1.08-2.59.28-.3.6-.38.8-.38h.58c.19 0 .44-.07.68.52.27.62.9 2.2.98 2.36.08.15.13.33.03.53-.1.2-.15.32-.29.5-.15.17-.31.38-.44.51-.15.14-.3.3-.13.58.17.28.77 1.27 1.65 2.06 1.13 1.01 2.08 1.32 2.37 1.47.29.14.46.12.63-.07.17-.2.74-.86.93-1.15.2-.29.4-.24.67-.14.27.1 1.74.82 2.04.97.3.15.5.22.57.34.07.12.07.7-.2 1.46z" })),
+                    "Enviar por WhatsApp"))))));
 }
-
 // ============================================================
 // ARMA TU CREPE
 // ============================================================
-function ArmaTuCrepe({onAdd}) {
-  const [carnes, setCarnes] = useState({});
-  const [quesos, setQuesos] = useState({});
-  const [verduras, setVerduras] = useState({});
-  const [frutas, setFrutas] = useState({});
-  const [dulces, setDulces] = useState({});
-  const [qty, setQty] = useState(1);
-  const [obs, setObs] = useState('');
-
-  const toggle = (setter, item) => setter(p => {
-    if (p[item.name]) { const n={...p}; delete n[item.name]; return n; }
-    return {...p, [item.name]:item};
-  });
-
-  const all = {...carnes,...quesos,...verduras,...frutas,...dulces};
-  const extras = Object.values(all).reduce((s,a)=>s+a.price,0);
-  const total = (ARMA_BASE + extras) * qty;
-
-  const Pill = ({item, sel, onToggle}) => (
-    <div onClick={()=>onToggle(item)} className={`pill-sel ${sel?'on':''}`}>
-      {item.name} <span style={{opacity:.7,fontSize:11}}>+${(item.price/1000).toFixed(1)}k</span>
-    </div>
-  );
-
-  const handleAdd = () => {
-    if (!Object.keys(all).length) { alert('¡Selecciona al menos un ingrediente!'); return; }
-    onAdd({
-      item:{id:'arma',name:'Arma Tu Crepe',cat:'armatu',price:ARMA_BASE},
-      qty, additions:Object.values(all), obs, totalPrice:total,
-    });
-  };
-
-  return (
-    <div className="arma-wrap">
-      <div className="arma-hero">
-        <div className="arma-title">🛠️ Arma Tu Crepe</div>
-        <div style={{fontSize:14,color:'#777'}}>Masa clásica — {fmtP(ARMA_BASE)} · Elige tus ingredientes</div>
-      </div>
-
-      <div className="sec-title">🥩 Carnes</div>
-      <div style={{display:'flex',flexWrap:'wrap'}}>
-        {ARMA_CARNES.map(c=><Pill key={c.name} item={c} sel={!!carnes[c.name]} onToggle={i=>toggle(setCarnes,i)}/>)}
-      </div>
-
-      <div className="sec-title">🧀 Quesos y Salsas</div>
-      <div style={{display:'flex',flexWrap:'wrap'}}>
-        {ARMA_QUESOS.map(c=><Pill key={c.name} item={c} sel={!!quesos[c.name]} onToggle={i=>toggle(setQuesos,i)}/>)}
-      </div>
-
-      <div className="sec-title">🥬 Verduras</div>
-      <div style={{display:'flex',flexWrap:'wrap'}}>
-        {ARMA_VERDURAS.map(c=><Pill key={c.name} item={c} sel={!!verduras[c.name]} onToggle={i=>toggle(setVerduras,i)}/>)}
-      </div>
-
-      <div className="sec-title">🍓 Frutas</div>
-      <div style={{display:'flex',flexWrap:'wrap'}}>
-        {ARMA_FRUTAS.map(c=><Pill key={c.name} item={c} sel={!!frutas[c.name]} onToggle={i=>toggle(setFrutas,i)}/>)}
-      </div>
-
-      <div className="sec-title">🍫 Dulces</div>
-      <div style={{display:'flex',flexWrap:'wrap'}}>
-        {ARMA_DULCES.map(c=><Pill key={c.name} item={c} sel={!!dulces[c.name]} onToggle={i=>toggle(setDulces,i)}/>)}
-      </div>
-
-      <div className="arma-summary">
-        <div style={{fontWeight:800,fontSize:14,marginBottom:6}}>Tu selección:</div>
-        {!Object.keys(all).length
-          ? <div style={{color:'#bbb',fontSize:13}}>¡Elige tus ingredientes arriba!</div>
-          : <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-              {Object.values(all).map(a=>(
-                <span key={a.name} style={{background:'#fff',border:'1.5px solid #F4C430',borderRadius:50,padding:'4px 10px',fontSize:12,fontWeight:700}}>{a.name}</span>
-              ))}
-            </div>
+function ArmaTuCrepe({ onAdd }) {
+    const [carnes, setCarnes] = useState({});
+    const [quesos, setQuesos] = useState({});
+    const [verduras, setVerduras] = useState({});
+    const [frutas, setFrutas] = useState({});
+    const [dulces, setDulces] = useState({});
+    const [qty, setQty] = useState(1);
+    const [obs, setObs] = useState('');
+    const toggle = (setter, item) => setter(p => {
+        if (p[item.name]) {
+            const n = { ...p };
+            delete n[item.name];
+            return n;
         }
-        <div style={{fontFamily:'Bangers',fontSize:26,color:'#C41E3A',marginTop:10,letterSpacing:1}}>Total: {fmtP(total)}</div>
-      </div>
-
-      <div className="sec-title">🔢 Cantidad</div>
-      <div className="qty-row" style={{marginBottom:16}}>
-        <button className="qty-btn" onClick={()=>setQty(q=>Math.max(1,q-1))}>−</button>
-        <span className="qty-num">{qty}</span>
-        <button className="qty-btn" onClick={()=>setQty(q=>q+1)}>+</button>
-      </div>
-
-      <div className="sec-title">📝 Observaciones</div>
-      <textarea className="obs" rows={2} style={{marginBottom:4}} placeholder="Alguna preferencia especial..." value={obs} onChange={e=>setObs(e.target.value)}/>
-
-      <button className="add-btn" style={{marginTop:14}} onClick={handleAdd}>
-        🛒 Agregar al pedido — {fmtP(total)}
-      </button>
-    </div>
-  );
+        return { ...p, [item.name]: item };
+    });
+    const all = { ...carnes, ...quesos, ...verduras, ...frutas, ...dulces };
+    const extras = Object.values(all).reduce((s, a) => s + a.price, 0);
+    const total = (ARMA_BASE + extras) * qty;
+    const Pill = ({ item, sel, onToggle }) => (React.createElement("div", { onClick: () => onToggle(item), className: `pill-sel ${sel ? 'on' : ''}` },
+        item.name,
+        " ",
+        React.createElement("span", { style: { opacity: .7, fontSize: 11 } },
+            "+$",
+            (item.price / 1000).toFixed(1),
+            "k")));
+    const handleAdd = () => {
+        if (!Object.keys(all).length) {
+            alert('¡Selecciona al menos un ingrediente!');
+            return;
+        }
+        onAdd({
+            item: { id: 'arma', name: 'Arma Tu Crepe', cat: 'armatu', price: ARMA_BASE },
+            qty, additions: Object.values(all), obs, totalPrice: total,
+        });
+    };
+    return (React.createElement("div", { className: "arma-wrap" },
+        React.createElement("div", { className: "arma-hero" },
+            React.createElement("div", { className: "arma-title" }, "\uD83D\uDEE0\uFE0F Arma Tu Crepe"),
+            React.createElement("div", { style: { fontSize: 14, color: '#777' } },
+                "Masa cl\u00E1sica \u2014 ",
+                fmtP(ARMA_BASE),
+                " \u00B7 Elige tus ingredientes")),
+        React.createElement("div", { className: "sec-title" }, "\uD83E\uDD69 Carnes"),
+        React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap' } }, ARMA_CARNES.map(c => React.createElement(Pill, { key: c.name, item: c, sel: !!carnes[c.name], onToggle: i => toggle(setCarnes, i) }))),
+        React.createElement("div", { className: "sec-title" }, "\uD83E\uDDC0 Quesos y Salsas"),
+        React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap' } }, ARMA_QUESOS.map(c => React.createElement(Pill, { key: c.name, item: c, sel: !!quesos[c.name], onToggle: i => toggle(setQuesos, i) }))),
+        React.createElement("div", { className: "sec-title" }, "\uD83E\uDD6C Verduras"),
+        React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap' } }, ARMA_VERDURAS.map(c => React.createElement(Pill, { key: c.name, item: c, sel: !!verduras[c.name], onToggle: i => toggle(setVerduras, i) }))),
+        React.createElement("div", { className: "sec-title" }, "\uD83C\uDF53 Frutas"),
+        React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap' } }, ARMA_FRUTAS.map(c => React.createElement(Pill, { key: c.name, item: c, sel: !!frutas[c.name], onToggle: i => toggle(setFrutas, i) }))),
+        React.createElement("div", { className: "sec-title" }, "\uD83C\uDF6B Dulces"),
+        React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap' } }, ARMA_DULCES.map(c => React.createElement(Pill, { key: c.name, item: c, sel: !!dulces[c.name], onToggle: i => toggle(setDulces, i) }))),
+        React.createElement("div", { className: "arma-summary" },
+            React.createElement("div", { style: { fontWeight: 800, fontSize: 14, marginBottom: 6 } }, "Tu selecci\u00F3n:"),
+            !Object.keys(all).length
+                ? React.createElement("div", { style: { color: '#bbb', fontSize: 13 } }, "\u00A1Elige tus ingredientes arriba!")
+                : React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } }, Object.values(all).map(a => (React.createElement("span", { key: a.name, style: { background: '#fff', border: '1.5px solid #F4C430', borderRadius: 50, padding: '4px 10px', fontSize: 12, fontWeight: 700 } }, a.name)))),
+            React.createElement("div", { style: { fontFamily: 'Bangers', fontSize: 26, color: '#C41E3A', marginTop: 10, letterSpacing: 1 } },
+                "Total: ",
+                fmtP(total))),
+        React.createElement("div", { className: "sec-title" }, "\uD83D\uDD22 Cantidad"),
+        React.createElement("div", { className: "qty-row", style: { marginBottom: 16 } },
+            React.createElement("button", { className: "qty-btn", onClick: () => setQty(q => Math.max(1, q - 1)) }, "\u2212"),
+            React.createElement("span", { className: "qty-num" }, qty),
+            React.createElement("button", { className: "qty-btn", onClick: () => setQty(q => q + 1) }, "+")),
+        React.createElement("div", { className: "sec-title" }, "\uD83D\uDCDD Observaciones"),
+        React.createElement("textarea", { className: "obs", rows: 2, style: { marginBottom: 4 }, placeholder: "Alguna preferencia especial...", value: obs, onChange: e => setObs(e.target.value) }),
+        React.createElement("button", { className: "add-btn", style: { marginTop: 14 }, onClick: handleAdd },
+            "\uD83D\uDED2 Agregar al pedido \u2014 ",
+            fmtP(total))));
 }
-
 // ============================================================
 // BEBIDAS
 // ============================================================
-function BebidaJugo({b, onAdd}) {
-  const [open, setOpen] = React.useState(false);
-  const [base, setBase] = React.useState(null);
-  const [sabor, setSabor] = React.useState(null);
-  const [azucar, setAzucar] = React.useState('Normal');
-  const [warn, setWarn] = React.useState('');
-  const precio = base ? b.variants.find(v=>v.name===base)?.price : b.price;
-  const handleAdd = () => {
-    if (!base) { setWarn('Elige en agua o en leche'); return; }
-    if (!sabor) { setWarn('Elige el sabor'); return; }
-    setWarn('');
-    const azucarTag = azucar === 'Normal' ? '' : ` (${azucar})`;
-    onAdd({item:{...b,cat:'bebidas',name:`Jugo ${sabor} ${base}${azucarTag}`},qty:1,additions:[],obs:'',totalPrice:precio});
-    setBase(null); setSabor(null); setAzucar('Normal'); setOpen(false);
-  };
-  return (
-    <div style={{background:'#fff',borderRadius:14,marginBottom:8,boxShadow:'0 2px 8px rgba(0,0,0,.07)',border:'1.5px solid #F0DEB4',overflow:'hidden'}}>
-      <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',cursor:'pointer'}} onClick={()=>setOpen(o=>!o)}>
-        {b.photo && <img src={b.photo} alt={b.name} style={{width:52,height:52,borderRadius:10,objectFit:'cover',flexShrink:0}}/>}
-        <div style={{flex:1}}>
-          <div style={{fontWeight:800,fontSize:14,color:'#3B1A0A'}}>🥤 {b.name}</div>
-          <div style={{fontSize:10,color:'#8B5E3C',marginTop:1}}>{b.desc}</div>
-          <div style={{fontSize:10,color:'#C41E3A',fontWeight:800,marginTop:2}}>💧 $9.9k agua · 🥛 $11.5k leche</div>
-        </div>
-        <div style={{fontSize:18,color:'#C41E3A'}}>{open?'▲':'▼'}</div>
-      </div>
-      {open && (
-        <div style={{padding:'0 12px 12px',borderTop:'1.5px solid #F0DEB4'}}>
-          <div style={{fontSize:11,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginTop:10,marginBottom:6}}>¿En agua o en leche?</div>
-          <div style={{display:'flex',gap:8,marginBottom:10}}>
-            {b.variants.map(v=>(
-              <div key={v.name} onClick={()=>{setBase(v.name);setWarn('');}} style={{
-                flex:1,padding:'8px',borderRadius:10,cursor:'pointer',textAlign:'center',
-                background:base===v.name?'#C41E3A':'#FFF5D0',
-                border:`2px solid ${base===v.name?'#C41E3A':'#E8C89A'}`,transition:'all .15s'
-              }}>
-                <div style={{fontWeight:800,fontSize:12,color:base===v.name?'#fff':'#3B1A0A'}}>{v.name}</div>
-                <div style={{fontFamily:"'Anton',sans-serif",fontSize:15,color:base===v.name?'#FFE080':'#C41E3A'}}>${(v.price/1000).toFixed(1)}k</div>
-              </div>
-            ))}
-          </div>
-          <div style={{fontSize:11,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>🍓 Sabor</div>
-          <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:10}}>
-            {SABORES_JUGO.map(s=>(
-              <div key={s} onClick={()=>{setSabor(s);setWarn('');}} style={{
-                padding:'6px 11px',borderRadius:50,cursor:'pointer',
-                background:sabor===s?'#C41E3A':'#FFF5D0',
-                border:`2px solid ${sabor===s?'#C41E3A':'#E8C89A'}`,
-                color:sabor===s?'#fff':'#3B1A0A',fontWeight:800,fontSize:12,transition:'all .15s'
-              }}>{s}</div>
-            ))}
-          </div>
-          <div style={{fontSize:11,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginBottom:6}}>🍬 Azúcar</div>
-          <div style={{display:'flex',gap:6,marginBottom:10}}>
-            {AZUCAR_OPTS.map(a=>(
-              <div key={a} onClick={()=>setAzucar(a)} style={{
-                flex:1,padding:'7px 4px',borderRadius:10,cursor:'pointer',textAlign:'center',
-                background:azucar===a?'#C41E3A':'#FFF5D0',
-                border:`2px solid ${azucar===a?'#C41E3A':'#E8C89A'}`,
-                color:azucar===a?'#fff':'#3B1A0A',fontWeight:800,fontSize:11,transition:'all .15s'
-              }}>{a}</div>
-            ))}
-          </div>
-          {warn && <div style={{color:'#C41E3A',fontSize:11,fontWeight:800,marginBottom:6}}>⚠️ {warn}</div>}
-          <button onClick={handleAdd} style={{
-            width:'100%',padding:'10px',background:'#C41E3A',border:'none',borderRadius:10,
-            fontFamily:"'Anton',sans-serif",fontSize:16,color:'#fff',cursor:'pointer',letterSpacing:1
-          }}>🛒 Agregar {sabor||''} {base||''}</button>
-        </div>
-      )}
-    </div>
-  );
+function BebidaJugo({ b, onAdd }) {
+    var _a;
+    const [open, setOpen] = React.useState(false);
+    const [base, setBase] = React.useState(null);
+    const [sabor, setSabor] = React.useState(null);
+    const [azucar, setAzucar] = React.useState('Normal');
+    const [warn, setWarn] = React.useState('');
+    const precio = base ? (_a = b.variants.find(v => v.name === base)) === null || _a === void 0 ? void 0 : _a.price : b.price;
+    const handleAdd = () => {
+        if (!base) {
+            setWarn('Elige en agua o en leche');
+            return;
+        }
+        if (!sabor) {
+            setWarn('Elige el sabor');
+            return;
+        }
+        setWarn('');
+        const azucarTag = azucar === 'Normal' ? '' : ` (${azucar})`;
+        onAdd({ item: { ...b, cat: 'bebidas', name: `Jugo ${sabor} ${base}${azucarTag}` }, qty: 1, additions: [], obs: '', totalPrice: precio });
+        setBase(null);
+        setSabor(null);
+        setAzucar('Normal');
+        setOpen(false);
+    };
+    return (React.createElement("div", { style: { background: '#fff', borderRadius: 14, marginBottom: 8, boxShadow: '0 2px 8px rgba(0,0,0,.07)', border: '1.5px solid #F0DEB4', overflow: 'hidden' } },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer' }, onClick: () => setOpen(o => !o) },
+            b.photo && React.createElement("img", { src: b.photo, alt: b.name, style: { width: 52, height: 52, borderRadius: 10, objectFit: 'cover', flexShrink: 0 } }),
+            React.createElement("div", { style: { flex: 1 } },
+                React.createElement("div", { style: { fontWeight: 800, fontSize: 14, color: '#3B1A0A' } },
+                    "\uD83E\uDD64 ",
+                    b.name),
+                React.createElement("div", { style: { fontSize: 10, color: '#8B5E3C', marginTop: 1 } }, b.desc),
+                React.createElement("div", { style: { fontSize: 10, color: '#C41E3A', fontWeight: 800, marginTop: 2 } }, "\uD83D\uDCA7 $9.9k agua \u00B7 \uD83E\uDD5B $11.5k leche")),
+            React.createElement("div", { style: { fontSize: 18, color: '#C41E3A' } }, open ? '▲' : '▼')),
+        open && (React.createElement("div", { style: { padding: '0 12px 12px', borderTop: '1.5px solid #F0DEB4' } },
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: '#C41E3A', textTransform: 'uppercase', letterSpacing: 1, marginTop: 10, marginBottom: 6 } }, "\u00BFEn agua o en leche?"),
+            React.createElement("div", { style: { display: 'flex', gap: 8, marginBottom: 10 } }, b.variants.map(v => (React.createElement("div", { key: v.name, onClick: () => { setBase(v.name); setWarn(''); }, style: {
+                    flex: 1, padding: '8px', borderRadius: 10, cursor: 'pointer', textAlign: 'center',
+                    background: base === v.name ? '#C41E3A' : '#FFF5D0',
+                    border: `2px solid ${base === v.name ? '#C41E3A' : '#E8C89A'}`, transition: 'all .15s'
+                } },
+                React.createElement("div", { style: { fontWeight: 800, fontSize: 12, color: base === v.name ? '#fff' : '#3B1A0A' } }, v.name),
+                React.createElement("div", { style: { fontFamily: "'Anton',sans-serif", fontSize: 15, color: base === v.name ? '#FFE080' : '#C41E3A' } },
+                    "$",
+                    (v.price / 1000).toFixed(1),
+                    "k"))))),
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: '#C41E3A', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 } }, "\uD83C\uDF53 Sabor"),
+            React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 } }, SABORES_JUGO.map(s => (React.createElement("div", { key: s, onClick: () => { setSabor(s); setWarn(''); }, style: {
+                    padding: '6px 11px', borderRadius: 50, cursor: 'pointer',
+                    background: sabor === s ? '#C41E3A' : '#FFF5D0',
+                    border: `2px solid ${sabor === s ? '#C41E3A' : '#E8C89A'}`,
+                    color: sabor === s ? '#fff' : '#3B1A0A', fontWeight: 800, fontSize: 12, transition: 'all .15s'
+                } }, s)))),
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: '#C41E3A', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 } }, "\uD83C\uDF6C Az\u00FAcar"),
+            React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 10 } }, AZUCAR_OPTS.map(a => (React.createElement("div", { key: a, onClick: () => setAzucar(a), style: {
+                    flex: 1, padding: '7px 4px', borderRadius: 10, cursor: 'pointer', textAlign: 'center',
+                    background: azucar === a ? '#C41E3A' : '#FFF5D0',
+                    border: `2px solid ${azucar === a ? '#C41E3A' : '#E8C89A'}`,
+                    color: azucar === a ? '#fff' : '#3B1A0A', fontWeight: 800, fontSize: 11, transition: 'all .15s'
+                } }, a)))),
+            warn && React.createElement("div", { style: { color: '#C41E3A', fontSize: 11, fontWeight: 800, marginBottom: 6 } },
+                "\u26A0\uFE0F ",
+                warn),
+            React.createElement("button", { onClick: handleAdd, style: {
+                    width: '100%', padding: '10px', background: '#C41E3A', border: 'none', borderRadius: 10,
+                    fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#fff', cursor: 'pointer', letterSpacing: 1
+                } },
+                "\uD83D\uDED2 Agregar ",
+                sabor || '',
+                " ",
+                base || '')))));
 }
-
-const AZUCAR_OPTS = ['Normal','Poca azúcar','Sin azúcar'];
-
-function BebidaPreparada({b, onAdd}) {
-  const [open, setOpen] = React.useState(false);
-  const [azucar, setAzucar] = React.useState('Normal');
-  const [sabor, setSabor] = React.useState(b.sabores ? b.sabores[0] : null);
-  const [qty, setQty] = React.useState(1);
-  return (
-    <div style={{background:'#fff',borderRadius:14,marginBottom:8,boxShadow:'0 2px 8px rgba(0,0,0,.07)',border:'1.5px solid #F0DEB4',overflow:'hidden'}}>
-      <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',cursor:'pointer'}} onClick={()=>setOpen(o=>!o)}>
-        {b.photo && <img src={b.photo} alt={b.name} style={{width:52,height:52,borderRadius:10,objectFit:'cover',flexShrink:0}}/>}
-        <div style={{flex:1}}>
-          <div style={{fontWeight:800,fontSize:14,color:'#3B1A0A'}}>🥤 {b.name}</div>
-          {b.desc && <div style={{fontSize:10,color:'#8B5E3C',marginTop:1}}>{b.desc}</div>}
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
-          <div style={{fontFamily:"'Anton',sans-serif",fontSize:18,color:'#C41E3A'}}>{fmtP(b.price)}</div>
-          <div style={{fontSize:16,color:'#C41E3A'}}>{open?'▲':'▼'}</div>
-        </div>
-      </div>
-      {open && (
-        <div style={{padding:'0 12px 12px',borderTop:'1.5px solid #F0DEB4'}}>
-          {/* Selector de sabor si aplica */}
-          {b.sabores && (
-            <>
-              <div style={{fontSize:11,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginTop:10,marginBottom:6}}>🍓 Sabor</div>
-              <div style={{display:'flex',gap:6,marginBottom:10}}>
-                {b.sabores.map(s=>(
-                  <div key={s} onClick={()=>setSabor(s)} style={{
-                    flex:1,padding:'7px 4px',borderRadius:10,cursor:'pointer',textAlign:'center',
-                    background:sabor===s?'#C41E3A':'#FFF5D0',
-                    border:`2px solid ${sabor===s?'#C41E3A':'#E8C89A'}`,
-                    color:sabor===s?'#fff':'#3B1A0A',fontWeight:800,fontSize:11,transition:'all .15s'
-                  }}>{s}</div>
-                ))}
-              </div>
-            </>
-          )}
-          {!b.noAzucar && (<>
-          <div style={{fontSize:11,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginTop:b.sabores?0:10,marginBottom:6}}>🍬 Azúcar</div>
-          <div style={{display:'flex',gap:6,marginBottom:10}}>
-            {AZUCAR_OPTS.map(a=>(
-              <div key={a} onClick={()=>setAzucar(a)} style={{
-                flex:1,padding:'7px 4px',borderRadius:10,cursor:'pointer',textAlign:'center',
-                background:azucar===a?'#C41E3A':'#FFF5D0',
-                border:`2px solid ${azucar===a?'#C41E3A':'#E8C89A'}`,
-                color:azucar===a?'#fff':'#3B1A0A',fontWeight:800,fontSize:11,transition:'all .15s'
-              }}>{a}</div>
-            ))}
-          </div>
-          </>)}
-          <div style={{display:'flex',alignItems:'center',gap:8,marginTop:4}}>
-            <div style={{display:'flex',alignItems:'center',gap:0,border:'2px solid #C41E3A',borderRadius:10,overflow:'hidden',flexShrink:0}}>
-              <button onClick={()=>setQty(q=>Math.max(1,q-1))} style={{width:34,height:38,background:'#FFF5D0',border:'none',cursor:'pointer',fontSize:20,fontWeight:700,color:'#C41E3A',display:'flex',alignItems:'center',justifyContent:'center'}}>−</button>
-              <span style={{minWidth:28,textAlign:'center',fontFamily:"'Anton',sans-serif",fontSize:16,color:'#3B1A0A'}}>{qty}</span>
-              <button onClick={()=>setQty(q=>q+1)} style={{width:34,height:38,background:'#FFF5D0',border:'none',cursor:'pointer',fontSize:20,fontWeight:700,color:'#C41E3A',display:'flex',alignItems:'center',justifyContent:'center'}}>+</button>
-            </div>
-            <button onClick={()=>{const name=`${b.name}${sabor?' '+sabor:''}${b.noAzucar||azucar==='Normal'?'':' ('+azucar+')'}`;onAdd({item:{...b,cat:'bebidas',name},qty,additions:[],obs:'',totalPrice:b.price*qty});setOpen(false);setQty(1);}} style={{
-              flex:1,padding:'10px',background:'#C41E3A',border:'none',borderRadius:10,
-              fontFamily:"'Anton',sans-serif",fontSize:16,color:'#fff',cursor:'pointer',letterSpacing:1
-            }}>🛒 Agregar — {fmtP(b.price*qty)}</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+const AZUCAR_OPTS = ['Normal', 'Poca azúcar', 'Sin azúcar'];
+function BebidaPreparada({ b, onAdd }) {
+    const [open, setOpen] = React.useState(false);
+    const [azucar, setAzucar] = React.useState('Normal');
+    const [sabor, setSabor] = React.useState(b.sabores ? b.sabores[0] : null);
+    const [qty, setQty] = React.useState(1);
+    return (React.createElement("div", { style: { background: '#fff', borderRadius: 14, marginBottom: 8, boxShadow: '0 2px 8px rgba(0,0,0,.07)', border: '1.5px solid #F0DEB4', overflow: 'hidden' } },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer' }, onClick: () => setOpen(o => !o) },
+            b.photo && React.createElement("img", { src: b.photo, alt: b.name, style: { width: 52, height: 52, borderRadius: 10, objectFit: 'cover', flexShrink: 0 } }),
+            React.createElement("div", { style: { flex: 1 } },
+                React.createElement("div", { style: { fontWeight: 800, fontSize: 14, color: '#3B1A0A' } },
+                    "\uD83E\uDD64 ",
+                    b.name),
+                b.desc && React.createElement("div", { style: { fontSize: 10, color: '#8B5E3C', marginTop: 1 } }, b.desc)),
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
+                React.createElement("div", { style: { fontFamily: "'Anton',sans-serif", fontSize: 18, color: '#C41E3A' } }, fmtP(b.price)),
+                React.createElement("div", { style: { fontSize: 16, color: '#C41E3A' } }, open ? '▲' : '▼'))),
+        open && (React.createElement("div", { style: { padding: '0 12px 12px', borderTop: '1.5px solid #F0DEB4' } },
+            b.sabores && (React.createElement(React.Fragment, null,
+                React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: '#C41E3A', textTransform: 'uppercase', letterSpacing: 1, marginTop: 10, marginBottom: 6 } }, "\uD83C\uDF53 Sabor"),
+                React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 10 } }, b.sabores.map(s => (React.createElement("div", { key: s, onClick: () => setSabor(s), style: {
+                        flex: 1, padding: '7px 4px', borderRadius: 10, cursor: 'pointer', textAlign: 'center',
+                        background: sabor === s ? '#C41E3A' : '#FFF5D0',
+                        border: `2px solid ${sabor === s ? '#C41E3A' : '#E8C89A'}`,
+                        color: sabor === s ? '#fff' : '#3B1A0A', fontWeight: 800, fontSize: 11, transition: 'all .15s'
+                    } }, s)))))),
+            !b.noAzucar && (React.createElement(React.Fragment, null,
+                React.createElement("div", { style: { fontSize: 11, fontWeight: 800, color: '#C41E3A', textTransform: 'uppercase', letterSpacing: 1, marginTop: b.sabores ? 0 : 10, marginBottom: 6 } }, "\uD83C\uDF6C Az\u00FAcar"),
+                React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 10 } }, AZUCAR_OPTS.map(a => (React.createElement("div", { key: a, onClick: () => setAzucar(a), style: {
+                        flex: 1, padding: '7px 4px', borderRadius: 10, cursor: 'pointer', textAlign: 'center',
+                        background: azucar === a ? '#C41E3A' : '#FFF5D0',
+                        border: `2px solid ${azucar === a ? '#C41E3A' : '#E8C89A'}`,
+                        color: azucar === a ? '#fff' : '#3B1A0A', fontWeight: 800, fontSize: 11, transition: 'all .15s'
+                    } }, a)))))),
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 } },
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 0, border: '2px solid #C41E3A', borderRadius: 10, overflow: 'hidden', flexShrink: 0 } },
+                    React.createElement("button", { onClick: () => setQty(q => Math.max(1, q - 1)), style: { width: 34, height: 38, background: '#FFF5D0', border: 'none', cursor: 'pointer', fontSize: 20, fontWeight: 700, color: '#C41E3A', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, "\u2212"),
+                    React.createElement("span", { style: { minWidth: 28, textAlign: 'center', fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#3B1A0A' } }, qty),
+                    React.createElement("button", { onClick: () => setQty(q => q + 1), style: { width: 34, height: 38, background: '#FFF5D0', border: 'none', cursor: 'pointer', fontSize: 20, fontWeight: 700, color: '#C41E3A', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, "+")),
+                React.createElement("button", { onClick: () => { const name = `${b.name}${sabor ? ' ' + sabor : ''}${b.noAzucar || azucar === 'Normal' ? '' : ' (' + azucar + ')'}`; onAdd({ item: { ...b, cat: 'bebidas', name }, qty, additions: [], obs: '', totalPrice: b.price * qty }); setOpen(false); setQty(1); }, style: {
+                        flex: 1, padding: '10px', background: '#C41E3A', border: 'none', borderRadius: 10,
+                        fontFamily: "'Anton',sans-serif", fontSize: 16, color: '#fff', cursor: 'pointer', letterSpacing: 1
+                    } },
+                    "\uD83D\uDED2 Agregar \u2014 ",
+                    fmtP(b.price * qty)))))));
 }
-
-
-function Bebidas({onAdd}) {
-  return (
-    <div className="beb-wrap">
-      {BEBIDAS.map(b => b.jugo
-        ? <BebidaJugo key={b.id} b={b} onAdd={onAdd}/>
+function Bebidas({ onAdd }) {
+    return (React.createElement("div", { className: "beb-wrap" }, BEBIDAS.map(b => b.jugo
+        ? React.createElement(BebidaJugo, { key: b.id, b: b, onAdd: onAdd })
         : b.preparada
-          ? <BebidaPreparada key={b.id} b={b} onAdd={onAdd}/>
-          : (
-            <div key={b.id} className="beb-item" onClick={()=>onAdd({
-              item:{...b,cat:'bebidas'},qty:1,additions:[],obs:'',totalPrice:b.price,
-            })}>
-              <div>
-                <div className="beb-name">🥤 {b.name}</div>
-                {b.desc && <div className="beb-desc">{b.desc}</div>}
-              </div>
-              <div style={{display:'flex',alignItems:'center',gap:10}}>
-                <div style={{fontFamily:"'Anton',sans-serif",fontSize:20,color:'#C41E3A'}}>{fmtP(b.price)}</div>
-                <div className="plus-circle">+</div>
-              </div>
-            </div>
-          )
-      )}
-    </div>
-  );
+            ? React.createElement(BebidaPreparada, { key: b.id, b: b, onAdd: onAdd })
+            : (React.createElement("div", { key: b.id, className: "beb-item", onClick: () => onAdd({
+                    item: { ...b, cat: 'bebidas' }, qty: 1, additions: [], obs: '', totalPrice: b.price,
+                }) },
+                React.createElement("div", null,
+                    React.createElement("div", { className: "beb-name" },
+                        "\uD83E\uDD64 ",
+                        b.name),
+                    b.desc && React.createElement("div", { className: "beb-desc" }, b.desc)),
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+                    React.createElement("div", { style: { fontFamily: "'Anton',sans-serif", fontSize: 20, color: '#C41E3A' } }, fmtP(b.price)),
+                    React.createElement("div", { className: "plus-circle" }, "+")))))));
 }
 // ============================================================
 // PRODUCT CARD
 // ============================================================
-function ProductCard({item, onSelect}) {
-  const color = catColor(item.cat);
-  const emoji = catEmoji(item.cat);
-  return (
-    <div className="card" onClick={()=>onSelect(item)}>
-      <div className="card-img" style={{background:`linear-gradient(135deg,${color}20,${color}50)`}}>
-        {item.photo
-          ? <img src={item.photo} alt={item.name} style={{width:'100%',height:'100%',objectFit:'cover',position:'absolute',inset:0}}/>
-          : <span>{emoji}</span>
-        }
-        {item.badge && <div className="card-badge">{item.badge}</div>}
-      </div>
-      <div className="card-body">
-        <div className="card-name">{item.name}</div>
-        <div className="card-price">{fmtP(item.price)}</div>
-        <div className="card-tap">👆 Toca para ver ingredientes</div>
-      </div>
-    </div>
-  );
+function ProductCard({ item, onSelect }) {
+    const color = catColor(item.cat);
+    const emoji = catEmoji(item.cat);
+    return (React.createElement("div", { className: "card", onClick: () => onSelect(item) },
+        React.createElement("div", { className: "card-img", style: { background: `linear-gradient(135deg,${color}20,${color}50)` } },
+            item.photo
+                ? React.createElement("img", { src: item.photo, alt: item.name, style: { width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 } })
+                : React.createElement("span", null, emoji),
+            item.badge && React.createElement("div", { className: "card-badge" }, item.badge)),
+        React.createElement("div", { className: "card-body" },
+            React.createElement("div", { className: "card-name" }, item.name),
+            React.createElement("div", { className: "card-price" }, fmtP(item.price)),
+            React.createElement("div", { className: "card-tap" }, "\uD83D\uDC46 Toca para ver ingredientes"))));
 }
-
 // ============================================================
 // APP
 // ============================================================
 function App() {
-  const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('lc_entered'));
-  const [search, setSearch] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [cat, setCat] = useState('favoritas');
-  const [sel, setSel] = useState(null);
-  const [cart, setCart] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('lc_cart')||'[]'); } catch { return []; }
-  });
-  const [showCart, setShowCart] = useState(false);
-  const [bounce, setBounce] = useState(false);
-  const [incentivoBanner, setIncentivoBanner] = useState('');
-  const [selHint, setSelHint] = useState(false);
-  const catRef = useRef(null);
-
-  useEffect(() => {
-    localStorage.setItem('lc_cart', JSON.stringify(cart));
-  }, [cart]);
-
-  // Banner incentivo domicilio gratis
-  useEffect(() => {
-    if (cart.length === 0) { setIncentivoBanner(''); return; }
-    const total = cart.reduce((s, c) => s + c.totalPrice, 0);
-    if (total < 60000) { setIncentivoBanner(''); return; }
-    const msg = total >= 100000
-      ? '🚀 ¡Domicilio GRATIS en tu pedido!'
-      : `🎉 ¡Te faltan $${(100000 - total).toLocaleString('es-CO')} para domicilio GRATIS!`;
-    setIncentivoBanner(msg);
-    const t = setTimeout(() => setIncentivoBanner(''), 4000);
-    return () => clearTimeout(t);
-  }, [cart]);
-
-  // Hint al abrir modal de producto
-  useEffect(() => {
-    if (!sel) return;
-    setSelHint(true);
-    const t = setTimeout(() => setSelHint(false), 3000);
-    return () => clearTimeout(t);
-  }, [sel]);
-
-  const playCartSound = () => {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      // Fun "pop" + ascending ding sound
-      const playTone = (freq, start, dur, type='sine') => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.type = type; o.frequency.setValueAtTime(freq, ctx.currentTime + start);
-        o.frequency.exponentialRampToValueAtTime(freq*1.5, ctx.currentTime + start + dur*0.5);
-        g.gain.setValueAtTime(0.3, ctx.currentTime + start);
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
-        o.start(ctx.currentTime + start);
-        o.stop(ctx.currentTime + start + dur);
-      };
-      playTone(400, 0,    0.08, 'square');
-      playTone(600, 0.07, 0.08, 'square');
-      playTone(900, 0.14, 0.15, 'sine');
-    } catch(e) {}
-  };
-
-  const addToCart = (item) => {
-    setCart(p => [...p, item]);
-    playCartSound();
-    setBounce(true);
-    setTimeout(()=>setBounce(false), 400);
-  };
-
-  const removeFromCart = (idx) => setCart(p => p.filter((_,i)=>i!==idx));
-
-  const handleEnter = () => { sessionStorage.setItem('lc_entered','1'); setShowSplash(false); };
-  if (showSplash) return <Splash onEnter={handleEnter}/>;
-
-  const searchQ = search.trim().toLowerCase();
-  const searchResults = searchQ.length > 1
-    ? ITEMS.filter(i => i.name.toLowerCase().includes(searchQ) || (i.desc||'').toLowerCase().includes(searchQ))
-    : [];
-
-  const items = ITEMS.filter(i => i.cat === cat);
-  const cartTotal = cart.reduce((s,c)=>s+c.totalPrice,0);
-
-  const switchCat = (id) => {
-    setCat(id);
-    // Scroll the cat tab into view
-    setTimeout(() => {
-      if (catRef.current) {
-        const btn = catRef.current.querySelector(`.cat-tab.on`);
-        if (btn) btn.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'});
-      }
-    }, 50);
-  };
-
-  return (
-    <>
-      {/* STICKY NAV: header + category bar como una unidad */}
-      <div className="sticky-nav">
-      {/* HEADER */}
-      <div className="hdr">
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <img
-            src="uploads/logo-9cc2bf2c.jpeg"
-            alt="Las Crepes Logo"
-            style={{width:54,height:54,borderRadius:'50%',objectFit:'cover',border:'3px solid #C41E3A',flexShrink:0,background:'#fff',boxShadow:'0 3px 12px rgba(196,30,58,.3)'}}
-          />
-          <div>
-            <div className="hdr-logo">LAS CREPES</div>
-            <div className="hdr-sub">Rápidas · Exquisitas · Saludables</div>
-          </div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:8}}>
-          {/* Icono lupa — expande input */}
-          <div style={{position:'relative',display:'flex',alignItems:'center'}}>
-            {searchOpen
-              ? <div style={{display:'flex',alignItems:'center',background:'#FFF5D0',border:'2px solid #C41E3A',borderRadius:50,padding:'5px 10px 5px 12px',gap:6}}>
-                  <span style={{fontSize:14}}>🔍</span>
-                  <input
-                    autoFocus
-                    style={{border:'none',background:'transparent',fontFamily:"'Nunito',sans-serif",fontWeight:700,fontSize:13,color:'#3B1A0A',outline:'none',width:120}}
-                    placeholder="Buscar..."
-                    value={search}
-                    onChange={e=>setSearch(e.target.value)}
-                  />
-                  <button onClick={()=>{setSearch('');setSearchOpen(false);}} style={{background:'none',border:'none',color:'#aaa',cursor:'pointer',fontSize:14,padding:0,lineHeight:1}}>✕</button>
-                </div>
-              : <button
-                  onClick={()=>setSearchOpen(true)}
-                  style={{background:'#FFF5D0',border:'2px solid #E8C89A',borderRadius:50,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:17}}
-                >🔍</button>
+    const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('lc_entered'));
+    const [search, setSearch] = useState('');
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [cat, setCat] = useState('favoritas');
+    const [sel, setSel] = useState(null);
+    const [cart, setCart] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('lc_cart') || '[]');
+        }
+        catch {
+            return [];
+        }
+    });
+    const [showCart, setShowCart] = useState(false);
+    const [bounce, setBounce] = useState(false);
+    const [incentivoBanner, setIncentivoBanner] = useState('');
+    const [selHint, setSelHint] = useState(false);
+    const catRef = useRef(null);
+    useEffect(() => {
+        localStorage.setItem('lc_cart', JSON.stringify(cart));
+    }, [cart]);
+    // Banner incentivo domicilio gratis
+    useEffect(() => {
+        if (cart.length === 0) {
+            setIncentivoBanner('');
+            return;
+        }
+        const total = cart.reduce((s, c) => s + c.totalPrice, 0);
+        if (total < 60000) {
+            setIncentivoBanner('');
+            return;
+        }
+        const msg = total >= 100000
+            ? '🚀 ¡Domicilio GRATIS en tu pedido!'
+            : `🎉 ¡Te faltan $${(100000 - total).toLocaleString('es-CO')} para domicilio GRATIS!`;
+        setIncentivoBanner(msg);
+        const t = setTimeout(() => setIncentivoBanner(''), 4000);
+        return () => clearTimeout(t);
+    }, [cart]);
+    // Hint al abrir modal de producto
+    useEffect(() => {
+        if (!sel)
+            return;
+        setSelHint(true);
+        const t = setTimeout(() => setSelHint(false), 3000);
+        return () => clearTimeout(t);
+    }, [sel]);
+    const playCartSound = () => {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            // Fun "pop" + ascending ding sound
+            const playTone = (freq, start, dur, type = 'sine') => {
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.type = type;
+                o.frequency.setValueAtTime(freq, ctx.currentTime + start);
+                o.frequency.exponentialRampToValueAtTime(freq * 1.5, ctx.currentTime + start + dur * 0.5);
+                g.gain.setValueAtTime(0.3, ctx.currentTime + start);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+                o.start(ctx.currentTime + start);
+                o.stop(ctx.currentTime + start + dur);
+            };
+            playTone(400, 0, 0.08, 'square');
+            playTone(600, 0.07, 0.08, 'square');
+            playTone(900, 0.14, 0.15, 'sine');
+        }
+        catch (e) { }
+    };
+    const addToCart = (item) => {
+        setCart(p => [...p, item]);
+        playCartSound();
+        setBounce(true);
+        setTimeout(() => setBounce(false), 400);
+    };
+    const removeFromCart = (idx) => setCart(p => p.filter((_, i) => i !== idx));
+    const handleEnter = () => { sessionStorage.setItem('lc_entered', '1'); setShowSplash(false); };
+    if (showSplash)
+        return React.createElement(Splash, { onEnter: handleEnter });
+    const searchQ = search.trim().toLowerCase();
+    const searchResults = searchQ.length > 1
+        ? ITEMS.filter(i => i.name.toLowerCase().includes(searchQ) || (i.desc || '').toLowerCase().includes(searchQ))
+        : [];
+    const items = ITEMS.filter(i => i.cat === cat);
+    const cartTotal = cart.reduce((s, c) => s + c.totalPrice, 0);
+    const switchCat = (id) => {
+        setCat(id);
+        // Scroll the cat tab into view
+        setTimeout(() => {
+            if (catRef.current) {
+                const btn = catRef.current.querySelector(`.cat-tab.on`);
+                if (btn)
+                    btn.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
             }
-          </div>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2}}>
-            <button className={`cart-btn ${bounce?'cbounce':''}`} onClick={()=>setShowCart(true)}>
-              🛒 Pedido
-              {cart.length>0 && <div className="cart-count">{cart.length}</div>}
-            </button>
-            <span style={{fontSize:9,color:'#8B5E3C',fontWeight:700,letterSpacing:.5}}>Aquí puedes ver tu pedido</span>
-          </div>
-        </div>
-      </div>
-
-      {/* BARRA DE BÚSQUEDA eliminada del body */}
-
-      {/* CATEGORIES - ocultas si hay búsqueda */}
-      {!searchQ && <div className="cats" ref={catRef}>
-        {CATEGORIES.map(c => (
-          <button
-            key={c.id}
-            className={`cat-tab ${cat===c.id?'on':''}`}
-            style={cat===c.id ? {background:c.color} : {}}
-            onClick={()=>switchCat(c.id)}
-          >
-            {c.emoji} {c.name}
-          </button>
-        ))}
-      </div>}
-      </div>{/* /sticky-nav */}
-
-      {/* RESULTADOS DE BÚSQUEDA */}
-      {searchQ.length > 1 ? (
-        <div style={{padding:'14px 12px 110px'}}>
-          {searchResults.length === 0 ? (
-            <div className="no-results">
-              <div style={{fontSize:48}}>🥞</div>
-              <div style={{fontWeight:800,fontSize:16,marginTop:10,color:'#3B1A0A'}}>Sin resultados para "{search}"</div>
-              <div style={{fontSize:13,marginTop:4,color:'#C8A96A'}}>Intenta con otro nombre o ingrediente</div>
-            </div>
-          ) : (
-            <>
-              <div style={{fontSize:12,fontWeight:800,color:'#C41E3A',textTransform:'uppercase',letterSpacing:1,marginBottom:10}}>
-                {searchResults.length} resultado{searchResults.length!==1?'s':''} • "{search}"
-              </div>
-              <div className="grid" style={{padding:0,paddingBottom:110}}>
-                {searchResults.map(item => (
-                  <ProductCard key={item.id} item={item} onSelect={setSel}/>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <>
-          {/* CONTENT */}
-          {cat === 'armatu' ? (
-            <ArmaTuCrepe onAdd={addToCart}/>
-          ) : cat === 'bebidas' ? (
-            <Bebidas onAdd={addToCart}/>
-          ) : (
-            <div className="grid">
-              {items.map(item => (
-                <ProductCard key={item.id} item={item} onSelect={setSel}/>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* CART BAR */}
-      {cart.length > 0 && (
-        <div className="cbar">
-          <button className="cbar-btn" onClick={()=>setShowCart(true)}>
-            <span>{cart.length} {cart.length===1?'producto':'productos'}</span>
-            <span>Ver pedido →</span>
-            <span>{fmtP(cartTotal)}</span>
-          </button>
-        </div>
-      )}
-
-      {/* INCENTIVO BANNER */}
-      {incentivoBanner && <div className="incentivo-banner">{incentivoBanner}</div>}
-
-      {/* SEL HINT */}
-      {selHint && <div className="sel-hint">⬆️ Desliza hacia arriba para pedir</div>}
-
-      {/* MODALS */}
-      {sel && <ProductModal item={sel} onClose={()=>setSel(null)} onAdd={addToCart}/>}
-      {showCart && <CartDrawer cart={cart} onClose={()=>setShowCart(false)} onRemove={removeFromCart} onSend={()=>{setCart([]);setShowCart(false);}}/>}
-    </>
-  );
+        }, 50);
+    };
+    return (React.createElement(React.Fragment, null,
+        React.createElement("div", { className: "sticky-nav" },
+            React.createElement("div", { className: "hdr" },
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+                    React.createElement("img", { src: "uploads/logo-9cc2bf2c.jpeg", alt: "Las Crepes Logo", style: { width: 54, height: 54, borderRadius: '50%', objectFit: 'cover', border: '3px solid #C41E3A', flexShrink: 0, background: '#fff', boxShadow: '0 3px 12px rgba(196,30,58,.3)' } }),
+                    React.createElement("div", null,
+                        React.createElement("div", { className: "hdr-logo" }, "LAS CREPES"),
+                        React.createElement("div", { className: "hdr-sub" }, "R\u00E1pidas \u00B7 Exquisitas \u00B7 Saludables"))),
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                    React.createElement("div", { style: { position: 'relative', display: 'flex', alignItems: 'center' } }, searchOpen
+                        ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', background: '#FFF5D0', border: '2px solid #C41E3A', borderRadius: 50, padding: '5px 10px 5px 12px', gap: 6 } },
+                            React.createElement("span", { style: { fontSize: 14 } }, "\uD83D\uDD0D"),
+                            React.createElement("input", { autoFocus: true, style: { border: 'none', background: 'transparent', fontFamily: "'Nunito',sans-serif", fontWeight: 700, fontSize: 13, color: '#3B1A0A', outline: 'none', width: 120 }, placeholder: "Buscar...", value: search, onChange: e => setSearch(e.target.value) }),
+                            React.createElement("button", { onClick: () => { setSearch(''); setSearchOpen(false); }, style: { background: 'none', border: 'none', color: '#aaa', cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 } }, "\u2715"))
+                        : React.createElement("button", { onClick: () => setSearchOpen(true), style: { background: '#FFF5D0', border: '2px solid #E8C89A', borderRadius: 50, width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 17 } }, "\uD83D\uDD0D")),
+                    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 } },
+                        React.createElement("button", { className: `cart-btn ${bounce ? 'cbounce' : ''}`, onClick: () => setShowCart(true) },
+                            "\uD83D\uDED2 Pedido",
+                            cart.length > 0 && React.createElement("div", { className: "cart-count" }, cart.length)),
+                        React.createElement("span", { style: { fontSize: 9, color: '#8B5E3C', fontWeight: 700, letterSpacing: .5 } }, "Aqu\u00ED puedes ver tu pedido")))),
+            !searchQ && React.createElement("div", { className: "cats", ref: catRef }, CATEGORIES.map(c => (React.createElement("button", { key: c.id, className: `cat-tab ${cat === c.id ? 'on' : ''}`, style: cat === c.id ? { background: c.color } : {}, onClick: () => switchCat(c.id) },
+                c.emoji,
+                " ",
+                c.name))))),
+        searchQ.length > 1 ? (React.createElement("div", { style: { padding: '14px 12px 110px' } }, searchResults.length === 0 ? (React.createElement("div", { className: "no-results" },
+            React.createElement("div", { style: { fontSize: 48 } }, "\uD83E\uDD5E"),
+            React.createElement("div", { style: { fontWeight: 800, fontSize: 16, marginTop: 10, color: '#3B1A0A' } },
+                "Sin resultados para \"",
+                search,
+                "\""),
+            React.createElement("div", { style: { fontSize: 13, marginTop: 4, color: '#C8A96A' } }, "Intenta con otro nombre o ingrediente"))) : (React.createElement(React.Fragment, null,
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: '#C41E3A', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 } },
+                searchResults.length,
+                " resultado",
+                searchResults.length !== 1 ? 's' : '',
+                " \u2022 \"",
+                search,
+                "\""),
+            React.createElement("div", { className: "grid", style: { padding: 0, paddingBottom: 110 } }, searchResults.map(item => (React.createElement(ProductCard, { key: item.id, item: item, onSelect: setSel })))))))) : (React.createElement(React.Fragment, null, cat === 'armatu' ? (React.createElement(ArmaTuCrepe, { onAdd: addToCart })) : cat === 'bebidas' ? (React.createElement(Bebidas, { onAdd: addToCart })) : (React.createElement("div", { className: "grid" }, items.map(item => (React.createElement(ProductCard, { key: item.id, item: item, onSelect: setSel }))))))),
+        cart.length > 0 && (React.createElement("div", { className: "cbar" },
+            React.createElement("button", { className: "cbar-btn", onClick: () => setShowCart(true) },
+                React.createElement("span", null,
+                    cart.length,
+                    " ",
+                    cart.length === 1 ? 'producto' : 'productos'),
+                React.createElement("span", null, "Ver pedido \u2192"),
+                React.createElement("span", null, fmtP(cartTotal))))),
+        incentivoBanner && React.createElement("div", { className: "incentivo-banner" }, incentivoBanner),
+        selHint && React.createElement("div", { className: "sel-hint" }, "\u2B06\uFE0F Desliza hacia arriba para pedir"),
+        sel && React.createElement(ProductModal, { item: sel, onClose: () => setSel(null), onAdd: addToCart }),
+        showCart && React.createElement(CartDrawer, { cart: cart, onClose: () => setShowCart(false), onRemove: removeFromCart, onSend: () => { setCart([]); setShowCart(false); } })));
 }
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 
 <template id="__bundler_thumbnail" data-bg-color="#FFF5D0">
