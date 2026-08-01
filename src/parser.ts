@@ -646,7 +646,9 @@ export type AIClassification =
   | { intent: "producto"; items: ParsedItem[]; upselling?: string }
   | { intent: "observacion"; texto: string; productoIndex?: number }
   | { intent: "pregunta"; respuesta: string }
-  | { intent: "extra"; nombre: string; precio: number }
+  | { intent: "extra"; nombre: string; precio: number; productoIndex?: number }
+  | { intent: "eliminar"; index: number; nombre?: string }
+  | { intent: "reemplazar"; index: number; nombre?: string; items: ParsedItem[] }
   | { intent: "ambiguo"; opciones: { nombre: string; productoId: string }[] };
 
 export async function classifyWithAI(
@@ -685,23 +687,27 @@ export async function classifyWithAI(
     `MENSAJE DEL CLIENTE: "${text}"\n\n` +
     `Analiza el mensaje y responde SOLO con JSON válido, sin texto extra. El JSON debe tener este formato:\n` +
     `{\n` +
-    `  "intent": "producto" | "observacion" | "pregunta" | "extra" | "ambiguo",\n` +
+    `  "intent": "producto" | "observacion" | "pregunta" | "extra" | "eliminar" | "reemplazar" | "ambiguo",\n` +
     `  "items": [{"productoId": string, "producto": string, "cantidad": number, "precio": number, "observaciones": string, "extras": []}],\n` +
     `  "observacion": string,\n` +
     `  "productoIndex": number,\n` +
+    `  "eliminarIndex": number,\n` +
     `  "respuesta": string,\n` +
     `  "extraNombre": string,\n` +
     `  "extraPrecio": number,\n` +
     `  "opciones": [{"nombre": string, "productoId": string}]\n` +
     `}\n\n` +
     `REGLAS:\n` +
+    `- Los índices ("productoIndex", "eliminarIndex") son 0-based y se refieren a la lista PEDIDO ACTUAL DEL CLIENTE de arriba (el ítem 1 es index 0).\n` +
     `- intent "producto": el cliente pide algo del menú. Llena "items" con los productos identificados usando el id exacto del menú.\n` +
-    `- intent "observacion": el cliente hace una modificación (sin X, poco X, bien X) a un producto ya en el pedido. Llena "observacion" y "productoIndex" (0-based, -1 si aplica a todos).\n` +
+    `- intent "observacion": el cliente hace una modificación (sin X, poco X, bien X) a un producto ya en el pedido. Llena "observacion" y "productoIndex" (-1 si aplica a todos).\n` +
     `- intent "pregunta": el cliente pregunta algo. Llena "respuesta" con una respuesta corta y útil basada en el menú.\n` +
-    `- intent "extra": el cliente pide un extra para el último producto. Llena "extraNombre" y "extraPrecio".\n` +
+    `- intent "extra": el cliente pide un extra/topping (tocineta, champiñones, maíz, fresa...). Llena "extraNombre", "extraPrecio" y "productoIndex" (el ítem del pedido al que va el topping; si no es claro, la última crepe, NUNCA una bebida).\n` +
+    `- intent "eliminar": el cliente quiere QUITAR un producto ya en el pedido ("quítame el agua", "el jugo no", "borra la coca cola", "ya no quiero X"). Llena "eliminarIndex" con el índice del ítem a quitar.\n` +
+    `- intent "reemplazar": el cliente quiere CAMBIAR un producto por otro ("agua no, mejor un jugo", "cambia la coca por limonada", "en vez de X quiero Y"). Llena "eliminarIndex" (el que sale) e "items" (el/los que entran, con id del menú).\n` +
     `- intent "ambiguo": el mensaje coincide con varios productos. Llena "opciones" con los candidatos.\n` +
     `- Si el texto parece un pedido de comida o bebida pero el producto NO está en el menú, usa intent "pregunta" y en "respuesta" escribe: "Lo sentimos, en este momento no tenemos [nombre del producto] 😊 ¿Deseas agregar algo más?"\n` +
-    `- Si el texto no es reconocible como nada (ni producto, ni observacion, ni pregunta, ni extra), usa intent "ambiguo" con opciones vacías.`;
+    `- Si el texto no es reconocible como nada, usa intent "ambiguo" con opciones vacías.`;
 
   try {
     console.log(`🤖 LLAMANDO GEMINI (classifyWithAI) con texto: "${text}"`);
@@ -779,8 +785,42 @@ export async function classifyWithAI(
       const nombre = typeof parsed.extraNombre === "string" ? parsed.extraNombre.trim() : "";
       const precio = Number(parsed.extraPrecio) || 0;
       if (!nombre) return null;
-      console.log("✅ classifyWithAI → extra:", nombre);
-      return { intent: "extra", nombre, precio };
+      const productoIndex = typeof parsed.productoIndex === "number" ? parsed.productoIndex : undefined;
+      console.log("✅ classifyWithAI → extra:", nombre, "→ index", productoIndex);
+      return { intent: "extra", nombre, precio, productoIndex };
+    }
+
+    if (intent === "eliminar") {
+      const index = typeof parsed.eliminarIndex === "number" ? parsed.eliminarIndex : -1;
+      const nombre = typeof parsed.observacion === "string" ? parsed.observacion.trim() : undefined;
+      console.log("✅ classifyWithAI → eliminar index:", index);
+      return { intent: "eliminar", index, nombre };
+    }
+
+    if (intent === "reemplazar") {
+      const index = typeof parsed.eliminarIndex === "number" ? parsed.eliminarIndex : -1;
+      const mappedItems: ParsedItem[] = [];
+      for (const aiItem of (parsed.items || [])) {
+        const aiNorm = normalizeText(aiItem.producto || "");
+        const matched = allProducts.find((p: any) => {
+          if (aiItem.productoId && p.id === aiItem.productoId) return true;
+          const norm = normalizeText(p.nombre);
+          return norm === aiNorm || norm.includes(aiNorm) || aiNorm.includes(norm);
+        });
+        if (!matched) continue;
+        mappedItems.push({
+          productoId: matched.id,
+          producto: matched.nombre,
+          cantidad: Math.max(1, Number(aiItem.cantidad) || 1),
+          precio: Number(aiItem.precio) || matched.precio,
+          variante: undefined,
+          observaciones: aiItem.observaciones || undefined,
+          extras: []
+        });
+      }
+      if (mappedItems.length === 0) return null;
+      console.log("✅ classifyWithAI → reemplazar index:", index, "por:", mappedItems.map(i => i.producto).join(", "));
+      return { intent: "reemplazar", index, items: mergeParsedItems(mappedItems) };
     }
 
     if (intent === "ambiguo") {

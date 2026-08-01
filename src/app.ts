@@ -514,6 +514,120 @@ function formatLineaItem(item: any, withPrice = false): string {
   return linea + obsLinea;
 }
 
+// Ids de productos de la categoría bebidas (jugos, gaseosas, agua, malteadas, limonadas...).
+const BEBIDAS_IDS: Set<string> = new Set(
+  (((menu.categorias as any[]).find((c: any) => c.id === "bebidas")?.productos) || []).map((p: any) => p.id)
+);
+// true si el ítem del carrito es una bebida (los toppings/extras nunca van sobre una bebida).
+function esItemBebida(item: any): boolean {
+  return !!item && BEBIDAS_IDS.has(item.productoId);
+}
+// Último ítem del carrito que NO es bebida (crepe/salada/dulce/waffle). undefined si sólo hay bebidas.
+function ultimoItemNoBebida(order: any): any | undefined {
+  if (!order?.items?.length) return undefined;
+  for (let i = order.items.length - 1; i >= 0; i--) {
+    if (!esItemBebida(order.items[i])) return order.items[i];
+  }
+  return undefined;
+}
+
+// Aplica una clasificación de Gemini (producto/eliminar/reemplazar/extra/observacion/pregunta)
+// mutando el carrito y respondiendo con el resumen actualizado. Devuelve true si manejó el mensaje.
+// Se usa como "editor de carrito por IA" para NOTAS DE VOZ (correcciones habladas del cliente).
+async function aplicarClasificacionIA(phone: string, ai: any): Promise<boolean> {
+  const order = getOrder(phone);
+  if (!order || !ai) return false;
+  const n = order.items.length;
+  let cambio = "";
+
+  if (ai.intent === "pregunta" && ai.respuesta) {
+    await sendWhatsAppMessage(phone, ai.respuesta);
+    return true;
+  }
+
+  if (ai.intent === "eliminar") {
+    let idx = typeof ai.index === "number" ? ai.index : -1;
+    if ((idx < 0 || idx >= n) && ai.nombre) {
+      const nom = ai.nombre.toLowerCase();
+      idx = order.items.findIndex((i: any) => (i.producto || "").toLowerCase().includes(nom));
+    }
+    if (idx < 0 || idx >= n) return false;
+    const quitado = order.items[idx];
+    order.items.splice(idx, 1);
+    cambio = `Quité ${quitado.producto} 👍`;
+
+  } else if (ai.intent === "reemplazar") {
+    let idx = typeof ai.index === "number" ? ai.index : -1;
+    if ((idx < 0 || idx >= n) && Array.isArray(ai.items) && ai.items.length) {
+      // sin índice claro: quitar la última bebida (caso típico "agua no, mejor un jugo")
+      for (let i = order.items.length - 1; i >= 0; i--) {
+        if (esItemBebida(order.items[i])) { idx = i; break; }
+      }
+    }
+    const saliente = idx >= 0 && idx < order.items.length ? order.items[idx].producto : undefined;
+    if (idx >= 0 && idx < order.items.length) order.items.splice(idx, 1);
+    if (Array.isArray(ai.items) && ai.items.length) createOrUpdateOrder(phone, ai.items);
+    const entra = (ai.items || []).map((i: any) => i.producto).join(", ");
+    cambio = saliente ? `Cambié ${saliente} por ${entra} 👍` : `Agregué ${entra} 👍`;
+
+  } else if (ai.intent === "producto") {
+    if (!Array.isArray(ai.items) || !ai.items.length) return false;
+    createOrUpdateOrder(phone, ai.items);
+    cambio = `Agregué ${ai.items.map((i: any) => i.producto).join(", ")} 👍`;
+
+  } else if (ai.intent === "extra") {
+    if (!ai.nombre) return false;
+    const target = (typeof ai.productoIndex === "number" && ai.productoIndex >= 0 && ai.productoIndex < n && !esItemBebida(order.items[ai.productoIndex]))
+      ? order.items[ai.productoIndex]
+      : ultimoItemNoBebida(order);
+    if (!target) return false;
+    target.extras = target.extras || [];
+    if (!target.extras.find((e: any) => e.nombre === ai.nombre)) {
+      target.extras.push({ nombre: ai.nombre, precio: Number(ai.precio) || 0, cantidad: 1 });
+    }
+    cambio = `Agregué ${ai.nombre} a tu ${target.producto} 👍`;
+
+  } else if (ai.intent === "observacion") {
+    const obs = ai.texto || "";
+    if (!obs) return false;
+    const idx = typeof ai.productoIndex === "number" ? ai.productoIndex : -1;
+    if (idx >= 0 && idx < n) {
+      order.items[idx].observaciones = order.items[idx].observaciones ? `${order.items[idx].observaciones}, ${obs}` : obs;
+    } else {
+      order.items.forEach((i: any) => { i.observaciones = i.observaciones ? `${i.observaciones}, ${obs}` : obs; });
+    }
+    cambio = `Anoté: ${obs} 📝`;
+
+  } else {
+    return false;
+  }
+
+  updateOrderStep(phone, "post_agregar_producto");
+  const actualizado = getOrder(phone)!;
+  const resumen = actualizado.items.map((i: any) => formatLineaItem(i, true)).join("\n") || "(sin productos aún)";
+  await sendWhatsAppButtons(phone,
+    `${cambio}\n\nTu pedido va así:\n${resumen}\n\n¿Qué deseas hacer?`,
+    [{ id: "confirmar", title: "✅ Confirmar" }, { id: "agregar_mas", title: "➕ Agregar" }, { id: "eliminar", title: "🗑️ Quitar" }]
+  );
+  return true;
+}
+
+// Editor de carrito por VOZ: consulta a Gemini con el contexto del pedido y aplica la corrección
+// hablada del cliente (quitar/cambiar producto, extra al ítem correcto). Devuelve true si la manejó.
+async function editarCarritoPorVoz(phone: string, text: string): Promise<boolean> {
+  const order = getOrder(phone);
+  if (!order) return false;
+  const currentItems = order.items.map((i: any) => ({ producto: i.producto, precio: i.precio, variante: i.variante }));
+  try {
+    const ai = await classifyWithAI(text, currentItems, order.step || "");
+    if (!ai) return false;
+    return await aplicarClasificacionIA(phone, ai);
+  } catch (e) {
+    console.error("❌ Error editarCarritoPorVoz:", e);
+    return false;
+  }
+}
+
 // Aplica adiciones ("adicional de X"/"con X") y observaciones ("sin X"/"poco X") escritas como
 // texto libre al ÚLTIMO ítem del carrito. Reutiliza los extractores del parser (basados en
 // disparadores, que NO toman "sin X" como extra). Devuelve el resumen aplicado o null.
@@ -1517,6 +1631,12 @@ if (skipParsing) {
     if (aiClassification?.intent === "producto") {
       parseResult = { items: aiClassification.items, upselling: aiClassification.upselling };
       aiClassification = null; // Manejado como producto, no como otro intent
+    } else if (vinoDeAudio && aiClassification &&
+      (aiClassification.intent === "eliminar" || aiClassification.intent === "reemplazar" || aiClassification.intent === "extra")) {
+      // Corrección hablada mientras arma el pedido (quitar/cambiar/extra) → aplicar directo
+      if (await aplicarClasificacionIA(phone, aiClassification)) {
+        return res.sendStatus(200);
+      }
     }
   }
 } else {
@@ -2598,14 +2718,22 @@ if (
     const extraMatch = EXTRAS_MAP.find(e => e.keywords.some(k =>
       lower.includes(k) && !new RegExp(`\\b(sin|no)\\s+${k}`, "i").test(lower)));
     if (extraMatch && (esAdicion || lower.split(" ").length <= 3)) {
-      const lastItem = currentOrder.items[currentOrder.items.length - 1];
-      lastItem.extras = lastItem.extras || [];
-      const yaExiste = lastItem.extras.find((e: any) => e.nombre === extraMatch.nombre);
+      // Los toppings van sobre una crepe/waffle, nunca sobre una bebida (jugo/agua/gaseosa).
+      const targetItem = ultimoItemNoBebida(currentOrder);
+      if (!targetItem) {
+        await sendWhatsAppButtons(phone,
+          `El ${extraMatch.nombre} va sobre una crepe 😊 Agrega primero una crepe y con gusto le sumo el topping.`,
+          [{ id: "confirmar", title: "✅ Confirmar" }, { id: "agregar_mas", title: "➕ Agregar" }, { id: "eliminar", title: "🗑️ Quitar" }]
+        );
+        return res.sendStatus(200);
+      }
+      targetItem.extras = targetItem.extras || [];
+      const yaExiste = targetItem.extras.find((e: any) => e.nombre === extraMatch.nombre);
       if (!yaExiste) {
-        lastItem.extras.push({ nombre: extraMatch.nombre, precio: extraMatch.precio, cantidad: 1 });
+        targetItem.extras.push({ nombre: extraMatch.nombre, precio: extraMatch.precio, cantidad: 1 });
       }
       await sendWhatsAppButtons(phone,
-        `Agregado ✅ ${extraMatch.nombre} (+$${extraMatch.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
+        `Agregado ✅ ${extraMatch.nombre} a tu ${targetItem.producto} (+$${extraMatch.precio.toLocaleString("es-CO")})\n\n¿Algo más?`,
         [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
       );
       return res.sendStatus(200);
@@ -4663,6 +4791,10 @@ return res.sendStatus(200);
       }
       return res.sendStatus(200);
     }
+    // Nota de voz → dejar que Gemini resuelva correcciones habladas (quitar/cambiar producto, extra)
+    if (vinoDeAudio && await editarCarritoPorVoz(phone, text)) {
+      return res.sendStatus(200);
+    }
     // Adiciones ("adicional de X") + observaciones ("sin X") como texto libre → al último ítem
     currentOrder.cartFreeTextAttempts = 0;
     const modConf = modificarItemPorTexto(currentOrder, text);
@@ -5097,6 +5229,10 @@ return res.sendStatus(200);
         { id: "4",           title: "📝 Observación" }
       ]
     );
+    return res.sendStatus(200);
+  }
+  // Nota de voz → dejar que Gemini resuelva correcciones habladas (quitar/cambiar producto, extra)
+  if (vinoDeAudio && await editarCarritoPorVoz(phone, text)) {
     return res.sendStatus(200);
   }
   currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;
