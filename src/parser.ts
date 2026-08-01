@@ -890,6 +890,8 @@ export async function parseWithAI(text: string): Promise<ParseResult> {
 }
 
 export function parseOrder(text: string): ParseResult {
+  // "+" como separador de adición (ej. "Nutella + fresa + queso") → tratarlo como "con"
+  text = text.replace(/\+/g, " con ");
   const lower = normalizeText(text);
 
   // Detectar preguntas sobre ingredientes: "qué tiene/lleva/trae/incluye X", "ingredientes de X"

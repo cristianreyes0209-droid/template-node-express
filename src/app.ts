@@ -262,7 +262,7 @@ async function sendWhatsAppLocation(phone: string, latitude: number, longitude: 
   console.log("RESPUESTA LOCATION META:", data);
 }
 
-async function calcularDomicilio(direccionCliente: string, sucursal: string, subtotalPedido?: number): Promise<{
+async function calcularDomicilio(direccionCliente: string, sucursal: string, subtotalPedido?: number, textoRecargo?: string): Promise<{
   distanciaKm: number;
   valorDomicilio: number;
   descripcion: string;
@@ -328,7 +328,8 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
 
   // Recargo por Dosquebradas (municipio vecino, un poco más lejos)
   const RECARGO_DOSQUEBRADAS = 1000;
-  const esDosquebradas = /dosquebradas|dos\s*quebradas/i.test(direccionCliente);
+  // Revisa el texto de la dirección (o el geocodificado del pin GPS, si se pasa) para el recargo
+  const esDosquebradas = /dosquebradas|dos\s*quebradas/i.test(`${direccionCliente} ${textoRecargo || ""}`);
 
   // Domicilio gratis en pedidos >= $100.000 (la promo gana sobre el recargo)
   if (subtotalPedido && subtotalPedido >= 100000) {
@@ -3842,6 +3843,7 @@ return res.sendStatus(200);
       await sendWhatsAppMessage(phone,
         `🙏 ¡Gracias por escribirnos! En este momento la sede *${nombreSucursal("la_villa")}* no está tomando pedidos por un inconveniente temporal. Apenas se normalice te avisaremos por aquí para tomar tu orden 😊🥞`);
       await agregarEspera("la_villa", phone);
+      clearTimeout(inactivityTimers.get(phone)); inactivityTimers.delete(phone); // no molestar con "¿sigues ahí?"
       return res.sendStatus(200);
     }
     if (demandaSuc["la_villa"]) {
@@ -3945,6 +3947,7 @@ return res.sendStatus(200);
       await sendWhatsAppMessage(phone,
         `🙏 ¡Gracias por escribirnos! En este momento la sede *${nombreSucursal("circunvalar")}* no está tomando pedidos por un inconveniente temporal. Apenas se normalice te avisaremos por aquí para tomar tu orden 😊🥞`);
       await agregarEspera("circunvalar", phone);
+      clearTimeout(inactivityTimers.get(phone)); inactivityTimers.delete(phone); // no molestar con "¿sigues ahí?"
       return res.sendStatus(200);
     }
     if (demandaSuc["circunvalar"]) {
@@ -4436,7 +4439,9 @@ return res.sendStatus(200);
     const addressToCalc = order.locationCoords
       ? `${order.locationCoords.latitude},${order.locationCoords.longitude}`
       : (order.direccion || text);
-    const calculo = await calcularDomicilio(addressToCalc, order.sucursal || "la_villa", calculateTotal(order).subtotal);
+    // El pin GPS pasa coordenadas a calcularDomicilio; se pasa la dirección geocodificada aparte
+    // para poder detectar "Dosquebradas" y aplicar el recargo también con ubicación GPS.
+    const calculo = await calcularDomicilio(addressToCalc, order.sucursal || "la_villa", calculateTotal(order).subtotal, order.direccion || "");
     fueraDeRango = !!calculo.fueraDeRango;
     valorDomicilio = calculo.valorDomicilio;
     descripcionDomicilio = calculo.descripcion;
