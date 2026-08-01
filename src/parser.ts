@@ -624,6 +624,48 @@ export function isQuestion(text: string): boolean {
   return false;
 }
 
+// Responde de forma DETERMINÍSTICA a "¿qué crepes/opciones con/de X tienen?" listando las crepes
+// que contienen ese ingrediente/proteína (sin depender de Gemini). Devuelve el texto o null.
+export function consultarCrepesPorIngrediente(text: string): string | null {
+  const norm = normalizeText(text);
+  // Debe ser una CONSULTA de opciones, no un pedido concreto ("una crepe de pollo")
+  const senalConsulta =
+    /\bopcion(es)?\b/.test(norm) ||
+    /\bcuales\b/.test(norm) ||
+    (/\bque\b/.test(norm) && /\b(tienen|tiene|hay|manejan|ofrecen)\b/.test(norm));
+  if (!senalConsulta) return null;
+
+  const GRUPOS: { kw: string[]; etiqueta: string }[] = [
+    { kw: ["pollo"], etiqueta: "pollo" },
+    { kw: ["carne", "res"], etiqueta: "carne" },
+    { kw: ["champinon", "champinones", "hongos"], etiqueta: "champiñón" },
+    { kw: ["camarones", "mariscos", "pescado"], etiqueta: "mariscos" },
+    { kw: ["tocineta"], etiqueta: "tocineta" },
+    { kw: ["pepperoni"], etiqueta: "pepperoni" },
+    { kw: ["jamon"], etiqueta: "jamón" },
+    { kw: ["ranchera", "salchicha"], etiqueta: "salchicha ranchera" },
+    { kw: ["vegetarian", "vegetal", "vegetales", "verdura", "verduras"], etiqueta: "vegetarianas" },
+    { kw: ["pina"], etiqueta: "piña" },
+  ];
+  const grupo = GRUPOS.find(g => g.kw.some(k => new RegExp(`\\b${k}`).test(norm)));
+  if (!grupo) return null;
+
+  const cats = (menu.categorias as any[]).filter(
+    (c: any) => !["extras", "bebidas", "dulces", "con_frutas", "entradas"].includes(c.id)
+  );
+  const productos = cats.flatMap((c: any) => (c.productos as any[]) || []);
+  const matches = productos.filter((p: any) => {
+    const blob = normalizeText([p.nombre, ...(p.aliases || []), ...(p.ingredientes || [])].join(" "));
+    return grupo.kw.some(k => blob.includes(k));
+  });
+  if (matches.length === 0) return null;
+
+  const lista = matches
+    .map((p: any) => `• ${p.nombre} — $${(p.precio || 0).toLocaleString("es-CO")}`)
+    .join("\n");
+  return `Estas son nuestras crepes con ${grupo.etiqueta} 😊\n\n${lista}\n\n¿Cuál te provoca? Escríbeme el nombre y te la registro 🥞`;
+}
+
 export function isAmbiguousText(text: string): boolean {
   const norm = normalizeText(text);
   const allProducts = (menu.categorias as any[])

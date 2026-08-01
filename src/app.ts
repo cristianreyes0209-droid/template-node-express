@@ -20,7 +20,7 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
-import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, extractExtrasFromFragment, extractObservaciones, GEMINI_MODEL } from './parser';
+import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, extractExtrasFromFragment, extractObservaciones, consultarCrepesPorIngrediente, GEMINI_MODEL } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
@@ -1604,6 +1604,28 @@ if (nombrePedidoMatch && currentOrder && !currentOrder.nombre) {
   }
 }
 
+// Consulta determinística de "¿qué crepes/opciones con X tienen?" → listar (sin depender de Gemini).
+// Se responde en cualquier paso salvo los de captura de datos sensibles (dirección, pago, factura...).
+const stepsBloqueaConsultaCrepes = new Set([
+  "esperando_direccion", "esperando_nombre", "esperando_pago", "esperando_comprobante",
+  "esperando_comprobante_holaclick", "esperando_datos_factura", "esperando_email_factura",
+  "esperando_confirmacion_direccion"
+]);
+if (!esBoton && !stepsBloqueaConsultaCrepes.has(currentOrder?.step || "")) {
+  const respCrepes = consultarCrepesPorIngrediente(text);
+  if (respCrepes) {
+    await sendWhatsAppMessage(phone, respCrepes);
+    if (currentOrder && currentOrder.items.length > 0) {
+      const resumenRC = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+      await sendWhatsAppButtons(phone,
+        "Tu pedido va así:\n\n" + resumenRC + "\n\n¿Qué deseas hacer?",
+        [{ id: "confirmar", title: "✅ Confirmar" }, { id: "agregar_mas", title: "➕ Agregar" }, { id: "eliminar", title: "🗑️ Quitar" }]
+      );
+    }
+    return res.sendStatus(200);
+  }
+}
+
 let parseResult: { items: any[]; ambiguousChoice?: any; upselling?: string; productoQuery?: string } =
   { items: [], ambiguousChoice: undefined, upselling: undefined };
 
@@ -2740,9 +2762,9 @@ if (
     }
   }
 
-  // 3. Texto largo (≥4 palabras) → guardar como observación general
+  // 3. Texto largo (≥4 palabras) → guardar como observación general (nunca una pregunta)
   const palabrasFallback = text.trim().split(/\s+/);
-  if (palabrasFallback.length >= 4 && currentOrder.items.length > 0) {
+  if (palabrasFallback.length >= 4 && currentOrder.items.length > 0 && !isQuestion(text)) {
     const obsActual = currentOrder.observacionesGenerales;
     currentOrder.observacionesGenerales = obsActual
       ? `${obsActual}. ${text.trim()}`
