@@ -381,6 +381,25 @@ export function extractObservaciones(fragment: string): string | undefined {
     observaciones.push(`sin ${obs.trim()}`);
   }
 
+  // "si <ingrediente>" = typo de "sin <ingrediente>" (le falta la "n"). Solo se toma como negación
+  // cuando la palabra siguiente es un ingrediente removible conocido — así "sí" (confirmación) no
+  // genera falsos positivos ("si quiero", "si gracias", "si" solo → nada).
+  const INGREDIENTES_REMOVIBLES = new Set([
+    "salsa","salsas","cebolla","cebollas","queso","quesos","tomate","tomates","lechuga",
+    "champinon","champinones","jalapeno","jalapenos","pollo","carne","huevo","huevos",
+    "maiz","pina","tocineta","jamon","azucar","sal","picante","mayonesa","mostaza","aji",
+    "arequipe","nutella","crema","aderezo","pepinillo","pepinillos","pepperoni","salami","ranchera"
+  ]);
+  const stripAcentos = (w: string) => w.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const siRegex = /\bsi\s+([\wáéíóúüñ]+)(?:\s+([\wáéíóúüñ]+))?/gi;
+  while ((m = siRegex.exec(text)) !== null) {
+    if (!INGREDIENTES_REMOVIBLES.has(stripAcentos(m[1]))) continue;
+    let obs = m[1];
+    if (m[2] && !STOP2.test(m[2])) obs += ` ${m[2]}`;
+    const negacion = `sin ${obs.trim()}`;
+    if (!observaciones.includes(negacion)) observaciones.push(negacion);
+  }
+
   const pocoMatch = text.match(/\bpoco\s+([\wáéíóúüñ]+)/i);
   if (pocoMatch) observaciones.push(`poco ${pocoMatch[1]}`);
 
