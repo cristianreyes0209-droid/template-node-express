@@ -276,7 +276,16 @@ export function updateOrderGeneralNotes(phone: string, notes: string) {
   const order = orders[phone];
   if (!order) return;
 
-  order.observacionesGenerales = notes;
+  // Acumular observaciones en vez de sobrescribir (evita perder notas como "uno sin queso"
+  // cuando el cliente agrega otra observación después). Dedup de repetidos exactos.
+  const nueva = (notes || "").trim();
+  if (!nueva) return;
+  const actual = (order.observacionesGenerales || "").trim();
+  if (!actual) {
+    order.observacionesGenerales = nueva;
+  } else if (!actual.toLowerCase().includes(nueva.toLowerCase())) {
+    order.observacionesGenerales = `${actual}. ${nueva}`;
+  }
 }
 
 export function updateOrderDireccionNotes(phone: string, notes: string) {

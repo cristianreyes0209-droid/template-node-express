@@ -158,7 +158,9 @@ export function normalizeText(text: string) {
     .replace(/\bcrees\b/g, "crepe")
     .replace(/\bchepes?\b/g, "crepe")
     .replace(/\bcrepes\b/g, "crepe")
+    .replace(/\bcreppes?\b/g, "crepe")
     .replace(/\bcrep\b/g, "crepe")
+    .replace(/\battun\b/g, "atun")
     .replace(/\branquera\b/g, "ranchera")
     .replace(/\brancheras\b/g, "ranchera")
     .replace(/\branchero\b/g, "ranchera")
@@ -406,6 +408,14 @@ export function extractObservaciones(fragment: string): string | undefined {
   const bienMatch = text.match(/\bbien\s+([\wáéíóúüñ]+)/i);
   if (bienMatch) observaciones.push(`bien ${bienMatch[1]}`);
 
+  // "solo X" / "solo con X" = el cliente quiere ÚNICAMENTE X → es una observación (NO agregar extras;
+  // eso lo evita extractExtrasFromFragment). Ej: "desgranada solo con queso cuajada" → "solo queso cuajada".
+  const soloMatch = text.match(/\bsolo\s+(?:con\s+)?(.+)$/i);
+  if (soloMatch) {
+    const resto = soloMatch[1].replace(/\b(por\s*favor|porfa|gracias)\b.*$/i, "").trim();
+    if (resto && resto.length <= 40) observaciones.push(`solo ${resto}`);
+  }
+
   return observaciones.length > 0 ? observaciones.join(", ") : undefined;
 }
 
@@ -554,6 +564,14 @@ export function extractExtrasFromFragment(fragment: string, extrasProducts: any[
   const text = normalizeText(fragment);
   const extrasFound: ParsedExtra[] = [];
 
+  // "solo con X" / "solo X" = el cliente quiere ÚNICAMENTE X (restricción, no adición). No cobrar extras
+  // (se registra como observación "solo X" vía extractObservaciones). Evita sobrecobros.
+  if (/\bsolo\b/.test(text)) return [];
+
+  // Si se nombra un queso ESPECÍFICO ("queso cuajada/americano/parmesano"), no agregar también el
+  // "queso" genérico (doble crema). Evita meter dos quesos por "con queso cuajada".
+  const quesoEspecifico = /\bqueso\s+(cuajada|americano|parmesano|mozarella|mozzarella)\b/.test(text);
+
   for (const extra of extrasProducts) {
     // Si el producto tiene extrasDisponibles definidos, respetar esa lista
     if (
@@ -566,6 +584,8 @@ export function extractExtrasFromFragment(fragment: string, extrasProducts: any[
 
     for (const alias of extra.aliases || []) {
       const normalizedAlias = normalizeText(alias);
+      // No agregar el "queso" genérico (doble crema) si se nombró un queso específico
+      if (normalizedAlias === "queso" && quesoEspecifico) continue;
       const regex = new RegExp(`\\b${escapeRegex(normalizedAlias)}\\b`, "i");
 
       const triggers = [

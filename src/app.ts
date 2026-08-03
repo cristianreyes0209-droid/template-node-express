@@ -1839,6 +1839,11 @@ const enStepDePago = stepActualPago === "esperando_pago"
   || stepActualPago === "esperando_comprobante_holaclick"
   || stepActualPago === "esperando_asesor"
   || stepActualPago === "esperando_confirmacion";
+// Pasos de captura de datos donde una keyword de pago NO debe secuestrar el mensaje
+// (ej: dirección "... para pagar por transferencia" → NO mostrar métodos de pago, guardar la dirección).
+const enStepCapturaDatos = stepActualPago === "esperando_direccion"
+  || stepActualPago === "esperando_nombre"
+  || stepActualPago === "esperando_confirmacion_direccion";
 
 // El cliente indica que YA pagó (en factura/pago/comprobante) → pedir comprobante, no repetir datos de pago
 const esYaPago =
@@ -1865,7 +1870,7 @@ if (esYaPago && enPasoPagoAmplio) {
   return res.sendStatus(200);
 }
 
-if (esPreguntaPago && !esMensajeLargo && !enStepDePago) {
+if (esPreguntaPago && !esMensajeLargo && !enStepDePago && !enStepCapturaDatos) {
   // Si el cliente está armando pedido con items → avanzar al flujo de confirmación
   if (
     currentOrder &&
@@ -4397,8 +4402,15 @@ return res.sendStatus(200);
   const nombreNorm = nombreRecibido.trim().toLowerCase()
     .normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[.,!¡¿?]/g, "").trim();
   const esSaludoNombre = /^(hola+|holi(?:s|is)?|buen[oa]s?(?:\s+(?:dias|tardes|noches))?|buen dia|hey+|hi|hello|ola+|que tal|saludos|gracias)$/.test(nombreNorm);
-  if (INVALIDOS_NOMBRE.has(nombreRecibido.toLowerCase()) || nombreRecibido.length < 2 || esSaludoNombre) {
-    await sendWhatsAppMessage(phone, "Por favor dime tu nombre 😊 ¿Cómo te llamas?");
+  // No aceptar una DIRECCIÓN como nombre (ej: "Para samaria 1 manzana 8 casa 21 segundo piso")
+  const pareceDireccionNombre =
+    /\d/.test(nombreRecibido) &&
+    /\b(mz|manzana|casa|piso|apto|apartamento|apartaestudio|calle|carrera|cra|cll|kra|avenida|av|diagonal|transversal|barrio|torre|conjunto|bloque|etapa|urbanizacion|urbanización|km|autopista)\b/i.test(nombreNorm);
+  if (INVALIDOS_NOMBRE.has(nombreRecibido.toLowerCase()) || nombreRecibido.length < 2 || esSaludoNombre || pareceDireccionNombre) {
+    const msgNombre = pareceDireccionNombre
+      ? "Eso parece una dirección 😊 Primero dime solo tu *nombre* (la dirección te la pido enseguida)."
+      : "Por favor dime tu nombre 😊 ¿Cómo te llamas?";
+    await sendWhatsAppMessage(phone, msgNombre);
     return res.sendStatus(200);
   }
   updateOrderName(phone, nombreRecibido);
@@ -4418,11 +4430,12 @@ return res.sendStatus(200);
       ]
     );
     return res.sendStatus(200);
-  } else if (currentOrder.tipoEntrega === "domicilio") {
+  } else if (currentOrder.tipoEntrega === "domicilio" && !currentOrder.direccion) {
     updateOrderStep(phone, "esperando_direccion");
     currentOrder = getOrder(phone)!;
     replyMessage = "Perfecto 👍\n\nEnvíame tu ubicación 📍 para mayor exactitud, o escríbeme tu dirección.";
   } else {
+    // recoger, o domicilio con dirección YA cargada → ir directo a confirmación (no re-pedir dirección)
     updateOrderStep(phone, "esperando_confirmacion");
     currentOrder = getOrder(phone)!;
     const order = getOrder(phone)!;
@@ -6150,6 +6163,23 @@ return res.sendStatus(200);
     return res.sendStatus(200);
   } else {
     const orderFB = getOrder(phone)!;
+    // Texto libre con dirección ya cargada → tratarlo como COMPLEMENTO (apto/casa/torre/referencia)
+    // y agregarlo a la dirección, en vez de ignorarlo. (Fix: complemento perdido para el domiciliario.)
+    const textoComp = text.trim();
+    const esComplementoDir = !!orderFB.direccion && !esBoton &&
+      /[a-záéíóúñ]/i.test(textoComp) && textoComp.length >= 4 &&
+      !["a", "b", "c"].includes(lower) &&
+      !orderFB.direccion.toLowerCase().includes(textoComp.toLowerCase());
+    if (esComplementoDir) {
+      updateOrderAddress(phone, `${orderFB.direccion} — ${textoComp}`);
+      const o2 = getOrder(phone)!;
+      await sendWhatsAppButtons(phone,
+        `📝 Anoté: ${textoComp}\n\n¿Es correcta esta dirección? 📍\n\n*${o2.direccion}*` +
+        (o2.valorDomicilio ? `\n💵 Domicilio: $${o2.valorDomicilio.toLocaleString("es-CO")}` : ""),
+        [{ id: "a", title: "Confirmar ✅" }, { id: "b", title: "Corregir ✏️" }, { id: "c", title: "Complementar 📝" }]
+      );
+      return res.sendStatus(200);
+    }
     if (orderFB.direccion) {
       await sendWhatsAppButtons(phone,
         `¿Es correcta esta dirección? 📍\n\n*${orderFB.direccion}*` +
