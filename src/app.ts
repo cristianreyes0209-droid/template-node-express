@@ -612,11 +612,17 @@ async function aplicarClasificacionIA(phone: string, ai: any): Promise<boolean> 
   return true;
 }
 
-// Editor de carrito por VOZ: consulta a Gemini con el contexto del pedido y aplica la corrección
-// hablada del cliente (quitar/cambiar producto, extra al ítem correcto). Devuelve true si la manejó.
+// Fallback IA de carrito: consulta a Gemini con el contexto del pedido y aplica lo que pida el
+// cliente (quitar/cambiar producto, extra al ítem correcto, swap de ingrediente misma categoría,
+// pregunta del menú). Se usa como último recurso para TODO texto libre en pasos de carrito.
+// Devuelve true si la manejó.
 async function editarCarritoPorVoz(phone: string, text: string): Promise<boolean> {
   const order = getOrder(phone);
   if (!order) return false;
+  // Guarda anti-costo: no llamar a Gemini para texto trivial ya manejado por handlers deterministas.
+  const t = (text || "").trim().toLowerCase();
+  const TRIVIAL = new Set(["si", "sí", "no", "ok", "okay", "dale", "listo", "gracias", "hola", "buenas", "confirmar", "agregar", "agregar_mas", "eliminar", "a", "b", "c", "1", "2", "3", "4", "5"]);
+  if (t.length < 2 || TRIVIAL.has(t)) return false;
   const currentItems = order.items.map((i: any) => ({ producto: i.producto, precio: i.precio, variante: i.variante }));
   try {
     const ai = await classifyWithAI(text, currentItems, order.step || "");
@@ -1653,9 +1659,12 @@ if (skipParsing) {
     if (aiClassification?.intent === "producto") {
       parseResult = { items: aiClassification.items, upselling: aiClassification.upselling };
       aiClassification = null; // Manejado como producto, no como otro intent
-    } else if (vinoDeAudio && aiClassification &&
-      (aiClassification.intent === "eliminar" || aiClassification.intent === "reemplazar" || aiClassification.intent === "extra")) {
-      // Corrección hablada mientras arma el pedido (quitar/cambiar/extra) → aplicar directo
+    } else if (aiClassification &&
+      (aiClassification.intent === "eliminar" || aiClassification.intent === "reemplazar" ||
+       aiClassification.intent === "extra" || aiClassification.intent === "observacion" ||
+       aiClassification.intent === "pregunta")) {
+      // Fallback IA en armado: corrección (quitar/cambiar/extra), swap de ingrediente
+      // (observacion "cambiar X por Y") o pregunta del menú → aplicar/responder directo.
       if (await aplicarClasificacionIA(phone, aiClassification)) {
         return res.sendStatus(200);
       }
@@ -4826,8 +4835,9 @@ return res.sendStatus(200);
       }
       return res.sendStatus(200);
     }
-    // Nota de voz → dejar que Gemini resuelva correcciones habladas (quitar/cambiar producto, extra)
-    if (vinoDeAudio && await editarCarritoPorVoz(phone, text)) {
+    // Fallback IA: cualquier texto libre no manejado → Gemini resuelve (corrección, swap de
+    // ingrediente misma categoría, pregunta del menú). Último recurso antes de "¿Qué deseas hacer?".
+    if (await editarCarritoPorVoz(phone, text)) {
       return res.sendStatus(200);
     }
     // Adiciones ("adicional de X") + observaciones ("sin X") como texto libre → al último ítem
@@ -5266,8 +5276,9 @@ return res.sendStatus(200);
     );
     return res.sendStatus(200);
   }
-  // Nota de voz → dejar que Gemini resuelva correcciones habladas (quitar/cambiar producto, extra)
-  if (vinoDeAudio && await editarCarritoPorVoz(phone, text)) {
+  // Fallback IA: cualquier texto libre no manejado → Gemini resuelve (corrección, swap de
+  // ingrediente misma categoría, pregunta del menú). Último recurso antes de "¿Qué deseas hacer?".
+  if (await editarCarritoPorVoz(phone, text)) {
     return res.sendStatus(200);
   }
   currentOrder.cartFreeTextAttempts = (currentOrder.cartFreeTextAttempts || 0) + 1;

@@ -748,12 +748,12 @@ export async function classifyWithAI(
 
   const menuResumen = allProducts
     .map((p: any) =>
-      `- id:${p.id} | ${p.nombre} $${p.precio}${p.aliases?.length ? ` (aliases: ${(p.aliases as string[]).slice(0, 3).join(", ")})` : ""}${p.variantes ? ` [variantes: ${(p.variantes as any[]).map((v: any) => `${v.nombre} $${v.precio}`).join(" / ")}]` : ""}`
+      `- id:${p.id} | ${p.nombre} $${p.precio}${p.ingredientes?.length ? ` | lleva: ${(p.ingredientes as string[]).join(", ")}` : ""}${p.aliases?.length ? ` (aliases: ${(p.aliases as string[]).slice(0, 3).join(", ")})` : ""}${p.variantes ? ` [variantes: ${(p.variantes as any[]).map((v: any) => `${v.nombre} $${v.precio}`).join(" / ")}]` : ""}`
     )
     .join("\n");
 
   const extrasResumen = extrasProducts
-    .map((e: any) => `- ${e.nombre} $${e.precio} (id:${e.id})`)
+    .map((e: any) => `- ${e.nombre} $${e.precio} (id:${e.id}${e.tipo ? `, tipo:${e.tipo}` : ""})`)
     .join("\n");
 
   const pedidoActual = currentItems.length > 0
@@ -761,10 +761,11 @@ export async function classifyWithAI(
     : "(vacío)";
 
   const prompt =
-    `Eres el asistente de pedidos de Las Crepes de París, Pereira Colombia. Step actual: "${step}".\n\n` +
+    `Eres el asistente de pedidos y EXPERTO DEL MENÚ de Las Crepes de París, Pereira Colombia. Step actual: "${step}".\n` +
+    `Conoces los ingredientes de cada crepe y puedes recomendar, describir qué lleva un producto y resolver dudas del menú.\n\n` +
     `PEDIDO ACTUAL DEL CLIENTE:\n${pedidoActual}\n\n` +
-    `MENÚ PRINCIPAL:\n${menuResumen}\n\n` +
-    `EXTRAS DISPONIBLES:\n${extrasResumen}\n\n` +
+    `MENÚ PRINCIPAL (con ingredientes):\n${menuResumen}\n\n` +
+    `EXTRAS/TOPPINGS DISPONIBLES (con su tipo/categoría):\n${extrasResumen}\n\n` +
     `MENSAJE DEL CLIENTE: "${text}"\n\n` +
     `Analiza el mensaje y responde SOLO con JSON válido, sin texto extra. El JSON debe tener este formato:\n` +
     `{\n` +
@@ -781,8 +782,10 @@ export async function classifyWithAI(
     `REGLAS:\n` +
     `- Los índices ("productoIndex", "eliminarIndex") son 0-based y se refieren a la lista PEDIDO ACTUAL DEL CLIENTE de arriba (el ítem 1 es index 0).\n` +
     `- intent "producto": el cliente pide algo del menú. Llena "items" con los productos identificados usando el id exacto del menú.\n` +
-    `- intent "observacion": el cliente hace una modificación (sin X, poco X, bien X) a un producto ya en el pedido. Llena "observacion" y "productoIndex" (-1 si aplica a todos).\n` +
-    `- intent "pregunta": el cliente pregunta algo. Llena "respuesta" con una respuesta corta y útil basada en el menú.\n` +
+    `- intent "observacion": el cliente hace una modificación (sin X, poco X, bien X, "solo X") a un producto ya en el pedido. Llena "observacion" y "productoIndex" (-1 si aplica a todos).\n` +
+    `- CAMBIO DE INGREDIENTE (swap): si el cliente pide cambiar un ingrediente de SU crepe por otro del MISMO tipo/categoría (proteína↔proteína como jamón→pollo→carne→tocineta; queso↔queso como doble crema→cuajada→americano; salsa↔salsa) → usa intent "observacion" con "observacion":"cambiar X por Y" y el "productoIndex" del ítem. Es SIN COSTO. Solo permite el cambio si el ingrediente que sale realmente está en ese producto y el que entra es del mismo tipo (mira la lista de ingredientes y el tipo de los extras).\n` +
+    `- Si el cliente pide cambiar por un ingrediente de OTRA categoría (ej. cambiar queso por nutella) o AGREGAR algo extra, NO lo registres como swap gratis: usa intent "extra" (ofrécelo como topping pago) o intent "pregunta" explicando amablemente que ese cambio no aplica pero puede agregarlo como adicional.\n` +
+    `- intent "pregunta": el cliente pregunta o pide una recomendación/descripción ("qué lleva la ranchera", "cuál me recomiendas", "tienen algo sin cebolla"). Llena "respuesta" con una respuesta corta, cálida y EXACTA según los ingredientes del menú de arriba.\n` +
     `- intent "extra": el cliente pide un extra/topping (tocineta, champiñones, maíz, fresa...). Llena "extraNombre", "extraPrecio" y "productoIndex" (el ítem del pedido al que va el topping; si no es claro, la última crepe, NUNCA una bebida).\n` +
     `- intent "eliminar": el cliente quiere QUITAR un producto ya en el pedido ("quítame el agua", "el jugo no", "borra la coca cola", "ya no quiero X"). Llena "eliminarIndex" con el índice del ítem a quitar.\n` +
     `- intent "reemplazar": el cliente quiere CAMBIAR un producto por otro ("agua no, mejor un jugo", "cambia la coca por limonada", "en vez de X quiero Y"). Llena "eliminarIndex" (el que sale) e "items" (el/los que entran, con id del menú).\n` +
