@@ -107,7 +107,14 @@
   .pill.st-camino{background:var(--blue-soft);color:var(--blue)}
   .pill.st-terminada{background:var(--green-soft);color:var(--green)}
   .pill.st-abandonada{background:var(--red-soft);color:var(--red)}
+  .pill.st-cancelada{background:var(--red-soft);color:var(--red)}
   .pill.st-asistente{background:var(--purple-soft);color:var(--purple)}
+  /* Banner persistente de solicitud de asesor */
+  #asesorBanner{display:none;position:sticky;top:0;z-index:50;background:linear-gradient(90deg,#dc2626,#b91c1c);color:#fff;
+    padding:12px 18px;border-radius:12px;margin:0 0 12px;font-weight:800;box-shadow:0 4px 18px rgba(220,38,38,.35);
+    align-items:center;gap:10px;cursor:pointer;animation:asesorBlink 1.1s ease-in-out infinite}
+  #asesorBanner.show{display:flex}
+  @keyframes asesorBlink{0%,100%{box-shadow:0 4px 18px rgba(220,38,38,.35)}50%{box-shadow:0 4px 26px rgba(220,38,38,.85)}}
   .pill.st-proceso{background:#eef2f7;color:#475569}
   .muted{color:#cbd5e1;font-weight:600}
   .wa-link{width:30px;height:30px;border-radius:50%;background:var(--green-soft);display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:none;cursor:pointer;padding:0}
@@ -282,6 +289,12 @@
       </div>
     </div>
 
+    <!-- ALARMA: solicitudes de asesor pendientes -->
+    <div id="asesorBanner" onclick="irAAsesor()">
+      <span style="font-size:20px">🎧</span>
+      <span id="asesorBannerTxt">Cliente esperando asesor</span>
+    </div>
+
     <!-- KPIs -->
     <div class="kpis">
       <div class="kpi"><div class="kpi-icon ic-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div><h3>Chats activos</h3><div class="num" id="kpiChats">—</div><small>En conversación (sin confirmar)</small></div></div>
@@ -366,7 +379,8 @@ const ESTADOS = {
   camino:     { txt:"🛵 Orden en camino",     cls:"st-camino" },
   terminada:  { txt:"✅ Orden terminada",     cls:"st-terminada" },
   abandonada: { txt:"✖ Orden abandonada",     cls:"st-abandonada" },
-  asistente:  { txt:"🎧 Solicitud asistente", cls:"st-asistente" }
+  asistente:  { txt:"🎧 Solicitud asistente", cls:"st-asistente" },
+  cancelada:  { txt:"❌ Cancelado",           cls:"st-cancelada" }
 };
 const SUC_NOMBRE = { la_villa:"La Villa", circunvalar:"Av. Circunvalar" };
 const fmtCOP = n => "$ " + Number(n||0).toLocaleString("es-CO");
@@ -375,6 +389,7 @@ const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&l
 function mapEstado(e){
   if(e==="en_camino") return "camino";
   if(e==="entregado"||e==="finalizado") return "terminada";
+  if(e==="cancelado") return "cancelada";
   return "lista"; // recibido, en_preparacion
 }
 const bogotaDate = d => new Date(d).toLocaleDateString("en-CA",{timeZone:"America/Bogota"}); // YYYY-MM-DD
@@ -569,6 +584,24 @@ function detectarAlertas(esHoy){
   seenAsesor = new Set(asesor);
 }
 
+// Banner persistente: visible mientras haya sesiones esperando asesor (se oculta al atenderlas).
+function actualizarBannerAsesor(esHoy){
+  const el = document.getElementById("asesorBanner");
+  if(!el) return;
+  const esperando = (esHoy ? SESIONES : []).filter(s => s.step === "esperando_asesor");
+  if(esperando.length === 0){ el.classList.remove("show"); return; }
+  const nombres = esperando.map(s => s.nombre || fmtTel(s.phone)).slice(0,3).join(", ");
+  const extra = esperando.length > 3 ? ` y ${esperando.length-3} más` : "";
+  document.getElementById("asesorBannerTxt").textContent =
+    `${esperando.length} cliente(s) esperando asesor: ${nombres}${extra} · toca para ver`;
+  el.classList.add("show");
+}
+// Al tocar el banner: filtrar/enfocar; simple → llevar al primer chat en espera.
+function irAAsesor(){
+  const s = (SESIONES||[]).find(x => x.step === "esperando_asesor");
+  if(s && typeof abrirChat === "function"){ abrirChat(normPhone(s.phone), s.nombre||"", !!s.bot_pausado); }
+}
+
 /* ===================== CARGA DE DATOS ===================== */
 const normPhone = p => String(p||"").replace(/[^\d]/g,"");
 
@@ -598,6 +631,7 @@ async function cargarDatos(){
     );
 
     detectarAlertas(esHoy);   // sonido en pedidos confirmados nuevos y solicitudes de asesor
+    actualizarBannerAsesor(esHoy);  // banner persistente mientras haya clientes esperando asesor
     cargarEstadoSede();       // refrescar estado de pausa/alta demanda por sede
 
     ALLROWS = PEDIDOS.map(pedidoAFila)
@@ -624,7 +658,7 @@ function pedidoAFila(p){
     confirmada: true, abandonada: false, asistente: !!p.asesor_intervenido,
     esRecoger,
     estadoTxt: e.txt, estadoCls: e.cls,
-    activo: est !== "terminada" && esHoyVista   // botones en camino/terminada solo en la vista de hoy
+    activo: est !== "terminada" && est !== "cancelada" && esHoyVista   // sin botones si terminada/cancelada
   };
 }
 

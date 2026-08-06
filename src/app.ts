@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "./db";
 import cron from "node-cron";
-import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig } from "./db";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidoCancelableByPhone, getUltimoPedidoByPhone, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig } from "./db";
 import path from "path";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -2132,6 +2132,86 @@ if (esChangeToRecoger && currentOrder && currentOrder.step !== "confirmado") {
       { id: "b", title: "Av. Circunvalar 📍" }
     ]
   );
+  return res.sendStatus(200);
+}
+
+// ─── Cancelación de pedido por el CLIENTE (antes de estar "en camino") ───
+// Detecta intención de cancelar un pedido YA confirmado; pide confirmación antes de anular.
+// Se exige que el mensaje se refiera al pedido (o que el paso sea "confirmado") para no chocar
+// con el "cancelar" de mitad de flujo (que ya maneja esperando_direccion).
+const esVerboCancelar =
+  /\bcancel(a|ar|arlo|arla|arme|en|o|ame|eme)\b/.test(lower) ||
+  /\banul(a|ar|arlo|arla|arme|o|en)\b/.test(lower) ||
+  lower.includes("ya no quiero el pedido") || lower.includes("ya no quiero mi pedido");
+const esIntentoCancelarPedido = !esBoton && esVerboCancelar && (
+  lower.includes("pedido") || lower.includes("orden") || lower.includes("compra") ||
+  currentOrder?.step === "confirmado"
+);
+if (esIntentoCancelarPedido && currentOrder?.step !== "esperando_confirmacion_cancelacion") {
+  const pedCancel = await getPedidoCancelableByPhone(phone);
+  if (pedCancel) {
+    const ord = getOrder(phone) || (createOrUpdateOrder(phone, []), getOrder(phone)!);
+    ord.pedidoCancelarId = pedCancel.id;
+    updateOrderStep(phone, "esperando_confirmacion_cancelacion");
+    const totalCancel = pedCancel.total ? ` por *$${Number(pedCancel.total).toLocaleString("es-CO")}*` : "";
+    await sendWhatsAppButtons(phone,
+      `¿Seguro que deseas *cancelar* tu pedido${totalCancel}? 😔\n\nSi lo cancelas no se preparará.`,
+      [
+        { id: "cancelar_si", title: "Sí, cancelar ❌" },
+        { id: "cancelar_no", title: "No, mantenerlo ✅" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
+  // No hay pedido cancelable: ¿el último ya va en camino/entregado? → derivar a la sede.
+  const ultimoPed = await getUltimoPedidoByPhone(phone);
+  if (ultimoPed && ["en_camino", "entregado"].includes(ultimoPed.estado)) {
+    await sendWhatsAppMessage(phone,
+      "Tu pedido ya está en camino 🛵 y no puedo cancelarlo desde aquí. Por favor comunícate directamente con la sede:\n📞 La Villa: 606 341 3020 | Circunvalar: 606 345 0257"
+    );
+    return res.sendStatus(200);
+  }
+  // Sin pedido confirmado → dejar que el flujo normal maneje (cancelar durante el armado).
+}
+
+// Respuesta a la confirmación de cancelación (Sí/No)
+if (currentOrder?.step === "esperando_confirmacion_cancelacion") {
+  const confirmaCancelar = lower === "cancelar_si" || lower === "si" || lower === "sí" ||
+    lower.includes("si cancel") || lower.includes("sí cancel") || lower.includes("si, cancel") ||
+    (lower.includes("cancel") && !lower.includes("no cancel"));
+  const mantener = lower === "cancelar_no" || lower === "no" ||
+    lower.includes("mantener") || lower.includes("no cancel") || lower.includes("dejalo") || lower.includes("déjalo");
+  if (confirmaCancelar) {
+    const pedId = currentOrder.pedidoCancelarId;
+    const ped = pedId ? await getPedidoById(pedId) : await getPedidoCancelableByPhone(phone);
+    if (ped && ["en_camino", "entregado"].includes(ped.estado)) {
+      await sendWhatsAppMessage(phone,
+        "Tu pedido ya está en camino 🛵 y no puedo cancelarlo desde aquí. Comunícate con la sede:\n📞 La Villa: 606 341 3020 | Circunvalar: 606 345 0257");
+      clearOrder(phone);
+      return res.sendStatus(200);
+    }
+    if (ped) {
+      await updatePedidoEstado(ped.id, "cancelado");
+      const nombreC = ped.nombre || currentOrder.nombre || customer?.name || phone;
+      const sedeTxt = ped.sucursal === "circunvalar" ? "Av. Circunvalar" : "La Villa";
+      const totalTxt = ped.total ? ` — $${Number(ped.total).toLocaleString("es-CO")}` : "";
+      sendWhatsAppMessage("573151913928",
+        `❌ PEDIDO CANCELADO por el cliente\n\n👤 ${nombreC}\n📞 ${phone}\n🏪 ${sedeTxt}\n🧾 Pedido #${ped.id}${totalTxt}`).catch(() => {});
+    }
+    await sendWhatsAppMessage(phone,
+      "Tu pedido fue *cancelado* ❌\n\nLamentamos que no puedas disfrutarlo esta vez 🥞 ¡Te esperamos pronto!");
+    clearOrder(phone);
+    return res.sendStatus(200);
+  }
+  if (mantener) {
+    updateOrderStep(phone, "confirmado");
+    await sendWhatsAppMessage(phone, "¡Perfecto! Mantenemos tu pedido 🥞 Ya lo estamos preparando.");
+    return res.sendStatus(200);
+  }
+  await sendWhatsAppButtons(phone, "¿Deseas cancelar tu pedido?", [
+    { id: "cancelar_si", title: "Sí, cancelar ❌" },
+    { id: "cancelar_no", title: "No, mantenerlo ✅" }
+  ]);
   return res.sendStatus(200);
 }
 
@@ -6504,7 +6584,7 @@ app.post('/api/pedidos/:id/estado', async (req, res) => {
   }
   const id = parseInt(req.params.id);
   const { estado } = req.body || {};
-  const ESTADOS_VALIDOS = ['en_preparacion', 'en_camino', 'entregado'];
+  const ESTADOS_VALIDOS = ['en_preparacion', 'en_camino', 'entregado', 'cancelado'];
   if (!estado || isNaN(id) || !ESTADOS_VALIDOS.includes(estado)) {
     return res.status(400).json({ error: "Parámetros inválidos" });
   }
@@ -6530,7 +6610,8 @@ app.post('/api/pedidos/:id/estado', async (req, res) => {
       en_camino:      esRecoger
         ? `🛍️ ¡Hola ${nombre}! Tu orden está lista para recoger 🥞\n¡Te esperamos!`
         : `🛵 ¡Hola ${nombre}! Tu pedido está en camino 🛵\nPronto podrás disfrutar de tus deliciosas crepes 🥞`,
-      entregado:      msgEntregado
+      entregado:      msgEntregado,
+      cancelado:      `❌ ¡Hola ${nombre}! Tu pedido fue cancelado.\n\nSi fue un error o deseas volver a pedir, escríbenos por aquí 🥞`
     };
     sendWhatsAppMessage(pedido.phone, msgs[estado])
       .catch(e => console.error("❌ Notif estado:", e));

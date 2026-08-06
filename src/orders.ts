@@ -47,6 +47,7 @@ export type OrderStep =
   | "esperando_queso_dulce"
   | "esperando_sabor_cocacola"
   | "esperando_complemento_direccion"
+  | "esperando_confirmacion_cancelacion"
   | "confirmado";
 
 export type CustomerOrder = {
@@ -88,6 +89,7 @@ export type CustomerOrder = {
   cartFreeTextAttempts?: number;
   armandoFallbacks?: number;
   asesorIntervenido?: boolean;
+  pedidoCancelarId?: number;      // id del pedido en DB que el cliente está por cancelar (confirmación)
   botPausado?: boolean;           // asesor desconectó el bot desde el panel (silencio, conserva el paso)
   descuentoPct?: number;          // % de descuento aplicado a ESTE pedido
   descuentoDisponible?: number;   // cache del descuento acumulado del cliente

@@ -369,6 +369,39 @@ export async function getPedidoById(id: number) {
   }
 }
 
+// Último pedido del cliente (cualquier estado) en las últimas 12h.
+export async function getUltimoPedidoByPhone(phone: string) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM pedidos WHERE phone = $1 AND created_at >= NOW() - INTERVAL '12 hours'
+       ORDER BY created_at DESC LIMIT 1`,
+      [phone]
+    );
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error("❌ Error getUltimoPedidoByPhone:", error);
+    return null;
+  }
+}
+
+// Último pedido del cliente que TODAVÍA se puede cancelar (aún no despachado/entregado).
+export async function getPedidoCancelableByPhone(phone: string) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM pedidos
+       WHERE phone = $1
+         AND estado NOT IN ('en_camino', 'entregado', 'finalizado', 'cancelado')
+         AND created_at >= NOW() - INTERVAL '12 hours'
+       ORDER BY created_at DESC LIMIT 1`,
+      [phone]
+    );
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error("❌ Error getPedidoCancelableByPhone:", error);
+    return null;
+  }
+}
+
 export async function getPedidosArchivados() {
   try {
     const result = await pool.query(
