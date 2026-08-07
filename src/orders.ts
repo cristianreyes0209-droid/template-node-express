@@ -88,6 +88,7 @@ export type CustomerOrder = {
   };
   cartFreeTextAttempts?: number;
   armandoFallbacks?: number;
+  comprobanteAyudaAttempts?: number;   // veces que el cliente reporta problema de pago en el paso comprobante
   asesorIntervenido?: boolean;
   pedidoCancelarId?: number;      // id del pedido en DB que el cliente está por cancelar (confirmación)
   botPausado?: boolean;           // asesor desconectó el bot desde el panel (silencio, conserva el paso)

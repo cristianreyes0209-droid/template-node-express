@@ -909,6 +909,49 @@ function instruccionesPago(order: any): string {
   return `El total a pagar es: $${total.toLocaleString("es-CO")}\n\nPago por Nequi/Daviplata:\n📱 ${nequiNum}\n\nCuando realices el pago envíame el comprobante 📸`;
 }
 
+// PQR de pago: en el paso de comprobante, el cliente reporta un problema/pregunta para pagar
+// (ej. "necesito una llave", "no me deja", "el producto no existe"). Aclara la 1ª vez y escala a
+// un asesor si insiste. Devuelve true si manejó el mensaje. `stepAsesor`=paso al que volver.
+async function manejarProblemaPago(phone: string, text: string): Promise<boolean> {
+  const order = getOrder(phone);
+  if (!order) return false;
+  const l = (text || "").toLowerCase();
+  const pideAsesor = /\basesor|persona|humano|agente\b/.test(l);
+  const esProblemaPago =
+    l.includes("llave") || l.includes("no me deja") || l.includes("no puedo") ||
+    l.includes("no funciona") || l.includes("no sale") || l.includes("no me da") ||
+    l.includes("no existe") || l.includes("no aparece") || l.includes("error") ||
+    l.includes("numero") || l.includes("número") || l.includes("cuenta") ||
+    l.includes("como ") || l.includes("cómo ") || l.includes("donde") || l.includes("dónde") ||
+    l.includes("no tengo") || l.includes("dice que") || l.includes("ayuda") || pideAsesor;
+  if (!esProblemaPago) return false;
+
+  order.comprobanteAyudaAttempts = (order.comprobanteAyudaAttempts || 0) + 1;
+
+  // Escalar si insiste (2ª vez) o pide explícitamente un asesor
+  if (order.comprobanteAyudaAttempts >= 2 || pideAsesor) {
+    order.comprobanteAyudaAttempts = 0;
+    updateOrderStep(phone, "esperando_asesor");
+    const nombreA = order.nombre || phone;
+    const sedeA = order.sucursal === "circunvalar" ? "Av. Circunvalar" : "La Villa";
+    sendWhatsAppMessage("573151913928",
+      `💬 CLIENTE CON PROBLEMA DE PAGO\n\n👤 ${nombreA}\n📞 ${phone}\n🏪 ${sedeA}\n💬 "${text}"`).catch(() => {});
+    await sendWhatsAppMessage(phone,
+      "Te comunico con un asesor 😊 En breve alguien te ayuda con el pago.\n\nO llámanos directamente:\n📞 La Villa: 606 341 3020 | Circunvalar: 606 345 0257");
+    return true;
+  }
+
+  // 1ª vez: aclarar según el método
+  if (order.formaPago === "bancolombia") {
+    await sendWhatsAppMessage(phone, instruccionesPago(order));
+  } else {
+    const nequiNum = order.sucursal === "circunvalar" ? "3205839477" : "3207218267";
+    await sendWhatsAppMessage(phone,
+      `Para Nequi/Daviplata transfiere al *número de celular* 📱 *${nequiNum}* — ese número es el destino, en Nequi/Daviplata *no* necesitas una llave 😊\n\nCuando realices el pago, envíame la foto del comprobante 📸\n\nSi sigues con problemas escribe *asesor* y te ayudamos.`);
+  }
+  return true;
+}
+
 async function handleOperationalRouting(order: any, totals: any) {
   const numeroOrden = await getNextOrderNumberForDay();
   order.numeroOrden = numeroOrden;
@@ -3834,6 +3877,9 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     if (pideNequiHC || pideBancoHC) {
       // Mismo método re-escrito → recordatorio, sin salir del step
       replyMessage = "Ya tienes seleccionado el pago 😊 Cuando realices el pago envíame el comprobante 📸";
+    } else if (await manejarProblemaPago(phone, text)) {
+      // PQR: problema para pagar → aclarar / escalar
+      return res.sendStatus(200);
     } else {
       // Llegó texto en lugar de imagen — pedir foto
       replyMessage = "Por favor envía una foto del comprobante 📸";
@@ -4939,6 +4985,18 @@ return res.sendStatus(200);
       );
       return res.sendStatus(200);
     }
+    // Método de pago escrito aquí NO es observación (evita "📝 Observación: daviplata")
+    if (/^(efectivo|nequi|daviplata|bancolombia|transferencia|llave)$/.test(lower.trim())) {
+      await sendWhatsAppButtons(phone,
+        "Primero confirma tu pedido y enseguida eliges cómo pagar 😊",
+        [
+          { id: "confirmar",   title: "✅ Confirmar" },
+          { id: "agregar_mas", title: "➕ Agregar" },
+          { id: "eliminar",    title: "🗑️ Quitar" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
     // Texto libre (no pregunta) → guardarlo como observación del pedido
     if (esObservacionDireccion(text)) updateOrderDireccionNotes(phone, text);
     else updateOrderGeneralNotes(phone, text);
@@ -5852,6 +5910,10 @@ return res.sendStatus(200);
         instruccionesPago(getOrder(phone)!),
         [{ id: "listo", title: "Listo, ya pagué ✅" }]
       );
+      return res.sendStatus(200);
+    }
+    // PQR: ¿el cliente reporta un problema para pagar? → aclarar / escalar (no repetir robóticamente)
+    if (await manejarProblemaPago(phone, text)) {
       return res.sendStatus(200);
     }
     replyMessage = "Por favor envía una foto del comprobante 📸";
