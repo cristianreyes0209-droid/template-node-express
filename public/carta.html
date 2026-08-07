@@ -182,7 +182,7 @@
     .plus-circle{background:#C41E3A;color:#fff;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
 
     /* SPLASH SCREEN */
-    .splash{position:fixed;inset:0;background:#fff;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;overflow:hidden;}
+    .splash{position:fixed;inset:0;background:#000;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;overflow:hidden;}
     @keyframes splashFadeOut{0%{opacity:1;transform:scale(1)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
     .splash.out{animation:splashFadeOut .5s ease forwards;pointer-events:none;}
     @keyframes logoIn{0%{opacity:0;transform:translateY(-20px)}100%{opacity:1;transform:translateY(0)}}
@@ -190,9 +190,18 @@
     @keyframes logoFloat{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-14px) rotate(1.5deg)}}
     .splash-logo-img{animation:logoFloat 3.2s ease-in-out infinite;display:block;}
     @keyframes videoIn{0%{opacity:0;transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
-    .splash-video-wrap{width:calc(100vw - 32px);max-width:380px;border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.4);animation:videoIn .7s .5s ease both;background:#000;position:relative;}
-    .splash-video-wrap video{width:100%;display:block;max-height:55vh;object-fit:cover;}
-    .splash-video-wrap iframe{width:100%;border:none;aspect-ratio:9/16;display:block;max-height:55vh;}
+    /* PORTADA video a pantalla completa: reel nítido + fondo desenfocado */
+    .cover-bg,.cover-fg{position:absolute;inset:0;width:100%;height:100%;display:block;}
+    .cover-bg{z-index:0;object-fit:cover;filter:blur(22px) saturate(1.15);transform:scale(1.12);}
+    .cover-fg{z-index:1;object-fit:contain;}
+    .cover-scrim{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(to bottom,rgba(0,0,0,.30) 0%,rgba(0,0,0,.04) 38%,rgba(0,0,0,.62) 100%);}
+    .portada{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:12px;padding:0 20px calc(34px + env(safe-area-inset-bottom));text-align:center;}
+    .portada-logo-img{width:92px;height:92px;border-radius:50%;object-fit:cover;border:4px solid #fff;box-shadow:0 8px 32px rgba(0,0,0,.45);background:#fff;animation:logoFloat 3.2s ease-in-out infinite;}
+    .portada-title{font-family:'Anton',sans-serif;font-size:40px;color:#fff;letter-spacing:3px;line-height:1;text-shadow:0 3px 18px rgba(0,0,0,.65);}
+    .portada-tagline{font-size:11px;color:rgba(255,255,255,.88);letter-spacing:2px;text-transform:uppercase;font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.65);}
+    .cover-btn{margin-top:8px;background:#C41E3A;border:none;border-radius:50px;padding:15px 46px;font-family:'Anton',sans-serif;font-size:22px;letter-spacing:2px;color:#fff;cursor:pointer;box-shadow:0 6px 22px rgba(196,30,58,.5);transition:transform .15s;animation:btnIn .5s .3s ease both;}
+    .cover-btn:active{transform:scale(.95);}
+    .cover-count{font-size:11px;color:rgba(255,255,255,.82);font-weight:800;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.6);min-height:14px;}
     @keyframes btnIn{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
     .splash-btn{animation:btnIn .5s 1s ease both;background:#F4C430;border:none;border-radius:50px;padding:14px 36px;font-family:'Anton',sans-serif;font-size:22px;letter-spacing:1px;color:#2C1810;cursor:pointer;margin-top:20px;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:transform .15s;}
     .splash-btn:active{transform:scale(.95);}
@@ -699,69 +708,59 @@ function ProductModal({ item, onClose, onAdd }) {
 // 👉 Para agregar tu video:
 //    OPCIÓN A: sube el archivo MP4 al proyecto y cambia VIDEO_SRC a la ruta, ej: 'uploads/mi-video.mp4'
 //    OPCIÓN B: en Google Drive abre el video → Compartir → Copiar link → pega el ID en VIDEO_DRIVE_ID
-const VIDEO_SRC = null;
+const VIDEO_SRC = "uploads/reel-crepe.mp4";
+const VIDEO_POSTER = "uploads/reel-crepe-poster.jpg";
 const VIDEO_DRIVE_ID = null;
 function Splash({ onEnter }) {
     const [leaving, setLeaving] = useState(false);
-    const [countdown, setCountdown] = useState(4);
+    const [countdown, setCountdown] = useState(8);
+    const bgRef = useRef(null);
+    const fgRef = useRef(null);
+    const salido = useRef(false);
     const handleEnter = () => {
+        if (salido.current) return;
+        salido.current = true;
         setLeaving(true);
-        setTimeout(onEnter, 450);
+        setTimeout(onEnter, 400);
     };
-    // Auto-advance after 6 seconds
+    // Auto-avance ~8s
     useEffect(() => {
         const interval = setInterval(() => {
             setCountdown(c => {
-                if (c <= 1) {
-                    clearInterval(interval);
-                    handleEnter();
-                    return 0;
-                }
+                if (c <= 1) { clearInterval(interval); handleEnter(); return 0; }
                 return c - 1;
             });
         }, 1000);
         return () => clearInterval(interval);
     }, []);
-    const embedSrc = VIDEO_DRIVE_ID
-        ? `https://drive.google.com/file/d/${VIDEO_DRIVE_ID}/preview`
-        : null;
-    return (React.createElement("div", { className: `splash ${leaving ? 'out' : ''}`, style: { padding: '24px 16px', gap: 14, background: '#fff' } },
-        React.createElement("svg", { style: { position: 'absolute', top: 0, left: 0, width: 140, opacity: .08 }, viewBox: "0 0 200 200" },
-            React.createElement("path", { d: "M20 80 Q40 20 80 40 Q60 80 20 80Z", fill: "#3B1A0A" }),
-            React.createElement("circle", { cx: "50", cy: "30", r: "18", fill: "none", stroke: "#3B1A0A", strokeWidth: "3" }),
-            React.createElement("path", { d: "M10 120 Q30 90 60 110 Q40 130 10 120Z", fill: "#3B1A0A" })),
-        React.createElement("svg", { style: { position: 'absolute', top: 0, right: 0, width: 140, opacity: .06 }, viewBox: "0 0 200 200" },
-            React.createElement("path", { d: "M180 60 Q160 10 130 30 Q150 70 180 60Z", fill: "#3B1A0A" }),
-            React.createElement("ellipse", { cx: "155", cy: "110", rx: "30", ry: "20", fill: "none", stroke: "#3B1A0A", strokeWidth: "3" })),
-        React.createElement("svg", { style: { position: 'absolute', bottom: 0, right: 0, width: 180, opacity: .07 }, viewBox: "0 0 200 200" },
-            React.createElement("path", { d: "M200 200 Q160 140 120 160 Q140 200 200 200Z", fill: "#3B1A0A" }),
-            React.createElement("path", { d: "M150 140 Q180 120 190 150 Q170 165 150 140Z", fill: "#3B1A0A" })),
-        React.createElement("svg", { style: { position: 'absolute', bottom: 60, left: 0, width: 120, opacity: .07 }, viewBox: "0 0 200 200" },
-            React.createElement("path", { d: "M0 180 Q30 140 60 160 Q30 190 0 180Z", fill: "#3B1A0A" })),
-        React.createElement("div", { className: "splash-logo", style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 } },
-            React.createElement("img", { className: "splash-logo-img", src: "uploads/logo-9cc2bf2c.jpeg", alt: "Las Crepes", style: { width: 150, height: 150, borderRadius: '50%', objectFit: 'cover', border: '5px solid #C41E3A', boxShadow: '0 8px 32px rgba(196,30,58,.30)', background: '#fff' } }),
-            React.createElement("div", { style: { textAlign: 'center' } },
-                React.createElement("div", { style: { fontFamily: "'Anton',sans-serif", fontSize: 44, color: '#C41E3A', letterSpacing: 3, lineHeight: 1, textShadow: 'none' } }, "LAS CREPES"),
-                React.createElement("div", { style: { fontSize: 12, color: '#3B1A0A', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 800, marginTop: 4 } }, "R\u00E1pidas, Exquisitas y Saludables"))),
-        (VIDEO_SRC || embedSrc) && (React.createElement("div", { style: {
-                width: '100%', maxWidth: 360, borderRadius: 18, overflow: 'hidden',
-                boxShadow: '0 8px 32px rgba(0,0,0,.18)',
-                border: '3px solid #C41E3A',
-                background: '#000',
-                animation: 'videoIn .7s .3s ease both',
-                position: 'relative',
-                marginTop: 20
-            } }, VIDEO_SRC
-            ? React.createElement("video", { src: VIDEO_SRC, autoPlay: true, muted: true, playsInline: true, style: { width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }, onEnded: handleEnter })
-            : React.createElement("iframe", { src: embedSrc + '&autoplay=1', allowFullScreen: true, allow: "autoplay; encrypted-media", frameBorder: "0", style: { width: '100%', border: 'none', height: '56vw', maxHeight: 280, display: 'block' } }))),
-        React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 20, animation: 'btnIn .5s .8s ease both', opacity: 0, animationFillMode: 'both' } },
-            React.createElement("button", { onClick: handleEnter, style: {
-                    background: '#C41E3A', border: 'none', borderRadius: 50,
-                    padding: '14px 44px', fontFamily: "'Anton',sans-serif",
-                    fontSize: 22, letterSpacing: 2, color: '#fff', cursor: 'pointer',
-                    boxShadow: '0 4px 16px rgba(196,30,58,.35)', transition: 'transform .15s'
-                } }, "\uD83E\uDD5E VER MEN\u00DA"),
-            React.createElement("div", { style: { fontSize: 11, color: '#C8A96A', fontWeight: 800, letterSpacing: 1 } }, countdown > 0 ? `Continúa en ${countdown}s` : ''))));
+    // Loop robusto iOS/Android: reintenta play en pause / al volver / al terminar
+    useEffect(() => {
+        const vids = [bgRef.current, fgRef.current].filter(Boolean);
+        if (!vids.length) return;
+        const play = () => vids.forEach(v => { const p = v.play(); if (p) p.catch(() => {}); });
+        const reanudar = () => setTimeout(play, 200);
+        const alVolver = () => { if (!document.hidden) play(); };
+        const alReiniciar = (e) => { const v = e.target; v.currentTime = 0; play(); };
+        vids.forEach(v => { v.addEventListener('pause', reanudar); v.addEventListener('ended', alReiniciar); });
+        document.addEventListener('visibilitychange', alVolver);
+        window.addEventListener('pageshow', play);
+        play();
+        return () => {
+            vids.forEach(v => { v.removeEventListener('pause', reanudar); v.removeEventListener('ended', alReiniciar); });
+            document.removeEventListener('visibilitychange', alVolver);
+            window.removeEventListener('pageshow', play);
+        };
+    }, []);
+    return (React.createElement("div", { className: `splash ${leaving ? 'out' : ''}` },
+        React.createElement("video", { ref: bgRef, className: "cover-bg", src: VIDEO_SRC, poster: VIDEO_POSTER, autoPlay: true, muted: true, loop: true, playsInline: true, preload: "auto", "aria-hidden": true }),
+        React.createElement("video", { ref: fgRef, className: "cover-fg", src: VIDEO_SRC, poster: VIDEO_POSTER, autoPlay: true, muted: true, loop: true, playsInline: true, preload: "auto" }),
+        React.createElement("div", { className: "cover-scrim" }),
+        React.createElement("div", { className: "portada" },
+            React.createElement("img", { className: "portada-logo-img", src: "uploads/logo-9cc2bf2c.jpeg", alt: "Las Crepes" }),
+            React.createElement("div", { className: "portada-title" }, "LAS CREPES"),
+            React.createElement("div", { className: "portada-tagline" }, "Rápidas, Exquisitas y Saludables"),
+            React.createElement("button", { className: "cover-btn", onClick: handleEnter }, "🥞 Ver la carta"),
+            React.createElement("div", { className: "cover-count" }, countdown > 0 ? `Entrando en ${countdown}s` : ''))));
 }
 function CartDrawer({ cart, onClose, onRemove, onSend }) {
     const total = cart.reduce((s, c) => s + c.totalPrice, 0);
