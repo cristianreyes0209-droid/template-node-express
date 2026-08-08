@@ -479,7 +479,7 @@ app.get('/whatsapp', (req, res) => {
   return res.status(400).send("Missing hub params");
 });
 
-const CREBOT_SUFFIX = "\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\nSi necesitas contactarnos:\n📞 La Villa: 606 341 3020 | Circunvalar: 606 345 0257";
+const CREBOT_SUFFIX = "\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.";
 
 const MSG_BIENVENIDA_NUEVO =
   "👋 ¡Hola! Bienvenido/a a LAS CREPES 🥞\n\n" +
