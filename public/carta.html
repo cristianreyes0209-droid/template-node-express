@@ -762,8 +762,49 @@ function Splash({ onEnter }) {
             React.createElement("button", { className: "cover-btn", onClick: handleEnter }, "🥞 Ver la carta"),
             React.createElement("div", { className: "cover-count" }, countdown > 0 ? `Entrando en ${countdown}s` : ''))));
 }
-function CartDrawer({ cart, onClose, onRemove, onSend }) {
+function CartDrawer({ cart, onClose, onRemove, onSend, localMode, panelKey }) {
     const total = cart.reduce((s, c) => s + c.totalPrice, 0);
+    // Estado del checkout LOCAL (pedido manual desde el panel)
+    const [lNombre, setLNombre] = useState('');
+    const [lPhone, setLPhone] = useState('');
+    const [lSucursal, setLSucursal] = useState('la_villa');
+    const [lEntrega, setLEntrega] = useState('recoger');
+    const [lDireccion, setLDireccion] = useState('');
+    const [lDomicilio, setLDomicilio] = useState('');
+    const [lPago, setLPago] = useState('efectivo');
+    const [enviando, setEnviando] = useState(false);
+    const [doneNum, setDoneNum] = useState(null);
+    const registrarLocal = async () => {
+        if (!lNombre.trim()) { alert('Escribe el nombre del cliente'); return; }
+        if (!lPhone.trim()) { alert('El teléfono es obligatorio'); return; }
+        if (lEntrega === 'domicilio' && !lDireccion.trim()) { alert('Escribe la dirección del domicilio'); return; }
+        const dom = lEntrega === 'domicilio' ? (Number(lDomicilio) || 0) : 0;
+        const itemsP = cart.map(c => ({
+            producto: c.item.name,
+            cantidad: c.qty,
+            precio: Math.round(c.totalPrice / c.qty),
+            observaciones: c.obs || undefined,
+            extras: (c.additions || []).map(a => ({ nombre: a.name, cantidad: a.qty, precio: a.price || 0 }))
+        }));
+        setEnviando(true);
+        try {
+            const r = await fetch('/api/pedidos/manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-panel-key': panelKey },
+                body: JSON.stringify({
+                    key: panelKey, nombre: lNombre.trim(), phone: lPhone.trim(),
+                    sucursal: lSucursal, tipo_entrega: lEntrega,
+                    direccion: lEntrega === 'domicilio' ? lDireccion.trim() : undefined,
+                    forma_pago: lPago, items: itemsP,
+                    subtotal: total, domicilio: dom, total: total + dom
+                })
+            });
+            const j = await r.json();
+            if (r.ok && j.ok) { setDoneNum(j.numero_orden || 0); if (onSend) onSend(); }
+            else alert(j.error || 'No se pudo registrar el pedido');
+        } catch (e) { alert('Error de conexión con el panel'); }
+        setEnviando(false);
+    };
     const sendWA = () => {
         const lines = ['🥞 *PEDIDO - LAS CREPES*\n'];
         cart.forEach((c, i) => {
@@ -807,10 +848,31 @@ function CartDrawer({ cart, onClose, onRemove, onSend }) {
                 React.createElement("div", { className: "total-row" },
                     React.createElement("div", { className: "total-label" }, "Total del pedido"),
                     React.createElement("div", { className: "total-price" }, fmtP(total))),
-                React.createElement("button", { className: "wa-btn", onClick: sendWA },
-                    React.createElement("svg", { width: "24", height: "24", viewBox: "0 0 32 32", fill: "white" },
-                        React.createElement("path", { d: "M16 3C8.82 3 3 8.82 3 16c0 2.3.6 4.47 1.65 6.35L3 29l6.82-1.6A13 13 0 0016 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.35 18.35c-.27.76-1.57 1.44-2.15 1.53-.55.08-1.25.12-2.02-.13-.47-.15-1.07-.35-1.84-.68-3.23-1.4-5.33-4.6-5.49-4.81-.15-.21-1.27-1.69-1.27-3.22 0-1.53.8-2.28 1.08-2.59.28-.3.6-.38.8-.38h.58c.19 0 .44-.07.68.52.27.62.9 2.2.98 2.36.08.15.13.33.03.53-.1.2-.15.32-.29.5-.15.17-.31.38-.44.51-.15.14-.3.3-.13.58.17.28.77 1.27 1.65 2.06 1.13 1.01 2.08 1.32 2.37 1.47.29.14.46.12.63-.07.17-.2.74-.86.93-1.15.2-.29.4-.24.67-.14.27.1 1.74.82 2.04.97.3.15.5.22.57.34.07.12.07.7-.2 1.46z" })),
-                    "Enviar por WhatsApp"))))));
+                (localMode
+                    ? (doneNum !== null
+                        ? React.createElement("div", { style: { padding: '16px', textAlign: 'center', background: '#1a6b3a', color: '#fff', borderRadius: 14, fontWeight: 800, marginTop: 8 } }, `✅ Pedido${doneNum ? ' #' + doneNum : ''} registrado`)
+                        : React.createElement("div", { style: { marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 } },
+                            React.createElement("div", { style: { fontWeight: 900, color: '#3B1A0A', fontSize: 14 } }, "🧾 Registrar pedido (local)"),
+                            React.createElement("input", { className: "obs", placeholder: "Nombre del cliente", value: lNombre, onChange: e => setLNombre(e.target.value) }),
+                            React.createElement("input", { className: "obs", placeholder: "Celular WhatsApp (ej. 3208580551)", value: lPhone, inputMode: "tel", onChange: e => setLPhone(e.target.value) }),
+                            React.createElement("select", { className: "obs", value: lSucursal, onChange: e => setLSucursal(e.target.value) },
+                                React.createElement("option", { value: "la_villa" }, "La Villa"),
+                                React.createElement("option", { value: "circunvalar" }, "Av. Circunvalar")),
+                            React.createElement("select", { className: "obs", value: lEntrega, onChange: e => setLEntrega(e.target.value) },
+                                React.createElement("option", { value: "recoger" }, "Recoger en tienda"),
+                                React.createElement("option", { value: "domicilio" }, "Domicilio")),
+                            lEntrega === 'domicilio' && React.createElement("input", { className: "obs", placeholder: "Dirección", value: lDireccion, onChange: e => setLDireccion(e.target.value) }),
+                            lEntrega === 'domicilio' && React.createElement("input", { className: "obs", placeholder: "Valor domicilio (opcional)", value: lDomicilio, inputMode: "numeric", onChange: e => setLDomicilio(e.target.value) }),
+                            React.createElement("select", { className: "obs", value: lPago, onChange: e => setLPago(e.target.value) },
+                                React.createElement("option", { value: "efectivo" }, "Efectivo"),
+                                React.createElement("option", { value: "nequi/daviplata" }, "Nequi/Daviplata"),
+                                React.createElement("option", { value: "bancolombia" }, "Bancolombia")),
+                            React.createElement("button", { className: "wa-btn", style: { background: '#C41E3A' }, disabled: enviando, onClick: registrarLocal }, enviando ? "Registrando…" : "🧾 Registrar pedido")))
+                    : React.createElement("button", { className: "wa-btn", onClick: sendWA },
+                        React.createElement("svg", { width: "24", height: "24", viewBox: "0 0 32 32", fill: "white" },
+                            React.createElement("path", { d: "M16 3C8.82 3 3 8.82 3 16c0 2.3.6 4.47 1.65 6.35L3 29l6.82-1.6A13 13 0 0016 29c7.18 0 13-5.82 13-13S23.18 3 16 3zm6.35 18.35c-.27.76-1.57 1.44-2.15 1.53-.55.08-1.25.12-2.02-.13-.47-.15-1.07-.35-1.84-.68-3.23-1.4-5.33-4.6-5.49-4.81-.15-.21-1.27-1.69-1.27-3.22 0-1.53.8-2.28 1.08-2.59.28-.3.6-.38.8-.38h.58c.19 0 .44-.07.68.52.27.62.9 2.2.98 2.36.08.15.13.33.03.53-.1.2-.15.32-.29.5-.15.17-.31.38-.44.51-.15.14-.3.3-.13.58.17.28.77 1.27 1.65 2.06 1.13 1.01 2.08 1.32 2.37 1.47.29.14.46.12.63-.07.17-.2.74-.86.93-1.15.2-.29.4-.24.67-.14.27.1 1.74.82 2.04.97.3.15.5.22.57.34.07.12.07.7-.2 1.46z" })),
+                        "Enviar por WhatsApp"))
+                )))));
 }
 // ============================================================
 // ARMA TU CREPE
@@ -1047,7 +1109,10 @@ function ProductCard({ item, onSelect }) {
 // APP
 // ============================================================
 function App() {
-    const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('lc_entered'));
+    const LOCAL_PARAMS = new URLSearchParams(location.search);
+    const LOCAL_MODE = LOCAL_PARAMS.get('local') === '1';
+    const PANEL_KEY = LOCAL_PARAMS.get('key') || '';
+    const [showSplash, setShowSplash] = useState(() => LOCAL_MODE ? false : !sessionStorage.getItem('lc_entered'));
     const [search, setSearch] = useState('');
     const [searchOpen, setSearchOpen] = useState(false);
     const [cat, setCat] = useState('favoritas');
@@ -1194,7 +1259,7 @@ function App() {
         incentivoBanner && React.createElement("div", { className: "incentivo-banner" }, incentivoBanner),
         selHint && React.createElement("div", { className: "sel-hint" }, "\u2B06\uFE0F Desliza hacia arriba para pedir"),
         sel && React.createElement(ProductModal, { item: sel, onClose: () => setSel(null), onAdd: addToCart }),
-        showCart && React.createElement(CartDrawer, { cart: cart, onClose: () => setShowCart(false), onRemove: removeFromCart, onSend: () => { setCart([]); setShowCart(false); } })));
+        showCart && React.createElement(CartDrawer, { cart: cart, onClose: () => setShowCart(false), onRemove: removeFromCart, onSend: () => { setCart([]); setShowCart(false); }, localMode: LOCAL_MODE, panelKey: PANEL_KEY })));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
 

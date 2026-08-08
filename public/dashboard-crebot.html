@@ -235,6 +235,7 @@
     <div class="brand-sub">Dashboard de Órdenes</div>
 
     <nav class="nav">
+      <a href="#" onclick="abrirOrdenManual();return false" style="background:#C41E3A;color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11H3v10h6M9 11V3h6v8m0 0h6v10h-6M9 11h6M9 21h6"/></svg>🧾 Orden Manual</a>
       <a href="#" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chats entrantes</a>
       <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>Órdenes</a>
       <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M12 17.5H8m7.5-9 3 9M6 8h6l2 6"/></svg>Órdenes en camino</a>
@@ -602,6 +603,12 @@ function irAAsesor(){
   if(s && typeof abrirChat === "function"){ abrirChat(normPhone(s.phone), s.nombre||"", !!s.bot_pausado); }
 }
 
+// Abrir la carta en "modo local" para registrar un pedido manual (cliente que llama al local)
+function abrirOrdenManual(){
+  if(!sessionKey){ showToast("Primero ingresa al panel"); return; }
+  window.open(API+"/carta?local=1&key="+encodeURIComponent(sessionKey), "_blank");
+}
+
 /* ===================== CARGA DE DATOS ===================== */
 const normPhone = p => String(p||"").replace(/[^\d]/g,"");
 
@@ -654,7 +661,7 @@ function pedidoAFila(p){
   return {
     kind:"order", id:p.id, key:"o"+p.id, ts: Date.parse(p.created_at)||0, sucursal: p.sucursal || null,
     fecha: fmtFecha(p.created_at), hora: fmtHora(p.created_at),
-    tel: fmtTel(p.phone), phone: normPhone(p.phone), nombre: p.nombre || "",
+    tel: fmtTel(p.phone), phone: normPhone(p.phone), nombre: (p.canal === 'telefono' ? '📞 ' : '') + (p.nombre || ""),
     confirmada: true, abandonada: false, asistente: !!p.asesor_intervenido,
     esRecoger,
     estadoTxt: e.txt, estadoCls: e.cls,

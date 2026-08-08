@@ -6578,6 +6578,47 @@ app.post('/api/bot-toggle', async (req, res) => {
   return res.json({ ok: true, pausado: !!order.botPausado });
 });
 
+// ── Pedido MANUAL / LOCAL (el local llama, se registra desde la carta en modo local) ──
+app.post('/api/pedidos/manual', async (req, res) => {
+  const body = req.body || {};
+  const key = (req.headers['x-panel-key'] as string) || body.key;
+  if (!key || key !== process.env.PANEL_KEY) {
+    return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  }
+  // Normalizar a formato WhatsApp (Colombia): celular de 10 dígitos → anteponer 57.
+  let phone = (body.phone || "").toString().replace(/\D/g, "");
+  if (phone.length === 10 && phone.startsWith("3")) phone = "57" + phone;
+  const items = Array.isArray(body.items) ? body.items : [];
+  if (!phone) return res.status(400).json({ ok: false, error: "Teléfono obligatorio" });
+  if (items.length === 0) return res.status(400).json({ ok: false, error: "El pedido no tiene productos" });
+  try {
+    const numeroOrden = await getNextOrderNumberForDay();
+    const id = await savePedido({
+      numero_orden: numeroOrden,
+      phone,
+      nombre: body.nombre || undefined,
+      direccion: body.direccion || undefined,
+      items,
+      subtotal: Number(body.subtotal) || 0,
+      domicilio: Number(body.domicilio) || 0,
+      total: Number(body.total) || 0,
+      forma_pago: body.forma_pago || undefined,
+      sucursal: body.sucursal || undefined,
+      tipo_entrega: body.tipo_entrega || undefined,
+      canal: 'telefono',
+      confirmed_at: new Date().toISOString(),
+      estado: 'recibido',
+      observaciones_generales: body.observaciones || undefined,
+    });
+    if (!id) return res.status(500).json({ ok: false, error: "No se pudo guardar el pedido" });
+    console.log(`✅ Pedido MANUAL #${numeroOrden} (id ${id}) registrado desde panel`);
+    return res.json({ ok: true, id, numero_orden: numeroOrden });
+  } catch (err: any) {
+    console.error("❌ Error pedido manual:", err);
+    return res.status(500).json({ ok: false, error: err?.message || "Error interno" });
+  }
+});
+
 // ── Panel de operaciones ──────────────────────────────────────────────────────
 app.get('/operaciones', (req, res) => {
   const key = req.query.key;
