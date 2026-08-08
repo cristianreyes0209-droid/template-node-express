@@ -931,7 +931,7 @@ async function editarOrden(key){
 }
 function edQty(i,d){ EDIT.items[i].cantidad = Math.max(1,(EDIT.items[i].cantidad||1)+d); renderEditor(); }
 function edRemove(i){ EDIT.items.splice(i,1); renderEditor(); }
-function edAdd(){ const sel=document.getElementById('edAddSel'); if(!sel||sel.value==='') return; const pr=MENU_PRODS[sel.value]; if(!pr) return; EDIT.items.push({ producto:pr.nombre, cantidad:1, precio:Number(pr.precio)||0, extras:[] }); renderEditor(); }
+function edAdd(){ const sel=document.getElementById('edAddSel'); if(!sel||sel.value==='') return; const pr=MENU_PRODS[sel.value]; if(!pr) return; EDIT.items.push({ producto:(pr.esAdicion?"➕ "+pr.nombre:pr.nombre), cantidad:1, precio:Number(pr.precio)||0, extras:[] }); renderEditor(); }
 function edSetEntrega(v){ EDIT.tipo_entrega=v; renderEditor(); }
 function edSetDom(v){ EDIT.domicilio=Number(v)||0; renderEditor(); }
 function renderEditor(){
@@ -952,8 +952,14 @@ function renderEditor(){
       </div>
       <div>${fmtCOP(edLine(it))}</div>
     </div>`).join("") || '<div class="det-row">Sin ítems</div>';
+  const optsProd = MENU_PRODS.map((pr,i)=> pr.esAdicion ? "" : `<option value="${i}">${esc(pr.nombre)} — ${fmtCOP(pr.precio)}</option>`).join("");
+  const optsAdic = MENU_PRODS.map((pr,i)=> pr.esAdicion ? `<option value="${i}">${esc(pr.nombre)} — ${fmtCOP(pr.precio)}</option>` : "").join("");
   const addSel = `<div style="display:flex;gap:8px;margin-top:10px">
-      <select id="edAddSel" class="obs" style="flex:1">${['<option value="">➕ Agregar producto…</option>'].concat(MENU_PRODS.map((pr,i)=>`<option value="${i}">${esc(pr.nombre)} — ${fmtCOP(pr.precio)}</option>`)).join("")}</select>
+      <select id="edAddSel" class="obs" style="flex:1">
+        <option value="">➕ Agregar producto o adición…</option>
+        <optgroup label="Productos">${optsProd}</optgroup>
+        <optgroup label="Adiciones">${optsAdic}</optgroup>
+      </select>
       <button class="btn" onclick="edAdd()">Agregar</button></div>`;
   const entrega = `<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
       <select class="obs" onchange="edSetEntrega(this.value)">

@@ -6691,8 +6691,9 @@ app.get('/api/menu', (req, res) => {
   const key = req.query.key as string | undefined;
   if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ error: "Acceso no autorizado" });
   const prods = (menu.categorias as any[])
-    .filter((c: any) => c.id !== "extras")
-    .flatMap((c: any) => ((c.productos as any[]) || []).map((pr: any) => ({ nombre: pr.nombre, precio: pr.precio, categoria: c.id })));
+    .flatMap((c: any) => ((c.productos as any[]) || []).map((pr: any) => ({
+      nombre: pr.nombre, precio: pr.precio, categoria: c.id, esAdicion: c.id === "extras"
+    })));
   res.json(prods);
 });
 
