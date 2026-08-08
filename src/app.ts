@@ -1411,7 +1411,8 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
         if (order && !STEPS_SIN_TIMER.has(order.step) && !order.inactivityPending) {
           order.inactivityPending = true;
           await sendWhatsAppMessage(phone,
-            "¿Sigues ahí? 😊 Si ya sabes qué ordenar escríbemelo y yo te guío para que realices tu pedido por acá."
+            "¿Sigues ahí? 😊 Si ya sabes qué ordenar escríbemelo y yo te guío para que realices tu pedido por acá.\n\n" +
+            "Si necesitas ayuda, llámanos 📞 La Villa: 606 341 3020 | Circunvalar: 606 345 0257"
           );
         }
         inactivityTimers.delete(phone);
@@ -4221,7 +4222,6 @@ return res.sendStatus(200);
     replyMessage =
       `Perfecto 👍\n\nPuedes ver nuestro menú aquí:\n${cartaLink(customer)}\n\n` +
       "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\n" +
-      "Si necesitas contactarnos:\n📞 606 341 3020\n\n" +
       "Si ya sabes qué ordenar ¡te puedo tomar el pedido por acá! Escríbeme qué deseas 😊";
 
   } else if (
@@ -4325,7 +4325,6 @@ return res.sendStatus(200);
     replyMessage =
       `Perfecto 👍\n\nPuedes ver nuestro menú aquí:\n${cartaLink(customer)}\n\n` +
       "🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.\n\n" +
-      "Si necesitas contactarnos:\n📞 606 345 0257\n\n" +
       "Si ya sabes qué ordenar ¡te puedo tomar el pedido por acá! Escríbeme qué deseas 😊";
 
   } else {
