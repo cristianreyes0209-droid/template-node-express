@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "./db";
 import cron from "node-cron";
-import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, getPedidoById, getPedidoCancelableByPhone, getUltimoPedidoByPhone, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig } from "./db";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, updatePedido, getPedidoById, getPedidoCancelableByPhone, getUltimoPedidoByPhone, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig } from "./db";
 import path from "path";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -6617,6 +6617,83 @@ app.post('/api/pedidos/manual', async (req, res) => {
     console.error("❌ Error pedido manual:", err);
     return res.status(500).json({ ok: false, error: err?.message || "Error interno" });
   }
+});
+
+// Resumen del pedido en texto (para enviar al cliente por WhatsApp)
+function construirResumenPedido(p: any): string {
+  let items = p.items;
+  if (typeof items === "string") { try { items = JSON.parse(items); } catch { items = []; } }
+  items = Array.isArray(items) ? items : [];
+  const fmt = (n: any) => `$${Number(n || 0).toLocaleString("es-CO")}`;
+  const lineas = items.map((it: any) => {
+    const ex = (it.extras || []).filter((e: any) => e && e.nombre).map((e: any) => "+" + e.nombre).join(", ");
+    const varTxt = it.variante ? " - " + it.variante : "";
+    const exTxt = ex ? " " + ex : "";
+    const obs = it.observaciones ? `\n  📝 ${it.observaciones}` : "";
+    return `• ${it.producto}${varTxt}${exTxt} ×${it.cantidad || 1}${obs}`;
+  }).join("\n");
+  const esDom = p.tipo_entrega === "domicilio";
+  let t = `🧾 *Resumen de tu pedido — LAS CREPES*\n\n${lineas}\n\n`;
+  if (p.subtotal != null) t += `💰 Subtotal: ${fmt(p.subtotal)}\n`;
+  if (esDom && p.domicilio != null) t += `🚚 Domicilio: ${fmt(p.domicilio)}\n`;
+  t += `💵 Total: ${fmt(p.total)}\n`;
+  t += esDom ? `📍 Dirección: ${p.direccion || "—"}\n` : `🏪 Recoger en tienda\n`;
+  if (p.forma_pago) t += `💳 Pago: ${p.forma_pago}\n`;
+  t += `\n¡Gracias por tu pedido! 🥞`;
+  return t;
+}
+
+// Enviar el resumen del pedido al cliente por WhatsApp
+app.post('/api/pedidos/:id/enviar-resumen', async (req, res) => {
+  const key = (req.headers['x-panel-key'] as string) || (req.body || {}).key;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  const id = parseInt(req.params.id);
+  const p = await getPedidoById(id);
+  if (!p) return res.status(404).json({ ok: false, error: "Pedido no encontrado" });
+  if (!p.phone) return res.status(400).json({ ok: false, error: "El pedido no tiene teléfono" });
+  try {
+    await sendWhatsAppMessage(p.phone, construirResumenPedido(p));
+    return res.json({ ok: true });
+  } catch (e: any) {
+    return res.status(500).json({ ok: false, error: e?.message || "No se pudo enviar" });
+  }
+});
+
+// Editar un pedido (ítems/montos/entrega/pago/dirección) y opcionalmente reenviar el resumen
+app.post('/api/pedidos/:id/editar', async (req, res) => {
+  const body = req.body || {};
+  const key = (req.headers['x-panel-key'] as string) || body.key;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  const id = parseInt(req.params.id);
+  const p0 = await getPedidoById(id);
+  if (!p0) return res.status(404).json({ ok: false, error: "Pedido no encontrado" });
+  const ok = await updatePedido(id, {
+    items: Array.isArray(body.items) ? body.items : undefined,
+    subtotal: body.subtotal != null ? Number(body.subtotal) : undefined,
+    domicilio: body.domicilio != null ? Number(body.domicilio) : undefined,
+    total: body.total != null ? Number(body.total) : undefined,
+    direccion: body.direccion,
+    forma_pago: body.forma_pago,
+    tipo_entrega: body.tipo_entrega,
+    observaciones_generales: body.observaciones,
+  });
+  if (!ok) return res.status(500).json({ ok: false, error: "No se pudo actualizar" });
+  let reenviado = false;
+  if (body.reenviar) {
+    const p = await getPedidoById(id);
+    if (p?.phone) { try { await sendWhatsAppMessage(p.phone, construirResumenPedido(p)); reenviado = true; } catch (e) {} }
+  }
+  return res.json({ ok: true, reenviado });
+});
+
+// Menú (productos con precio) para el editor de pedidos del panel
+app.get('/api/menu', (req, res) => {
+  const key = req.query.key as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ error: "Acceso no autorizado" });
+  const prods = (menu.categorias as any[])
+    .filter((c: any) => c.id !== "extras")
+    .flatMap((c: any) => ((c.productos as any[]) || []).map((pr: any) => ({ nombre: pr.nombre, precio: pr.precio, categoria: c.id })));
+  res.json(prods);
 });
 
 // ── Panel de operaciones ──────────────────────────────────────────────────────

@@ -870,8 +870,11 @@ function verDetalle(key){
   }).join("") || '<div class="det-row">Sin ítems</div>';
   const esOrden = String(key).charAt(0)==="o";
   const idOrden = esOrden ? String(key).slice(1) : null;
+  const editable = esOrden && !['entregado','finalizado','cancelado'].includes(p.estado);
   const btnImprimir = esOrden
     ? `<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+         ${p.phone ? `<button class="btn" onclick="enviarResumen(${idOrden})">📲 Enviar resumen</button>` : ""}
+         ${editable ? `<button class="btn" onclick="editarOrden('${key}')">✏️ Editar</button>` : ""}
          ${p.sucursal === "la_villa" ? `<button class="btn" onclick="imprimirComanda(${idOrden})">🖨️ Impresora automática</button>` : ""}
          <button class="btn primary" onclick="imprimirLocal(${idOrden})">🖨️ Imprimir (local)</button>
        </div>`
@@ -892,7 +895,103 @@ function verDetalle(key){
     btnImprimir;
   document.getElementById("detOverlay").classList.add("open");
 }
-function cerrarDetalle(){ document.getElementById("detOverlay").classList.remove("open"); }
+function cerrarDetalle(){ document.getElementById("detOverlay").classList.remove("open"); EDIT=null; }
+
+/* ===================== ENVIAR RESUMEN / EDITAR PEDIDO ===================== */
+let MENU_PRODS = [];
+let EDIT = null;
+async function cargarMenu(){
+  if(MENU_PRODS.length) return;
+  try{ const r = await fetch(API+"/api/menu?key="+encodeURIComponent(sessionKey)); if(r.ok) MENU_PRODS = await r.json(); }catch(e){}
+}
+async function enviarResumen(id){
+  try{
+    const r = await fetch(API+"/api/pedidos/"+id+"/enviar-resumen", { method:"POST", headers:{ "x-panel-key": sessionKey } });
+    const j = await r.json();
+    showToast(r.ok && j.ok ? "📲 Resumen enviado al cliente" : "❌ "+(j.error||"No se pudo enviar"));
+  }catch(e){ showToast("❌ Error de conexión"); }
+}
+const edLine = it => (Number(it.precio)||0)*(it.cantidad||1) + (it.extras||[]).reduce((a,e)=>a+(Number(e.precio)||0)*(e.cantidad||1),0);
+const edSubtotal = () => (EDIT?EDIT.items:[]).reduce((s,it)=>s+edLine(it),0);
+async function editarOrden(key){
+  const p = PEDIDOS.find(x=>"o"+x.id===key);
+  if(!p){ showToast("No encontré el pedido"); return; }
+  let items = p.items; if(typeof items==="string"){ try{items=JSON.parse(items);}catch(e){items=[];} }
+  EDIT = {
+    id: p.id,
+    items: (items||[]).map(it=>({ producto:it.producto, cantidad:it.cantidad||1, precio:Number(it.precio)||0, variante:it.variante||undefined, observaciones:it.observaciones||undefined, extras: it.extras||[] })),
+    tipo_entrega: p.tipo_entrega || 'recoger',
+    direccion: p.direccion || '',
+    forma_pago: p.forma_pago || 'efectivo',
+    domicilio: Number(p.domicilio)||0
+  };
+  await cargarMenu();
+  document.getElementById("detOverlay").classList.add("open");
+  renderEditor();
+}
+function edQty(i,d){ EDIT.items[i].cantidad = Math.max(1,(EDIT.items[i].cantidad||1)+d); renderEditor(); }
+function edRemove(i){ EDIT.items.splice(i,1); renderEditor(); }
+function edAdd(){ const sel=document.getElementById('edAddSel'); if(!sel||sel.value==='') return; const pr=MENU_PRODS[sel.value]; if(!pr) return; EDIT.items.push({ producto:pr.nombre, cantidad:1, precio:Number(pr.precio)||0, extras:[] }); renderEditor(); }
+function edSetEntrega(v){ EDIT.tipo_entrega=v; renderEditor(); }
+function edSetDom(v){ EDIT.domicilio=Number(v)||0; renderEditor(); }
+function renderEditor(){
+  if(!EDIT) return;
+  const sub = edSubtotal();
+  const esDom = EDIT.tipo_entrega==='domicilio';
+  const dom = esDom ? (Number(EDIT.domicilio)||0) : 0;
+  const filas = EDIT.items.map((it,i)=>`
+    <div class="det-row">
+      <div>${esc(it.producto)}${it.variante?" - "+esc(it.variante):""}
+        <div class="ex" style="display:flex;align-items:center;gap:8px;margin-top:5px">
+          <button class="btn" style="padding:2px 11px" onclick="edQty(${i},-1)">−</button>
+          <b>×${it.cantidad||1}</b>
+          <button class="btn" style="padding:2px 11px" onclick="edQty(${i},1)">+</button>
+          <span style="color:#cbd5e1">·</span>
+          <a onclick="edRemove(${i})" style="color:#dc2626;cursor:pointer;font-weight:800">quitar</a>
+        </div>
+      </div>
+      <div>${fmtCOP(edLine(it))}</div>
+    </div>`).join("") || '<div class="det-row">Sin ítems</div>';
+  const addSel = `<div style="display:flex;gap:8px;margin-top:10px">
+      <select id="edAddSel" class="obs" style="flex:1">${['<option value="">➕ Agregar producto…</option>'].concat(MENU_PRODS.map((pr,i)=>`<option value="${i}">${esc(pr.nombre)} — ${fmtCOP(pr.precio)}</option>`)).join("")}</select>
+      <button class="btn" onclick="edAdd()">Agregar</button></div>`;
+  const entrega = `<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+      <select class="obs" onchange="edSetEntrega(this.value)">
+        <option value="recoger" ${!esDom?'selected':''}>🏪 Recoger en tienda</option>
+        <option value="domicilio" ${esDom?'selected':''}>🛵 Domicilio</option></select>
+      ${esDom?`<input class="obs" placeholder="Dirección" value="${esc(EDIT.direccion||'')}" onchange="EDIT.direccion=this.value">
+               <input class="obs" placeholder="Valor domicilio" value="${dom||''}" inputmode="numeric" onchange="edSetDom(this.value)">`:''}
+      <select class="obs" onchange="EDIT.forma_pago=this.value">
+        ${['efectivo','nequi/daviplata','bancolombia'].map(fp=>`<option value="${fp}" ${(EDIT.forma_pago===fp)?'selected':''}>${fp}</option>`).join("")}</select></div>`;
+  const totales = `<div class="det-row" style="margin-top:10px"><div>Subtotal</div><div>${fmtCOP(sub)}</div></div>
+      ${esDom?`<div class="det-row"><div>🛵 Domicilio</div><div>${fmtCOP(dom)}</div></div>`:''}
+      <div class="det-total">Total: ${fmtCOP(sub+dom)}</div>`;
+  const btns = `<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn" onclick="verDetalle('o'+EDIT.id)">← Cancelar</button>
+      <button class="btn" onclick="guardarEdicion(false)">💾 Guardar</button>
+      <button class="btn primary" onclick="guardarEdicion(true)">💾 Guardar y reenviar 📲</button></div>`;
+  document.getElementById("detBody").innerHTML =
+    `<div style="font-weight:900;color:#3B1A0A;margin-bottom:8px">✏️ Editar pedido #${EDIT.id}</div>`
+    + filas + addSel + entrega + totales + btns;
+}
+async function guardarEdicion(reenviar){
+  if(!EDIT) return;
+  const esDom = EDIT.tipo_entrega==='domicilio';
+  const sub = edSubtotal();
+  const dom = esDom ? (Number(EDIT.domicilio)||0) : 0;
+  try{
+    const r = await fetch(API+"/api/pedidos/"+EDIT.id+"/editar", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "x-panel-key": sessionKey },
+      body: JSON.stringify({ items: EDIT.items, subtotal: sub, domicilio: dom, total: sub+dom,
+        direccion: esDom?(EDIT.direccion||""):undefined, forma_pago: EDIT.forma_pago,
+        tipo_entrega: EDIT.tipo_entrega, reenviar: !!reenviar })
+    });
+    const j = await r.json();
+    if(r.ok && j.ok){ showToast(reenviar ? (j.reenviado?"✅ Guardado y resumen enviado":"✅ Guardado (no llegó WhatsApp)") : "✅ Pedido actualizado"); EDIT=null; cerrarDetalle(); cargarDatos(); }
+    else showToast("❌ "+(j.error||"No se pudo guardar"));
+  }catch(e){ showToast("❌ Error de conexión"); }
+}
 
 async function imprimirComanda(id){
   showToast("🖨️ Enviando a la impresora…");

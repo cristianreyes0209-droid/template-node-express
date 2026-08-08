@@ -291,6 +291,41 @@ export async function updatePedidoEstado(id: number, estado: string): Promise<vo
   }
 }
 
+// Editar un pedido (ítems, montos, entrega, pago, dirección, observación). Devuelve true si OK.
+export async function updatePedido(id: number, f: {
+  items?: any[]; subtotal?: number; domicilio?: number; total?: number;
+  direccion?: string; forma_pago?: string; tipo_entrega?: string; sucursal?: string;
+  observaciones_generales?: string;
+}): Promise<boolean> {
+  try {
+    await pool.query(
+      `UPDATE pedidos SET
+         items = COALESCE($2::jsonb, items),
+         subtotal = COALESCE($3, subtotal),
+         domicilio = COALESCE($4, domicilio),
+         total = COALESCE($5, total),
+         direccion = COALESCE($6, direccion),
+         forma_pago = COALESCE($7, forma_pago),
+         tipo_entrega = COALESCE($8, tipo_entrega),
+         sucursal = COALESCE($9, sucursal),
+         observaciones_generales = COALESCE($10, observaciones_generales),
+         updated_at = NOW()
+       WHERE id = $1`,
+      [
+        id,
+        f.items ? JSON.stringify(f.items) : null,
+        f.subtotal ?? null, f.domicilio ?? null, f.total ?? null,
+        f.direccion ?? null, f.forma_pago ?? null, f.tipo_entrega ?? null,
+        f.sucursal ?? null, f.observaciones_generales ?? null,
+      ]
+    );
+    return true;
+  } catch (error) {
+    console.error("❌ Error updatePedido:", error);
+    return false;
+  }
+}
+
 // ── Programa de descuento acumulable ────────────────────────────────────────
 export async function getDescuento(phone: string): Promise<number> {
   try {

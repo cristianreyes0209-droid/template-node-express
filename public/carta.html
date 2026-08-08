@@ -784,7 +784,7 @@ function CartDrawer({ cart, onClose, onRemove, onSend, localMode, panelKey }) {
             cantidad: c.qty,
             precio: Math.round(c.totalPrice / c.qty),
             observaciones: c.obs || undefined,
-            extras: (c.additions || []).map(a => ({ nombre: a.name, cantidad: a.qty, precio: a.price || 0 }))
+            extras: (c.additions || []).map(a => ({ nombre: a.name, cantidad: a.qty }))
         }));
         setEnviando(true);
         try {
