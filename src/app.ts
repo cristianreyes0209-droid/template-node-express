@@ -952,6 +952,39 @@ async function manejarProblemaPago(phone: string, text: string): Promise<boolean
   return true;
 }
 
+// Procesa un pin de ubicación como nueva dirección: geocodifica, cotiza domicilio y pide confirmar.
+// Reutilizable desde esperando_direccion / _complemento_direccion / _confirmacion_direccion.
+async function procesarUbicacion(phone: string, latitude: number, longitude: number, res: any) {
+  let direccionGeocoded = `${latitude},${longitude}`;
+  const mapsKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (mapsKey) {
+    try {
+      const geoRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${mapsKey}`);
+      const geoData = await geoRes.json() as any;
+      if (geoData.results?.[0]?.formatted_address) direccionGeocoded = geoData.results[0].formatted_address;
+    } catch (e) { console.error("❌ Error geocoding location:", e); }
+  }
+  updateOrderAddress(phone, direccionGeocoded);
+  const order = getOrder(phone)!;
+  order.locationCoords = { latitude, longitude };
+  order.valorDomicilio = undefined; order.distanciaKm = undefined; order.domicilioTexto = undefined;
+  let valorDomicilio = 4500, descripcionDomicilio = "";
+  try {
+    const calculo = await calcularDomicilio(`${latitude},${longitude}`, order.sucursal || "la_villa", calculateTotal(order).subtotal, order.direccion || "");
+    valorDomicilio = calculo.valorDomicilio; descripcionDomicilio = calculo.descripcion;
+    order.valorDomicilio = valorDomicilio; order.distanciaKm = calculo.distanciaKm; order.domicilioTexto = calculo.descripcion;
+  } catch (e) { console.log("Error calculando domicilio (ubicacion):", e); }
+  order.gpsDistanciaKm = order.distanciaKm || 0;
+  order.gpsSnapshot = { direccion: order.direccion || "", coords: { latitude, longitude }, valorDomicilio: order.valorDomicilio || 4500, domicilioTexto: order.domicilioTexto || "", distanciaKm: order.distanciaKm || 0 };
+  updateOrderStep(phone, "esperando_confirmacion_direccion");
+  await sendWhatsAppButtons(phone,
+    `¿Es correcta esta dirección? 📍\n\n*${order.direccion}*` +
+    (descripcionDomicilio ? `\n\n${descripcionDomicilio}` : "") +
+    `\n💵 Domicilio: $${valorDomicilio.toLocaleString("es-CO")}`,
+    [{ id: "a", title: "Confirmar ✅" }, { id: "b", title: "Corregir ✏️" }, { id: "c", title: "Complementar 📝" }]);
+  return res.sendStatus(200);
+}
+
 async function handleOperationalRouting(order: any, totals: any) {
   const numeroOrden = await getNextOrderNumberForDay();
   order.numeroOrden = numeroOrden;
@@ -1424,9 +1457,18 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   // El complemento de dirección se captura ANTES de cualquier FAQ/interceptor
   // (suele contener "dirección"/"ubicación" y lo secuestraba el FAQ de sucursales)
   if (currentOrder?.step === "esperando_complemento_direccion") {
+    // Pin de ubicación → geocodificar como nueva dirección (no anexar)
+    if (messageData.type === "location" && messageData.location?.latitude && messageData.location?.longitude) {
+      return await procesarUbicacion(phone, messageData.location.latitude, messageData.location.longitude, res);
+    }
     const complemento = text.trim();
+    // Solo anexar TEXTO real: ignorar no-texto (foto/audio) y el fallback "mensaje" para no corromper la dirección
+    if (tipoMensaje !== "text" || complemento.length <= 1 || complemento.toLowerCase() === "mensaje") {
+      await sendWhatsAppMessage(phone, "Escríbeme el complemento por *texto* (apto, torre, casa o punto de referencia) 😊\n\nO comparte tu 📍 ubicación.");
+      return res.sendStatus(200);
+    }
     const orderC = getOrder(phone)!;
-    if (complemento && complemento.length > 1 && orderC.direccion) {
+    if (orderC.direccion) {
       orderC.direccion = orderC.direccion + " — " + complemento;
     }
     const valorDomC = orderC.valorDomicilio || 4500;
@@ -1754,6 +1796,33 @@ const esMensajeLargo = text.length > 200 || text.includes("Vengo de https://las-
 if (esConsultaHorario && !esMensajeLargo) {
   await sendWhatsAppMessage(phone, HORARIO_MSG);
   return res.sendStatus(200);
+}
+
+// Consulta de ESTADO del pedido ("¿cómo va?", "¿ya viene?", "¿dónde está mi pedido?") → responder el
+// estado real, sin reiniciar el flujo. Solo si el cliente tiene un pedido reciente.
+const esConsultaEstadoPedido = !esBoton && !esMensajeLargo && (
+  lower.includes("como va") || lower.includes("cómo va") || lower.includes("como sigue") ||
+  lower.includes("cuanto falta") || lower.includes("cuánto falta") || lower.includes("ya viene") ||
+  lower.includes("ya salio") || lower.includes("ya salió") || lower.includes("donde esta mi pedido") ||
+  lower.includes("dónde está mi pedido") || lower.includes("estado de mi pedido") || lower.includes("estado del pedido") ||
+  lower.includes("donde esta el pedido") || lower.includes("se demora") || lower.includes("se esta demorando") || lower.includes("se está demorando")
+);
+if (esConsultaEstadoPedido) {
+  const ped = await getUltimoPedidoByPhone(phone);
+  if (ped) {
+    const est = ped.estado;
+    let msgEstado: string;
+    if (est === "en_camino") msgEstado = ped.tipo_entrega === "recoger"
+      ? "Tu pedido ya está *listo para recoger* 🛍️ ¡Te esperamos!"
+      : "Tu pedido va *en camino* 🛵 Suele tardar 40-50 min desde que sale. ¡Ya casi! 🥞";
+    else if (est === "entregado" || est === "finalizado") msgEstado = "Tu pedido figura como *entregado* ✅ ¿Todo bien? Si algo pasó, escríbenos 😊";
+    else if (est === "cancelado") msgEstado = "Ese pedido figura como *cancelado* ❌. ¿Deseas hacer uno nuevo? 🥞";
+    else msgEstado = "Tu pedido está *en preparación* 🍳 En breve sale. Si es domicilio, tarda ~40-50 min en total.";
+    msgEstado += "\n\nSi necesitas ayuda: 📞 La Villa 606 341 3020 | Circunvalar 606 345 0257";
+    await sendWhatsAppMessage(phone, msgEstado);
+    return res.sendStatus(200);
+  }
+  // Sin pedido reciente → dejar seguir el flujo normal
 }
 
 const esConsultaUbicacion =
@@ -6314,12 +6383,18 @@ return res.sendStatus(200);
     );
     return res.sendStatus(200);
   } else {
+    // Pin de ubicación → geocodificar como nueva dirección (no anexar "mensaje")
+    if (messageData.type === "location" && messageData.location?.latitude && messageData.location?.longitude) {
+      return await procesarUbicacion(phone, messageData.location.latitude, messageData.location.longitude, res);
+    }
     const orderFB = getOrder(phone)!;
     // Texto libre con dirección ya cargada → tratarlo como COMPLEMENTO (apto/casa/torre/referencia)
     // y agregarlo a la dirección, en vez de ignorarlo. (Fix: complemento perdido para el domiciliario.)
     const textoComp = text.trim();
-    const esComplementoDir = !!orderFB.direccion && !esBoton &&
+    // Solo texto real: excluir no-texto y el fallback "mensaje" (no corromper la dirección con "— mensaje")
+    const esComplementoDir = !!orderFB.direccion && tipoMensaje === "text" &&
       /[a-záéíóúñ]/i.test(textoComp) && textoComp.length >= 4 &&
+      textoComp.toLowerCase() !== "mensaje" &&
       !["a", "b", "c"].includes(lower) &&
       !orderFB.direccion.toLowerCase().includes(textoComp.toLowerCase());
     if (esComplementoDir) {
