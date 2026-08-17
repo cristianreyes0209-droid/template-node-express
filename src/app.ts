@@ -479,21 +479,20 @@ app.get('/whatsapp', (req, res) => {
   return res.status(400).send("Missing hub params");
 });
 
-const CREBOT_SUFFIX = "\n\n🎉 Si tu pedido supera los $100.000 el domicilio es *gratis*.";
+const CREBOT_SUFFIX = "";
+
+const CUERPO_SOLIDARIDAD =
+  "En estos momentos difíciles que estamos viviendo por el terremoto, queremos enviar un abrazo enorme a todas las familias afectadas en Pereira y Risaralda. 🙏\n\n" +
+  "Estamos con nuestra comunidad. Esperamos que tú y los tuyos estén bien y a salvo.\n\n" +
+  "Cuando estés listo, aquí estamos para atenderte. 🫶";
 
 const MSG_BIENVENIDA_NUEVO =
-  "👋 ¡Hola! Bienvenido/a a LAS CREPES 🥞\n\n" +
-  "Estoy aquí para ayudarte paso a paso en tu elección y que tu experiencia ordenando y disfrutando de nuestras deliciosas crepes sea fácil y fluida.\n\n" +
-  "¡Tú decides, yo te guío! ¡Comencemos! 😊";
+  "❤️ Hola, bienvenido a Las Crepes.\n\n" + CUERPO_SOLIDARIDAD;
 
 const MSG_BIENVENIDA_RECURRENTE = (nombre?: string) =>
   nombre
-    ? `👋 ¡Hola, ${nombre}! ¡Qué bueno tenerte de vuelta en LAS CREPES! 🥞\n\n` +
-      "Estoy aquí para ayudarte paso a paso en tu elección y que tu experiencia ordenando y disfrutando de nuestras deliciosas crepes sea fácil y fluida.\n\n" +
-      "¡Tú decides, yo te guío! ¡Comencemos! 😊"
-    : "👋 ¡Qué bueno tenerte de vuelta en LAS CREPES! 🥞\n\n" +
-      "Estoy aquí para ayudarte paso a paso en tu elección y que tu experiencia ordenando y disfrutando de nuestras deliciosas crepes sea fácil y fluida.\n\n" +
-      "¡Tú decides, yo te guío! ¡Comencemos! 😊";
+    ? `❤️ Hola, ${nombre}, bienvenido a Las Crepes.\n\n` + CUERPO_SOLIDARIDAD
+    : "❤️ Hola, bienvenido a Las Crepes.\n\n" + CUERPO_SOLIDARIDAD;
 
     function formatObservaciones(obs?: string) {
   if (!obs) return "";
@@ -1792,6 +1791,24 @@ const esConsultaHorario =
   lower.includes("cerrado");
 
 const esMensajeLargo = text.length > 200 || text.includes("Vengo de https://las-crepes.ola.click");
+
+// ¿Están abiertos/trabajando/operando? (dudas por el terremoto) → tranquilizar. Prioridad sobre horario.
+const esConsultaOperando = !esBoton && (
+  lower.includes("estan abiertos") || lower.includes("están abiertos") ||
+  lower.includes("estan trabajando") || lower.includes("están trabajando") ||
+  lower.includes("estan operando") || lower.includes("están operando") ||
+  lower.includes("estan operativos") || lower.includes("están operativos") ||
+  lower.includes("estan atendiendo") || lower.includes("están atendiendo") ||
+  lower.includes("estan laborando") || lower.includes("están laborando") ||
+  lower.includes("siguen abiertos") || lower.includes("siguen atendiendo") ||
+  lower.includes("siguen trabajando") || lower.includes("siguen operando") ||
+  lower.includes("abrieron hoy") || lower === "abrieron"
+);
+if (esConsultaOperando && !esMensajeLargo) {
+  await sendWhatsAppMessage(phone,
+    "Sí, seguimos *operando con normalidad* en nuestros horarios habituales 😊\n\n" + HORARIO_MSG);
+  return res.sendStatus(200);
+}
 
 if (esConsultaHorario && !esMensajeLargo) {
   await sendWhatsAppMessage(phone, HORARIO_MSG);
