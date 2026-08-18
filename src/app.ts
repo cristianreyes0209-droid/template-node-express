@@ -658,6 +658,37 @@ function modificarItemPorTexto(order: any, textoRaw: string): { agregados: strin
   return (agregados.length || obs) ? { agregados, obs } : null;
 }
 
+// Modificador por-ítem: "solo uno sin champiñones", "una de ellas marcada" → separa 1 unidad de una
+// línea con cantidad>1 en su propia línea con esa observación (así la cocina distingue). Devuelve
+// {producto, obs, restante} o null. Solo actúa si hay EXACTAMENTE UNA línea con cantidad>1 (sin ambigüedad).
+function separarUnidadPorTexto(order: any, textoRaw: string): { producto: string; obs: string; restante: number } | null {
+  if (!order?.items?.length) return null;
+  const t = (textoRaw || "").toLowerCase().trim();
+  const tienePorUna = /\b(solo\s+)?(uno|una)\b/.test(t) || /\buno de ellos\b|\buna de ellas\b/.test(t);
+  const tieneModificador = /\b(sin|con|marca(r|do|da)?|aparte|poco|bien|extra)\b/.test(t);
+  if (!tienePorUna || !tieneModificador) return null;
+  const multi = order.items.filter((it: any) => (it.cantidad || 1) > 1);
+  if (multi.length !== 1) return null;               // ambiguo o nada que separar
+  const linea = multi[0];
+  // obs = texto sin el prefijo "solo uno/una/un (de ellos/ellas)"
+  const obs = textoRaw.trim()
+    .replace(/^\s*(solo\s+)?(uno|una|un|1)\b\s*(de\s+ell[oa]s)?\s*/i, "")
+    .replace(/^[,:;\s]+/, "")
+    .trim();
+  if (!obs) return null;
+  linea.cantidad = (linea.cantidad || 1) - 1;
+  order.items.push({
+    productoId: linea.productoId,
+    producto: linea.producto,
+    precio: linea.precio,
+    variante: linea.variante,
+    cantidad: 1,
+    observaciones: obs,
+    extras: []
+  });
+  return { producto: linea.producto, obs, restante: linea.cantidad };
+}
+
 function getObservacionGeneralTexto(order: any) {
   return order.observacionesGenerales?.trim()
     ? "\n📝 Observación: " + order.observacionesGenerales.trim()
@@ -1713,6 +1744,23 @@ if (!esBoton && !stepsBloqueaConsultaCrepes.has(currentOrder?.step || "")) {
         [{ id: "confirmar", title: "✅ Confirmar" }, { id: "agregar_mas", title: "➕ Agregar" }, { id: "eliminar", title: "🗑️ Quitar" }]
       );
     }
+    return res.sendStatus(200);
+  }
+}
+
+// Modificador por-ítem ("solo uno sin champiñones") en pasos de carrito → separar 1 unidad en su
+// propia línea. Va ANTES del parseo/IA para tener prioridad (si no, la IA lo anexa como obs general).
+const stepsCarritoSplit = new Set(["armando_pedido", "post_agregar_producto", "esperando_confirmacion"]);
+if (!esBoton && tipoMensaje === "text" && stepsCarritoSplit.has(currentOrder?.step || "") && (currentOrder?.items?.length || 0) > 0) {
+  const split = separarUnidadPorTexto(currentOrder, text);
+  if (split) {
+    updateOrderStep(phone, "post_agregar_producto");
+    currentOrder = getOrder(phone)!;
+    const resumenSplit = currentOrder.items.map((i: any) => formatLineaItem(i, true)).join("\n");
+    await sendWhatsAppButtons(phone,
+      `🔖 Dejé *1 ${split.producto}* con: _${split.obs}_ y ${split.restante} más normal(es) 👍\n\n${resumenSplit}\n\n¿Qué deseas hacer?`,
+      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "agregar_mas", title: "➕ Agregar" }, { id: "eliminar", title: "🗑️ Quitar" }]
+    );
     return res.sendStatus(200);
   }
 }
