@@ -48,6 +48,7 @@ export type OrderStep =
   | "esperando_sabor_cocacola"
   | "esperando_complemento_direccion"
   | "esperando_confirmacion_cancelacion"
+  | "esperando_confirmacion_sucursal"
   | "confirmado";
 
 export type CustomerOrder = {
@@ -91,6 +92,11 @@ export type CustomerOrder = {
   comprobanteAyudaAttempts?: number;   // veces que el cliente reporta problema de pago en el paso comprobante
   asesorIntervenido?: boolean;
   pedidoCancelarId?: number;      // id del pedido en DB que el cliente está por cancelar (confirmación)
+  sucursalChequeada?: boolean;    // ya se validó si eligió la sucursal más cercana
+  sucursalAlt?: string;           // sucursal alternativa (más cercana) sugerida
+  altValor?: number;              // valor domicilio de la sucursal alternativa
+  altDist?: number;               // distancia km de la sucursal alternativa
+  altDomicilioTexto?: string;     // descripción domicilio de la sucursal alternativa
   botPausado?: boolean;           // asesor desconectó el bot desde el panel (silencio, conserva el paso)
   descuentoPct?: number;          // % de descuento aplicado a ESTE pedido
   descuentoDisponible?: number;   // cache del descuento acumulado del cliente

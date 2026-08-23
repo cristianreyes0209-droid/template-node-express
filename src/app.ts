@@ -719,6 +719,65 @@ function buildResumenFooter(order: any, totals: { subtotal: number; domicilio: n
     : "";
   return "\n\nSubtotal: $" + totals.subtotal.toLocaleString("es-CO") + domicilioLinea + descuentoLinea + "\nTotal: $" + totals.total.toLocaleString("es-CO") + (obsLinea ? "\n" + obsLinea : "") + entregaLinea;
 }
+// Muestra el resumen del pedido tras confirmar la dirección y pasa a esperando_confirmacion.
+async function mostrarResumenTrasDireccion(phone: string, res: any) {
+  updateOrderStep(phone, "esperando_confirmacion");
+  const order = getOrder(phone)!;
+  const totals = calculateTotal(order, order.valorDomicilio ?? 4500);
+  const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
+  await sendWhatsAppButtons(phone,
+    "Perfecto 👌\n\nTu pedido es:\n" + resumen +
+    buildResumenFooter(order, totals, order.domicilioTexto) +
+    "\n\n📝 Si deseas una observación escríbela, o elige:",
+    [
+      { id: "confirmar", title: "Confirmar" },
+      { id: "agregar_mas", title: "Agregar mas" },
+      { id: "eliminar", title: "Eliminar" }
+    ]
+  );
+  return res.sendStatus(200);
+}
+
+// Si el cliente eligió la sucursal MÁS LEJANA (la otra le queda ≥2km más cerca), avisa con botones
+// Dejar / Cambiar. Devuelve true si interceptó (ya envió el aviso). Solo domicilio y una sola vez.
+async function avisarSucursalMasCercana(phone: string): Promise<boolean> {
+  const order = getOrder(phone);
+  if (!order || order.tipoEntrega !== "domicilio" || order.sucursalChequeada) return false;
+  order.sucursalChequeada = true;
+  const chosen = order.sucursal === "circunvalar" ? "circunvalar" : "la_villa";
+  const otra = chosen === "circunvalar" ? "la_villa" : "circunvalar";
+  const chosenDist = order.distanciaKm || 0;
+  const chosenVal = order.valorDomicilio ?? 4500;
+  if (chosenDist <= 0) return false;
+  const dest = order.locationCoords
+    ? `${order.locationCoords.latitude},${order.locationCoords.longitude}`
+    : (order.direccion || "");
+  if (!dest) return false;
+  let otraCalc;
+  try {
+    otraCalc = await calcularDomicilio(dest, otra, calculateTotal(order).subtotal, order.direccion || "");
+  } catch (e) { return false; }
+  if (!otraCalc || !otraCalc.distanciaKm || otraCalc.distanciaKm <= 0) return false;
+  if (otraCalc.distanciaKm > chosenDist - 2) return false; // la elegida ya es la más cercana (o similar)
+
+  order.sucursalAlt = otra;
+  order.altValor = otraCalc.valorDomicilio;
+  order.altDist = otraCalc.distanciaKm;
+  order.altDomicilioTexto = otraCalc.descripcion;
+  updateOrderStep(phone, "esperando_confirmacion_sucursal");
+  const km = (n: number) => Math.round(n * 10) / 10;
+  await sendWhatsAppButtons(phone,
+    `📍 Elegiste *${nombreSucursal(chosen as SucKey)}* (~${km(chosenDist)}km, domicilio $${chosenVal.toLocaleString("es-CO")}), ` +
+    `pero *${nombreSucursal(otra as SucKey)}* te queda más cerca (~${km(otraCalc.distanciaKm)}km, domicilio $${(otraCalc.valorDomicilio).toLocaleString("es-CO")}) 🛵\n\n` +
+    "¿Confirmas tu sucursal o la cambias?",
+    [
+      { id: "dejar_suc", title: `Dejar ${nombreSucursal(chosen as SucKey)} ✅` },
+      { id: "cambiar_suc", title: `Cambiar a ${nombreSucursal(otra as SucKey)} 🔄` }
+    ]
+  );
+  return true;
+}
+
 // El descuento se puede canjear cuando el acumulado supera este porcentaje
 const UMBRAL_CANJE = 5;
 
@@ -6342,6 +6401,21 @@ return res.sendStatus(200);
       "Puedes escribir otra crepe, bebida, topping, hacer observacion, o responder SI o NO.";
   }
 
+} else if (currentOrder?.step === "esperando_confirmacion_sucursal") {
+  const order = getOrder(phone)!;
+  if (lower === "cambiar_suc" || lower === "b" || lower.includes("cambiar")) {
+    if (order.sucursalAlt) {
+      order.sucursal = order.sucursalAlt;
+      if (order.altValor != null) order.valorDomicilio = order.altValor;
+      if (order.altDist != null) order.distanciaKm = order.altDist;
+      order.domicilioTexto = order.altDomicilioTexto || order.domicilioTexto;
+      await sendWhatsAppMessage(phone, `Listo, cambié a *${nombreSucursal(order.sucursal as SucKey)}* 🛵`);
+    }
+    return await mostrarResumenTrasDireccion(phone, res);
+  }
+  // dejar_suc / a / cualquier otra → mantener la sucursal elegida
+  return await mostrarResumenTrasDireccion(phone, res);
+
 } else if (currentOrder?.step === "esperando_confirmacion_direccion") {
   if (lower === "usar_gps_dir") {
     // Restaurar datos del pin GPS original
@@ -6391,25 +6465,9 @@ return res.sendStatus(200);
     }
   }
 
-  updateOrderStep(phone, "esperando_confirmacion");
-  currentOrder = getOrder(phone)!;
-
-  const totals = calculateTotal(order, valorDomicilio);
-
-    const resumen = order.items.map((item: any) => formatLineaItem(item)).join("\n");
-
-  await sendWhatsAppButtons(phone,
-  "Perfecto 👌\n\nTu pedido es:\n" +
-  resumen +
-  buildResumenFooter(order, totals, descripcionDomicilio) +
-  "\n\n📝 Si deseas una observación escríbela, o elige:",
-[
-    { id: "confirmar", title: "Confirmar" },
-    { id: "agregar_mas", title: "Agregar mas" },
-    { id: "eliminar", title: "Eliminar" }
-  ]
-);
-return res.sendStatus(200);
+  // Si eligió la sucursal más lejana, avisar antes de continuar (una sola vez)
+  if (await avisarSucursalMasCercana(phone)) return res.sendStatus(200);
+  return await mostrarResumenTrasDireccion(phone, res);
 
 } else if (lower === "c" || lower === "complementar" || lower.includes("complement")) {
     updateOrderStep(phone, "esperando_complemento_direccion");
