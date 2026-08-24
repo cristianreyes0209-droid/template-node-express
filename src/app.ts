@@ -5068,7 +5068,7 @@ return res.sendStatus(200);
       "Perfecto 👍\n\n" +
       "¿Qué producto deseas retirar?\n\n" +
       resumen +
-      "\n\nRespóndeme con el número del producto.";
+      "\n\nRespóndeme con el número del producto, o escribe *todos* para vaciar el pedido.";
 
   } else if (esBoton && lower === "agregar_mas") {
     currentOrder.cartFreeTextAttempts = 0;
@@ -5204,6 +5204,21 @@ return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "retirando_productos") {
   const order = getOrder(phone)!;
+
+  // Eliminar TODOS los productos → vaciar el pedido
+  const esEliminarTodos = lower === "todos" || lower === "todas" || lower === "todo" ||
+    lower.includes("eliminar todo") || lower.includes("quitar todo") || lower.includes("borrar todo") ||
+    lower.includes("elimina todo") || lower.includes("quita todo") || lower.includes("vaciar") ||
+    lower.includes("todos los productos") || lower.includes("todo el pedido");
+  if (esEliminarTodos && order.items.length > 0) {
+    order.items = [];
+    updateOrderStep(phone, "armando_pedido");
+    currentOrder = getOrder(phone)!;
+    if (customer?.name) updateOrderName(phone, customer.name);
+    await sendWhatsAppMessage(phone,
+      "Listo 👍 Quité *todos* los productos, tu pedido quedó vacío.\n\n¿Qué deseas pedir? 🥞");
+    return res.sendStatus(200);
+  }
 
   // El cliente se arrepintió de eliminar → volver a confirmación sin quitar nada
   const esCancelarRetiro =
@@ -5549,7 +5564,7 @@ return res.sendStatus(200);
       "Perfecto 👍\n\n" +
       "¿Qué producto deseas retirar?\n\n" +
       resumen +
-      "\n\nRespóndeme con el número del producto.";
+      "\n\nRespóndeme con el número del producto, o escribe *todos* para vaciar el pedido.";
 
   } else if (esBoton && lower === "4") {
     currentOrder.cartFreeTextAttempts = 0;
