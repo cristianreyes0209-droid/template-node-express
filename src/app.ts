@@ -3317,6 +3317,21 @@ if (!currentOrder) {
     );
     return res.sendStatus(200);
   }
+  // Palabra de comando que solo tiene sentido con un pedido activo (sobra de un flujo ya
+  // cerrado/cancelado). No relanzar el saludo completo: respuesta corta con botones.
+  const esComandoSuelto =
+    /^(eliminar|quitar|retirar|confirmar|agregar|modificar|observaci[oó]n|vaciar|cambiar)( todo(s)?| m[aá]s)?$/
+      .test(lower.trim());
+  if (esComandoSuelto) {
+    await sendWhatsAppButtons(phone,
+      "No tienes un pedido en curso ahora mismo 😊 ¿Deseas empezar uno?",
+      [
+        { id: "1", title: "Hacer un pedido 🥞" },
+        { id: "2", title: "Ver menú 📋" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
   createOrUpdateOrder(phone, []);
   updateOrderStep(phone, "esperando_menu_principal");
   currentOrder = getOrder(phone)!;
