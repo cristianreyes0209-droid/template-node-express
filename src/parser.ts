@@ -611,7 +611,17 @@ export function extractExtrasFromFragment(fragment: string, extrasProducts: any[
 
       // Match singular o plural del alias (ej: "fresa" / "fresas")
       const aliasRegex = new RegExp(`\\b${escapeRegex(normalizedAlias)}s?\\b`, "i");
-      if (aliasRegex.test(text) && hasTrigger) {
+      const exactPresent = aliasRegex.test(text);
+
+      // Fallback difuso: tolera 1 typo dentro de la lista "con X y Z" (ej "durazo" → "durazno").
+      // Guardas: alias ≥5 y token ≥4 → en la práctica solo 1 error de tipeo, evita falsos positivos.
+      let fuzzyInConList = false;
+      if (!exactPresent && conListMatch && normalizedAlias.length >= 5) {
+        const tokens = conListMatch[1].split(/[^a-z0-9ñ]+/i).filter(t => t.length >= 4);
+        fuzzyInConList = tokens.some(t => similarity(t, normalizedAlias) >= 0.8);
+      }
+
+      if ((exactPresent && hasTrigger) || fuzzyInConList) {
         const existing = extrasFound.find((e) => e.id === extra.id);
 
         if (!existing) {
