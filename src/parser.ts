@@ -639,6 +639,38 @@ export function extractExtrasFromFragment(fragment: string, extrasProducts: any[
   return extrasFound;
 }
 
+// Detecta pago mixto/declarado en texto libre: montos asociados a método (nequi/daviplata/
+// bancolombia/transferencia) y/o efectivo. Ej: "80,000 Nequi\n4,900 efectivo".
+// Normaliza montos colombianos ("80.000"/"80,000" → 80000). Devuelve null si no hay señal clara.
+export function parsePagoMixto(text: string): { metodo?: "nequi" | "bancolombia"; transferencia?: number; efectivo?: number } | null {
+  const t = (text || "").toLowerCase();
+  // Montos colombianos hasta ~$2.000.000. Números mayores (ej: un celular Nequi "3207218267")
+  // NO son montos → se ignoran para no contaminar el pago.
+  const parseMonto = (s: string): number => {
+    const n = parseInt(s.replace(/[.,\s]/g, ""), 10) || 0;
+    return n > 2000000 ? 0 : n;
+  };
+  // Número más cercano a una palabra clave (antes —con conector opcional "por/de/en"— o después).
+  const montoCerca = (kw: RegExp): number => {
+    const m = t.match(new RegExp(`(\\d[\\d.,]*)\\s*(?:pesos|cop|\\$)?\\s*(?:por|de|en)?\\s*(?:${kw.source})|(?:${kw.source})\\s*(?:por|de|:)?\\s*\\$?\\s*(\\d[\\d.,]*)`, "i"));
+    if (!m) return 0;
+    return parseMonto(m[1] || m[2] || "");
+  };
+  const efectivo = montoCerca(/efectivo/);
+  const esBanco = /\b(bancolombia|transferencia|llave)\b/.test(t);
+  const esNequi = /\b(nequi|daviplata)\b/.test(t);
+  let transferencia = 0;
+  let metodo: "nequi" | "bancolombia" | undefined;
+  if (esNequi) { transferencia = montoCerca(/nequi|daviplata/); metodo = "nequi"; }
+  else if (esBanco) { transferencia = montoCerca(/bancolombia|transferencia|llave/); metodo = "bancolombia"; }
+  if (!metodo && !efectivo) return null;
+  const out: { metodo?: "nequi" | "bancolombia"; transferencia?: number; efectivo?: number } = {};
+  if (metodo) out.metodo = metodo;
+  if (transferencia > 0) out.transferencia = transferencia;
+  if (efectivo > 0) out.efectivo = efectivo;
+  return out;
+}
+
 function sameExtras(a?: ParsedExtra[], b?: ParsedExtra[]) {
   return JSON.stringify(a || []) === JSON.stringify(b || []);
 }

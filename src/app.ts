@@ -20,7 +20,7 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
-import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, extractExtrasFromFragment, extractObservaciones, consultarCrepesPorIngrediente, GEMINI_MODEL } from './parser';
+import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, extractExtrasFromFragment, extractObservaciones, consultarCrepesPorIngrediente, parsePagoMixto, GEMINI_MODEL } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
@@ -238,6 +238,56 @@ async function transcribirAudioWhatsApp(mediaId: string, mimeType?: string): Pro
   } catch (e) {
     console.error("🎤 Error transcribiendo audio:", e);
     return undefined;
+  }
+}
+
+// Lee el monto transferido en un comprobante (imagen) usando Gemini multimodal.
+// Devuelve el entero en pesos, o null si no se puede leer con seguridad (foto borrosa,
+// error de red, etc.) → el flujo lo trata como "aceptar como hoy" (no bloquea).
+async function leerMontoComprobante(mediaId: string, mimeType?: string): Promise<number | null> {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) return null;
+  const token = (process.env.WHATSAPP_TOKEN || "").trim();
+  try {
+    const metaRes = await fetch(`https://graph.facebook.com/v18.0/${mediaId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!metaRes.ok) return null;
+    const metaData = await metaRes.json() as any;
+    const mediaUrl: string | undefined = metaData?.url;
+    const mime = (metaData?.mime_type || mimeType || "image/jpeg").split(";")[0].trim();
+    if (!mediaUrl) return null;
+
+    const imgRes = await fetch(mediaUrl, { headers: { Authorization: `Bearer ${token}` } });
+    if (!imgRes.ok) return null;
+    const imgB64 = Buffer.from(await imgRes.arrayBuffer()).toString("base64");
+
+    const gemRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [
+            { inline_data: { mime_type: mime, data: imgB64 } },
+            { text: "Este es un comprobante de transferencia colombiano (Nequi, Daviplata o Bancolombia). Devuelve SOLO el monto transferido/enviado como número entero en pesos, sin puntos, comas ni símbolos (ejemplo: 80000). Si no puedes leer el monto con seguridad, responde exactamente: null" }
+          ]}],
+          generationConfig: { temperature: 0, maxOutputTokens: 32 }
+        })
+      }
+    );
+    if (!gemRes.ok) { console.error(`📸 Error Gemini comprobante HTTP ${gemRes.status}`); return null; }
+    const gemData = await gemRes.json() as any;
+    const raw: string = (gemData?.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
+    console.log(`📸 COMPROBANTE monto leído: "${raw.slice(0, 40)}"`);
+    if (/null/i.test(raw)) return null;
+    const digits = raw.replace(/[^\d]/g, "");
+    if (!digits) return null;
+    const monto = parseInt(digits, 10);
+    return Number.isFinite(monto) && monto > 0 ? monto : null;
+  } catch (e) {
+    console.error("📸 Error leyendo comprobante:", e);
+    return null;
   }
 }
 
@@ -5173,6 +5223,25 @@ return res.sendStatus(200);
     if (await editarCarritoPorVoz(phone, text)) {
       return res.sendStatus(200);
     }
+    // Método de pago escrito aquí NO es observación (aunque traiga montos/texto extra, ej:
+    // "80,000 Nequi 4,900 efectivo" o "Nequi 3207218267"). Guiar a confirmar primero y no
+    // archivarlo como observación. Se recuerda la porción en efectivo para el saldo del comprobante.
+    const mencionaPagoConf = /\b(efectivo|nequi|daviplata|bancolombia|transferencia|llave|contra\s*entrega|contraentrega)\b/i.test(lower);
+    if (mencionaPagoConf) {
+      const mixConf = parsePagoMixto(text);
+      if (mixConf?.efectivo) currentOrder.pagoEfectivoParcial = mixConf.efectivo;
+      if (mixConf?.transferencia) currentOrder.pagoTransferParcial = mixConf.transferencia;
+      const anotado = (mixConf?.efectivo || mixConf?.transferencia) ? "Anoté tu forma de pago 👍 " : "";
+      await sendWhatsAppButtons(phone,
+        anotado + "Primero *confirma* tu pedido y enseguida seguimos con el pago 😊",
+        [
+          { id: "confirmar",   title: "✅ Confirmar" },
+          { id: "agregar_mas", title: "➕ Agregar" },
+          { id: "eliminar",    title: "🗑️ Quitar" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
     // Adiciones ("adicional de X") + observaciones ("sin X") como texto libre → al último ítem
     currentOrder.cartFreeTextAttempts = 0;
     const modConf = modificarItemPorTexto(currentOrder, text);
@@ -5184,18 +5253,6 @@ return res.sendStatus(200);
       const resumenConf = currentOrder.items.map((i: any) => formatLineaItem(i, true)).join("\n");
       await sendWhatsAppButtons(phone,
         `Anotado ✅ ${partesConf.join(" · ")}\n\n${resumenConf}\n\n¿Qué deseas hacer?`,
-        [
-          { id: "confirmar",   title: "✅ Confirmar" },
-          { id: "agregar_mas", title: "➕ Agregar" },
-          { id: "eliminar",    title: "🗑️ Quitar" }
-        ]
-      );
-      return res.sendStatus(200);
-    }
-    // Método de pago escrito aquí NO es observación (evita "📝 Observación: daviplata")
-    if (/^(efectivo|nequi|daviplata|bancolombia|transferencia|llave)$/.test(lower.trim())) {
-      await sendWhatsAppButtons(phone,
-        "Primero confirma tu pedido y enseguida eliges cómo pagar 😊",
         [
           { id: "confirmar",   title: "✅ Confirmar" },
           { id: "agregar_mas", title: "➕ Agregar" },
@@ -5660,6 +5717,26 @@ return res.sendStatus(200);
 
 } else if (currentOrder?.step === "esperando_pago") {
 
+  // Pago mixto: parte por transferencia + parte en efectivo (ej: "80,000 Nequi 4,900 efectivo").
+  // Debe evaluarse ANTES de las ramas efectivo/nequi (que lo tomarían como pago simple).
+  const mixPago = parsePagoMixto(text);
+  if (mixPago && mixPago.efectivo && mixPago.transferencia) {
+    const o = getOrder(phone)!;
+    o.pagoEfectivoParcial = mixPago.efectivo;
+    o.pagoTransferParcial = mixPago.transferencia;
+    updateOrderPayment(phone, (mixPago.metodo === "bancolombia" ? "bancolombia" : "nequi/daviplata") + " + efectivo");
+    updateOrderStep(phone, "esperando_comprobante");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      `Perfecto 👍 Pago mixto anotado:\n` +
+      `• $${mixPago.transferencia.toLocaleString("es-CO")} por ${mixPago.metodo === "bancolombia" ? "Bancolombia" : "Nequi/Daviplata"}\n` +
+      `• $${mixPago.efectivo.toLocaleString("es-CO")} en efectivo contra entrega\n\n` +
+      instruccionesPago(getOrder(phone)!),
+      [{ id: "listo", title: "Listo, ya pagué ✅" }]
+    );
+    return res.sendStatus(200);
+  }
+
   // Canje de descuento acumulado (botón o palabra clave)
   if (lower === "usar_descuento" || /(usar|aplicar|canjear)\s*(mi\s*)?(descuento|puntos)|mi descuento/i.test(lower)) {
     const orderD = getOrder(phone)!;
@@ -5998,6 +6075,18 @@ return res.sendStatus(200);
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
+    // Leer el comprobante con IA y calcular saldo pendiente. Si no se puede leer (null),
+    // se acepta como hoy (no bloquea). El pedido siempre se confirma y reenvía.
+    const efectivoParcial = order.pagoEfectivoParcial || 0;
+    const esperadoTransfer = Math.max(0, totals.total - efectivoParcial);
+    let montoLeido: number | null = null;
+    try { montoLeido = await leerMontoComprobante(imageId, messageData.image?.mime_type); } catch {}
+    let saldoPend = 0;
+    if (montoLeido != null && esperadoTransfer > 0 && (esperadoTransfer - montoLeido) >= 1000) {
+      saldoPend = esperadoTransfer - montoLeido;   // umbral $1.000 evita falsos por mala lectura
+      order.saldoPendiente = saldoPend;
+    }
+
     // Consumir el descuento acumulado si se aplicó en este pedido
     if (order.descuentoPct) {
       order.observacionesGenerales = ((order.observacionesGenerales || "") + ` [Descuento ${order.descuentoPct}% aplicado]`).trim();
@@ -6037,6 +6126,9 @@ return res.sendStatus(200);
       (order.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio}` : "") +
       `\n💵 Total: $${totals.total}\n` +
       `💳 Pago: ${order.formaPago}\n` +
+      (montoLeido != null ? `💵 Transferido leído: $${montoLeido.toLocaleString("es-CO")}\n` : "") +
+      (efectivoParcial > 0 ? `💵 Efectivo contra entrega: $${efectivoParcial.toLocaleString("es-CO")}\n` : "") +
+      (saldoPend > 0 ? `⚠️ SALDO PENDIENTE: $${saldoPend.toLocaleString("es-CO")}\n` : "") +
       `🏬 Sucursal: ${order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar"}\n` +
       (order.tipoEntrega === "domicilio" && order.direccion ? `📍 Dirección: ${order.direccion}` : "🏪 Recoger en tienda") +
       (order.observacionesGenerales?.trim() ? `\n📝 Observación: ${order.observacionesGenerales.trim()}` : "");
@@ -6094,10 +6186,22 @@ return res.sendStatus(200);
       `\n💵 Total: $${totals.total.toLocaleString("es-CO")}` +
       (order.observacionesGenerales?.trim() ? `\n📝 Observación: ${order.observacionesGenerales.trim()}` : "") +
       (order.direccion ? `\n📍 Dirección: ${order.direccion}` : "") +
-      `\n💳 Pago: ${order.formaPago}`;
+      `\n💳 Pago: ${order.formaPago}` +
+      (saldoPend > 0
+        ? `\n\n⚠️ Vi que transferiste *$${(montoLeido || 0).toLocaleString("es-CO")}*. El total es *$${totals.total.toLocaleString("es-CO")}*, quedaría un saldo de *$${saldoPend.toLocaleString("es-CO")}*. Por favor complétalo o avísanos 🙏`
+        : (efectivoParcial > 0
+          ? `\n\n💵 Recuerda: quedan *$${efectivoParcial.toLocaleString("es-CO")}* en efectivo contra entrega.`
+          : ""));
 
     await sendWhatsAppMessage(phone, resumenComprobante);
     replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
+
+    // Avisar al asesor del posible faltante para que revise
+    if (saldoPend > 0) {
+      sendWhatsAppMessage("573151913928",
+        `⚠️ POSIBLE SALDO PENDIENTE\n👤 ${order.nombre || customer?.name || "Cliente"}\n📞 ${phone}\n💵 Total: $${totals.total.toLocaleString("es-CO")}\n💵 Transferido leído: $${(montoLeido || 0).toLocaleString("es-CO")}\n⚠️ Falta: $${saldoPend.toLocaleString("es-CO")}`
+      ).catch(() => {});
+    }
 
   } else {
     // Distinguir "cambiar de método" (o pedir uno distinto) de "re-escribir el mismo método ya elegido".
