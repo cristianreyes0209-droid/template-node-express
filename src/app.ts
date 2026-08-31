@@ -1725,6 +1725,29 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     return res.sendStatus(200);
   }
 
+  // Consulta genérica de bebidas ("qué tienes de beber/tomar", "bebida", "de tomar").
+  // Se responde con la lista completa; al interceptar aquí (antes de los handlers de
+  // observación) evita que la pregunta se guarde como observación del pedido.
+  const _pideBebidasGenerica =
+    /\b(de|para)\s+(beber|tomar|toma|tomas)\b/.test(_lower) ||
+    /\bbebidas?\b/.test(_lower);
+  if (_bebidasCat && !_esMsgLargo && _pideBebidasGenerica) {
+    const jugos = _bebidasCat.productos.filter((p: any) => p.tipo === "jugo")
+      .map((p: any) => p.nombre.replace(/^Jugo de /, "")).join(", ");
+    const lim = _bebidasCat.productos.find((p: any) => p.id === "limonada");
+    const limStr = (lim?.variantes || []).map((v: any) => `${v.nombre} $${v.precio.toLocaleString("es-CO")}`).join(" · ");
+    const malt = _bebidasCat.productos.find((p: any) => p.id === "malteada");
+    const maltStr = (malt?.variantes || []).map((v: any) => v.nombre).join(", ");
+    await sendWhatsAppMessage(phone,
+      "🥤 Esto tenemos para beber:\n" +
+      (jugos ? `\n🧃 Jugos naturales ($9.900 agua / $11.500 leche): ${jugos}` : "") +
+      (limStr ? `\n🍋 Limonadas: ${limStr}` : "") +
+      (maltStr ? `\n🥛 Malteadas $${(malt?.precio || 17900).toLocaleString("es-CO")}: ${maltStr}` : "") +
+      "\n🥤 Gaseosa / Coca-Cola · 💧 Agua" +
+      "\n\n¿Cuál deseas? 😊");
+    return res.sendStatus(200);
+  }
+
   const _esConsultaMenu =
     _lower === "menu" || _lower === "menú" || _lower === "carta" ||
     _lower.includes("ver menu") || _lower.includes("ver menú") ||
