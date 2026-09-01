@@ -317,6 +317,7 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
   valorDomicilio: number;
   descripcion: string;
   fueraDeRango?: boolean;
+  noEncontrada?: boolean;
 }> {
   const sucursales: Record<string, string> = {
     "la_villa": "Calle 83 #16a-22, Pereira, Risaralda, Colombia",
@@ -347,7 +348,7 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
   if (!elemento || elemento.status !== "OK") {
     console.log("📍 DOMICILIO - Sin resultado OK, usando base $4500");
     console.log("========================");
-    return { distanciaKm: 0, valorDomicilio: 4500, descripcion: "Domicilio base" };
+    return { distanciaKm: 0, valorDomicilio: 4500, descripcion: "Domicilio base", noEncontrada: true };
   }
 
   const distanciaMetros = elemento.distance.value;
@@ -4991,7 +4992,12 @@ return res.sendStatus(200);
     const textoDirLimpio = direccionFinal;
     const tieneDigito = /\d/.test(textoDirLimpio);
     const tieneKeywordDir = /\b(calle|carrera|carr|cll|cra|cr|av\b|avenida|diagonal|transversal|circular|autopista|variante|barrio|conjunto|urbanizacion|urbanización|manzana|km|kilómetro|kilómetros|#|nro|no\.)\b/i.test(textoDirLimpio);
-    const esDirInvalida = textoDirLimpio.length < 5 || PALABRAS_INVALIDAS_DIR.has(textoDirLimpio.toLowerCase()) || (!tieneDigito && !tieneKeywordDir);
+    const palabrasDir = textoDirLimpio.split(/\s+/).filter(Boolean);
+    const tienePOI = /\b(centro\s+comercial|c\.?\s?c\.?|mall|megacentro|unicentro|arboleda|ciudad\s+victoria|plaza|ciudadela|condominio|edificio|torre|conjunto|urbanizaci[oó]n|local|vereda|sector|parque|km|kil[oó]metro)\b/i.test(textoDirLimpio);
+    // Parece dirección: número, keyword de calle, POI, o ≥2 palabras (nombre propio de lugar).
+    // Si Google luego no la ubica, se rechaza con guía (ver noEncontrada más abajo).
+    const pareceDireccion = tieneDigito || tieneKeywordDir || tienePOI || palabrasDir.length >= 2;
+    const esDirInvalida = textoDirLimpio.length < 5 || PALABRAS_INVALIDAS_DIR.has(textoDirLimpio.toLowerCase()) || !pareceDireccion;
     if (esDirInvalida) {
       await sendWhatsAppMessage(phone, "No encontré una dirección válida 📍 Por favor escríbela así:\n\nCalle 12 #33-10, barrio Los Álamos");
       return res.sendStatus(200);
@@ -5013,6 +5019,7 @@ return res.sendStatus(200);
   let valorDomicilio = 4500;
   let descripcionDomicilio = "";
   let fueraDeRango = false;
+  let noEncontrada = false;
   try {
     const addressToCalc = order.locationCoords
       ? `${order.locationCoords.latitude},${order.locationCoords.longitude}`
@@ -5021,6 +5028,7 @@ return res.sendStatus(200);
     // para poder detectar "Dosquebradas" y aplicar el recargo también con ubicación GPS.
     const calculo = await calcularDomicilio(addressToCalc, order.sucursal || "la_villa", calculateTotal(order).subtotal, order.direccion || "");
     fueraDeRango = !!calculo.fueraDeRango;
+    noEncontrada = !!calculo.noEncontrada;
     valorDomicilio = calculo.valorDomicilio;
     descripcionDomicilio = calculo.descripcion;
     order.valorDomicilio = valorDomicilio;
@@ -5042,6 +5050,18 @@ return res.sendStatus(200);
       "Por favor compárteme tu *ubicación GPS* 📍 o escríbeme la dirección de nuevo con barrio y ciudad.\n\n" +
       "Si continúa, un asesor te confirma el valor 😊"
     );
+    return res.sendStatus(200);
+  }
+
+  // Google no ubicó la dirección de texto → pedir más detalle / GPS (no cobrar base a ciegas)
+  if (noEncontrada && !isGpsPin) {
+    order.valorDomicilio = undefined;
+    order.distanciaKm = undefined;
+    order.domicilioTexto = undefined;
+    updateOrderStep(phone, "esperando_direccion");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppMessage(phone,
+      "No encontré esa dirección 📍 Escríbela con más detalle (calle, número y barrio) así:\n\nCalle 12 #33-10, barrio Los Álamos\n\nO compárteme tu *ubicación GPS* 📍");
     return res.sendStatus(200);
   }
 
