@@ -6691,11 +6691,16 @@ return res.sendStatus(200);
     // Texto libre con dirección ya cargada → tratarlo como COMPLEMENTO (apto/casa/torre/referencia)
     // y agregarlo a la dirección, en vez de ignorarlo. (Fix: complemento perdido para el domiciliario.)
     const textoComp = text.trim();
+    // Pregunta o queja (duda, precio, tiempo) → NO es complemento de dirección; no anexar.
+    const esPreguntaOComentario =
+      textoComp.includes("?") || isQuestion(textoComp) ||
+      /\b(no\s+entiendo|no\s+comprendo|me\s+da|cuanto|cuánto|cuesta|precio|vale|tarda|demora|por\s*que|por\s*qué|porque|equivocad|no\s+es\s+as[ií])\b/i.test(textoComp);
     // Solo texto real: excluir no-texto y el fallback "mensaje" (no corromper la dirección con "— mensaje")
     const esComplementoDir = !!orderFB.direccion && tipoMensaje === "text" &&
       /[a-záéíóúñ]/i.test(textoComp) && textoComp.length >= 4 &&
       textoComp.toLowerCase() !== "mensaje" &&
       !["a", "b", "c"].includes(lower) &&
+      !esPreguntaOComentario &&
       !orderFB.direccion.toLowerCase().includes(textoComp.toLowerCase());
     if (esComplementoDir) {
       updateOrderAddress(phone, `${orderFB.direccion} — ${textoComp}`);
