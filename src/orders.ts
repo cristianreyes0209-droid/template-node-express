@@ -94,7 +94,6 @@ export type CustomerOrder = {
   pedidoCancelarId?: number;      // id del pedido en DB que el cliente está por cancelar (confirmación)
   pagoEfectivoParcial?: number;   // porción en efectivo (pago mixto)
   pagoTransferParcial?: number;   // porción declarada a transferir (nequi/daviplata/banco)
-  saldoPendiente?: number;        // faltante detectado al leer el comprobante
   sucursalChequeada?: boolean;    // ya se validó si eligió la sucursal más cercana
   sucursalAlt?: string;           // sucursal alternativa (más cercana) sugerida
   altValor?: number;              // valor domicilio de la sucursal alternativa

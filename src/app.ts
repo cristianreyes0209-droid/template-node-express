@@ -241,56 +241,6 @@ async function transcribirAudioWhatsApp(mediaId: string, mimeType?: string): Pro
   }
 }
 
-// Lee el monto transferido en un comprobante (imagen) usando Gemini multimodal.
-// Devuelve el entero en pesos, o null si no se puede leer con seguridad (foto borrosa,
-// error de red, etc.) → el flujo lo trata como "aceptar como hoy" (no bloquea).
-async function leerMontoComprobante(mediaId: string, mimeType?: string): Promise<number | null> {
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (!geminiKey) return null;
-  const token = (process.env.WHATSAPP_TOKEN || "").trim();
-  try {
-    const metaRes = await fetch(`https://graph.facebook.com/v18.0/${mediaId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!metaRes.ok) return null;
-    const metaData = await metaRes.json() as any;
-    const mediaUrl: string | undefined = metaData?.url;
-    const mime = (metaData?.mime_type || mimeType || "image/jpeg").split(";")[0].trim();
-    if (!mediaUrl) return null;
-
-    const imgRes = await fetch(mediaUrl, { headers: { Authorization: `Bearer ${token}` } });
-    if (!imgRes.ok) return null;
-    const imgB64 = Buffer.from(await imgRes.arrayBuffer()).toString("base64");
-
-    const gemRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [
-            { inline_data: { mime_type: mime, data: imgB64 } },
-            { text: "Este es un comprobante de transferencia colombiano (Nequi, Daviplata o Bancolombia). Devuelve SOLO el monto transferido/enviado como número entero en pesos, sin puntos, comas ni símbolos (ejemplo: 80000). Si no puedes leer el monto con seguridad, responde exactamente: null" }
-          ]}],
-          generationConfig: { temperature: 0, maxOutputTokens: 32 }
-        })
-      }
-    );
-    if (!gemRes.ok) { console.error(`📸 Error Gemini comprobante HTTP ${gemRes.status}`); return null; }
-    const gemData = await gemRes.json() as any;
-    const raw: string = (gemData?.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
-    console.log(`📸 COMPROBANTE monto leído: "${raw.slice(0, 40)}"`);
-    if (/null/i.test(raw)) return null;
-    const digits = raw.replace(/[^\d]/g, "");
-    if (!digits) return null;
-    const monto = parseInt(digits, 10);
-    return Number.isFinite(monto) && monto > 0 ? monto : null;
-  } catch (e) {
-    console.error("📸 Error leyendo comprobante:", e);
-    return null;
-  }
-}
-
 async function sendWhatsAppLocation(phone: string, latitude: number, longitude: number, name?: string) {
   const response = await fetch(
     `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`,
@@ -6132,17 +6082,8 @@ return res.sendStatus(200);
     const order = getOrder(phone)!;
     const totals = calculateTotal(order);
 
-    // Leer el comprobante con IA y calcular saldo pendiente. Si no se puede leer (null),
-    // se acepta como hoy (no bloquea). El pedido siempre se confirma y reenvía.
+    // Porción en efectivo declarada (pago mixto) para el recordatorio "efectivo contra entrega".
     const efectivoParcial = order.pagoEfectivoParcial || 0;
-    const esperadoTransfer = Math.max(0, totals.total - efectivoParcial);
-    let montoLeido: number | null = null;
-    try { montoLeido = await leerMontoComprobante(imageId, messageData.image?.mime_type); } catch {}
-    let saldoPend = 0;
-    if (montoLeido != null && esperadoTransfer > 0 && (esperadoTransfer - montoLeido) >= 1000) {
-      saldoPend = esperadoTransfer - montoLeido;   // umbral $1.000 evita falsos por mala lectura
-      order.saldoPendiente = saldoPend;
-    }
 
     // Consumir el descuento acumulado si se aplicó en este pedido
     if (order.descuentoPct) {
@@ -6183,9 +6124,7 @@ return res.sendStatus(200);
       (order.tipoEntrega === "domicilio" ? `\n🚚 Domicilio: $${totals.domicilio}` : "") +
       `\n💵 Total: $${totals.total}\n` +
       `💳 Pago: ${order.formaPago}\n` +
-      (montoLeido != null ? `💵 Transferido leído: $${montoLeido.toLocaleString("es-CO")}\n` : "") +
       (efectivoParcial > 0 ? `💵 Efectivo contra entrega: $${efectivoParcial.toLocaleString("es-CO")}\n` : "") +
-      (saldoPend > 0 ? `⚠️ SALDO PENDIENTE: $${saldoPend.toLocaleString("es-CO")}\n` : "") +
       `🏬 Sucursal: ${order.sucursal === "la_villa" ? "La Villa" : "Av. Circunvalar"}\n` +
       (order.tipoEntrega === "domicilio" && order.direccion ? `📍 Dirección: ${order.direccion}` : "🏪 Recoger en tienda") +
       (order.observacionesGenerales?.trim() ? `\n📝 Observación: ${order.observacionesGenerales.trim()}` : "");
@@ -6244,21 +6183,12 @@ return res.sendStatus(200);
       (order.observacionesGenerales?.trim() ? `\n📝 Observación: ${order.observacionesGenerales.trim()}` : "") +
       (order.direccion ? `\n📍 Dirección: ${order.direccion}` : "") +
       `\n💳 Pago: ${order.formaPago}` +
-      (saldoPend > 0
-        ? `\n\n⚠️ Vi que transferiste *$${(montoLeido || 0).toLocaleString("es-CO")}*. El total es *$${totals.total.toLocaleString("es-CO")}*, quedaría un saldo de *$${saldoPend.toLocaleString("es-CO")}*. Por favor complétalo o avísanos 🙏`
-        : (efectivoParcial > 0
-          ? `\n\n💵 Recuerda: quedan *$${efectivoParcial.toLocaleString("es-CO")}* en efectivo contra entrega.`
-          : ""));
+      (efectivoParcial > 0
+        ? `\n\n💵 Recuerda: quedan *$${efectivoParcial.toLocaleString("es-CO")}* en efectivo contra entrega.`
+        : "");
 
     await sendWhatsAppMessage(phone, resumenComprobante);
     replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
-
-    // Avisar al asesor del posible faltante para que revise
-    if (saldoPend > 0) {
-      sendWhatsAppMessage("573151913928",
-        `⚠️ POSIBLE SALDO PENDIENTE\n👤 ${order.nombre || customer?.name || "Cliente"}\n📞 ${phone}\n💵 Total: $${totals.total.toLocaleString("es-CO")}\n💵 Transferido leído: $${(montoLeido || 0).toLocaleString("es-CO")}\n⚠️ Falta: $${saldoPend.toLocaleString("es-CO")}`
-      ).catch(() => {});
-    }
 
   } else {
     // Distinguir "cambiar de método" (o pedir uno distinto) de "re-escribir el mismo método ya elegido".
