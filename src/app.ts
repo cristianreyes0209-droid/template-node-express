@@ -312,6 +312,19 @@ async function sendWhatsAppLocation(phone: string, latitude: number, longitude: 
   console.log("RESPUESTA LOCATION META:", data);
 }
 
+// Limpia SOLO el texto que se manda a Google para geocodificar (no la dirección guardada/impresa).
+// Quita ruido de unidad ("casa 50 lote b", "torre 3 apto 303") y normaliza el separador del número,
+// para que Google ubique la vía correcta y no mida de más. El guard evita tocar POIs/nombres sin
+// número de vía (ej. "Megacentro pinares", "Manzana 5 casa 12").
+function limpiarDireccionParaGeo(dir: string): string {
+  let s = dir;
+  s = s.replace(/(\d+\s*[a-z]?)\s*-\s*(\d+)/gi, (_m, a, b) => `${a.replace(/\s+/g, "")}-${b}`);
+  if (/\d+[a-z]?\s*[-#]\s*\d+/i.test(s) || /#\s*\d/i.test(s)) {
+    s = s.replace(/\b(casa|lote|apto|apartamento|torre|bloque|int|interior|piso|mz|manzana|etapa|unidad|local)\s*\.?\s*(?:no\.?|n[°º]?)?\s*[a-z0-9]{1,4}\b/gi, " ");
+  }
+  return s.replace(/\s{2,}/g, " ").replace(/[\s,;\-]+$/, "").trim();
+}
+
 async function calcularDomicilio(direccionCliente: string, sucursal: string, subtotalPedido?: number, textoRecargo?: string): Promise<{
   distanciaKm: number;
   valorDomicilio: number;
@@ -327,7 +340,8 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
   const origenDecodificado = sucursales[sucursal] || sucursales["la_villa"];
   const origen = encodeURIComponent(origenDecodificado);
   const isCoords = /^-?\d+\.?\d*,-?\d+\.?\d*$/.test(direccionCliente.trim());
-  const destinoDecodificado = isCoords ? direccionCliente.trim() : direccionCliente + ", Pereira, Colombia";
+  const destinoDecodificado = isCoords ? direccionCliente.trim() : limpiarDireccionParaGeo(direccionCliente) + ", Pereira, Colombia";
+  if (!isCoords) console.log("📍 DESTINO LIMPIO:", destinoDecodificado);
   const destino = encodeURIComponent(destinoDecodificado);
   const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
