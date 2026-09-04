@@ -762,7 +762,7 @@ function Splash({ onEnter }) {
             React.createElement("button", { className: "cover-btn", onClick: handleEnter }, "🥞 Ver la carta"),
             React.createElement("div", { className: "cover-count" }, countdown > 0 ? `Entrando en ${countdown}s` : ''))));
 }
-function CartDrawer({ cart, onClose, onRemove, onSend, localMode, panelKey }) {
+function CartDrawer({ cart, onClose, onRemove, onSend, localMode, panelKey, mesa }) {
     const total = cart.reduce((s, c) => s + c.totalPrice, 0);
     // Estado del checkout LOCAL (pedido manual desde el panel)
     const [lNombre, setLNombre] = useState('');
@@ -802,6 +802,28 @@ function CartDrawer({ cart, onClose, onRemove, onSend, localMode, panelKey }) {
             const j = await r.json();
             if (r.ok && j.ok) { setDoneNum(j.numero_orden || 0); if (onSend) onSend(); }
             else alert(j.error || 'No se pudo registrar el pedido');
+        } catch (e) { alert('Error de conexión con el panel'); }
+        setEnviando(false);
+    };
+    // Modo MESA (venta local con cuenta abierta): agrega la ronda a la mesa e imprime en cocina.
+    const registrarMesa = async () => {
+        const itemsP = cart.map(c => ({
+            producto: c.item.name,
+            cantidad: c.qty,
+            precio: Math.round(c.totalPrice / c.qty),
+            observaciones: c.obs || undefined,
+            extras: (c.additions || []).map(a => ({ nombre: a.name, cantidad: a.qty }))
+        }));
+        setEnviando(true);
+        try {
+            const r = await fetch('/api/pedidos/local/agregar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-panel-key': panelKey },
+                body: JSON.stringify({ key: panelKey, mesa: mesa, items: itemsP })
+            });
+            const j = await r.json();
+            if (r.ok && j.ok) { setDoneNum(0); if (onSend) onSend(); }
+            else alert(j.error || 'No se pudo agregar la ronda');
         } catch (e) { alert('Error de conexión con el panel'); }
         setEnviando(false);
     };
@@ -850,7 +872,12 @@ function CartDrawer({ cart, onClose, onRemove, onSend, localMode, panelKey }) {
                     React.createElement("div", { className: "total-price" }, fmtP(total))),
                 (localMode
                     ? (doneNum !== null
-                        ? React.createElement("div", { style: { padding: '16px', textAlign: 'center', background: '#1a6b3a', color: '#fff', borderRadius: 14, fontWeight: 800, marginTop: 8 } }, `✅ Pedido${doneNum ? ' #' + doneNum : ''} registrado`)
+                        ? React.createElement("div", { style: { padding: '16px', textAlign: 'center', background: '#1a6b3a', color: '#fff', borderRadius: 14, fontWeight: 800, marginTop: 8 } }, mesa ? `✅ Ronda agregada a ${mesa}` : `✅ Pedido${doneNum ? ' #' + doneNum : ''} registrado`)
+                        : mesa
+                        ? React.createElement("div", { style: { marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 } },
+                            React.createElement("div", { style: { fontWeight: 900, color: '#3B1A0A', fontSize: 14 } }, "🍽️ Agregar a " + mesa),
+                            React.createElement("div", { style: { fontSize: 12, color: '#8a6d4b' } }, "Se enviará a cocina y se acumula en la cuenta de la mesa."),
+                            React.createElement("button", { className: "wa-btn", style: { background: '#0f766e' }, disabled: enviando, onClick: registrarMesa }, enviando ? "Agregando…" : "🍽️ Agregar ronda (imprime en cocina)"))
                         : React.createElement("div", { style: { marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 } },
                             React.createElement("div", { style: { fontWeight: 900, color: '#3B1A0A', fontSize: 14 } }, "🧾 Registrar pedido (local)"),
                             React.createElement("input", { className: "obs", placeholder: "Nombre del cliente", value: lNombre, onChange: e => setLNombre(e.target.value) }),
@@ -1112,12 +1139,14 @@ function App() {
     const LOCAL_PARAMS = new URLSearchParams(location.search);
     const LOCAL_MODE = LOCAL_PARAMS.get('local') === '1';
     const PANEL_KEY = LOCAL_PARAMS.get('key') || '';
+    const MESA = LOCAL_PARAMS.get('mesa') || '';
     const [showSplash, setShowSplash] = useState(() => LOCAL_MODE ? false : !sessionStorage.getItem('lc_entered'));
     const [search, setSearch] = useState('');
     const [searchOpen, setSearchOpen] = useState(false);
     const [cat, setCat] = useState('favoritas');
     const [sel, setSel] = useState(null);
     const [cart, setCart] = useState(() => {
+        if (MESA) return []; // modo mesa: cada ronda arranca vacía (no arrastrar entre mesas)
         try {
             return JSON.parse(localStorage.getItem('lc_cart') || '[]');
         }
@@ -1131,6 +1160,7 @@ function App() {
     const [selHint, setSelHint] = useState(false);
     const catRef = useRef(null);
     useEffect(() => {
+        if (MESA) return; // modo mesa: no persistir el carrito
         localStorage.setItem('lc_cart', JSON.stringify(cart));
     }, [cart]);
     // Banner incentivo domicilio gratis
@@ -1259,7 +1289,7 @@ function App() {
         incentivoBanner && React.createElement("div", { className: "incentivo-banner" }, incentivoBanner),
         selHint && React.createElement("div", { className: "sel-hint" }, "\u2B06\uFE0F Desliza hacia arriba para pedir"),
         sel && React.createElement(ProductModal, { item: sel, onClose: () => setSel(null), onAdd: addToCart }),
-        showCart && React.createElement(CartDrawer, { cart: cart, onClose: () => setShowCart(false), onRemove: removeFromCart, onSend: () => { setCart([]); setShowCart(false); }, localMode: LOCAL_MODE, panelKey: PANEL_KEY })));
+        showCart && React.createElement(CartDrawer, { cart: cart, onClose: () => setShowCart(false), onRemove: removeFromCart, onSend: () => { setCart([]); setShowCart(false); }, localMode: LOCAL_MODE, panelKey: PANEL_KEY, mesa: MESA })));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
 

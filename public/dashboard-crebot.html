@@ -922,24 +922,22 @@ const MESAS_LOCAL = [
   { pref:"Piso 2", nombres: Array.from({length:6},(_,i)=>"Mesa "+(i+1)) },
   { pref:"Llevar", nombres:["Consumo personal","Consumo familiar"] },
 ];
-let LOCAL = { mesa:null, tab:null, ronda:[], mesas:[] };
+let LOCAL = { mesa:null, tab:null, mesas:[] };
 
 async function abrirVentaLocal(){
   if(!sessionKey){ showToast("Primero ingresa al panel"); return; }
-  await cargarMenu();
   await cargarMesas();
-  LOCAL.mesa=null; LOCAL.tab=null; LOCAL.ronda=[];
+  LOCAL.mesa=null; LOCAL.tab=null;
   renderLocalGrid();
   document.getElementById("localOverlay").classList.add("open");
 }
-function cerrarVentaLocal(){ document.getElementById("localOverlay").classList.remove("open"); LOCAL={mesa:null,tab:null,ronda:[],mesas:[]}; }
+function cerrarVentaLocal(){ document.getElementById("localOverlay").classList.remove("open"); LOCAL={mesa:null,tab:null,mesas:[]}; }
 
 async function cargarMesas(){
   try{ const r = await fetch(API+"/api/mesas?key="+encodeURIComponent(sessionKey)); LOCAL.mesas = r.ok ? await r.json() : []; }
   catch(e){ LOCAL.mesas=[]; }
 }
 function mesaAbiertaPorLabel(label){ return (LOCAL.mesas||[]).find(m=>m.mesa===label) || null; }
-function locSumItems(items){ return (items||[]).reduce((a,it)=> a + ((Number(it.precio)||0) + (it.extras||[]).reduce((s,e)=>s+(Number(e&&e.precio)||0),0))*(Number(it.cantidad)||1), 0); }
 
 function renderLocalGrid(){
   const secciones = MESAS_LOCAL.map(sec=>{
@@ -958,24 +956,21 @@ function renderLocalGrid(){
 function abrirMesa(label){
   LOCAL.mesa = label;
   LOCAL.tab = mesaAbiertaPorLabel(label);
-  LOCAL.ronda = [];
   renderMesaTab();
 }
-function volverMesas(){ LOCAL.mesa=null; LOCAL.tab=null; LOCAL.ronda=[]; renderLocalGrid(); }
+function volverMesas(){ LOCAL.mesa=null; LOCAL.tab=null; renderLocalGrid(); }
 
-function optsMenuLocal(){
-  const optsProd = MENU_PRODS.map((pr,i)=> pr.esAdicion ? "" : `<option value="${i}">${esc(pr.nombre)} — ${fmtCOP(pr.precio)}</option>`).join("");
-  const optsAdic = MENU_PRODS.map((pr,i)=> pr.esAdicion ? `<option value="${i}">${esc(pr.nombre)} — ${fmtCOP(pr.precio)}</option>` : "").join("");
-  return `<option value="">➕ Agregar producto…</option><optgroup label="Productos">${optsProd}</optgroup><optgroup label="Adiciones">${optsAdic}</optgroup>`;
+// Abre la carta digital en modo local con la mesa preseleccionada (todas las funciones de la carta).
+function abrirCartaMesa(label){
+  window.open(API+"/carta?local=1&mesa="+encodeURIComponent(label)+"&key="+encodeURIComponent(sessionKey), "_blank");
 }
-function locAddProd(){
-  const sel=document.getElementById('locAddSel'); if(!sel||sel.value==='') return;
-  const pr=MENU_PRODS[sel.value]; if(!pr) return;
-  LOCAL.ronda.push({ producto:(pr.esAdicion?"➕ "+pr.nombre:pr.nombre), cantidad:1, precio:Number(pr.precio)||0, extras:[] });
-  sel.value=''; renderMesaTab();
+// La ronda se agrega en la pestaña de la carta; este botón refresca el acumulado.
+async function refrescarMesa(){
+  await cargarMesas();
+  LOCAL.tab = mesaAbiertaPorLabel(LOCAL.mesa);
+  renderMesaTab();
+  cargarDatos();
 }
-function locQty(i,d){ LOCAL.ronda[i].cantidad = Math.max(1,(LOCAL.ronda[i].cantidad||1)+d); renderMesaTab(); }
-function locRemove(i){ LOCAL.ronda.splice(i,1); renderMesaTab(); }
 
 function renderMesaTab(){
   const tab = LOCAL.tab;
@@ -984,43 +979,20 @@ function renderMesaTab(){
   const acumFilas = acumItems.length
     ? acumItems.map(it=>`<div class="det-row"><div>${esc(it.producto)}${it.variante?" - "+esc(it.variante):""} <b>×${it.cantidad||1}</b></div><div>${fmtCOP((it.precio||0)*(it.cantidad||1))}</div></div>`).join("")
     : '<div class="muted" style="padding:6px 0">Sin consumo aún</div>';
-  const rondaFilas = LOCAL.ronda.map((it,i)=>`<div class="det-row"><div>${esc(it.producto)} <b>×${it.cantidad}</b></div>
-     <div style="display:flex;gap:6px;align-items:center">${fmtCOP(it.precio*it.cantidad)}
-       <button class="btn mini" onclick="locQty(${i},-1)">−</button><button class="btn mini" onclick="locQty(${i},1)">+</button>
-       <button class="btn mini danger" onclick="locRemove(${i})">✕</button></div></div>`).join("") || '<div class="muted" style="padding:6px 0">Agrega productos a la ronda</div>';
   const totalAcum = tab ? Number(tab.total||0) : 0;
-  const totalRonda = locSumItems(LOCAL.ronda);
   document.getElementById("localBody").innerHTML = `
     <button class="btn" onclick="volverMesas()">← Mesas</button>
     <h3 style="margin:10px 0 4px">${esc(LOCAL.mesa)}</h3>
     <div class="muted" style="margin-bottom:6px">Cuenta ${tab?`abierta · <b>${fmtCOP(totalAcum)}</b>`:"nueva"}</div>
     <div style="font-weight:800;font-size:13px;margin-top:8px">Consumo acumulado</div>
     ${acumFilas}
-    <div style="font-weight:800;font-size:13px;margin-top:14px">Nueva ronda</div>
-    <select id="locAddSel" class="obs" style="width:100%;margin:6px 0" onchange="locAddProd()">${optsMenuLocal()}</select>
-    ${rondaFilas}
-    <div class="det-total">Ronda: ${fmtCOP(totalRonda)}</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px">
-      <button class="btn primary" ${LOCAL.ronda.length?"":"disabled"} onclick="agregarRonda()">🖨️ Agregar ronda e imprimir</button>
+    ${tab?`<div class="det-total">Total: ${fmtCOP(totalAcum)}</div>`:""}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px">
+      <button class="btn primary" onclick="abrirCartaMesa('${String(LOCAL.mesa).replace(/'/g,"\\'")}')">➕ Agregar productos (carta)</button>
+      <button class="btn" onclick="refrescarMesa()">🔄 Actualizar</button>
       ${tab?`<button class="btn" onclick="cerrarMesa()">💵 Cerrar mesa</button>`:""}
-    </div>`;
-}
-
-async function agregarRonda(){
-  if(!LOCAL.ronda.length) return;
-  try{
-    const r = await fetch(API+"/api/pedidos/local/agregar", {
-      method:"POST", headers:{ "Content-Type":"application/json", "x-panel-key": sessionKey },
-      body: JSON.stringify({ mesa: LOCAL.mesa, items: LOCAL.ronda })
-    });
-    const j = await r.json();
-    if(!j.ok){ showToast(j.error||"No se pudo agregar"); return; }
-    showToast("Ronda enviada a cocina 🖨️");
-    LOCAL.ronda=[];
-    await cargarMesas(); LOCAL.tab = mesaAbiertaPorLabel(LOCAL.mesa);
-    renderMesaTab();
-    cargarDatos();
-  }catch(e){ showToast("Error de red"); }
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:8px">Los productos se agregan desde la carta (pestaña nueva). Al volver, toca 🔄 Actualizar.</div>`;
 }
 
 async function cerrarMesa(){
