@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "./db";
 import cron from "node-cron";
-import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, updatePedido, getPedidoById, getPedidoCancelableByPhone, getUltimoPedidoByPhone, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig } from "./db";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, updatePedido, getPedidoById, getPedidoCancelableByPhone, getUltimoPedidoByPhone, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getMesaAbierta, getMesasAbiertas, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig } from "./db";
 import path from "path";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -6941,6 +6941,116 @@ app.post('/api/pedidos/manual', async (req, res) => {
     console.error("❌ Error pedido manual:", err);
     return res.status(500).json({ ok: false, error: err?.message || "Error interno" });
   }
+});
+
+// ── Venta Local (pedidos por mesa, cuenta abierta) — solo La Villa ─────────────
+const SUC_LOCAL = "la_villa";
+
+// Suma subtotal desde los items (precio + extras) × cantidad. Domicilio 0, total = subtotal.
+function subtotalDesdeItems(items: any[]): number {
+  return (items || []).reduce((acc: number, it: any) => {
+    const extras = (it.extras || []).reduce((s: number, e: any) => s + (Number(e?.precio) || 0), 0);
+    return acc + ((Number(it.precio) || 0) + extras) * (Number(it.cantidad) || 1);
+  }, 0);
+}
+
+// Imprime una ronda de venta local en la impresora de La Villa (comanda de cocina).
+async function imprimirComandaLocal(encabezado: string, itemsRonda: any[], mesa: string) {
+  try {
+    const r = await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nombre: encabezado,
+        telefono: "",
+        pedidoTexto: (itemsRonda || []).map((i: any) => {
+          const obs = i.observaciones ? ` (${i.observaciones})` : "";
+          const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
+          return `${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs} ×${i.cantidad}`;
+        }),
+        subtotal: subtotalDesdeItems(itemsRonda),
+        domicilio: 0,
+        total: subtotalDesdeItems(itemsRonda),
+        direccion: mesa,
+        pago: "Pendiente (mesa)",
+        tiempoEstimado: "En mesa",
+        observacion: "",
+        horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
+        sucursal: "La Villa"
+      })
+    });
+    if (!r.ok) console.error(`❌ Impresora venta local: HTTP ${r.status} → ${await r.text().catch(() => "")}`);
+    else console.log(`🖨️ Comanda local impresa (${mesa})`);
+  } catch (e) { console.error("❌ Impresora venta local (red):", e); }
+}
+
+// Mesas con cuenta abierta hoy en La Villa (para armar el grid del panel).
+app.get('/api/mesas', async (req, res) => {
+  const key = req.query.key as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ error: "Acceso no autorizado" });
+  const rows = await getMesasAbiertas();
+  const mesas = rows.map((p: any) => {
+    let items = p.items;
+    if (typeof items === "string") { try { items = JSON.parse(items); } catch { items = []; } }
+    return { id: p.id, mesa: p.mesa, items: items || [], subtotal: p.subtotal, total: p.total, created_at: p.created_at };
+  });
+  res.json(mesas);
+});
+
+// Agregar una ronda a una mesa (crea la cuenta si no existe) e imprime la comanda.
+app.post('/api/pedidos/local/agregar', async (req, res) => {
+  const body = req.body || {};
+  const key = (req.headers['x-panel-key'] as string) || body.key;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  const mesa = (body.mesa || "").toString().trim();
+  const ronda = Array.isArray(body.items) ? body.items : [];
+  if (!mesa) return res.status(400).json({ ok: false, error: "Falta la mesa" });
+  if (ronda.length === 0) return res.status(400).json({ ok: false, error: "La ronda no tiene productos" });
+  try {
+    const abierta = await getMesaAbierta(mesa);
+    let id: number | null;
+    let itemsTotales: any[];
+    if (abierta) {
+      let prev = abierta.items;
+      if (typeof prev === "string") { try { prev = JSON.parse(prev); } catch { prev = []; } }
+      itemsTotales = [...(prev || []), ...ronda];
+      const sub = subtotalDesdeItems(itemsTotales);
+      const ok = await updatePedido(abierta.id, { items: itemsTotales, subtotal: sub, domicilio: 0, total: sub });
+      id = ok ? abierta.id : null;
+    } else {
+      itemsTotales = ronda;
+      const sub = subtotalDesdeItems(itemsTotales);
+      id = await savePedido({
+        numero_orden: await getNextOrderNumberForDay(),
+        phone: "", nombre: mesa, mesa,
+        items: itemsTotales, subtotal: sub, domicilio: 0, total: sub,
+        sucursal: SUC_LOCAL, tipo_entrega: "local", canal: "local",
+        estado: "abierta", confirmed_at: new Date().toISOString(),
+      });
+    }
+    if (!id) return res.status(500).json({ ok: false, error: "No se pudo guardar la mesa" });
+    const nRonda = abierta ? "" : "1";
+    await imprimirComandaLocal(`🍽️ ${mesa}${nRonda ? " — Ronda " + nRonda : " — Ronda"}`, ronda, mesa);
+    const total = subtotalDesdeItems(itemsTotales);
+    return res.json({ ok: true, id, mesa, items: itemsTotales, total });
+  } catch (err: any) {
+    console.error("❌ Error venta local agregar:", err);
+    return res.status(500).json({ ok: false, error: err?.message || "Error interno" });
+  }
+});
+
+// Cerrar (cobrar) la cuenta de una mesa. forma_pago opcional (vacío = pendiente).
+app.post('/api/mesas/:id/cerrar', async (req, res) => {
+  const body = req.body || {};
+  const key = (req.headers['x-panel-key'] as string) || body.key;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ ok: false, error: "id inválido" });
+  const p = await getPedidoById(id);
+  if (!p) return res.status(404).json({ ok: false, error: "Mesa no encontrada" });
+  if (body.forma_pago) await updatePedido(id, { forma_pago: body.forma_pago });
+  await updatePedidoEstado(id, "entregado");
+  return res.json({ ok: true });
 });
 
 // Resumen del pedido en texto (para enviar al cliente por WhatsApp)

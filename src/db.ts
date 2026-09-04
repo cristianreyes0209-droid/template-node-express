@@ -55,6 +55,8 @@ pool.connect()
       .catch(err => console.error("❌ Error agregando columna items:", err));
     await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS tipo_entrega TEXT`)
       .catch(err => console.error("❌ Error agregando columna tipo_entrega:", err));
+    await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS mesa TEXT`)
+      .catch(err => console.error("❌ Error agregando columna mesa:", err));
     await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS canal TEXT`)
       .catch(err => console.error("❌ Error agregando columna canal:", err));
     await client.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS holaclick_order TEXT`)
@@ -238,6 +240,7 @@ export type PedidoData = {
   viene_de_carta?: boolean;
   observaciones_generales?: string;
   asesor_intervenido?: boolean;
+  mesa?: string;
 };
 
 export async function savePedido(data: PedidoData): Promise<number | null> {
@@ -246,8 +249,8 @@ export async function savePedido(data: PedidoData): Promise<number | null> {
       `INSERT INTO pedidos
         (numero_orden, phone, nombre, direccion, items, subtotal, domicilio, total,
          forma_pago, sucursal, tipo_entrega, canal, holaclick_order, confirmed_at, estado,
-         factura, email_factura, viene_de_carta, observaciones_generales, asesor_intervenido)
-       VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+         factura, email_factura, viene_de_carta, observaciones_generales, asesor_intervenido, mesa)
+       VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
        RETURNING id`,
       [
         data.numero_orden || null,
@@ -270,6 +273,7 @@ export async function savePedido(data: PedidoData): Promise<number | null> {
         data.viene_de_carta ?? false,
         data.observaciones_generales || null,
         data.asesor_intervenido ?? false,
+        data.mesa || null,
       ]
     );
     console.log("✅ Pedido guardado id:", result.rows[0]?.id);
@@ -485,6 +489,39 @@ export async function getPedidosPorFecha(fecha: string) {  // fecha = "YYYY-MM-D
     return result.rows;
   } catch (error) {
     console.error("❌ Error getPedidosPorFecha:", error);
+    return [];
+  }
+}
+
+// Cuenta abierta (venta local) de una mesa específica, hoy, en La Villa. null si no hay.
+export async function getMesaAbierta(mesa: string) {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM pedidos
+       WHERE mesa = $1 AND estado = 'abierta' AND sucursal = 'la_villa'
+         AND created_at >= (NOW() AT TIME ZONE 'America/Bogota')::date::timestamp AT TIME ZONE 'America/Bogota'
+       ORDER BY created_at DESC LIMIT 1`,
+      [mesa]
+    );
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error("❌ Error getMesaAbierta:", error);
+    return null;
+  }
+}
+
+// Todas las mesas con cuenta abierta hoy en La Villa.
+export async function getMesasAbiertas() {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM pedidos
+       WHERE estado = 'abierta' AND sucursal = 'la_villa'
+         AND created_at >= (NOW() AT TIME ZONE 'America/Bogota')::date::timestamp AT TIME ZONE 'America/Bogota'
+       ORDER BY created_at ASC`
+    );
+    return result.rows;
+  } catch (error) {
+    console.error("❌ Error getMesasAbiertas:", error);
     return [];
   }
 }

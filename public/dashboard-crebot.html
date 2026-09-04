@@ -172,6 +172,15 @@
   .modal-head h3{font-size:16px;font-weight:800}
   .modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-soft);line-height:1}
   .modal-body{padding:18px 20px}
+  .mesa-sec{margin-bottom:14px}
+  .mesa-sec-t{font-weight:800;font-size:13px;color:var(--text-soft);margin:6px 0}
+  .mesa-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+  .mesa-cell{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;border:1px solid var(--border);border-radius:12px;background:var(--card-bg);cursor:pointer;font-size:13px}
+  .mesa-cell.ocup{border-color:#0f766e;background:#0f766e14}
+  .mesa-tot{font-size:12px;font-weight:800;color:#0f766e}
+  .mesa-free{font-size:11px;color:var(--text-soft)}
+  .btn.mini{padding:2px 8px;font-size:14px;line-height:1}
+  .btn.danger{color:#b91c1c}
   .det-row{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px dashed var(--border);font-size:13px}
   .det-row:last-child{border-bottom:none}
   .det-row .ex{color:var(--text-soft);font-size:11.5px}
@@ -236,6 +245,7 @@
 
     <nav class="nav">
       <a href="#" onclick="abrirOrdenManual();return false" style="background:#C41E3A;color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11H3v10h6M9 11V3h6v8m0 0h6v10h-6M9 11h6M9 21h6"/></svg>🧾 Orden Manual</a>
+      <a href="#" onclick="abrirVentaLocal();return false" style="background:#0f766e;color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11h18M6 11V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4M5 11v8m14-8v8"/></svg>🍽️ Venta Local</a>
       <a href="#" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chats entrantes</a>
       <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>Órdenes</a>
       <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M12 17.5H8m7.5-9 3 9M6 8h6l2 6"/></svg>Órdenes en camino</a>
@@ -341,6 +351,13 @@
   </div>
 </div>
 
+<div class="overlay" id="localOverlay" onclick="if(event.target===this)cerrarVentaLocal()">
+  <div class="modal" style="width:660px">
+    <div class="modal-head"><h3>🍽️ Venta Local — La Villa</h3><button class="modal-close" onclick="cerrarVentaLocal()">&times;</button></div>
+    <div class="modal-body" id="localBody"></div>
+  </div>
+</div>
+
 <!-- ================= CHAT DRAWER ================= -->
 <div class="drawer" id="chatDrawer">
   <div class="drawer-head">
@@ -381,7 +398,8 @@ const ESTADOS = {
   terminada:  { txt:"✅ Orden terminada",     cls:"st-terminada" },
   abandonada: { txt:"✖ Orden abandonada",     cls:"st-abandonada" },
   asistente:  { txt:"🎧 Solicitud asistente", cls:"st-asistente" },
-  cancelada:  { txt:"❌ Cancelado",           cls:"st-cancelada" }
+  cancelada:  { txt:"❌ Cancelado",           cls:"st-cancelada" },
+  mesa:       { txt:"🍽️ Mesa abierta",        cls:"st-proceso" }
 };
 const SUC_NOMBRE = { la_villa:"La Villa", circunvalar:"Av. Circunvalar" };
 const fmtCOP = n => "$ " + Number(n||0).toLocaleString("es-CO");
@@ -391,6 +409,7 @@ function mapEstado(e){
   if(e==="en_camino") return "camino";
   if(e==="entregado"||e==="finalizado") return "terminada";
   if(e==="cancelado") return "cancelada";
+  if(e==="abierta") return "mesa";
   return "lista"; // recibido, en_preparacion
 }
 const bogotaDate = d => new Date(d).toLocaleDateString("en-CA",{timeZone:"America/Bogota"}); // YYYY-MM-DD
@@ -665,7 +684,7 @@ function pedidoAFila(p){
     confirmada: true, abandonada: false, asistente: !!p.asesor_intervenido,
     esRecoger,
     estadoTxt: e.txt, estadoCls: e.cls,
-    activo: est !== "terminada" && est !== "cancelada" && esHoyVista   // sin botones si terminada/cancelada
+    activo: est !== "terminada" && est !== "cancelada" && est !== "mesa" && esHoyVista   // sin botones si terminada/cancelada/mesa
   };
 }
 
@@ -896,6 +915,129 @@ function verDetalle(key){
   document.getElementById("detOverlay").classList.add("open");
 }
 function cerrarDetalle(){ document.getElementById("detOverlay").classList.remove("open"); EDIT=null; }
+
+/* ===================== VENTA LOCAL (mesas) ===================== */
+const MESAS_LOCAL = [
+  { pref:"Piso 1", nombres: Array.from({length:9},(_,i)=>"Mesa "+(i+1)) },
+  { pref:"Piso 2", nombres: Array.from({length:6},(_,i)=>"Mesa "+(i+1)) },
+  { pref:"Llevar", nombres:["Consumo personal","Consumo familiar"] },
+];
+let LOCAL = { mesa:null, tab:null, ronda:[], mesas:[] };
+
+async function abrirVentaLocal(){
+  if(!sessionKey){ showToast("Primero ingresa al panel"); return; }
+  await cargarMenu();
+  await cargarMesas();
+  LOCAL.mesa=null; LOCAL.tab=null; LOCAL.ronda=[];
+  renderLocalGrid();
+  document.getElementById("localOverlay").classList.add("open");
+}
+function cerrarVentaLocal(){ document.getElementById("localOverlay").classList.remove("open"); LOCAL={mesa:null,tab:null,ronda:[],mesas:[]}; }
+
+async function cargarMesas(){
+  try{ const r = await fetch(API+"/api/mesas?key="+encodeURIComponent(sessionKey)); LOCAL.mesas = r.ok ? await r.json() : []; }
+  catch(e){ LOCAL.mesas=[]; }
+}
+function mesaAbiertaPorLabel(label){ return (LOCAL.mesas||[]).find(m=>m.mesa===label) || null; }
+function locSumItems(items){ return (items||[]).reduce((a,it)=> a + ((Number(it.precio)||0) + (it.extras||[]).reduce((s,e)=>s+(Number(e&&e.precio)||0),0))*(Number(it.cantidad)||1), 0); }
+
+function renderLocalGrid(){
+  const secciones = MESAS_LOCAL.map(sec=>{
+    const cells = sec.nombres.map(nom=>{
+      const label = sec.pref+" · "+nom;
+      const tab = mesaAbiertaPorLabel(label);
+      const ocup = !!tab;
+      return `<button class="mesa-cell${ocup?' ocup':''}" onclick="abrirMesa('${label.replace(/'/g,"\\'")}')">
+        <b>${esc(nom)}</b>${ocup?`<span class="mesa-tot">${fmtCOP(tab.total)}</span>`:`<span class="mesa-free">Libre</span>`}</button>`;
+    }).join("");
+    return `<div class="mesa-sec"><div class="mesa-sec-t">${esc(sec.pref)}</div><div class="mesa-grid">${cells}</div></div>`;
+  }).join("");
+  document.getElementById("localBody").innerHTML = secciones;
+}
+
+function abrirMesa(label){
+  LOCAL.mesa = label;
+  LOCAL.tab = mesaAbiertaPorLabel(label);
+  LOCAL.ronda = [];
+  renderMesaTab();
+}
+function volverMesas(){ LOCAL.mesa=null; LOCAL.tab=null; LOCAL.ronda=[]; renderLocalGrid(); }
+
+function optsMenuLocal(){
+  const optsProd = MENU_PRODS.map((pr,i)=> pr.esAdicion ? "" : `<option value="${i}">${esc(pr.nombre)} — ${fmtCOP(pr.precio)}</option>`).join("");
+  const optsAdic = MENU_PRODS.map((pr,i)=> pr.esAdicion ? `<option value="${i}">${esc(pr.nombre)} — ${fmtCOP(pr.precio)}</option>` : "").join("");
+  return `<option value="">➕ Agregar producto…</option><optgroup label="Productos">${optsProd}</optgroup><optgroup label="Adiciones">${optsAdic}</optgroup>`;
+}
+function locAddProd(){
+  const sel=document.getElementById('locAddSel'); if(!sel||sel.value==='') return;
+  const pr=MENU_PRODS[sel.value]; if(!pr) return;
+  LOCAL.ronda.push({ producto:(pr.esAdicion?"➕ "+pr.nombre:pr.nombre), cantidad:1, precio:Number(pr.precio)||0, extras:[] });
+  sel.value=''; renderMesaTab();
+}
+function locQty(i,d){ LOCAL.ronda[i].cantidad = Math.max(1,(LOCAL.ronda[i].cantidad||1)+d); renderMesaTab(); }
+function locRemove(i){ LOCAL.ronda.splice(i,1); renderMesaTab(); }
+
+function renderMesaTab(){
+  const tab = LOCAL.tab;
+  let acumItems = [];
+  if(tab){ acumItems = typeof tab.items==="string" ? (()=>{try{return JSON.parse(tab.items)}catch(e){return[]}})() : (tab.items||[]); }
+  const acumFilas = acumItems.length
+    ? acumItems.map(it=>`<div class="det-row"><div>${esc(it.producto)}${it.variante?" - "+esc(it.variante):""} <b>×${it.cantidad||1}</b></div><div>${fmtCOP((it.precio||0)*(it.cantidad||1))}</div></div>`).join("")
+    : '<div class="muted" style="padding:6px 0">Sin consumo aún</div>';
+  const rondaFilas = LOCAL.ronda.map((it,i)=>`<div class="det-row"><div>${esc(it.producto)} <b>×${it.cantidad}</b></div>
+     <div style="display:flex;gap:6px;align-items:center">${fmtCOP(it.precio*it.cantidad)}
+       <button class="btn mini" onclick="locQty(${i},-1)">−</button><button class="btn mini" onclick="locQty(${i},1)">+</button>
+       <button class="btn mini danger" onclick="locRemove(${i})">✕</button></div></div>`).join("") || '<div class="muted" style="padding:6px 0">Agrega productos a la ronda</div>';
+  const totalAcum = tab ? Number(tab.total||0) : 0;
+  const totalRonda = locSumItems(LOCAL.ronda);
+  document.getElementById("localBody").innerHTML = `
+    <button class="btn" onclick="volverMesas()">← Mesas</button>
+    <h3 style="margin:10px 0 4px">${esc(LOCAL.mesa)}</h3>
+    <div class="muted" style="margin-bottom:6px">Cuenta ${tab?`abierta · <b>${fmtCOP(totalAcum)}</b>`:"nueva"}</div>
+    <div style="font-weight:800;font-size:13px;margin-top:8px">Consumo acumulado</div>
+    ${acumFilas}
+    <div style="font-weight:800;font-size:13px;margin-top:14px">Nueva ronda</div>
+    <select id="locAddSel" class="obs" style="width:100%;margin:6px 0" onchange="locAddProd()">${optsMenuLocal()}</select>
+    ${rondaFilas}
+    <div class="det-total">Ronda: ${fmtCOP(totalRonda)}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px">
+      <button class="btn primary" ${LOCAL.ronda.length?"":"disabled"} onclick="agregarRonda()">🖨️ Agregar ronda e imprimir</button>
+      ${tab?`<button class="btn" onclick="cerrarMesa()">💵 Cerrar mesa</button>`:""}
+    </div>`;
+}
+
+async function agregarRonda(){
+  if(!LOCAL.ronda.length) return;
+  try{
+    const r = await fetch(API+"/api/pedidos/local/agregar", {
+      method:"POST", headers:{ "Content-Type":"application/json", "x-panel-key": sessionKey },
+      body: JSON.stringify({ mesa: LOCAL.mesa, items: LOCAL.ronda })
+    });
+    const j = await r.json();
+    if(!j.ok){ showToast(j.error||"No se pudo agregar"); return; }
+    showToast("Ronda enviada a cocina 🖨️");
+    LOCAL.ronda=[];
+    await cargarMesas(); LOCAL.tab = mesaAbiertaPorLabel(LOCAL.mesa);
+    renderMesaTab();
+    cargarDatos();
+  }catch(e){ showToast("Error de red"); }
+}
+
+async function cerrarMesa(){
+  if(!LOCAL.tab) return;
+  const fp = prompt("Forma de pago (efectivo / nequi / bancolombia) — vacío = pendiente:","");
+  if(fp===null) return;
+  try{
+    const r = await fetch(API+"/api/mesas/"+LOCAL.tab.id+"/cerrar", {
+      method:"POST", headers:{ "Content-Type":"application/json", "x-panel-key": sessionKey },
+      body: JSON.stringify({ forma_pago: (fp||"").trim() || undefined })
+    });
+    const j = await r.json();
+    if(!j.ok){ showToast(j.error||"No se pudo cerrar"); return; }
+    showToast("Mesa cerrada ✅");
+    await cargarMesas(); volverMesas(); cargarDatos();
+  }catch(e){ showToast("Error de red"); }
+}
 
 /* ===================== ENVIAR RESUMEN / EDITAR PEDIDO ===================== */
 let MENU_PRODS = [];
