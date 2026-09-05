@@ -6246,6 +6246,21 @@ return res.sendStatus(200);
       );
       return res.sendStatus(200);
     }
+    // El cliente quiere AGREGAR más productos antes de pagar → volver a armar el pedido.
+    const quiereAgregarComp =
+      lower === "agregar_mas" || lower === "agregar" ||
+      lower.includes("agregar") || lower.includes("añadir") || lower.includes("anadir") ||
+      lower.includes("pedir otro") || lower.includes("pedir otra") ||
+      lower.includes("pedir mas") || lower.includes("pedir más") ||
+      lower.includes("quiero pedir") || lower.includes("quiero agregar") || lower.includes("puedo agregar") ||
+      ((lower.includes("otro") || lower.includes("otra")) && (lower.includes("mas") || lower.includes("más") || lower.includes("pedir") || lower.includes("quiero") || lower.includes("agregar")));
+    if (quiereAgregarComp) {
+      updateOrderStep(phone, "armando_pedido");
+      currentOrder = getOrder(phone)!;
+      await sendWhatsAppMessage(phone,
+        "Claro 😊 ¿Qué deseas agregar? Escríbeme el producto (uno por mensaje) y actualizamos el total antes de pagar.");
+      return res.sendStatus(200);
+    }
     // PQR: ¿el cliente reporta un problema para pagar? → aclarar / escalar (no repetir robóticamente)
     if (await manejarProblemaPago(phone, text)) {
       return res.sendStatus(200);
