@@ -180,7 +180,10 @@ export function normalizeText(text: string) {
     .replace(/\bburguesias?\b/g, "burguesa")
     .replace(/\bburgesias?\b/g, "burguesa")
     .replace(/\bburgesa\b/g, "burguesa")
-    .replace(/\bhamburguesa\b/g, "burguesa");
+    .replace(/\bhamburguesa\b/g, "burguesa")
+    // Typos de "veggie" (mala ortografía) → forma canónica, para que dispare la ambigüedad
+    // entre Strogonoff Veggie y Burguessa Veggie.
+    .replace(/\b(veguie|veguui|vegguie|veggui|veggi|vegie|vejie|vejjie|veggui|begguie|beggie|beguie)\b/g, "veggie");
 }
 
 function splitIntoFragments(text: string) {

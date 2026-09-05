@@ -1274,7 +1274,7 @@ aliases: [
             "Salsa strogonoff",
             "Vino blanco"
           ],
-          aliases: ["strogonoff veggie", "veggie", "stroganoff veggie"]
+          aliases: ["strogonoff veggie", "stroganoff veggie"]
         },
         {
           id: "vegetariana",
