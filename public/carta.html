@@ -39,6 +39,15 @@
 
     /* GRID */
     .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:14px 12px 110px;}
+    /* Modo local (órdenes manuales / mesas) en PC: tarjetas más pequeñas para que quepan más */
+    @media (min-width:820px){
+      body.lc-local .grid{grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px;padding:12px 14px 90px;}
+      body.lc-local .card-img{height:96px;font-size:44px;}
+      body.lc-local .card-body{padding:8px 10px 10px;}
+      body.lc-local .card-name{font-size:12px;}
+      body.lc-local .card-price{font-size:17px;}
+      body.lc-local .card-tap{font-size:9px;}
+    }
 
     /* CARD */
     .card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 3px 12px rgba(59,26,10,.1);cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative;border:1.5px solid #F0DEB4;}
@@ -1163,6 +1172,8 @@ function App() {
         if (MESA) return; // modo mesa: no persistir el carrito
         localStorage.setItem('lc_cart', JSON.stringify(cart));
     }, [cart]);
+    // Modo local (órdenes manuales / mesas): grid más denso en PC
+    useEffect(() => { if (LOCAL_MODE) document.body.classList.add('lc-local'); }, []);
     // Banner incentivo domicilio gratis
     useEffect(() => {
         if (cart.length === 0) {
