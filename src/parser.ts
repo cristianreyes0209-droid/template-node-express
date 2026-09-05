@@ -575,6 +575,12 @@ export function extractExtrasFromFragment(fragment: string, extrasProducts: any[
   // "queso" genérico (doble crema). Evita meter dos quesos por "con queso cuajada".
   const quesoEspecifico = /\bqueso\s+(cuajada|americano|parmesano|mozarella|mozzarella)\b/.test(text);
 
+  // Ingredientes/nombre del propio producto → un alias que ya es parte del producto NO debe
+  // agregarse como extra por el trigger débil "con X" (ej: "pollo con champiñones" → Pollo Champiñón
+  // no lleva +pollo ni +champiñones). Solo se agrega si hay trigger EXPLÍCITO ("extra/adicional X").
+  const prodBlob = normalizeText([product?.nombre, ...(product?.ingredientes || [])].filter(Boolean).join(" "));
+  const enProducto = (s: string) => { const n = normalizeText(s); return n.length >= 4 && prodBlob.includes(n.slice(0, Math.min(n.length, 5))); };
+
   for (const extra of extrasProducts) {
     // Si el producto tiene extrasDisponibles definidos, respetar esa lista
     if (
@@ -584,6 +590,8 @@ export function extractExtrasFromFragment(fragment: string, extrasProducts: any[
     ) {
       continue;
     }
+
+    const esParteDelProducto = !!prodBlob && [extra.nombre, ...(extra.aliases || [])].some((x: string) => x && enProducto(x));
 
     for (const alias of extra.aliases || []) {
       const normalizedAlias = normalizeText(alias);
@@ -612,6 +620,15 @@ export function extractExtrasFromFragment(fragment: string, extrasProducts: any[
 
       const hasTrigger = inConList || triggers.some(t => text.includes(t) || text.includes(`${t}s`));
 
+      // Triggers EXPLÍCITOS de adición (no el débil "con X")
+      const triggersExplicitos = [
+        `extra ${normalizedAlias}`, `con extra ${normalizedAlias}`, `mas ${normalizedAlias}`,
+        `adicional ${normalizedAlias}`, `adicional de ${normalizedAlias}`,
+        `adicion ${normalizedAlias}`, `adicion de ${normalizedAlias}`,
+        `agregar ${normalizedAlias}`, `doble ${normalizedAlias}`,
+      ];
+      const hasExplicito = triggersExplicitos.some(t => text.includes(t) || text.includes(`${t}s`));
+
       // Match singular o plural del alias (ej: "fresa" / "fresas")
       const aliasRegex = new RegExp(`\\b${escapeRegex(normalizedAlias)}s?\\b`, "i");
       const exactPresent = aliasRegex.test(text);
@@ -624,7 +641,10 @@ export function extractExtrasFromFragment(fragment: string, extrasProducts: any[
         fuzzyInConList = tokens.some(t => similarity(t, normalizedAlias) >= 0.8);
       }
 
-      if ((exactPresent && hasTrigger) || fuzzyInConList) {
+      const debeAgregar = esParteDelProducto
+        ? (exactPresent && hasExplicito)                       // ya es parte del producto → solo adición explícita
+        : ((exactPresent && hasTrigger) || fuzzyInConList);    // lógica normal
+      if (debeAgregar) {
         const existing = extrasFound.find((e) => e.id === extra.id);
 
         if (!existing) {

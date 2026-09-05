@@ -139,6 +139,21 @@ function nombreValido(n?: string): boolean {
   return true;
 }
 
+// Si en una dirección quedó pegado el mensaje de confirmación del bot ("Es correcta esta
+// dirección? 📍 *Cra…* 2.6km → $5.000 💵 : $5.000"), extraer la dirección real (va entre *...*)
+// y quitar el scaffolding. Una dirección normal se devuelve intacta.
+function limpiarDireccionGuardada(dir?: string): string {
+  if (!dir) return dir || "";
+  let s = dir.trim();
+  const m = s.match(/\*([^*]+)\*/);
+  if (m) s = m[1];
+  s = s.replace(/¿?\s*es correcta esta direcci[oó]n\??/gi, " ");
+  s = s.replace(/\s*\d+(?:[.,]\d+)?\s*km\s*→.*$/i, " ");   // "2.6km → $5.000 ..."
+  s = s.replace(/\s*💵.*$/i, " ");                          // "💵 : $5.000"
+  s = s.replace(/[📍*]/g, " ").replace(/\s{2,}/g, " ").replace(/^[\s,;:–-]+|[\s,;:–-]+$/g, "").trim();
+  return s || dir.trim();
+}
+
 // ── Pausa / alta demanda por sucursal ─────────────────────────────────────────
 type SucKey = "la_villa" | "circunvalar";
 const pausaSuc:   Record<SucKey, boolean> = { la_villa: false, circunvalar: false };
@@ -1261,6 +1276,8 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   // Nombre mal guardado (frase de pago, >3 palabras, etc.) → descartarlo para saludar genérico
   // y volver a pedir el nombre más adelante.
   if (customer?.name && !nombreValido(customer.name)) customer.name = undefined;
+  // Dirección mal guardada (mensaje del bot pegado) → limpiarla para display, link de carta y reuso.
+  if (customer?.last_address) customer.last_address = limpiarDireccionGuardada(customer.last_address);
   const tieneUltimoPedido = !!(
     customer?.last_order &&
     Array.isArray(customer.last_order) &&
@@ -4973,7 +4990,7 @@ return res.sendStatus(200);
       .replace(/^[\s.,:;¡!¿?\-]+/, "")
       .replace(/\s+/g, " ")
       .trim();
-    const direccionFinal = direccionLimpia.length >= 5 ? direccionLimpia : text.trim();
+    const direccionFinal = limpiarDireccionGuardada(direccionLimpia.length >= 5 ? direccionLimpia : text.trim());
     const textoDirLimpio = direccionFinal;
     const tieneDigito = /\d/.test(textoDirLimpio);
     const tieneKeywordDir = /\b(calle|carrera|carr|cll|cra|cr|av\b|avenida|diagonal|transversal|circular|autopista|variante|barrio|conjunto|urbanizacion|urbanización|manzana|km|kilómetro|kilómetros|#|nro|no\.)\b/i.test(textoDirLimpio);
@@ -6441,8 +6458,12 @@ return res.sendStatus(200);
       }
       return res.sendStatus(200);
     }
+    // Una pregunta o intención de cambio/asesor NO es una nota para el repartidor
+    // (ej: "¿Puedo hacer un cambio en el pedido?") → dejar pasar a la atención de abajo.
+    const esPreguntaOComentarioConf = text.includes("?") || isQuestion(text) ||
+      /\b(cambio|cambiar|modificar|comunicar|asesor|hablar|persona|humano|pregunta|puedo|podr[ií]a|quisiera)\b/i.test(lower);
     // Probable detalle de dirección no detectado por PALABRAS_DIRECCION (ej. sector, urbanización)
-    if (currentOrder.direccion && text.trim().length > 2 && text.trim().length < 120 && !lower.includes("nuevo") && !lower.includes("asesor")) {
+    if (!esPreguntaOComentarioConf && currentOrder.direccion && text.trim().length > 2 && text.trim().length < 120 && !lower.includes("nuevo") && !lower.includes("asesor")) {
       updateOrderDireccionNotes(phone, text.trim());
       await sendWhatsAppMessage(phone, `Anotado ✅ "${text.trim()}" — se lo enviamos al repartidor 🛵`);
       return res.sendStatus(200);
