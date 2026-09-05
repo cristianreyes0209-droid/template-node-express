@@ -713,11 +713,14 @@ function sesionAFila(s){
 
 function calcularResumen(peds, sesiones){
   const esEntregado = e => e==="entregado" || e==="finalizado";
-  const terminadas = peds.filter(p=>esEntregado(p.estado));
-  const sucMap = {};
+  const esMesa = p => !!p.mesa || p.tipo_entrega === "local" || p.canal === "local";
   const esEfectivo = fp => (fp||"").toLowerCase() === "efectivo";
+  const terminadas    = peds.filter(p=>esEntregado(p.estado));
+  const terminadasReg = terminadas.filter(p=>!esMesa(p));   // domicilios / recoger (total de siempre)
+  const terminadasMesa= terminadas.filter(esMesa);          // Venta Local → total aparte
+  const sucMap = {};
   const pagos = { efectivo:{ n:0, total:0 }, comprobante:{ n:0, total:0 } };
-  for(const p of terminadas){
+  for(const p of terminadasReg){
     const key = p.sucursal || "otra";
     if(!sucMap[key]) sucMap[key] = { nombre: SUC_NOMBRE[key] || "Sucursal", terminadas:0, total:0,
                                      efectivo:{n:0,total:0}, comprobante:{n:0,total:0} };
@@ -729,14 +732,23 @@ function calcularResumen(peds, sesiones){
     g.n += 1; g.total += Number(p.total||0);
     s.n += 1; s.total += Number(p.total||0);
   }
+  // Total aparte de mesas (Venta Local)
+  const mesas = { n: terminadasMesa.length, total: 0, efectivo:{n:0,total:0}, comprobante:{n:0,total:0} };
+  for(const p of terminadasMesa){
+    mesas.total += Number(p.total||0);
+    const b = esEfectivo(p.forma_pago) ? mesas.efectivo : mesas.comprobante;
+    b.n += 1; b.total += Number(p.total||0);
+  }
+  const regNoMesa = peds.filter(p=>!esMesa(p));
   return {
     chatsActivos: (sesiones||[]).length,
-    confirmadas:  peds.length,
-    enCamino:     peds.filter(p=>p.estado==="en_camino").length,
-    terminadas:   terminadas.length,
-    totalHoy:     terminadas.reduce((s,p)=>s+Number(p.total||0),0),
+    confirmadas:  regNoMesa.length,
+    enCamino:     regNoMesa.filter(p=>p.estado==="en_camino").length,
+    terminadas:   terminadasReg.length,
+    totalHoy:     terminadasReg.reduce((s,p)=>s+Number(p.total||0),0),
     sucursales:   Object.values(sucMap),
-    pagos
+    pagos,
+    mesas
   };
 }
 
@@ -807,12 +819,22 @@ function renderResumen(r){
     <div class="total-card highlight">
       <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg></div>
       <div style="flex:1">
-        <b>Total del día</b><small>Órdenes terminadas: ${r.terminadas}</small>
+        <b>Total del día (domicilios)</b><small>Órdenes terminadas: ${r.terminadas}</small>
         <span class="money">${fmtCOP(r.totalHoy)}</span>
         ${payLines(r.pagos || { efectivo:{n:0,total:0}, comprobante:{n:0,total:0} })}
       </div>
     </div>`;
-  cont.innerHTML = cards + totalGeneral;
+  const m = r.mesas || { n:0, total:0, efectivo:{n:0,total:0}, comprobante:{n:0,total:0} };
+  const mesasCard = m.n > 0 ? `
+    <div class="total-card">
+      <div class="kpi-icon ic-green" style="font-size:20px">🍽️</div>
+      <div style="flex:1">
+        <b>Mesas (Venta Local)</b><small>Cuentas cerradas: ${m.n}</small>
+        <span class="money">${fmtCOP(m.total)}</span>
+        ${payLines(m)}
+      </div>
+    </div>` : "";
+  cont.innerHTML = cards + totalGeneral + mesasCard;
 }
 
 function renderFiltrado(){
@@ -990,15 +1012,30 @@ function renderMesaTab(){
     <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px">
       <button class="btn primary" onclick="abrirCartaMesa('${String(LOCAL.mesa).replace(/'/g,"\\'")}')">➕ Agregar productos (carta)</button>
       <button class="btn" onclick="refrescarMesa()">🔄 Actualizar</button>
-      ${tab?`<button class="btn" onclick="cerrarMesa()">💵 Cerrar mesa</button>`:""}
+      ${tab?`<button class="btn" onclick="pedirPagoCierre()">💵 Cerrar mesa</button>`:""}
     </div>
     <div class="muted" style="font-size:11px;margin-top:8px">Los productos se agregan desde la carta (pestaña nueva). Al volver, toca 🔄 Actualizar.</div>`;
 }
 
-async function cerrarMesa(){
+const METODOS_PAGO_MESA = ["Efectivo","Nequi","Daviplata","Bancolombia","Bold"];
+// Selector de método de pago al cerrar la mesa (en vez de escribirlo a mano)
+function pedirPagoCierre(){
   if(!LOCAL.tab) return;
-  const fp = prompt("Forma de pago (efectivo / nequi / bancolombia) — vacío = pendiente:","");
-  if(fp===null) return;
+  const totalAcum = Number(LOCAL.tab.total||0);
+  const botones = METODOS_PAGO_MESA.map(mtd =>
+    `<button class="btn primary" style="flex:1;min-width:110px" onclick="cerrarMesa('${mtd}')">${mtd}</button>`
+  ).join("");
+  document.getElementById("localBody").innerHTML = `
+    <button class="btn" onclick="renderMesaTab()">← Volver</button>
+    <h3 style="margin:10px 0 4px">Cerrar ${esc(LOCAL.mesa)}</h3>
+    <div class="muted" style="margin-bottom:10px">Total a cobrar: <b>${fmtCOP(totalAcum)}</b></div>
+    <div style="font-weight:800;font-size:13px;margin-bottom:6px">¿Con qué método pagó?</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${botones}</div>
+    <div style="margin-top:12px"><button class="btn" style="width:100%" onclick="cerrarMesa('')">Cerrar sin especificar (pendiente)</button></div>`;
+}
+
+async function cerrarMesa(fp){
+  if(!LOCAL.tab) return;
   try{
     const r = await fetch(API+"/api/mesas/"+LOCAL.tab.id+"/cerrar", {
       method:"POST", headers:{ "Content-Type":"application/json", "x-panel-key": sessionKey },
