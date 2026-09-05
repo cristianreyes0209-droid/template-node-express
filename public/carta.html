@@ -47,6 +47,9 @@
       body.lc-local .card-name{font-size:12px;}
       body.lc-local .card-price{font-size:17px;}
       body.lc-local .card-tap{font-size:9px;}
+      /* Modal de producto como diálogo centrado y desplazable (para alcanzar adiciones + Agregar) */
+      body.lc-local .overlay{align-items:center;justify-content:center;padding:16px;}
+      body.lc-local .modal{max-width:600px;border-radius:20px;max-height:88vh;}
     }
 
     /* CARD */
@@ -559,8 +562,9 @@ function Explosion({ ingredients, onDone, centerEmoji, centerPhoto }) {
 // ============================================================
 // PRODUCT MODAL
 // ============================================================
-function ProductModal({ item, onClose, onAdd }) {
-    const [phase, setPhase] = useState('photo'); // photo | exploding | revealed
+function ProductModal({ item, onClose, onAdd, localMode }) {
+    // En modo local (POS): abrir directo en la vista con adiciones + Agregar (sin foto/explosión).
+    const [phase, setPhase] = useState(localMode ? 'revealed' : 'photo'); // photo | exploding | revealed
     const [qty, setQty] = useState(1);
     const [ads, setAds] = useState({});
     const [obs, setObs] = useState('');
@@ -1299,7 +1303,7 @@ function App() {
                 React.createElement("span", null, fmtP(cartTotal))))),
         incentivoBanner && React.createElement("div", { className: "incentivo-banner" }, incentivoBanner),
         selHint && React.createElement("div", { className: "sel-hint" }, "\u2B06\uFE0F Desliza hacia arriba para pedir"),
-        sel && React.createElement(ProductModal, { item: sel, onClose: () => setSel(null), onAdd: addToCart }),
+        sel && React.createElement(ProductModal, { item: sel, onClose: () => setSel(null), onAdd: addToCart, localMode: LOCAL_MODE }),
         showCart && React.createElement(CartDrawer, { cart: cart, onClose: () => setShowCart(false), onRemove: removeFromCart, onSend: () => { setCart([]); setShowCart(false); }, localMode: LOCAL_MODE, panelKey: PANEL_KEY, mesa: MESA })));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
