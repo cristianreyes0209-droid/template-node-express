@@ -127,6 +127,18 @@ function cartaLink(customer: any): string {
   return `${CARTA_URL}?${p.toString()}`;
 }
 
+// Valida que un texto parezca un nombre real (no una frase de pago/pedido ni algo con más de
+// 3 palabras). Se usa al capturar el nombre y para descartar nombres mal guardados.
+function nombreValido(n?: string): boolean {
+  if (!n) return false;
+  const t = n.trim();
+  if (t.length < 2 || t.length > 40) return false;
+  if (t.split(/\s+/).filter(Boolean).length > 3) return false;
+  const norm = t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (/\b(pago|paga|pagar|transferencia|transfer|efectivo|nequi|daviplata|bancolombia|domicilio|pedido|pedir|favor|gracias|direccion|factura|comprobante|recoger|llevar|whatsapp|celular|telefono|numero)\b/.test(norm)) return false;
+  return true;
+}
+
 // ── Pausa / alta demanda por sucursal ─────────────────────────────────────────
 type SucKey = "la_villa" | "circunvalar";
 const pausaSuc:   Record<SucKey, boolean> = { la_villa: false, circunvalar: false };
@@ -1246,6 +1258,9 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
   phoneProcessing.add(phone);
 
   const customer = await getCustomerByPhone(phone);
+  // Nombre mal guardado (frase de pago, >3 palabras, etc.) → descartarlo para saludar genérico
+  // y volver a pedir el nombre más adelante.
+  if (customer?.name && !nombreValido(customer.name)) customer.name = undefined;
   const tieneUltimoPedido = !!(
     customer?.last_order &&
     Array.isArray(customer.last_order) &&
@@ -1817,7 +1832,7 @@ const shouldCallAI =
 const nombrePedidoMatch = text.match(/a nombre de[:\s]+([^\n,]+)/i);
 if (nombrePedidoMatch && currentOrder && !currentOrder.nombre) {
   const nombreCap = nombrePedidoMatch[1].trim();
-  if (nombreCap.length >= 2 && nombreCap.length <= 40) {
+  if (nombreValido(nombreCap)) {
     updateOrderName(phone, nombreCap);
     currentOrder = getOrder(phone)!;
   }
@@ -4786,10 +4801,16 @@ return res.sendStatus(200);
   const pareceDireccionNombre =
     /\d/.test(nombreRecibido) &&
     /\b(mz|manzana|casa|piso|apto|apartamento|apartaestudio|calle|carrera|cra|cll|kra|avenida|av|diagonal|transversal|barrio|torre|conjunto|bloque|etapa|urbanizacion|urbanización|km|autopista)\b/i.test(nombreNorm);
-  if (INVALIDOS_NOMBRE.has(nombreRecibido.toLowerCase()) || nombreRecibido.length < 2 || esSaludoNombre || pareceDireccionNombre) {
+  // Frase que no es un nombre (más de 3 palabras o contiene términos de pago/pedido),
+  // ej: "Pago por transferencia por favor" → volver a pedir el nombre.
+  const palabrasNombre = nombreRecibido.split(/\s+/).filter(Boolean).length;
+  const pareceFraseNoNombre = palabrasNombre > 3 || (!pareceDireccionNombre && !nombreValido(nombreRecibido));
+  if (INVALIDOS_NOMBRE.has(nombreRecibido.toLowerCase()) || nombreRecibido.length < 2 || esSaludoNombre || pareceDireccionNombre || pareceFraseNoNombre) {
     const msgNombre = pareceDireccionNombre
       ? "Eso parece una dirección 😊 Primero dime solo tu *nombre* (la dirección te la pido enseguida)."
-      : "Por favor dime tu nombre 😊 ¿Cómo te llamas?";
+      : pareceFraseNoNombre
+        ? "Por favor dime *solo tu nombre* 😊 (sin más texto)."
+        : "Por favor dime tu nombre 😊 ¿Cómo te llamas?";
     await sendWhatsAppMessage(phone, msgNombre);
     return res.sendStatus(200);
   }
