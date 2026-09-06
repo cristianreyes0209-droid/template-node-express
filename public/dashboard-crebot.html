@@ -1025,10 +1025,14 @@ function renderMesaTab(){
   const cerrada = !!(tab && tab.estado && tab.estado !== "abierta");
   const encabezado = cerrada ? `cerrada · <b>${fmtCOP(totalAcum)}</b>` : (tab ? `abierta · <b>${fmtCOP(totalAcum)}</b>` : "nueva");
   const acciones = cerrada
-    ? `<div class="muted" style="margin-top:12px">🔒 Mesa cerrada${tab && tab.forma_pago ? ` · Pago: ${esc(tab.forma_pago)}` : ""}.</div>`
+    ? `<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px">
+        ${tab?`<button class="btn" onclick="imprimirCuentaMesa()">🖨️ Imprimir cuenta</button>`:""}
+      </div>
+      <div class="muted" style="margin-top:10px">🔒 Mesa cerrada${tab && tab.forma_pago ? ` · Pago: ${esc(tab.forma_pago)}` : ""}.</div>`
     : `<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px">
         <button class="btn primary" onclick="abrirCartaMesa('${String(LOCAL.mesa).replace(/'/g,"\\'")}')">➕ Agregar productos (carta)</button>
         <button class="btn" onclick="refrescarMesa()">🔄 Actualizar</button>
+        ${tab?`<button class="btn" onclick="imprimirCuentaMesa()">🖨️ Imprimir cuenta</button>`:""}
         ${tab?`<button class="btn" onclick="pedirPagoCierre()">💵 Cerrar mesa</button>`:""}
       </div>
       <div class="muted" style="font-size:11px;margin-top:8px">Los productos se agregan desde la carta (pestaña nueva). Al volver, toca 🔄 Actualizar.</div>`;
@@ -1246,6 +1250,58 @@ function imprimirLocal(id){
   doc.open(); doc.write(buildComandaHTML(p, items||[])); doc.close();
   ifr.contentWindow.focus();
   showToast("🖨️ Abriendo impresión…");
+  setTimeout(()=>{ try{ ifr.contentWindow.print(); }catch(e){} setTimeout(()=>ifr.remove(), 1500); }, 350);
+}
+
+/* Cuenta de mesa (resumen con valor) — imprime por el navegador desde LOCAL.tab */
+function imprimirCuentaMesa(){
+  const t = LOCAL.tab;
+  if(!t){ showToast("No hay mesa"); return; }
+  let items = t.items; if(typeof items==="string"){ try{items=JSON.parse(items);}catch(e){items=[];} }
+  items = items || [];
+  const total = Number(t.total||0);
+  let hora = "";
+  try{ hora = new Date().toLocaleString("es-CO",{timeZone:"America/Bogota",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit",hour12:true}); }catch(e){}
+  const filas = items.map(it => {
+    const cant = Number(it.cantidad)||1;
+    const extrasArr = (it.extras||[]).filter(e=>e&&e.nombre);
+    const linea = ((Number(it.precio)||0) + extrasArr.reduce((s,e)=>s+(Number(e.precio)||0),0)) * cant;
+    const extras = extrasArr.map(e=>"+"+e.nombre).join(", ");
+    const obs = it.observaciones ? "📝 "+esc(it.observaciones) : "";
+    return `<div class="it"><div class="row"><b>${cant}x ${esc(it.producto)}${it.variante? " - "+esc(it.variante):""}</b><span>${fmtCOP(linea)}</span></div>`
+      + (extras? `<div class="sub">${esc(extras)}</div>`:"")
+      + (obs? `<div class="sub">${obs}</div>`:"")
+      + `</div>`;
+  }).join("") || "<div class='it'>Sin consumo</div>";
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Cuenta ${esc(t.mesa||"Mesa")}</title><style>
+    @page{ margin:4mm; } *{ box-sizing:border-box; color:#000 !important; font-weight:bold !important; }
+    body{ font-family:'Courier New',monospace; margin:0; padding:6px; width:76mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .center{ text-align:center; } h1{ font-size:16px; margin:0; letter-spacing:1px; }
+    .suc{ font-size:13px; margin:2px 0; } .titulo{ font-size:14px; margin:4px 0; }
+    .hr{ border-top:2px solid #000; margin:6px 0; }
+    .it{ font-size:14px; margin:3px 0; } .it b{ font-size:14px; }
+    .sub{ font-size:12px; padding-left:12px; }
+    .row{ display:flex; justify-content:space-between; gap:8px; }
+    .total{ font-size:18px; margin-top:4px; }
+  </style></head><body>
+    <div class="center"><h1>LAS CREPES 🥞</h1><div class="suc">La Villa</div>
+      <div class="titulo">CUENTA DE MESA</div>
+      <div class="titulo">🍽️ ${esc(t.mesa||"Mesa")}</div>
+      ${hora? `<div style="font-size:12px">${esc(hora)}</div>`:""}</div>
+    <div class="hr"></div>
+    ${filas}
+    <div class="hr"></div>
+    <div class="row total"><span>TOTAL</span><span>${fmtCOP(total)}</span></div>
+    <div class="hr"></div>
+    <div class="center" style="font-size:12px">¡Gracias por tu visita! 🥞</div>
+  </body></html>`;
+  const ifr = document.createElement("iframe");
+  ifr.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+  document.body.appendChild(ifr);
+  const doc = ifr.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  ifr.contentWindow.focus();
+  showToast("🖨️ Abriendo impresión de la cuenta…");
   setTimeout(()=>{ try{ ifr.contentWindow.print(); }catch(e){} setTimeout(()=>ifr.remove(), 1500); }, 350);
 }
 
