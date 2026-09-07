@@ -1197,6 +1197,28 @@ for (const fragment of fragments) {
   }
 
   if (!product) {
+    // Fragmento suelto que es una adición (ej: "nutella y banano" se partió y quedó "banano")
+    // → adjuntarla como extra al ítem anterior en vez de descartarla.
+    const fragAdNorm = normalizeText(fragmentLimpio);
+    const adSuelto = fragAdNorm ? extraProducts.find((ex: any) =>
+      (ex.aliases || []).some((al: string) =>
+        new RegExp(`\\b${escapeRegex(normalizeText(al))}s?\\b`, "i").test(fragAdNorm))
+    ) : null;
+    if (adSuelto && items.length > 0) {
+      const prev = items[items.length - 1];
+      const prevProd = mainProducts.find((p: any) => p.id === prev.productoId);
+      const prodBlobPrev = normalizeText([prevProd?.nombre, ...((prevProd?.ingredientes as string[]) || [])].filter(Boolean).join(" "));
+      const adNombreNorm = normalizeText(adSuelto.nombre);
+      const yaEsParte = !!prodBlobPrev && adNombreNorm.length >= 4 && prodBlobPrev.includes(adNombreNorm.slice(0, 5));
+      const permitido = !(prevProd?.extrasDisponibles?.length) || prevProd.extrasDisponibles.includes(adSuelto.id);
+      if (!yaEsParte && permitido) {
+        prev.extras = prev.extras || [];
+        if (!prev.extras.some((e: any) => e.id === adSuelto.id)) {
+          prev.extras.push({ id: adSuelto.id, nombre: adSuelto.nombre, precio: adSuelto.precio, cantidad: 1 });
+        }
+      }
+      continue;
+    }
     // El fragmento puede ser ambiguo tras limpiar (ej. "1 crepe ranchera" → "ranchera" = Ranchera / Ranchera Mixta).
     // Surfacearlo como aclaración en vez de descartarlo en silencio.
     if (!firstAmbiguity) {
