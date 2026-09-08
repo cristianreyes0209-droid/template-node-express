@@ -117,6 +117,12 @@ async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: st
 // Link de la carta digital. Para clientes recurrentes se le agregan nombre y dirección
 // guardados como parámetros, para que la carta pre-llene esos campos.
 const CARTA_URL = process.env.CARTA_URL || "https://menu.tecmenu.com";
+
+// ── Cierre temporal Av. Circunvalar (terremoto) — poner en false al reabrir ───
+const CIRCUNVALAR_CERRADA = true;
+const BLOQUEAR_DOSQUEBRADAS = true;
+const MSG_CIERRE_CIRCUNVALAR = "🚨 *Información importante*\n\nDebido a los daños del terremoto, cerramos temporalmente nuestra sede *Av. Circunvalar* por seguridad.\n\nSi estás en Pereira, con gusto gestionamos tu pedido desde *La Villa* 🥞❤️\n\n⚠️ Por el momento no tenemos domicilio hacia *Dosquebradas*.\n\nGracias por tu comprensión 🙏";
+const MSG_BLOQUEO_DOSQUEBRADAS = "🙏 Lo lamentamos: debido al cierre temporal de la sede *Av. Circunvalar*, por ahora *no podemos gestionar pedidos a domicilio hacia Dosquebradas*.\n\nSi estás en Pereira te atendemos con gusto, o puedes recoger en *La Villa* 🥞";
 function cartaLink(customer: any): string {
   const n = customer?.name?.trim();
   const d = customer?.last_address?.trim();
@@ -308,6 +314,7 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
   descripcion: string;
   fueraDeRango?: boolean;
   noEncontrada?: boolean;
+  dosquebradas?: boolean;
 }> {
   const sucursales: Record<string, string> = {
     "la_villa": "Calle 83 #16a-22, Pereira, Risaralda, Colombia",
@@ -370,8 +377,9 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
 
   // Recargo por Dosquebradas (municipio vecino, un poco más lejos)
   const RECARGO_DOSQUEBRADAS = 1000;
-  // Revisa el texto de la dirección (o el geocodificado del pin GPS, si se pasa) para el recargo
-  const esDosquebradas = /dosquebradas|dos\s*quebradas/i.test(`${direccionCliente} ${textoRecargo || ""}`);
+  // Revisa el texto de la dirección, el textoRecargo y el geocodificado de Google (destination_addresses).
+  const destGeo = (data.destination_addresses && data.destination_addresses[0]) || "";
+  const esDosquebradas = /dosquebradas|dos\s*quebradas/i.test(`${direccionCliente} ${textoRecargo || ""} ${destGeo}`);
 
   // Domicilio gratis en pedidos >= $100.000 (la promo gana sobre el recargo)
   if (subtotalPedido && subtotalPedido >= 100000) {
@@ -389,7 +397,23 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
   console.log("VALOR DOMICILIO:", valorDomicilio);
   console.log("========================");
 
-  return { distanciaKm: distKmRedondeado, valorDomicilio, descripcion };
+  return { distanciaKm: distKmRedondeado, valorDomicilio, descripcion, dosquebradas: esDosquebradas };
+}
+
+// ¿La dirección es de Dosquebradas? (bloqueada por el cierre de Av. Circunvalar) → avisa + botones.
+async function bloquearDosquebradas(phone: string, order: any, calculo: any, res: any): Promise<boolean> {
+  if (!BLOQUEAR_DOSQUEBRADAS) return false;
+  const esDq = !!(calculo && calculo.dosquebradas) || /dosquebradas|dos\s*quebradas/i.test(order?.direccion || "");
+  if (!esDq) return false;
+  order.valorDomicilio = undefined;
+  order.distanciaKm = undefined;
+  order.domicilioTexto = undefined;
+  updateOrderStep(phone, "esperando_direccion");
+  await sendWhatsAppButtons(phone, MSG_BLOQUEO_DOSQUEBRADAS, [
+    { id: "recoger_villa_dq", title: "🏪 Recoger en La Villa" },
+    { id: "otra_direccion_dq", title: "📍 Otra dirección (Pereira)" }
+  ]);
+  return true;
 }
 
 const inactivityTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -788,6 +812,7 @@ async function avisarSucursalMasCercana(phone: string): Promise<boolean> {
   order.sucursalChequeada = true;
   const chosen = order.sucursal === "circunvalar" ? "circunvalar" : "la_villa";
   const otra = chosen === "circunvalar" ? "la_villa" : "circunvalar";
+  if (CIRCUNVALAR_CERRADA && otra === "circunvalar") return false;   // no sugerir la sede cerrada
   const chosenDist = order.distanciaKm || 0;
   const chosenVal = order.valorDomicilio ?? 4500;
   if (chosenDist <= 0) return false;
@@ -994,16 +1019,20 @@ function parseCartaDigitalText(text: string) {
 async function liquidarDomicilioCartaYConfirmar(phone: string, res: any) {
   const order = getOrder(phone)!;
   order.valorDomicilio = undefined; order.distanciaKm = undefined; order.domicilioTexto = undefined;
-  let valorDomicilio = 4500, descripcionDomicilio = "", fueraDeRango = false;
+  let valorDomicilio = 4500, descripcionDomicilio = "", fueraDeRango = false, esDq = false;
   try {
     const calculo = await calcularDomicilio(order.direccion || "", order.sucursal || "la_villa", calculateTotal(order).subtotal);
     fueraDeRango = !!calculo.fueraDeRango;
+    esDq = !!calculo.dosquebradas;
     valorDomicilio = calculo.valorDomicilio;
     descripcionDomicilio = calculo.descripcion;
     order.valorDomicilio = valorDomicilio;
     order.distanciaKm = calculo.distanciaKm;
     order.domicilioTexto = calculo.descripcion;
   } catch (e) { console.log("Error calculando domicilio carta:", e); }
+
+  // Cierre Circunvalar: bloquear domicilios a Dosquebradas
+  if (await bloquearDosquebradas(phone, order, { dosquebradas: esDq }, res)) return;
 
   if (fueraDeRango) {
     // Dirección de texto poco fiable (probable otra ciudad) → pedir GPS o reescribir
@@ -4400,8 +4429,23 @@ return res.sendStatus(200);
 return res.sendStatus(200);
   }
 } else if (currentOrder?.step === "esperando_sucursal") {
+  // Cierre temporal de Av. Circunvalar (terremoto): desistir cancela; elegir Circunvalar avisa.
+  if (lower === "desistir") {
+    clearOrder(phone);
+    await sendWhatsAppMessage(phone, "Entendido 😊 Lamentamos no atenderte esta vez. ¡Te esperamos muy pronto! 🙏");
+    return res.sendStatus(200);
+  }
+  const esCircun = lower === "b" || lower.includes("circunvalar") || lower.includes("av circunvalar") || lower.includes("avenida circunvalar");
+  if (CIRCUNVALAR_CERRADA && esCircun) {
+    await sendWhatsAppButtons(phone, MSG_CIERRE_CIRCUNVALAR, [
+      { id: "seguir_villa", title: "Seguir en La Villa ✅" },
+      { id: "desistir",     title: "Desistir ❌" }
+    ]);
+    return res.sendStatus(200);
+  }
   if (
     lower === "a" ||
+    lower === "seguir_villa" ||
     lower.includes("villa") ||
     lower.includes("la villa")
   ) {
@@ -4937,6 +4981,37 @@ return res.sendStatus(200);
     const orderForCoords = getOrder(phone);
     if (orderForCoords) orderForCoords.locationCoords = { latitude, longitude };
   } else {
+    // Bloqueo Dosquebradas: opciones tras el aviso
+    if (lower === "otra_direccion_dq") {
+      updateOrderStep(phone, "esperando_direccion");
+      currentOrder = getOrder(phone)!;
+      await sendWhatsAppMessage(phone, "Perfecto 👍 Escríbeme una dirección en *Pereira* o compárteme tu ubicación 📍");
+      return res.sendStatus(200);
+    }
+    if (lower === "recoger_villa_dq") {
+      updateOrderDeliveryType(phone, "recoger");
+      currentOrder = getOrder(phone)!;
+      currentOrder.sucursal = "la_villa";
+      currentOrder.direccion = undefined;
+      currentOrder.valorDomicilio = 0;
+      currentOrder.domicilioTexto = undefined;
+      updateOrderStep(phone, "esperando_confirmacion");
+      currentOrder = getOrder(phone)!;
+      const orderRc = getOrder(phone)!;
+      const totalsRc = calculateTotal(orderRc);
+      const resumenRc = orderRc.items.map((item: any) => formatLineaItem(item)).join("\n");
+      await sendWhatsAppButtons(phone,
+        "Perfecto 👌 Recoges en *La Villa* 🏪\n\nTu pedido es:\n" + resumenRc +
+        buildResumenFooter(orderRc, totalsRc, orderRc.domicilioTexto) +
+        "\n\n📝 Si deseas una observación escríbela, o elige:",
+        [
+          { id: "confirmar", title: "Confirmar" },
+          { id: "agregar_mas", title: "Agregar mas" },
+          { id: "eliminar", title: "Eliminar" }
+        ]
+      );
+      return res.sendStatus(200);
+    }
     // Manejar botones de cancelar domicilio
     if (lower === "recoger_en_vez") {
       updateOrderDeliveryType(phone, "recoger");
@@ -5022,6 +5097,7 @@ return res.sendStatus(200);
   let descripcionDomicilio = "";
   let fueraDeRango = false;
   let noEncontrada = false;
+  let esDqDir = false;
   try {
     const addressToCalc = order.locationCoords
       ? `${order.locationCoords.latitude},${order.locationCoords.longitude}`
@@ -5031,6 +5107,7 @@ return res.sendStatus(200);
     const calculo = await calcularDomicilio(addressToCalc, order.sucursal || "la_villa", calculateTotal(order).subtotal, order.direccion || "");
     fueraDeRango = !!calculo.fueraDeRango;
     noEncontrada = !!calculo.noEncontrada;
+    esDqDir = !!calculo.dosquebradas;
     valorDomicilio = calculo.valorDomicilio;
     descripcionDomicilio = calculo.descripcion;
     order.valorDomicilio = valorDomicilio;
@@ -5039,6 +5116,9 @@ return res.sendStatus(200);
   } catch (e) {
     console.log("Error calculando domicilio:", e);
   }
+
+  // Cierre Circunvalar: bloquear domicilios a Dosquebradas
+  if (await bloquearDosquebradas(phone, order, { dosquebradas: esDqDir }, res)) { currentOrder = getOrder(phone)!; return res.sendStatus(200); }
 
   // Tope de distancia: geocoding poco fiable en dirección de texto → no cotizar, pedir GPS/reescribir
   if (fueraDeRango && !isGpsPin) {
@@ -6626,6 +6706,7 @@ return res.sendStatus(200);
   }
   let valorDomicilio = order.valorDomicilio || 4500;
   let descripcionDomicilio = order.domicilioTexto || "";
+  let esDqConf = false;
   if (!order.valorDomicilio) {
     try {
       const calculo = await calcularDomicilio(
@@ -6633,6 +6714,7 @@ return res.sendStatus(200);
         order.sucursal || "la_villa",
         calculateTotal(order).subtotal
       );
+      esDqConf = !!calculo.dosquebradas;
       valorDomicilio = calculo.valorDomicilio;
       descripcionDomicilio = calculo.descripcion;
       order.valorDomicilio = valorDomicilio;
@@ -6642,6 +6724,9 @@ return res.sendStatus(200);
       console.log("Error calculando domicilio:", e);
     }
   }
+
+  // Cierre Circunvalar: bloquear domicilios a Dosquebradas
+  if (await bloquearDosquebradas(phone, order, { dosquebradas: esDqConf }, res)) return res.sendStatus(200);
 
   // Si eligió la sucursal más lejana, avisar antes de continuar (una sola vez)
   if (await avisarSucursalMasCercana(phone)) return res.sendStatus(200);
