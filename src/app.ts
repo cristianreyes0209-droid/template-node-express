@@ -103,7 +103,8 @@ async function sendWhatsAppButtons(phone: string, body: string, buttons: {id: st
           action: {
             buttons: buttons.map(btn => ({
               type: "reply",
-              reply: { id: btn.id, title: btn.title }
+              // WhatsApp rechaza títulos > 20 chars → truncar por code points (no parte emojis)
+              reply: { id: btn.id, title: [...(btn.title || "")].slice(0, 20).join("") }
             }))
           }
         }
@@ -410,8 +411,8 @@ async function bloquearDosquebradas(phone: string, order: any, calculo: any, res
   order.domicilioTexto = undefined;
   updateOrderStep(phone, "esperando_direccion");
   await sendWhatsAppButtons(phone, MSG_BLOQUEO_DOSQUEBRADAS, [
-    { id: "recoger_villa_dq", title: "🏪 Recoger en La Villa" },
-    { id: "otra_direccion_dq", title: "📍 Otra dirección (Pereira)" }
+    { id: "recoger_villa_dq", title: "🏪 Recoger La Villa" },
+    { id: "otra_direccion_dq", title: "📍 Otra dirección" }
   ]);
   return true;
 }
