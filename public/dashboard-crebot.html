@@ -1210,19 +1210,25 @@ function buildComandaHTML(p, items){
     + `<div class="row total"><span>TOTAL</span><span>${fmtCOP(p.total)}</span></div>`;
   const obsGen = p.observaciones_generales && String(p.observaciones_generales).trim()
     ? `<div class="meta">📝 ${esc(p.observaciones_generales)}</div>` : "";
+  const facturaHTML = p.factura
+    ? `<div class="hr"></div><div class="meta"><b>🧾 FACTURA ELECTRÓNICA</b><br>` +
+      `NIT/Cédula: ${esc(p.factura)}<br>` +
+      (p.email_factura ? `Correo: ${esc(p.email_factura)}` : "Correo: —") +
+      `</div>`
+    : "";
   return `<!doctype html><html><head><meta charset="utf-8"><title>Comanda #${num}</title><style>
     @page{ margin:4mm; }
     *{ box-sizing:border-box; }
-    body{ font-family:'Courier New',monospace; color:#000; font-weight:bold; margin:0; padding:6px; width:76mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    body{ font-family:'Courier New',monospace; color:#000; font-weight:bold; margin:0; padding:6px; width:58mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     *{ color:#000 !important; font-weight:bold !important; }
     .center{ text-align:center; }
     h1{ font-size:16px; margin:0; letter-spacing:1px; }
     .suc{ font-size:13px; margin:2px 0; }
-    .num{ font-size:20px; margin:4px 0; }
+    .num{ font-size:18px; margin:4px 0; }
     .hr{ border-top:2px solid #000; margin:6px 0; }
     .it{ font-size:14px; margin:3px 0; }
-    .it b{ font-size:15px; }
-    .sub{ font-size:13px; padding-left:12px; }
+    .it b{ font-size:14px; }
+    .sub{ font-size:12px; padding-left:12px; }
     .row{ display:flex; justify-content:space-between; font-size:14px; }
     .row.total{ font-size:16px; margin-top:4px; }
     .meta{ font-size:13px; margin-top:6px; line-height:1.5; word-break:break-word; }
@@ -1237,6 +1243,7 @@ function buildComandaHTML(p, items){
     <div class="meta">👤 ${p.nombre? esc(p.nombre):"—"}<br>📞 ${esc(fmtTel(p.phone))}<br>
       ${esDom ? "📍 "+esc(p.direccion||"—") : "🏪 Recoger en tienda"}<br>💳 ${esc(p.forma_pago||"—")}</div>
     ${obsGen}
+    ${facturaHTML}
   </body></html>`;
 }
 function imprimirLocal(id){
@@ -1275,7 +1282,7 @@ function imprimirCuentaMesa(){
   }).join("") || "<div class='it'>Sin consumo</div>";
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>Cuenta ${esc(t.mesa||"Mesa")}</title><style>
     @page{ margin:4mm; } *{ box-sizing:border-box; color:#000 !important; font-weight:bold !important; }
-    body{ font-family:'Courier New',monospace; margin:0; padding:6px; width:76mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    body{ font-family:'Courier New',monospace; margin:0; padding:6px; width:58mm; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .center{ text-align:center; } h1{ font-size:16px; margin:0; letter-spacing:1px; }
     .suc{ font-size:13px; margin:2px 0; } .titulo{ font-size:14px; margin:4px 0; }
     .hr{ border-top:2px solid #000; margin:6px 0; }
