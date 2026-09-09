@@ -309,6 +309,16 @@ function limpiarDireccionParaGeo(dir: string): string {
   return s.replace(/\s{2,}/g, " ").replace(/[\s,;\-]+$/, "").trim();
 }
 
+// Barrios/sectores conocidos de Dosquebradas que un cliente puede escribir sin decir
+// "Dosquebradas" explícitamente. Frases completas (no palabras sueltas como "aurora") para
+// no bloquear por error direcciones legítimas de Pereira (ej. "La Aurora" de Pereira).
+const BARRIOS_DOSQUEBRADAS = ["entreguaduas", "la aurora baja"];
+function esDireccionDosquebradas(texto: string): boolean {
+  const norm = normalizeText(texto || "");
+  return /dosquebradas|dos\s*quebradas/i.test(norm) ||
+    BARRIOS_DOSQUEBRADAS.some(b => norm.includes(b));
+}
+
 async function calcularDomicilio(direccionCliente: string, sucursal: string, subtotalPedido?: number, textoRecargo?: string): Promise<{
   distanciaKm: number;
   valorDomicilio: number;
@@ -380,7 +390,7 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
   const RECARGO_DOSQUEBRADAS = 1000;
   // Revisa el texto de la dirección, el textoRecargo y el geocodificado de Google (destination_addresses).
   const destGeo = (data.destination_addresses && data.destination_addresses[0]) || "";
-  const esDosquebradas = /dosquebradas|dos\s*quebradas/i.test(`${direccionCliente} ${textoRecargo || ""} ${destGeo}`);
+  const esDosquebradas = esDireccionDosquebradas(`${direccionCliente} ${textoRecargo || ""} ${destGeo}`);
 
   // Domicilio gratis en pedidos >= $100.000 (la promo gana sobre el recargo)
   if (subtotalPedido && subtotalPedido >= 100000) {
@@ -404,7 +414,7 @@ async function calcularDomicilio(direccionCliente: string, sucursal: string, sub
 // ¿La dirección es de Dosquebradas? (bloqueada por el cierre de Av. Circunvalar) → avisa + botones.
 async function bloquearDosquebradas(phone: string, order: any, calculo: any, res: any): Promise<boolean> {
   if (!BLOQUEAR_DOSQUEBRADAS) return false;
-  const esDq = !!(calculo && calculo.dosquebradas) || /dosquebradas|dos\s*quebradas/i.test(order?.direccion || "");
+  const esDq = !!(calculo && calculo.dosquebradas) || esDireccionDosquebradas(order?.direccion || "");
   if (!esDq) return false;
   order.valorDomicilio = undefined;
   order.distanciaKm = undefined;
@@ -4385,6 +4395,17 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     lower === "b" ||
     lower.includes("domicilio")
   ) {
+    // Sucursal heredada del pedido anterior: re-chequear el cierre de Circunvalar antes de
+    // continuar (si no, un pedido repetido a Circunvalar se cuela sin el aviso de cierre).
+    if (CIRCUNVALAR_CERRADA && currentOrder.sucursal === "circunvalar") {
+      updateOrderStep(phone, "esperando_sucursal");
+      currentOrder = getOrder(phone)!;
+      await sendWhatsAppButtons(phone, MSG_CIERRE_CIRCUNVALAR, [
+        { id: "seguir_villa", title: "Seguir en La Villa ✅" },
+        { id: "desistir",     title: "Desistir ❌" }
+      ]);
+      return res.sendStatus(200);
+    }
     updateOrderDeliveryType(phone, "domicilio");
 
     // Asegurar que el nombre esté en la orden antes de pedir dirección
