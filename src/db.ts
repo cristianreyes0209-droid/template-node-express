@@ -77,6 +77,29 @@ pool.connect()
       .catch(err => console.error("❌ Error agregando columna descuento_acumulado:", err));
     await client.query(`ALTER TABLE clientes ADD COLUMN IF NOT EXISTS descuento_recordatorio_at TIMESTAMPTZ`)
       .catch(err => console.error("❌ Error agregando columna descuento_recordatorio_at:", err));
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bonos (
+        id SERIAL PRIMARY KEY,
+        codigo TEXT UNIQUE NOT NULL,
+        descuento_pct INTEGER NOT NULL,
+        descripcion TEXT,
+        activo BOOLEAN DEFAULT true,
+        max_usos INTEGER,
+        usos_totales INTEGER DEFAULT 0,
+        una_vez_por_cliente BOOLEAN DEFAULT true,
+        fecha_expira DATE,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `).catch(err => console.error("❌ Error creando tabla bonos:", err));
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bonos_canjes (
+        id SERIAL PRIMARY KEY,
+        bono_id INTEGER REFERENCES bonos(id),
+        phone TEXT NOT NULL,
+        pedido_id INTEGER,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `).catch(err => console.error("❌ Error creando tabla bonos_canjes:", err));
     client.release();
   })
   .catch((err) => {
@@ -383,6 +406,84 @@ export async function marcarRecordatorioDescuento(phone: string): Promise<void> 
     await pool.query(`UPDATE clientes SET descuento_recordatorio_at = NOW() WHERE phone = $1`, [normalizePhone(phone)]);
   } catch (error) {
     console.error("❌ Error marcarRecordatorioDescuento:", error);
+  }
+}
+
+// ── Bonos (cupones de descuento por código) ─────────────────────────────────
+function normalizarCodigoBono(codigo: string): string {
+  return (codigo || "").trim().toUpperCase().replace(/\s+/g, "");
+}
+
+export async function getBonoPorCodigo(codigo: string) {
+  try {
+    const r = await pool.query(`SELECT * FROM bonos WHERE codigo = $1 AND activo = true LIMIT 1`, [normalizarCodigoBono(codigo)]);
+    return r.rows[0] || null;
+  } catch (error) {
+    console.error("❌ Error getBonoPorCodigo:", error);
+    return null;
+  }
+}
+
+export async function clienteYaUsoBono(bonoId: number, phone: string): Promise<boolean> {
+  try {
+    const r = await pool.query(`SELECT 1 FROM bonos_canjes WHERE bono_id = $1 AND phone = $2 LIMIT 1`, [bonoId, normalizePhone(phone)]);
+    return (r.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error("❌ Error clienteYaUsoBono:", error);
+    return false;
+  }
+}
+
+export async function registrarCanjeBono(bonoId: number, phone: string, pedidoId?: number | null): Promise<void> {
+  try {
+    await pool.query(`INSERT INTO bonos_canjes (bono_id, phone, pedido_id) VALUES ($1, $2, $3)`, [bonoId, normalizePhone(phone), pedidoId ?? null]);
+    await pool.query(`UPDATE bonos SET usos_totales = usos_totales + 1 WHERE id = $1`, [bonoId]);
+  } catch (error) {
+    console.error("❌ Error registrarCanjeBono:", error);
+  }
+}
+
+export async function listBonos() {
+  try {
+    const r = await pool.query(`SELECT * FROM bonos ORDER BY created_at DESC`);
+    return r.rows;
+  } catch (error) {
+    console.error("❌ Error listBonos:", error);
+    return [];
+  }
+}
+
+export async function createBono(data: {
+  codigo: string; descuento_pct: number; descripcion?: string;
+  max_usos?: number | null; una_vez_por_cliente?: boolean; fecha_expira?: string | null;
+}) {
+  try {
+    const r = await pool.query(
+      `INSERT INTO bonos (codigo, descuento_pct, descripcion, max_usos, una_vez_por_cliente, fecha_expira)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        normalizarCodigoBono(data.codigo),
+        data.descuento_pct,
+        data.descripcion || null,
+        data.max_usos ?? null,
+        data.una_vez_por_cliente ?? true,
+        data.fecha_expira || null,
+      ]
+    );
+    return r.rows[0];
+  } catch (error) {
+    console.error("❌ Error createBono:", error);
+    throw error;
+  }
+}
+
+export async function toggleBono(id: number, activo: boolean): Promise<boolean> {
+  try {
+    const r = await pool.query(`UPDATE bonos SET activo = $2 WHERE id = $1`, [id, activo]);
+    return (r.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error("❌ Error toggleBono:", error);
+    return false;
   }
 }
 

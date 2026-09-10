@@ -49,6 +49,7 @@ export type OrderStep =
   | "esperando_complemento_direccion"
   | "esperando_confirmacion_cancelacion"
   | "esperando_confirmacion_sucursal"
+  | "esperando_codigo_bono"
   | "confirmado";
 
 export type CustomerOrder = {
@@ -102,6 +103,10 @@ export type CustomerOrder = {
   botPausado?: boolean;           // asesor desconectó el bot desde el panel (silencio, conserva el paso)
   descuentoPct?: number;          // % de descuento aplicado a ESTE pedido
   descuentoDisponible?: number;   // cache del descuento acumulado del cliente
+  bonoId?: number;                // id del bono aplicado a ESTE pedido
+  bonoCodigo?: string;            // código del bono aplicado
+  bonoPct?: number;               // % de descuento del bono aplicado
+  pasoAntesDeBono?: OrderStep;    // paso al que volver si el código de bono no es válido
   upsellingFrutasMostrado?: boolean;
   upsellingTocinetaMostrado?: boolean;
   upsellingToppingsMostrado?: boolean;
@@ -154,8 +159,9 @@ export function calculateTotal(order: CustomerOrder, valorDomicilioOverride?: nu
   // Domicilio gratis cuando subtotal >= $100.000
   const domicilio = (subtotal >= 100000 && domicilioBase > 0) ? 0 : domicilioBase;
 
-  // Descuento acumulado (aplica solo sobre el subtotal de productos)
-  const descuento = order.descuentoPct ? Math.round(subtotal * order.descuentoPct / 100) : 0;
+  // Descuento acumulado + bono (ambos aplican solo sobre el subtotal de productos;
+  // en la práctica son mutuamente excluyentes, el flujo de app.ts no deja combinarlos)
+  const descuento = Math.round(subtotal * ((order.descuentoPct || 0) + (order.bonoPct || 0)) / 100);
 
   const total = subtotal + domicilio - descuento;
 

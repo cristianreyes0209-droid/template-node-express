@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "./db";
 import cron from "node-cron";
-import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, updatePedido, getPedidoById, getPedidoCancelableByPhone, getUltimoPedidoByPhone, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getMesaAbierta, getMesasAbiertas, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig } from "./db";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, updatePedido, getPedidoById, getPedidoCancelableByPhone, getUltimoPedidoByPhone, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getMesaAbierta, getMesasAbiertas, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig, getBonoPorCodigo, clienteYaUsoBono, registrarCanjeBono, listBonos, createBono, toggleBono } from "./db";
 import path from "path";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -5862,6 +5862,49 @@ return res.sendStatus(200);
   return res.sendStatus(200);
 }
 
+} else if (currentOrder?.step === "esperando_codigo_bono") {
+
+  const codigoIngresado = (text || "").trim();
+  const pasoVolver = currentOrder.pasoAntesDeBono || "esperando_pago";
+  const bono = await getBonoPorCodigo(codigoIngresado);
+
+  if (!bono) {
+    updateOrderStep(phone, pasoVolver);
+    await sendWhatsAppMessage(phone, "❌ Ese código no es válido o ya venció. Si quieres, sigue con tu pago 😊");
+    return res.sendStatus(200);
+  }
+  if (bono.fecha_expira && new Date(bono.fecha_expira) < new Date()) {
+    updateOrderStep(phone, pasoVolver);
+    await sendWhatsAppMessage(phone, "❌ Ese código ya venció 😔");
+    return res.sendStatus(200);
+  }
+  if (bono.max_usos != null && Number(bono.usos_totales) >= Number(bono.max_usos)) {
+    updateOrderStep(phone, pasoVolver);
+    await sendWhatsAppMessage(phone, "❌ Ese código ya alcanzó su límite de usos 😔");
+    return res.sendStatus(200);
+  }
+  if (bono.una_vez_por_cliente && await clienteYaUsoBono(bono.id, phone)) {
+    updateOrderStep(phone, pasoVolver);
+    await sendWhatsAppMessage(phone, "❌ Ya usaste este bono antes 😊");
+    return res.sendStatus(200);
+  }
+
+  const orderB = getOrder(phone)!;
+  orderB.bonoId = bono.id;
+  orderB.bonoCodigo = bono.codigo;
+  orderB.bonoPct = Number(bono.descuento_pct);
+  updateOrderStep(phone, pasoVolver);
+  const tB = calculateTotal(getOrder(phone)!);
+  await sendWhatsAppButtons(phone,
+    `🎉 ¡Bono *${bono.codigo}* aplicado! −*${bono.descuento_pct}%* (−$${tB.descuento.toLocaleString("es-CO")}).\n\nNuevo total: *$${tB.total.toLocaleString("es-CO")}* 💰\n¿Cómo deseas pagar?`,
+    [
+      { id: "efectivo", title: "Efectivo 💵" },
+      { id: "nequi", title: "Nequi/Daviplata 📱" },
+      { id: "bancolombia", title: "Bancolombia/Llave🏦" }
+    ]
+  );
+  return res.sendStatus(200);
+
 } else if (currentOrder?.step === "esperando_pago") {
 
   // Pago mixto: parte por transferencia + parte en efectivo (ej: "80,000 Nequi 4,900 efectivo").
@@ -5906,6 +5949,19 @@ return res.sendStatus(200);
         : real > 0
           ? `Tu descuento se activa al superar el *5%* y ahora tienes *${real}%* acumulado. ¡Sigue pidiendo, sumas *1% por cada pedido*! 🥞`
           : "Aún no tienes descuento acumulado 😊 Ganas *1% por cada pedido* entregado.");
+    }
+    return res.sendStatus(200);
+  }
+
+  // Cliente dice que tiene un bono/cupón/código de descuento
+  if (/\b(bono|cup[oó]n|c[oó]digo)\b/i.test(lower)) {
+    const orderB0 = getOrder(phone)!;
+    if (orderB0.descuentoPct || orderB0.bonoPct) {
+      await sendWhatsAppMessage(phone, "Ya tienes un descuento aplicado a este pedido 😊");
+    } else {
+      orderB0.pasoAntesDeBono = "esperando_pago";
+      updateOrderStep(phone, "esperando_codigo_bono");
+      await sendWhatsAppMessage(phone, "🎟️ Escribe tu código de bono:");
     }
     return res.sendStatus(200);
   }
@@ -5964,6 +6020,11 @@ return res.sendStatus(200);
     if (orderEf.descuentoPct) {
       orderEf.observacionesGenerales = ((orderEf.observacionesGenerales || "") + ` [Descuento ${orderEf.descuentoPct}% aplicado]`).trim();
       resetDescuento(phone).catch(() => {});
+    }
+    // Consumir el bono aplicado en este pedido
+    if (orderEf.bonoId) {
+      orderEf.observacionesGenerales = ((orderEf.observacionesGenerales || "") + ` [Bono ${orderEf.bonoCodigo} -${orderEf.bonoPct}%]`).trim();
+      registrarCanjeBono(orderEf.bonoId, phone).catch(() => {});
     }
 
     await upsertCustomer({ phone, name: orderEf.nombre, last_address: orderEf.direccion, last_order: orderEf.items, last_order_at: new Date().toISOString(), last_sucursal: orderEf.sucursal });
@@ -6229,6 +6290,11 @@ return res.sendStatus(200);
     if (order.descuentoPct) {
       order.observacionesGenerales = ((order.observacionesGenerales || "") + ` [Descuento ${order.descuentoPct}% aplicado]`).trim();
       resetDescuento(phone).catch(() => {});
+    }
+    // Consumir el bono aplicado en este pedido
+    if (order.bonoId) {
+      order.observacionesGenerales = ((order.observacionesGenerales || "") + ` [Bono ${order.bonoCodigo} -${order.bonoPct}%]`).trim();
+      registrarCanjeBono(order.bonoId, phone).catch(() => {});
     }
 
     await upsertCustomer({
@@ -7293,6 +7359,49 @@ app.get('/api/menu', (req, res) => {
       nombre: pr.nombre, precio: pr.precio, categoria: c.id, esAdicion: c.id === "extras"
     })));
   res.json(prods);
+});
+
+// ── Bonos (cupones de descuento) ───────────────────────────────────────────
+app.get('/api/bonos', async (req, res) => {
+  const key = req.query.key as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ error: "Acceso no autorizado" });
+  res.json(await listBonos());
+});
+
+app.post('/api/bonos', async (req, res) => {
+  const body = req.body || {};
+  const key = (req.headers['x-panel-key'] as string) || body.key;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  const codigo = (body.codigo || "").trim();
+  const descuentoPct = Number(body.descuento_pct);
+  if (!codigo || !descuentoPct || descuentoPct < 1 || descuentoPct > 100) {
+    return res.status(400).json({ ok: false, error: "Código y % de descuento (1-100) son obligatorios" });
+  }
+  try {
+    const bono = await createBono({
+      codigo,
+      descuento_pct: descuentoPct,
+      descripcion: body.descripcion,
+      max_usos: body.max_usos != null && body.max_usos !== "" ? Number(body.max_usos) : null,
+      una_vez_por_cliente: body.una_vez_por_cliente !== false,
+      fecha_expira: body.fecha_expira || null,
+    });
+    res.json({ ok: true, bono });
+  } catch (e: any) {
+    const dup = /duplicate key|unique/i.test(String(e?.message || ""));
+    res.status(dup ? 409 : 500).json({ ok: false, error: dup ? "Ese código ya existe" : "No se pudo crear el bono" });
+  }
+});
+
+app.post('/api/bonos/:id/toggle', async (req, res) => {
+  const body = req.body || {};
+  const key = (req.headers['x-panel-key'] as string) || body.key;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ ok: false, error: "id inválido" });
+  const ok = await toggleBono(id, !!body.activo);
+  if (!ok) return res.status(500).json({ ok: false, error: "No se pudo actualizar" });
+  res.json({ ok: true });
 });
 
 // ── Panel de operaciones ──────────────────────────────────────────────────────
