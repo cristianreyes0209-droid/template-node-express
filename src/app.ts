@@ -1,7 +1,7 @@
 import "dotenv/config";
 import "./db";
 import cron from "node-cron";
-import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, updatePedido, getPedidoById, getPedidoCancelableByPhone, getUltimoPedidoByPhone, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getMesaAbierta, getMesasAbiertas, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig, getBonoPorCodigo, clienteYaUsoBono, registrarCanjeBono, listBonos, createBono, toggleBono } from "./db";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, updatePedido, getPedidoById, getPedidoCancelableByPhone, getUltimoPedidoByPhone, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getMesaAbierta, getMesasAbiertas, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig, getBonoPorCodigo, getBonoPersonalPorTelefono, clienteYaUsoBono, registrarCanjeBono, listBonos, createBono, toggleBono } from "./db";
 import path from "path";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -873,6 +873,23 @@ async function ofrecerDescuentoEnPago(phone: string) {
       [{ id: "usar_descuento", title: `🎁 Usar mi ${disp}%` }]
     );
   }
+}
+
+// Aplica automáticamente (sin pedir código) un bono personal creado para este teléfono,
+// en el step de pago del siguiente pedido que haga el cliente.
+async function aplicarBonoPersonalEnPago(phone: string) {
+  const order = getOrder(phone);
+  if (!order || order.bonoId || order.descuentoPct) return; // ya tiene un descuento aplicado a este pedido
+  const bono = await getBonoPersonalPorTelefono(phone);
+  if (!bono) return;
+  const vigente = (!bono.fecha_expira || new Date(bono.fecha_expira) >= new Date())
+    && (bono.max_usos == null || Number(bono.usos_totales) < Number(bono.max_usos))
+    && !(bono.una_vez_por_cliente && await clienteYaUsoBono(bono.id, phone));
+  if (!vigente) return;
+  order.bonoId = bono.id;
+  order.bonoCodigo = bono.codigo;
+  order.bonoPct = Number(bono.descuento_pct);
+  await sendWhatsAppMessage(phone, `🎁 Aplicamos tu descuento especial del *${bono.descuento_pct}%* a este pedido. ¡Gracias por tu paciencia! 🥞❤️`);
 }
 
 function parseOlaClickText(text: string) {
@@ -5868,7 +5885,7 @@ return res.sendStatus(200);
   const pasoVolver = currentOrder.pasoAntesDeBono || "esperando_pago";
   const bono = await getBonoPorCodigo(codigoIngresado);
 
-  if (!bono) {
+  if (!bono || (bono.telefono && bono.telefono !== phone.replace(/\D/g, ""))) {
     updateOrderStep(phone, pasoVolver);
     await sendWhatsAppMessage(phone, "❌ Ese código no es válido o ya venció. Si quieres, sigue con tu pago 😊");
     return res.sendStatus(200);
@@ -6227,6 +6244,7 @@ return res.sendStatus(200);
       ]
     );
     await ofrecerDescuentoEnPago(phone);
+    await aplicarBonoPersonalEnPago(phone);
     return res.sendStatus(200);
   }
 
@@ -6255,6 +6273,7 @@ return res.sendStatus(200);
       ]
     );
     await ofrecerDescuentoEnPago(phone);
+    await aplicarBonoPersonalEnPago(phone);
     return res.sendStatus(200);
   }
 
@@ -7378,6 +7397,7 @@ app.post('/api/bonos', async (req, res) => {
     return res.status(400).json({ ok: false, error: "Código y % de descuento (1-100) son obligatorios" });
   }
   try {
+    const telefono = (body.telefono || "").trim() || null;
     const bono = await createBono({
       codigo,
       descuento_pct: descuentoPct,
@@ -7385,7 +7405,13 @@ app.post('/api/bonos', async (req, res) => {
       max_usos: body.max_usos != null && body.max_usos !== "" ? Number(body.max_usos) : null,
       una_vez_por_cliente: body.una_vez_por_cliente !== false,
       fecha_expira: body.fecha_expira || null,
+      telefono,
     });
+    if (bono.telefono) {
+      sendWhatsAppMessage(bono.telefono,
+        `🎉 ¡Felicitaciones! Tienes un descuento especial del *${bono.descuento_pct}%* para tu próxima compra en Las Crepes de París 🥞❤️\n\nSe aplicará automáticamente en tu próximo pedido.`
+      ).catch(e => console.error("❌ Error avisando bono personal:", e));
+    }
     res.json({ ok: true, bono });
   } catch (e: any) {
     const dup = /duplicate key|unique/i.test(String(e?.message || ""));

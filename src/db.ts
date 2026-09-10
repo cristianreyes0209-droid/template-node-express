@@ -91,6 +91,8 @@ pool.connect()
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `).catch(err => console.error("❌ Error creando tabla bonos:", err));
+    await client.query(`ALTER TABLE bonos ADD COLUMN IF NOT EXISTS telefono TEXT`)
+      .catch(err => console.error("❌ Error agregando columna telefono a bonos:", err));
     await client.query(`
       CREATE TABLE IF NOT EXISTS bonos_canjes (
         id SERIAL PRIMARY KEY,
@@ -424,6 +426,16 @@ export async function getBonoPorCodigo(codigo: string) {
   }
 }
 
+export async function getBonoPersonalPorTelefono(phone: string) {
+  try {
+    const r = await pool.query(`SELECT * FROM bonos WHERE telefono = $1 AND activo = true LIMIT 1`, [normalizePhone(phone)]);
+    return r.rows[0] || null;
+  } catch (error) {
+    console.error("❌ Error getBonoPersonalPorTelefono:", error);
+    return null;
+  }
+}
+
 export async function clienteYaUsoBono(bonoId: number, phone: string): Promise<boolean> {
   try {
     const r = await pool.query(`SELECT 1 FROM bonos_canjes WHERE bono_id = $1 AND phone = $2 LIMIT 1`, [bonoId, normalizePhone(phone)]);
@@ -456,11 +468,12 @@ export async function listBonos() {
 export async function createBono(data: {
   codigo: string; descuento_pct: number; descripcion?: string;
   max_usos?: number | null; una_vez_por_cliente?: boolean; fecha_expira?: string | null;
+  telefono?: string | null;
 }) {
   try {
     const r = await pool.query(
-      `INSERT INTO bonos (codigo, descuento_pct, descripcion, max_usos, una_vez_por_cliente, fecha_expira)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      `INSERT INTO bonos (codigo, descuento_pct, descripcion, max_usos, una_vez_por_cliente, fecha_expira, telefono)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [
         normalizarCodigoBono(data.codigo),
         data.descuento_pct,
@@ -468,6 +481,7 @@ export async function createBono(data: {
         data.max_usos ?? null,
         data.una_vez_por_cliente ?? true,
         data.fecha_expira || null,
+        data.telefono ? normalizePhone(data.telefono) : null,
       ]
     );
     return r.rows[0];

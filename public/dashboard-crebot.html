@@ -983,6 +983,7 @@ function renderBonos(){
     <div class="det-row" style="align-items:center">
       <div>
         <b>${esc(b.codigo)}</b> — ${b.descuento_pct}%
+        ${b.telefono?`<div class="ex">📱 Personal: ${esc(b.telefono)}</div>`:""}
         ${b.descripcion?`<div class="ex">${esc(b.descripcion)}</div>`:""}
         <div class="ex">Usos: ${b.usos_totales||0}${b.max_usos!=null?"/"+b.max_usos:""} · ${b.una_vez_por_cliente?"1 por cliente":"sin límite por cliente"}${b.fecha_expira?" · vence "+esc(String(b.fecha_expira).slice(0,10)):""}</div>
       </div>
@@ -999,6 +1000,7 @@ function renderBonos(){
       <input class="obs" id="bnCodigo" placeholder="Código (ej: BIENVENIDA10)">
       <input class="obs" id="bnPct" type="number" min="1" max="100" placeholder="% de descuento">
       <input class="obs" id="bnDesc" placeholder="Descripción (opcional)">
+      <input class="obs" id="bnTelefono" placeholder="📱 WhatsApp del cliente (opcional — bono personal, se le avisa de inmediato)">
       <input class="obs" id="bnMax" type="number" min="1" placeholder="Máx. usos (vacío = ilimitado)">
       <input class="obs" id="bnExpira" type="date" placeholder="Fecha de vencimiento (opcional)">
       <label style="display:flex;align-items:center;gap:6px;font-size:13px">
@@ -1012,19 +1014,21 @@ async function crearBono(){
   const pct = Number(document.getElementById("bnPct").value);
   if(!codigo || !pct || pct<1 || pct>100){ showToast("Código y % de descuento (1-100) son obligatorios"); return; }
   const maxRaw = document.getElementById("bnMax").value;
+  const telefono = document.getElementById("bnTelefono").value.trim();
   try{
     const r = await fetch(API+"/api/bonos", {
       method:"POST", headers:{ "Content-Type":"application/json", "x-panel-key": sessionKey },
       body: JSON.stringify({
         key: sessionKey, codigo, descuento_pct: pct,
         descripcion: document.getElementById("bnDesc").value.trim() || undefined,
+        telefono: telefono || undefined,
         max_usos: maxRaw ? Number(maxRaw) : null,
         una_vez_por_cliente: document.getElementById("bnUnico").checked,
         fecha_expira: document.getElementById("bnExpira").value || null
       })
     });
     const j = await r.json();
-    if(r.ok && j.ok){ showToast("✅ Bono creado"); await cargarBonos(); renderBonos(); }
+    if(r.ok && j.ok){ showToast(telefono ? "✅ Bono creado y cliente avisado por WhatsApp" : "✅ Bono creado"); await cargarBonos(); renderBonos(); }
     else showToast("❌ "+(j.error||"No se pudo crear"));
   }catch(e){ showToast("❌ Error de conexión"); }
 }
