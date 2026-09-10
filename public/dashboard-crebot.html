@@ -1188,7 +1188,7 @@ async function guardarEdicionMesa(){
   }catch(e){ showToast("❌ Error de conexión"); }
 }
 
-const METODOS_PAGO_MESA = ["Efectivo","Nequi","Daviplata","Bancolombia","Bold"];
+const METODOS_PAGO_MESA = ["Efectivo","Nequi","Daviplata","Bancolombia","Bold","Rappi"];
 // Selector de método de pago al cerrar la mesa (en vez de escribirlo a mano)
 function pedirPagoCierre(){
   if(!LOCAL.tab) return;
