@@ -1032,6 +1032,7 @@ function renderMesaTab(){
     : `<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:14px">
         <button class="btn primary" onclick="abrirCartaMesa('${String(LOCAL.mesa).replace(/'/g,"\\'")}')">➕ Agregar productos (carta)</button>
         <button class="btn" onclick="refrescarMesa()">🔄 Actualizar</button>
+        ${tab?`<button class="btn" onclick="editarMesaPedido()">✏️ Editar pedido</button>`:""}
         ${tab?`<button class="btn" onclick="imprimirCuentaMesa()">🖨️ Imprimir cuenta</button>`:""}
         ${tab?`<button class="btn" onclick="pedirPagoCierre()">💵 Cerrar mesa</button>`:""}
       </div>
@@ -1044,6 +1045,61 @@ function renderMesaTab(){
     ${acumFilas}
     ${tab?`<div class="det-total">Total: ${fmtCOP(totalAcum)}</div>`:""}
     ${acciones}`;
+}
+
+/* ===================== EDITAR PEDIDO DE MESA (quitar/ajustar ítems antes de cobrar) ===================== */
+let MESA_EDIT = null;
+function editarMesaPedido(){
+  const tab = LOCAL.tab;
+  if(!tab) return;
+  let items = tab.items; if(typeof items==="string"){ try{items=JSON.parse(items);}catch(e){items=[];} }
+  MESA_EDIT = {
+    id: tab.id,
+    items: (items||[]).map(it=>({ producto:it.producto, cantidad:it.cantidad||1, precio:Number(it.precio)||0, variante:it.variante||undefined, observaciones:it.observaciones||undefined, extras: it.extras||[] }))
+  };
+  renderMesaEditor();
+}
+function mesaEdQty(i,d){ MESA_EDIT.items[i].cantidad = Math.max(1,(MESA_EDIT.items[i].cantidad||1)+d); renderMesaEditor(); }
+function mesaEdRemove(i){ MESA_EDIT.items.splice(i,1); renderMesaEditor(); }
+function renderMesaEditor(){
+  if(!MESA_EDIT) return;
+  const sub = MESA_EDIT.items.reduce((s,it)=>s+edLine(it),0);
+  const filas = MESA_EDIT.items.map((it,i)=>`
+    <div class="det-row">
+      <div>${esc(it.producto)}${it.variante?" - "+esc(it.variante):""}
+        <div class="ex" style="display:flex;align-items:center;gap:8px;margin-top:5px">
+          <button class="btn" style="padding:2px 11px" onclick="mesaEdQty(${i},-1)">−</button>
+          <b>×${it.cantidad||1}</b>
+          <button class="btn" style="padding:2px 11px" onclick="mesaEdQty(${i},1)">+</button>
+          <span style="color:#cbd5e1">·</span>
+          <a onclick="mesaEdRemove(${i})" style="color:#dc2626;cursor:pointer;font-weight:800">quitar</a>
+        </div>
+      </div>
+      <div>${fmtCOP(edLine(it))}</div>
+    </div>`).join("") || '<div class="det-row">Sin ítems</div>';
+  const btns = `<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn" onclick="MESA_EDIT=null;renderMesaTab()">← Cancelar</button>
+      <button class="btn primary" onclick="guardarEdicionMesa()">💾 Guardar cambios</button></div>`;
+  document.getElementById("localBody").innerHTML =
+    `<div style="font-weight:900;color:#3B1A0A;margin-bottom:8px">✏️ Editar pedido — ${esc(LOCAL.mesa)}</div>`
+    + filas
+    + `<div class="det-total">Total: ${fmtCOP(sub)}</div>`
+    + btns;
+}
+async function guardarEdicionMesa(){
+  if(!MESA_EDIT) return;
+  if(MESA_EDIT.items.length===0 && !confirm("La mesa quedará sin ítems. ¿Guardar de todas formas?")) return;
+  const sub = MESA_EDIT.items.reduce((s,it)=>s+edLine(it),0);
+  try{
+    const r = await fetch(API+"/api/pedidos/"+MESA_EDIT.id+"/editar", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", "x-panel-key": sessionKey },
+      body: JSON.stringify({ items: MESA_EDIT.items, subtotal: sub, domicilio: 0, total: sub })
+    });
+    const j = await r.json();
+    if(r.ok && j.ok){ showToast("✅ Pedido de mesa actualizado"); MESA_EDIT=null; await refrescarMesa(); }
+    else showToast("❌ "+(j.error||"No se pudo guardar"));
+  }catch(e){ showToast("❌ Error de conexión"); }
 }
 
 const METODOS_PAGO_MESA = ["Efectivo","Nequi","Daviplata","Bancolombia","Bold"];
