@@ -775,7 +775,7 @@ function Splash({ onEnter }) {
             React.createElement("button", { className: "cover-btn", onClick: handleEnter }, "🥞 Ver la carta"),
             React.createElement("div", { className: "cover-count" }, countdown > 0 ? `Entrando en ${countdown}s` : ''))));
 }
-function CartDrawer({ cart, onClose, onRemove, onSend, localMode, panelKey, mesa }) {
+function CartDrawer({ cart, onClose, onRemove, onSend, localMode, panelKey, mesa, clienteMode }) {
     const total = cart.reduce((s, c) => s + c.totalPrice, 0);
     // Estado del checkout LOCAL (pedido manual desde el panel)
     const [lNombre, setLNombre] = useState('');
@@ -829,15 +829,17 @@ function CartDrawer({ cart, onClose, onRemove, onSend, localMode, panelKey, mesa
         }));
         setEnviando(true);
         try {
-            const r = await fetch('/api/pedidos/local/agregar', {
+            const r = await fetch(clienteMode ? '/api/mesas/pedido-cliente' : '/api/pedidos/local/agregar', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'x-panel-key': panelKey },
-                body: JSON.stringify({ key: panelKey, mesa: mesa, items: itemsP })
+                headers: clienteMode
+                    ? { 'Content-Type': 'application/json' }
+                    : { 'Content-Type': 'application/json', 'x-panel-key': panelKey },
+                body: JSON.stringify(clienteMode ? { mesa: mesa, items: itemsP } : { key: panelKey, mesa: mesa, items: itemsP })
             });
             const j = await r.json();
             if (r.ok && j.ok) { setDoneNum(0); if (onSend) onSend(); }
             else alert(j.error || 'No se pudo agregar la ronda');
-        } catch (e) { alert('Error de conexión con el panel'); }
+        } catch (e) { alert('Error de conexión'); }
         setEnviando(false);
     };
     const sendWA = () => {
@@ -1150,7 +1152,8 @@ function ProductCard({ item, onSelect }) {
 // ============================================================
 function App() {
     const LOCAL_PARAMS = new URLSearchParams(location.search);
-    const LOCAL_MODE = LOCAL_PARAMS.get('local') === '1';
+    const CLIENTE_MODE = LOCAL_PARAMS.get('cliente') === '1'; // autoservicio por QR de mesa, sin PANEL_KEY
+    const LOCAL_MODE = LOCAL_PARAMS.get('local') === '1' || CLIENTE_MODE;
     const PANEL_KEY = LOCAL_PARAMS.get('key') || '';
     const MESA = LOCAL_PARAMS.get('mesa') || '';
     const [showSplash, setShowSplash] = useState(() => LOCAL_MODE ? false : !sessionStorage.getItem('lc_entered'));
@@ -1304,7 +1307,7 @@ function App() {
         incentivoBanner && React.createElement("div", { className: "incentivo-banner" }, incentivoBanner),
         selHint && React.createElement("div", { className: "sel-hint" }, "\u2B06\uFE0F Desliza hacia arriba para pedir"),
         sel && React.createElement(ProductModal, { item: sel, onClose: () => setSel(null), onAdd: addToCart, localMode: LOCAL_MODE }),
-        showCart && React.createElement(CartDrawer, { cart: cart, onClose: () => setShowCart(false), onRemove: removeFromCart, onSend: () => { setCart([]); setShowCart(false); }, localMode: LOCAL_MODE, panelKey: PANEL_KEY, mesa: MESA })));
+        showCart && React.createElement(CartDrawer, { cart: cart, onClose: () => setShowCart(false), onRemove: removeFromCart, onSend: () => { setCart([]); setShowCart(false); }, localMode: LOCAL_MODE, panelKey: PANEL_KEY, mesa: MESA, clienteMode: CLIENTE_MODE })));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
 

@@ -7246,7 +7246,38 @@ app.get('/api/mesas', async (req, res) => {
   res.json(mesas);
 });
 
-// Agregar una ronda a una mesa (crea la cuenta si no existe) e imprime la comanda.
+// Agrega una ronda a la cuenta abierta de una mesa (la crea si no existe) e imprime la comanda.
+// Compartida por el endpoint del mesero (panel, con PANEL_KEY) y el endpoint público del cliente (QR de la mesa).
+async function registrarRondaMesa(mesa: string, ronda: any[]) {
+  const abierta = await getMesaAbierta(mesa);
+  let id: number | null;
+  let itemsTotales: any[];
+  if (abierta) {
+    let prev = abierta.items;
+    if (typeof prev === "string") { try { prev = JSON.parse(prev); } catch { prev = []; } }
+    itemsTotales = [...(prev || []), ...ronda];
+    const sub = subtotalDesdeItems(itemsTotales);
+    const ok = await updatePedido(abierta.id, { items: itemsTotales, subtotal: sub, domicilio: 0, total: sub });
+    id = ok ? abierta.id : null;
+  } else {
+    itemsTotales = ronda;
+    const sub = subtotalDesdeItems(itemsTotales);
+    id = await savePedido({
+      numero_orden: await getNextOrderNumberForDay(),
+      phone: "", nombre: mesa, mesa,
+      items: itemsTotales, subtotal: sub, domicilio: 0, total: sub,
+      sucursal: SUC_LOCAL, tipo_entrega: "local", canal: "local",
+      estado: "abierta", confirmed_at: new Date().toISOString(),
+    });
+  }
+  if (!id) return { ok: false as const, error: "No se pudo guardar la mesa" };
+  const nRonda = abierta ? "" : "1";
+  await imprimirComandaLocal(`🍽️ ${mesa}${nRonda ? " — Ronda " + nRonda : " — Ronda"}`, ronda, mesa);
+  const total = subtotalDesdeItems(itemsTotales);
+  return { ok: true as const, id, mesa, items: itemsTotales, total };
+}
+
+// Agregar una ronda a una mesa (crea la cuenta si no existe) e imprime la comanda. Uso del mesero (panel).
 app.post('/api/pedidos/local/agregar', async (req, res) => {
   const body = req.body || {};
   const key = (req.headers['x-panel-key'] as string) || body.key;
@@ -7256,35 +7287,61 @@ app.post('/api/pedidos/local/agregar', async (req, res) => {
   if (!mesa) return res.status(400).json({ ok: false, error: "Falta la mesa" });
   if (ronda.length === 0) return res.status(400).json({ ok: false, error: "La ronda no tiene productos" });
   try {
-    const abierta = await getMesaAbierta(mesa);
-    let id: number | null;
-    let itemsTotales: any[];
-    if (abierta) {
-      let prev = abierta.items;
-      if (typeof prev === "string") { try { prev = JSON.parse(prev); } catch { prev = []; } }
-      itemsTotales = [...(prev || []), ...ronda];
-      const sub = subtotalDesdeItems(itemsTotales);
-      const ok = await updatePedido(abierta.id, { items: itemsTotales, subtotal: sub, domicilio: 0, total: sub });
-      id = ok ? abierta.id : null;
-    } else {
-      itemsTotales = ronda;
-      const sub = subtotalDesdeItems(itemsTotales);
-      id = await savePedido({
-        numero_orden: await getNextOrderNumberForDay(),
-        phone: "", nombre: mesa, mesa,
-        items: itemsTotales, subtotal: sub, domicilio: 0, total: sub,
-        sucursal: SUC_LOCAL, tipo_entrega: "local", canal: "local",
-        estado: "abierta", confirmed_at: new Date().toISOString(),
-      });
-    }
-    if (!id) return res.status(500).json({ ok: false, error: "No se pudo guardar la mesa" });
-    const nRonda = abierta ? "" : "1";
-    await imprimirComandaLocal(`🍽️ ${mesa}${nRonda ? " — Ronda " + nRonda : " — Ronda"}`, ronda, mesa);
-    const total = subtotalDesdeItems(itemsTotales);
-    return res.json({ ok: true, id, mesa, items: itemsTotales, total });
+    const r = await registrarRondaMesa(mesa, ronda);
+    if (!r.ok) return res.status(500).json(r);
+    return res.json(r);
   } catch (err: any) {
     console.error("❌ Error venta local agregar:", err);
     return res.status(500).json({ ok: false, error: err?.message || "Error interno" });
+  }
+});
+
+// ── Autoservicio por QR de mesa (cliente, sin PANEL_KEY) ────────────────────
+// Solo las 15 mesas físicas de La Villa (Piso 1: Mesa 1-9, Piso 2: Mesa 1-6).
+const MESAS_FISICAS_WHITELIST = new Set([
+  ...Array.from({ length: 9 }, (_, i) => `Piso 1 · Mesa ${i + 1}`),
+  ...Array.from({ length: 6 }, (_, i) => `Piso 2 · Mesa ${i + 1}`),
+]);
+const cooldownMesaCliente = new Map<string, number>(); // mesa -> timestamp del último envío aceptado
+const COOLDOWN_MESA_CLIENTE_MS = 3000;
+
+app.post('/api/mesas/pedido-cliente', async (req, res) => {
+  const body = req.body || {};
+  const mesa = (body.mesa || "").toString().trim();
+  if (!MESAS_FISICAS_WHITELIST.has(mesa)) {
+    return res.status(400).json({ ok: false, error: "Mesa no válida" });
+  }
+  const ahora = Date.now();
+  const ultimo = cooldownMesaCliente.get(mesa) || 0;
+  if (ahora - ultimo < COOLDOWN_MESA_CLIENTE_MS) {
+    return res.status(429).json({ ok: false, error: "Espera un momento antes de enviar de nuevo" });
+  }
+  const rondaCruda = Array.isArray(body.items) ? body.items : [];
+  if (rondaCruda.length === 0) return res.status(400).json({ ok: false, error: "El pedido no tiene productos" });
+  // Límites básicos anti-abuso (no se recalcula el menú completo: es una mesa física supervisada,
+  // el mismo nivel de confianza que ya existe hoy cuando el mesero usa la carta).
+  const MAX_CANTIDAD = 30;
+  const MAX_PRECIO = 200000;
+  const ronda = rondaCruda.slice(0, 40).map((it: any) => ({
+    producto: String(it?.producto || "").slice(0, 120),
+    variante: it?.variante ? String(it.variante).slice(0, 80) : undefined,
+    cantidad: Math.max(1, Math.min(MAX_CANTIDAD, Number(it?.cantidad) || 1)),
+    precio: Math.max(0, Math.min(MAX_PRECIO, Number(it?.precio) || 0)),
+    observaciones: it?.observaciones ? String(it.observaciones).slice(0, 300) : undefined,
+    extras: Array.isArray(it?.extras) ? it.extras.slice(0, 20).map((e: any) => ({
+      nombre: String(e?.nombre || "").slice(0, 80),
+      cantidad: Math.max(1, Math.min(MAX_CANTIDAD, Number(e?.cantidad) || 1)),
+      precio: Math.max(0, Math.min(MAX_PRECIO, Number(e?.precio) || 0)),
+    })) : [],
+  }));
+  try {
+    cooldownMesaCliente.set(mesa, ahora);
+    const r = await registrarRondaMesa(mesa, ronda);
+    if (!r.ok) return res.status(500).json(r);
+    return res.json(r);
+  } catch (err: any) {
+    console.error("❌ Error pedido cliente en mesa:", err);
+    return res.status(500).json({ ok: false, error: "Error interno" });
   }
 });
 
@@ -7438,6 +7495,15 @@ app.get('/operaciones', (req, res) => {
   }
   res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
   res.sendFile(path.join(__dirname, '../public/operaciones.html'));
+});
+
+app.get('/panel/mesas-qr', (req, res) => {
+  const key = req.query.key;
+  if (key !== process.env.PANEL_KEY) {
+    return res.status(401).send('Acceso denegado');
+  }
+  res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
+  res.sendFile(path.join(__dirname, '../public/mesas-qr.html'));
 });
 
 app.get('/api/pedidos', async (req, res) => {
