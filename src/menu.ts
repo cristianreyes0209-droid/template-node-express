@@ -363,7 +363,10 @@ export const menu = {
             "mexicana",
             "crepe mexicana",
             "mejicana",
-            "meicana"
+            "meicana",
+            "mexicano",
+            "crepe mexicano",
+            "mejicano"
           ],
           modificadoresComunes: [
             "sin jalapeños",
@@ -1284,7 +1287,8 @@ aliases: [
           id: "vegetariana",
           nombre: "Vegetariana",
           precio: 13900,
-          aliases: ["vegetariana", "crepe vegetariana"],
+          ingredientes: ["Champiñones", "Maíz", "Pico de gallo", "Pimentón"],
+          aliases: ["vegetariana", "crepe vegetariana", "vegetariano", "crepe vegetariano"],
           variantes: [
             {
               id: "sin_salsa",

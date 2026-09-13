@@ -432,7 +432,7 @@ function buildAliasEntries(products: any[]) {
     )
     .sort((a, b) => b.alias.length - a.alias.length);
 }
-function findBestProductMatches(fragment: string, products: any[]) {
+export function findBestProductMatches(fragment: string, products: any[]) {
   const text = normalizeText(fragment);
   const aliasEntries = buildAliasEntries(products);
   // Palabras comunes (para, con, sin, por, del…) NO deben matchear productos por typo/similitud
@@ -1147,6 +1147,9 @@ const fragments = splitIntoFragments(textoLimpio);
 
 // Helper de limpieza de fragmento para buscar el producto
 const limpiarFrag = (s: string) => s
+  // conector inicial ("más 1 crepe X", "también quiero X") no debe quedar pegado al nombre del producto,
+  // o el matching difuso falla por el ruido extra (ej. "más 1 vegetariano" no coincide con "vegetariana")
+  .replace(/^(?:más|mas|también|tambien|además|ademas)\s+/i, "")
   .replace(/^(\d+|una|unas|uno|unos|un|dos|tres|cuatro|cinco)\s+/i, "")
   .replace(/\bcrepe\s+de\b/g, "")   // "crepe de X" → "X"
   .replace(/\bcrepe\b/g, "")

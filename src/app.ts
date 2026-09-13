@@ -20,7 +20,7 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
-import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, extractExtrasFromFragment, extractObservaciones, consultarCrepesPorIngrediente, parsePagoMixto, GEMINI_MODEL } from './parser';
+import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, extractExtrasFromFragment, extractObservaciones, consultarCrepesPorIngrediente, parsePagoMixto, findBestProductMatches, GEMINI_MODEL } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
@@ -1136,6 +1136,51 @@ async function manejarProblemaPago(phone: string, text: string): Promise<boolean
     const nequiNum = order.sucursal === "circunvalar" ? "3205839477" : "3207218267";
     await sendWhatsAppMessage(phone,
       `Para Nequi/Daviplata transfiere al *número de celular* 📱 *${nequiNum}* — ese número es el destino, en Nequi/Daviplata *no* necesitas una llave 😊\n\nCuando realices el pago, envíame la foto del comprobante 📸\n\nSi sigues con problemas escribe *asesor* y te ayudamos.`);
+  }
+  return true;
+}
+
+// Detecta y responde preguntas de ingredientes ("que ingredientes trae", "que contiene la vegetariana",
+// "que ingredientes trae" sin nombre → se asume el último producto agregado al pedido). Usa matching
+// difuso (findBestProductMatches) para resolver variantes de género/typos (vegetariano ↔ vegetariana).
+// Devuelve true si respondió (el caller debe cortar el flujo normal), false si no aplica.
+async function responderPreguntaIngredientes(phone: string, text: string): Promise<boolean> {
+  const normTextIQ = normalizeText(text);
+  const ingredientQueryM =
+    normTextIQ.match(/^(?:(?:quiero saber|me (?:puedes?|puede) decir)\s+)?que\s+ingredientes\s+(?:tiene|lleva|trae|contiene|incluye)(?:\s+(?:la\s+|el\s+|una?\s+)?(.+?))?[\?]?\s*$/) ||
+    normTextIQ.match(/^(?:(?:quiero saber|me (?:puedes?|puede) decir)\s+)?que\s+(?:tiene|lleva|trae|contiene|incluye)\s+(?:la\s+|el\s+|una?\s+)?(.+?)[\?]?\s*$/) ||
+    normTextIQ.match(/^ingredientes?\s+(?:de\s+)?(?:la\s+|el\s+|una?\s+)?(.+?)[\?]?\s*$/);
+
+  if (!ingredientQueryM) return false;
+
+  const queryTerm = (ingredientQueryM[1] || "").trim();
+  const allProdsIQ = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
+
+  let bestProd: any = queryTerm ? (findBestProductMatches(queryTerm, allProdsIQ)[0] || null) : null;
+
+  // Sin nombre de producto explícito (ej. "y que ingredientes trae") → asumir el último ítem del pedido.
+  const order = getOrder(phone);
+  const lastItem = order?.items?.[order.items.length - 1];
+  if (!bestProd && lastItem) {
+    bestProd =
+      allProdsIQ.find((p: any) => normalizeText(p.nombre) === normalizeText(lastItem.producto)) ||
+      findBestProductMatches(normalizeText(lastItem.producto), allProdsIQ)[0] ||
+      null;
+  }
+  if (!bestProd) return false;
+
+  const tieneIngredientes = bestProd.ingredientes && bestProd.ingredientes.length > 0;
+  const ingredientesTexto = tieneIngredientes
+    ? bestProd.ingredientes.map((i: string) => `• ${i}`).join("\n")
+    : "No tengo información detallada de ingredientes para este producto.";
+
+  const yaEnCarrito = order?.items?.some((it: any) => normalizeText(it.producto) === normalizeText(bestProd.nombre));
+  if (yaEnCarrito) {
+    await sendWhatsAppMessage(phone, `*${bestProd.nombre}* lleva:\n\n${ingredientesTexto}`);
+  } else {
+    if (!order) { createOrUpdateOrder(phone, []); }
+    getOrder(phone)!.pendingProductQuery = { id: bestProd.id, nombre: bestProd.nombre, precio: bestProd.precio };
+    await sendWhatsAppMessage(phone, `*${bestProd.nombre}* lleva:\n\n${ingredientesTexto}\n\n¿Deseas pedirlo? 😊`);
   }
   return true;
 }
@@ -2602,43 +2647,9 @@ if (esConsultaToppings && !esMensajeLargo && parsedItems.length === 0) {
   return res.sendStatus(200);
 }
 
-// Consulta de ingredientes de un producto ("qué tiene", "qué lleva", "ingredientes de")
-const normTextIQ = normalizeText(text);
-const ingredientQueryM =
-  normTextIQ.match(/^(?:(?:quiero saber|me (?:puedes?|puede) decir)\s+)?que\s+(?:tiene|lleva|trae|contiene|incluye)\s+(?:la\s+|el\s+|una?\s+)?(.+?)[\?]?\s*$/) ||
-  normTextIQ.match(/^ingredientes?\s+(?:de\s+)?(?:la\s+|el\s+|una?\s+)?(.+?)[\?]?\s*$/);
-
-if (ingredientQueryM && !esMensajeLargo) {
-  const queryTerm = ingredientQueryM[1].trim();
-  const allProdsIQ = (menu.categorias as any[]).reduce((acc: any[], c: any) => acc.concat(c.productos), []);
-  let bestProd: any = null;
-  let bestScore = 0;
-  for (const prod of allProdsIQ) {
-    const candidates = [prod.nombre, ...(prod.aliases || [])].map((a: string) => normalizeText(a));
-    for (const candidate of candidates) {
-      let score = 0;
-      if (candidate === queryTerm) score = 3;
-      else if (candidate.includes(queryTerm) && queryTerm.length >= 4) score = 2;
-      else if (queryTerm.includes(candidate) && candidate.length >= 4) score = 2;
-      if (score > bestScore) { bestScore = score; bestProd = prod; }
-    }
-  }
-  if (bestProd && bestScore > 0) {
-    const tieneIngredientes = bestProd.ingredientes && bestProd.ingredientes.length > 0;
-    const ingredientesTexto = tieneIngredientes
-      ? bestProd.ingredientes.map((i: string) => `• ${i}`).join("\n")
-      : "No tengo información detallada de ingredientes para este producto.";
-    // Guardar el producto consultado para cuando el cliente confirme con "sí"
-    if (!currentOrder) {
-      createOrUpdateOrder(phone, []);
-      currentOrder = getOrder(phone)!;
-    }
-    currentOrder.pendingProductQuery = { id: bestProd.id, nombre: bestProd.nombre, precio: bestProd.precio };
-    await sendWhatsAppMessage(phone,
-      `*${bestProd.nombre}* lleva:\n\n${ingredientesTexto}\n\n¿Deseas pedirlo? 😊`
-    );
-    return res.sendStatus(200);
-  }
+// Consulta de ingredientes de un producto ("qué tiene", "qué lleva", "ingredientes de", "que ingredientes trae")
+if (!esMensajeLargo && await responderPreguntaIngredientes(phone, text)) {
+  return res.sendStatus(200);
 }
 
 if (lower === "test") {
@@ -4886,6 +4897,15 @@ return res.sendStatus(200);
   return res.sendStatus(200);
 
 } else if (currentOrder?.step === "esperando_nombre") {
+  // El cliente está tratando de agregar otro producto en vez de dar su nombre
+  // (ej. "y 1 crepe mexicano") → agregarlo al pedido y volver a pedir el nombre.
+  const intentoProductoNombre = parseOrder(text).items;
+  if (intentoProductoNombre.length > 0) {
+    createOrUpdateOrder(phone, intentoProductoNombre);
+    const nombresAgregadosN = intentoProductoNombre.map((i: any) => i.producto).join(", ");
+    await sendWhatsAppMessage(phone, `➕ Agregué *${nombresAgregadosN}* a tu pedido.\n\nAhora sí, ¿cuál es tu nombre? 😊`);
+    return res.sendStatus(200);
+  }
   const nombreRecibido = text.trim();
   const INVALIDOS_NOMBRE = new Set([
     "confirmar", "agregar_mas", "agregar", "eliminar", "recoger",
@@ -5087,6 +5107,16 @@ return res.sendStatus(200);
           { id: "cancelar_pedido_dir", title: "❌ Cancelar pedido" }
         ]
       );
+      return res.sendStatus(200);
+    }
+
+    // El cliente está tratando de agregar otro producto en vez de dar la dirección
+    // (ej. "y 1 crepe mexicano") → agregarlo al pedido y volver a pedir la dirección.
+    const intentoProductoDir = parseOrder(text).items;
+    if (intentoProductoDir.length > 0) {
+      createOrUpdateOrder(phone, intentoProductoDir);
+      const nombresAgregadosD = intentoProductoDir.map((i: any) => i.producto).join(", ");
+      await sendWhatsAppMessage(phone, `➕ Agregué *${nombresAgregadosD}* a tu pedido.\n\nAhora sí, envíame tu dirección 📍 (o tu ubicación).`);
       return res.sendStatus(200);
     }
 
@@ -6249,6 +6279,15 @@ return res.sendStatus(200);
   }
 
 } else if (currentOrder?.step === "esperando_datos_factura") {
+  // El cliente está tratando de agregar otro producto en vez de dar el NIT/cédula
+  // (ej. "es 1 crepe mexicano") → agregarlo al pedido y volver a pedir el dato de factura.
+  const intentoProductoFact = parseOrder(text).items;
+  if (intentoProductoFact.length > 0) {
+    createOrUpdateOrder(phone, intentoProductoFact);
+    const nombresAgregadosF = intentoProductoFact.map((i: any) => i.producto).join(", ");
+    await sendWhatsAppMessage(phone, `➕ Agregué *${nombresAgregadosF}* a tu pedido.\n\nAhora sí, envíame tu NIT o cédula y razón social para la factura.`);
+    return res.sendStatus(200);
+  }
   const orderDf = getOrder(phone)!;
   orderDf.factura = text;
   updateOrderStep(phone, "esperando_email_factura");
