@@ -6099,11 +6099,7 @@ return res.sendStatus(200);
         body: JSON.stringify({
           nombre: orderEf.nombre || customer?.name || "Cliente",
           telefono: orderEf.telefono,
-          pedidoTexto: orderEf.items.map((i: any) => {
-            const obs = i.observaciones ? ` (${i.observaciones})` : "";
-            const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
-            return `${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs} ×${i.cantidad}`;
-          }),
+          pedidoTexto: construirLineasTicket(orderEf.items),
           subtotal: totalsEf.subtotal,
           domicilio: totalsEf.domicilio,
           total: totalsEf.total,
@@ -6412,11 +6408,7 @@ return res.sendStatus(200);
         body: JSON.stringify({
           nombre: order.nombre || customer?.name || "Cliente",
           telefono: order.telefono,
-          pedidoTexto: order.items.map((i: any) => {
-            const obs = i.observaciones ? ` (${i.observaciones})` : "";
-            const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
-            return `${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs} ×${i.cantidad}`;
-          }),
+          pedidoTexto: construirLineasTicket(order.items),
           subtotal: totals.subtotal,
           domicilio: totals.domicilio,
           total: totals.total,
@@ -7231,6 +7223,44 @@ app.post('/api/pedidos/manual', async (req, res) => {
   }
 });
 
+// ── Ticket de impresora térmica (58mm) — evita que se corte texto largo ────────
+const ANCHO_TICKET = 30; // caracteres por línea, conservador para impresora térmica de 58mm
+
+// Parte un texto largo en varias líneas de máx. ANCHO_TICKET caracteres, sin cortar palabras.
+function envolverLinea(texto: string, ancho = ANCHO_TICKET): string[] {
+  const palabras = texto.split(/\s+/).filter(Boolean);
+  const lineas: string[] = [];
+  let actual = "";
+  for (const palabra of palabras) {
+    const candidata = actual ? `${actual} ${palabra}` : palabra;
+    if (candidata.length > ancho && actual) {
+      lineas.push(actual);
+      actual = palabra;
+    } else {
+      actual = candidata;
+    }
+  }
+  if (actual) lineas.push(actual);
+  return lineas.length ? lineas : [texto];
+}
+
+// Construye las líneas de "pedidoTexto" para la impresora térmica: en vez de una sola línea
+// larga por producto (nombre+variante+extras+obs+cantidad concatenados, que se corta en 58mm),
+// cada producto/extra/observación va en su propia línea, ya envuelta a ANCHO_TICKET caracteres.
+function construirLineasTicket(items: any[]): string[] {
+  const lineas: string[] = [];
+  for (const i of items || []) {
+    lineas.push(...envolverLinea(`${i.cantidad || 1}x ${i.producto}${i.variante ? " - " + i.variante : ""}`));
+    if (i.extras?.length > 0) {
+      lineas.push(...envolverLinea(`  +${i.extras.map((e: any) => e.nombre).join(", +")}`));
+    }
+    if (i.observaciones) {
+      lineas.push(...envolverLinea(`  (${i.observaciones})`));
+    }
+  }
+  return lineas;
+}
+
 // ── Venta Local (pedidos por mesa, cuenta abierta) — solo La Villa ─────────────
 const SUC_LOCAL = "la_villa";
 
@@ -7251,11 +7281,7 @@ async function imprimirComandaLocal(encabezado: string, itemsRonda: any[], mesa:
       body: JSON.stringify({
         nombre: encabezado,
         telefono: "",
-        pedidoTexto: (itemsRonda || []).map((i: any) => {
-          const obs = i.observaciones ? ` (${i.observaciones})` : "";
-          const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
-          return `${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs} ×${i.cantidad}`;
-        }),
+        pedidoTexto: construirLineasTicket(itemsRonda),
         subtotal: subtotalDesdeItems(itemsRonda),
         domicilio: 0,
         total: subtotalDesdeItems(itemsRonda),
@@ -7659,11 +7685,7 @@ app.post('/api/pedidos/:id/imprimir', async (req, res) => {
       body: JSON.stringify({
         nombre: pedido.nombre || "Cliente",
         telefono: pedido.phone,
-        pedidoTexto: items.map((i: any) => {
-          const obs = i.observaciones ? ` (${i.observaciones})` : "";
-          const extras = i.extras?.length > 0 ? " +" + i.extras.map((e: any) => e.nombre).join(", +") : "";
-          return `${i.producto}${i.variante ? " - " + i.variante : ""}${extras}${obs} ×${i.cantidad}`;
-        }),
+        pedidoTexto: construirLineasTicket(items),
         subtotal: pedido.subtotal,
         domicilio: pedido.domicilio,
         total: pedido.total,
