@@ -699,7 +699,10 @@ async function editarCarritoPorVoz(phone: string, text: string): Promise<boolean
   const t = (text || "").trim().toLowerCase();
   const TRIVIAL = new Set(["si", "sí", "no", "ok", "okay", "dale", "listo", "gracias", "hola", "buenas", "confirmar", "agregar", "agregar_mas", "eliminar", "a", "b", "c", "1", "2", "3", "4", "5"]);
   if (t.length < 2 || TRIVIAL.has(t)) return false;
-  const currentItems = order.items.map((i: any) => ({ producto: i.producto, precio: i.precio, variante: i.variante }));
+  const currentItems = order.items.map((i: any) => ({
+    producto: i.producto, precio: i.precio, variante: i.variante,
+    cantidad: i.cantidad, extras: (i.extras || []).map((e: any) => e.nombre)
+  }));
   try {
     const ai = await classifyWithAI(text, currentItems, order.step || "");
     if (!ai) return false;
@@ -2017,7 +2020,9 @@ if (skipParsing) {
     const currentItems = currentOrder?.items.map((i: any) => ({
       producto: i.producto,
       precio: i.precio,
-      variante: i.variante
+      variante: i.variante,
+      cantidad: i.cantidad,
+      extras: (i.extras || []).map((e: any) => e.nombre)
     })) || [];
     aiClassification = await classifyWithAI(text, currentItems, currentOrder?.step || "");
     if (aiClassification?.intent === "producto") {
@@ -3272,7 +3277,10 @@ if (
   // 6. Último recurso — probar Gemini como fallback conversacional
   if (tipoMensaje === "text" && !SKIP_AI_KEYWORDS.has(lower) && aiClassification === null) {
     try {
-      const currentItemsFB = currentOrder?.items.map((i: any) => ({ producto: i.producto, precio: i.precio, variante: i.variante })) || [];
+      const currentItemsFB = currentOrder?.items.map((i: any) => ({
+        producto: i.producto, precio: i.precio, variante: i.variante,
+        cantidad: i.cantidad, extras: (i.extras || []).map((e: any) => e.nombre)
+      })) || [];
       const geminiFB = await classifyWithAI(text, currentItemsFB, currentOrder?.step || "");
       if (geminiFB?.intent === "pregunta" && geminiFB.respuesta) {
         await sendWhatsAppMessage(phone, geminiFB.respuesta);

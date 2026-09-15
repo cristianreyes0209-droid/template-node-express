@@ -799,7 +799,7 @@ export type AIClassification =
 
 export async function classifyWithAI(
   text: string,
-  currentItems: { producto: string; precio: number; variante?: string }[],
+  currentItems: { producto: string; precio: number; variante?: string; cantidad?: number; extras?: string[] }[],
   step: string
 ): Promise<AIClassification | null> {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -822,7 +822,10 @@ export async function classifyWithAI(
     .join("\n");
 
   const pedidoActual = currentItems.length > 0
-    ? currentItems.map((i, idx) => `${idx + 1}. ${i.producto}${i.variante ? " - " + i.variante : ""} $${i.precio}`).join("\n")
+    ? currentItems.map((i, idx) =>
+        `${idx + 1}. ${i.cantidad || 1}x ${i.producto}${i.variante ? " - " + i.variante : ""}` +
+        `${i.extras?.length ? " +" + i.extras.join(", +") : ""} ($${i.precio} c/u)`
+      ).join("\n")
     : "(vacío)";
 
   const prompt =
@@ -1200,12 +1203,26 @@ for (const fragment of fragments) {
   }
 
   if (!product) {
-    // Fragmento suelto que es una adición (ej: "nutella y banano" se partió y quedó "banano")
-    // → adjuntarla como extra al ítem anterior en vez de descartarla.
+    // Nota de empaque ("aparte"/"separado"/"por separado") → observación del ítem anterior,
+    // sin cobrar nada (ej. "empacarme salsa de piña aparte" no debe agregar Piña como extra pago).
+    if (/\b(aparte|por separado|separad[oa])\b/i.test(fragment) && items.length > 0) {
+      const prev = items[items.length - 1];
+      const nota = fragment.trim();
+      prev.observaciones = prev.observaciones ? `${prev.observaciones}, ${nota}` : nota;
+      continue;
+    }
+
+    // Fragmento suelto que ES el nombre de una adición (ej: "nutella y banano" se partió y quedó
+    // "banano") → adjuntarla como extra al ítem anterior en vez de descartarla. Debe ser una mención
+    // "limpia" (el fragmento, ya sin cantidad/artículos, coincide exactamente con el alias) para no
+    // cobrar extras por texto suelto ambiguo que solo lo menciona de pasada dentro de una frase más
+    // larga (ej. "salsa de piña aparte" no debe cobrar Piña).
     const fragAdNorm = normalizeText(fragmentLimpio);
     const adSuelto = fragAdNorm ? extraProducts.find((ex: any) =>
-      (ex.aliases || []).some((al: string) =>
-        new RegExp(`\\b${escapeRegex(normalizeText(al))}s?\\b`, "i").test(fragAdNorm))
+      (ex.aliases || []).some((al: string) => {
+        const normalizedAlias = normalizeText(al);
+        return fragAdNorm === normalizedAlias || fragAdNorm === `${normalizedAlias}s`;
+      })
     ) : null;
     if (adSuelto && items.length > 0) {
       const prev = items[items.length - 1];
