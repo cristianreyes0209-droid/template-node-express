@@ -215,6 +215,13 @@ export const menu = {
           precio: 8000,
           tipo: "helado",
           aliases: ["2 bolas", "dos bolas"]
+        },
+        {
+          id: "extra_michelada",
+          nombre: "Michelada",
+          precio: 1500,
+          tipo: "bebida",
+          aliases: ["michelada", "extra michelada", "con michelada"]
         }
       ]
     },
@@ -225,7 +232,7 @@ export const menu = {
         {
           id: "crepe_de_paris",
           nombre: "Crepe de Paris",
-          precio: 29500,
+          precio: 29900,
           ingredientes: [
             "Pollo desmechado",
             "Carne desmechada",
@@ -281,7 +288,7 @@ export const menu = {
         {
           id: "desgranada_mixta",
           nombre: "Desgranada mixta",
-          precio: 27500,
+          precio: 27900,
           ingredientes: [
             "Res salteada",
             "Pollo salteado",
@@ -298,19 +305,19 @@ export const menu = {
             {
               id: "mixta",
               nombre: "Mixta",
-              precio: 27500,
+              precio: 27900,
               aliases: ["mixta", "mixto", "mixtos", "pollo y carne", "carne y pollo", "mixta pollo y carne"]
             },
             {
               id: "solo_pollo",
               nombre: "Solo Pollo",
-              precio: 27500,
+              precio: 27900,
               aliases: ["solo pollo", "con pollo", "de pollo"]
             },
             {
               id: "solo_carne",
               nombre: "Solo Carne",
-              precio: 27500,
+              precio: 27900,
               aliases: ["solo carne", "con carne", "de carne"]
             }
           ],
@@ -350,7 +357,7 @@ export const menu = {
    {
           id: "mexicana",
           nombre: "Mexicana",
-          precio: 27900,
+          precio: 28500,
           ingredientes: [
             "Carne desmechada",
             "Frijol",
@@ -397,7 +404,7 @@ export const menu = {
     {
       id: "especial",
       nombre: "Especial",
-      precio: 26500,
+      precio: 26900,
       ingredientes: [
         "Pollo desmechado",
         "Carne desmechada",
@@ -431,7 +438,7 @@ export const menu = {
     {
       id: "vegetales_mixta",
       nombre: "Vegetales Mixta",
-      precio: 24500,
+      precio: 24900,
       aliases: [
         "vegetales",
         "vegetal",
@@ -450,19 +457,19 @@ export const menu = {
         {
           id: "mixta",
           nombre: "Mixta",
-          precio: 24500,
+          precio: 24900,
           aliases: ["mixta", "pollo y carne", "carne y pollo", "mixta pollo y carne"]
         },
         {
           id: "solo_pollo",
           nombre: "Solo Pollo",
-          precio: 21000,
+          precio: 21900,
           aliases: ["solo pollo", "con pollo", "de pollo"]
         },
         {
           id: "solo_carne",
           nombre: "Solo Carne",
-          precio: 24500,
+          precio: 24900,
           aliases: ["solo carne", "con carne", "de carne"]
         }
       ],
@@ -485,7 +492,7 @@ export const menu = {
     {
       id: "ranchera_mixta",
       nombre: "Ranchera Mixta",
-      precio: 24500,
+      precio: 24900,
       aliases: [
         "ranchera mixta",
         "ranchera",
@@ -508,19 +515,19 @@ export const menu = {
         {
           id: "mixta",
           nombre: "Mixta",
-          precio: 24500,
+          precio: 24900,
           aliases: ["mixta", "pollo y carne", "carne y pollo"]
         },
         {
           id: "solo_pollo",
           nombre: "Solo pollo",
-          precio: 21000,
+          precio: 21900,
           aliases: ["solo pollo", "con pollo", "de pollo", "pollo"]
         },
         {
           id: "solo_carne",
           nombre: "Solo carne",
-          precio: 24500,
+          precio: 24900,
           aliases: ["solo carne", "con carne", "de carne", "carne"]
         }
       ],
@@ -544,7 +551,7 @@ export const menu = {
     {
       id: "bolognesa",
       nombre: "Bolognesa",
-      precio: 26500,
+      precio: 26900,
       ingredientes: [
         "Albóndigas mixtas de res y cerdo",
         "Salsa boloñesa",
@@ -568,7 +575,7 @@ export const menu = {
     {
       id: "pollo_champinon",
       nombre: "Pollo Champiñón",
-      precio: 16500,
+      precio: 16900,
       ingredientes: [
         "Pollo desmechado",
         "Champiñones",
@@ -622,7 +629,7 @@ export const menu = {
     {
       id: "pollo_y_pina",
       nombre: "Pollo y Piña",
-      precio: 15500,
+      precio: 15900,
       ingredientes: [
         "Pollo desmechado",
         "Piña calada",
@@ -663,7 +670,7 @@ export const menu = {
     {
       id: "pollo_y_carne",
       nombre: "Pollo y Carne",
-      precio: 17000,
+      precio: 17500,
       ingredientes: [
         "Pollo desmechado",
         "Carne desmechada",
@@ -696,7 +703,7 @@ export const menu = {
     {
       id: "pollo",
       nombre: "Pollo",
-      precio: 14500,
+      precio: 14900,
       ingredientes: [
         "Pollo desmechado",
         "Queso doble crema",
@@ -719,7 +726,7 @@ export const menu = {
     {
       id: "carne",
       nombre: "Carne",
-      precio: 17000,
+      precio: 17500,
       ingredientes: [
         "Carne desmechada",
         "Queso doble crema",
@@ -747,7 +754,7 @@ export const menu = {
     {
       id: "hawaiana",
       nombre: "Hawaiana",
-      precio: 14000,
+      precio: 14500,
       ingredientes: [
         "Jamón premium",
         "Piña calada",
@@ -774,7 +781,7 @@ export const menu = {
     {
       id: "ranchera",
       nombre: "Ranchera",
-      precio: 14500,
+      precio: 14900,
       ingredientes: [
         "Salchicha ranchera",
         "Maíz tierno",
@@ -808,7 +815,7 @@ export const menu = {
     {
       id: "costillas_bbq",
       nombre: "Costillas BBQ",
-      precio: 28500,
+      precio: 28900,
       ingredientes: [
         "Costillas de cerdo",
         "Salsa BBQ artesanal",
@@ -854,7 +861,7 @@ export const menu = {
     {
       id: "americana",
       nombre: "Americana",
-      precio: 19900,
+      precio: 20500,
       ingredientes: [
         "Salchicha perro",
         "Queso cuajada",
@@ -894,7 +901,7 @@ export const menu = {
     {
       id: "crepe_burguesa",
       nombre: "Crepe Burguesa",
-      precio: 24500,
+      precio: 24900,
       ingredientes: [
         "180 grs. de lomo de res madurado",
         "Queso americano",
@@ -936,7 +943,7 @@ export const menu = {
  {
       id: "italiana",
       nombre: "Italiana",
-      precio: 23500,
+      precio: 23900,
       ingredientes: [
         "Pepperoni",
         "Salami",
@@ -982,7 +989,7 @@ export const menu = {
         {
           id: "strogonoff_pollo",
           nombre: "Strogonoff de pollo",
-          precio: 29900,
+          precio: 30500,
           ingredientes: [
             "Pechuga de pollo",
             "Champiñones",
@@ -1013,7 +1020,7 @@ export const menu = {
         {
           id: "strogonoff_carne",
           nombre: "Strogonoff de carne",
-          precio: 34500,
+          precio: 34900,
           ingredientes: [
             "Lomo de res",
             "Champiñones",
@@ -1047,7 +1054,7 @@ export const menu = {
         {
           id: "crepe_mignon",
           nombre: "Crepe Mignon",
-          precio: 36500,
+          precio: 36900,
           ingredientes: [
             "Lomo de res",
             "Tocineta",
@@ -1076,7 +1083,7 @@ export const menu = {
         {
           id: "marinera",
           nombre: "Marinera",
-          precio: 37500,
+          precio: 37900,
           ingredientes: [
             "Mariscos",
             "Salsa marinera",
@@ -1102,7 +1109,7 @@ export const menu = {
         {
 id: "camarones_gourmet",
 nombre: "Camarones Gourmet",
-precio: 35500,
+precio: 35900,
 ingredientes: [
   "Camarones",
   "Salsa marinera",
@@ -1139,7 +1146,7 @@ extrasDisponibles: [
         {
 id: "mediterranea_camarones",
 nombre: "Mediterránea de camarones",
-precio: 33500,
+precio: 33900,
 ingredientes: [
   "Camarones tigre",
   "Ajo",
@@ -1179,7 +1186,7 @@ aliases: [
         {
        id: "mediterranea_mariscos",
 nombre: "Mediterránea de mariscos",
-precio: 35500,
+precio: 35900,
 ingredientes: [
   "Mariscos",
   "Ajo",
@@ -1213,7 +1220,7 @@ aliases: [
         {
           id: "atun",
           nombre: "Atún",
-          precio: 23500,
+          precio: 23900,
           ingredientes: [
             "Atún",
             "Mayo ajo",
@@ -1248,19 +1255,19 @@ aliases: [
         {
           id: "super_nachos",
           nombre: "Super Nachos",
-          precio: 32500,
+          precio: 33000,
           aliases: ["super nachos", "supernachos", "supernacho", "nachos especiales"]
         },
         {
           id: "nachos_paris",
           nombre: "Nachos París",
-          precio: 27000,
+          precio: 27500,
           aliases: ["nachos paris", "nachos de paris"]
         },
         {
           id: "nachos_cheddar",
           nombre: "Nachos con Cheddar",
-          precio: 18000,
+          precio: 19000,
           ingredientes: ["Nachos", "Queso cheddar (incluido)"],
           notas: "El queso cheddar ya está incluido en el precio. No cobrar cheddar como extra.",
           aliases: ["nachos cheddar", "nachos con queso", "nachos con cheddar"]
@@ -1274,7 +1281,7 @@ aliases: [
         {
           id: "strogonoff_veggie",
           nombre: "Strogonoff Veggie",
-          precio: 36500,
+          precio: 36900,
           ingredientes: [
             "Albóndigas de soya y huevo",
             "Champiñones",
@@ -1287,7 +1294,7 @@ aliases: [
           id: "vegetariana",
           nombre: "Vegetariana",
           precio: 13900,
-          ingredientes: ["Champiñones", "Maíz", "Pico de gallo", "Pimentón"],
+          ingredientes: ["Champiñones", "Maíz tierno", "Pico de gallo", "Queso doble crema", "Pimentón"],
           aliases: ["vegetariana", "crepe vegetariana", "vegetariano", "crepe vegetariano"],
           variantes: [
             {
@@ -1299,13 +1306,13 @@ aliases: [
             {
               id: "con_salsa_italiana",
               nombre: "Italiana",
-              precio: 14500,
+              precio: 14900,
               aliases: ["con salsa italiana", "con italiana", "salsa italiana", "italiana"]
             },
             {
               id: "con_salsa_bechamel",
               nombre: "Bechamel",
-              precio: 13900,
+              precio: 14500,
               aliases: ["con salsa bechamel", "con bechamel", "salsa bechamel", "bechamel"]
             }
           ]
@@ -1313,7 +1320,7 @@ aliases: [
         {
           id: "burguessa_veggie",
           nombre: "Burguessa Veggie",
-          precio: 25500,
+          precio: 25900,
           ingredientes: [
             "Proteína de soya y huevo",
             "Tomate",
@@ -1348,7 +1355,7 @@ aliases: [
         {
           id: "tropical",
           nombre: "Tropical",
-          precio: 16900,
+          precio: 17500,
           ingredientes: [
             "Durazno",
             "Fresa",
@@ -1363,7 +1370,7 @@ aliases: [
         {
           id: "crepostre",
           nombre: "Crepostre",
-          precio: 9500,
+          precio: 9900,
           ingredientes: ["Nutella", "Fresa", "Durazno"],
           aliases: ["crepostre", "cre postre"]
         }
@@ -1376,25 +1383,25 @@ aliases: [
         {
           id: "nutella_crepe",
           nombre: "Nutella",
-          precio: 11500,
+          precio: 11900,
           aliases: ["nutella", "crepe nutella", "de nutella"]
         },
         {
           id: "chocolate_crepe",
           nombre: "Chocolate",
-          precio: 10500,
+          precio: 10900,
           aliases: ["chocolate", "crepe chocolate", "de chocolate"]
         },
         {
           id: "arequipe_crepe",
           nombre: "Arequipe",
-          precio: 10500,
+          precio: 10900,
           aliases: ["arequipe", "crepe arequipe", "de arequipe"]
         },
         {
           id: "crepe_oblea",
           nombre: "Crepe Oblea",
-          precio: 11900,
+          precio: 12500,
           ingredientes: [
             "Arequipe",
             "Queso cuajada",
@@ -1484,10 +1491,10 @@ aliases: [
         {
           id: "limonada",
           nombre: "Limonada",
-          precio: 5000,
+          precio: 5500,
           aliases: ["limonada"],
           variantes: [
-            { id: "natural", nombre: "Natural", precio: 5000, aliases: ["natural", "limonada natural", "limonada"] },
+            { id: "natural", nombre: "Natural", precio: 5500, aliases: ["natural", "limonada natural", "limonada"] },
             { id: "coco", nombre: "De coco", precio: 10500, aliases: ["de coco", "coco", "limonada de coco", "limonada coco"] },
             { id: "cereza", nombre: "Cerezada", precio: 12500, aliases: ["de cereza", "cereza", "cerezada", "cerezadas", "limonada de cereza", "limonada cereza", "limonada cerezada", "limonada cerezadas"] }
           ]
@@ -1521,15 +1528,59 @@ aliases: [
         },
         {
           id: "gaseosa",
-          nombre: "Gaseosa",
+          nombre: "Gaseosa Postobón",
           precio: 5900,
-          aliases: ["gaseosa"]
+          aliases: ["gaseosa", "gaseosa postobon", "gaseosa postobón"]
         },
         {
           id: "te_hatsu",
           nombre: "Te Hatsu",
           precio: 9900,
           aliases: ["te hatsu", "hatsu"]
+        },
+        {
+          id: "bretana",
+          nombre: "Bretaña",
+          precio: 4900,
+          aliases: ["bretaña", "bretana"],
+          extrasDisponibles: ["extra_michelada"]
+        },
+        {
+          id: "coca_cola_zero",
+          nombre: "Coca Cola Zero",
+          precio: 5900,
+          aliases: ["coca cola zero", "cocacola zero", "coca zero"]
+        },
+        {
+          id: "jugos_hit",
+          nombre: "Jugos Hit",
+          precio: 5900,
+          aliases: ["jugo hit", "jugos hit", "hit"]
+        },
+        {
+          id: "mr_te_pet",
+          nombre: "Mr. Té Pet 500",
+          precio: 5900,
+          aliases: ["mr te", "mr té", "mr te pet", "mr té pet 500"]
+        },
+        {
+          id: "h2o_pet",
+          nombre: "H2O Pet 400",
+          precio: 5900,
+          aliases: ["h2o", "h2o pet", "h2o pet 400"]
+        },
+        {
+          id: "saborizadas_pet",
+          nombre: "Saborizadas Pet 400",
+          precio: 5900,
+          aliases: ["saborizada", "saborizadas", "saborizadas pet", "saborizadas pet 400"]
+        },
+        {
+          id: "club_colombia",
+          nombre: "Cerveza Club Colombia",
+          precio: 8900,
+          aliases: ["club colombia", "cerveza club colombia", "cerveza"],
+          extrasDisponibles: ["extra_michelada"]
         }
       ]
     },
@@ -1540,7 +1591,7 @@ aliases: [
         {
           id: "crepe_salada_clasica",
           nombre: "Crepe con masa clásica",
-          precio: 11500,
+          precio: 6000,
           aliases: ["crepe salada", "arma tu crepe", "crepe clasica"],
           extrasDisponibles: [
             "extra_carne", "extra_pollo", "tocineta", "extra_pepperoni",
