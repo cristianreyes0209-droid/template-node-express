@@ -1214,14 +1214,23 @@ for (const fragment of fragments) {
 
     // Fragmento suelto que ES el nombre de una adición (ej: "nutella y banano" se partió y quedó
     // "banano") → adjuntarla como extra al ítem anterior en vez de descartarla. Debe ser una mención
-    // "limpia" (el fragmento, ya sin cantidad/artículos, coincide exactamente con el alias) para no
-    // cobrar extras por texto suelto ambiguo que solo lo menciona de pasada dentro de una frase más
-    // larga (ej. "salsa de piña aparte" no debe cobrar Piña).
+    // "limpia" (el fragmento, ya sin cantidad/artículos, coincide exactamente con el alias) O traer un
+    // gatillo explícito ("con X", "extra X", "agregar X"...) dentro del fragmento — así "queso con fresa"
+    // sí agrega Fresa (gatillo "con fresa"), pero "salsa de piña aparte" sigue sin cobrar Piña de más
+    // (no trae ningún gatillo tipo "con piña"/"extra piña", y además ya se intercepta antes como nota
+    // de empaque).
     const fragAdNorm = normalizeText(fragmentLimpio);
     const adSuelto = fragAdNorm ? extraProducts.find((ex: any) =>
       (ex.aliases || []).some((al: string) => {
         const normalizedAlias = normalizeText(al);
-        return fragAdNorm === normalizedAlias || fragAdNorm === `${normalizedAlias}s`;
+        const esMencionExacta = fragAdNorm === normalizedAlias || fragAdNorm === `${normalizedAlias}s`;
+        const triggers = [
+          `con ${normalizedAlias}`, `extra ${normalizedAlias}`, `adicional ${normalizedAlias}`,
+          `adicional de ${normalizedAlias}`, `adicion ${normalizedAlias}`, `adicion de ${normalizedAlias}`,
+          `agregar ${normalizedAlias}`, `mas ${normalizedAlias}`
+        ];
+        const tieneGatilloExplicito = triggers.some(t => fragAdNorm.includes(t) || fragAdNorm.includes(`${t}s`));
+        return esMencionExacta || tieneGatilloExplicito;
       })
     ) : null;
     if (adSuelto && items.length > 0) {

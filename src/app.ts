@@ -5665,6 +5665,31 @@ return res.sendStatus(200);
     return res.sendStatus(200);
   }
 
+  // Si la "observación" en realidad es un pedido de adición real (ej. "con fresas") → cobrarla
+  // como extra del último ítem, igual que ya hace el paso de confirmación con texto libre, en vez
+  // de guardarla solo como nota sin cobrar. Mismo criterio que esperando_confirmacion: si
+  // modificarItemPorTexto detectó algo (extra y/o observación de ítem), ya quedó aplicado ahí —
+  // no volver a guardarlo también como observación general para no duplicarlo.
+  const modObs = modificarItemPorTexto(currentOrder, text);
+  if (modObs) {
+    currentOrder = getOrder(phone)!;
+    const partesObs: string[] = [];
+    if (modObs.agregados.length) partesObs.push("➕ " + modObs.agregados.join(", "));
+    if (modObs.obs) partesObs.push("📝 " + modObs.obs);
+    const resumenObs = currentOrder.items.map((i: any) => formatLineaItem(i, true)).join("\n");
+    updateOrderStep(phone, "esperando_confirmacion");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      `Anotado ✅ ${partesObs.join(" · ")}\n\n${resumenObs}\n\n¿Qué deseas hacer?`,
+      [
+        { id: "confirmar",   title: "✅ Confirmar" },
+        { id: "agregar_mas", title: "➕ Agregar" },
+        { id: "eliminar",    title: "🗑️ Quitar" }
+      ]
+    );
+    return res.sendStatus(200);
+  }
+
   if (esObservacionDireccion(text)) {
     updateOrderDireccionNotes(phone, text);
   } else {
