@@ -713,6 +713,23 @@ async function editarCarritoPorVoz(phone: string, text: string): Promise<boolean
   }
 }
 
+// Limpia todos los campos del pedido (no solo items) para empezar de cero — se usa cuando el
+// carrito queda vacío (por "eliminar todos" o por retirar el último producto) y también cuando el
+// cliente pide explícitamente un pedido nuevo/diferente. Evita que datos del pedido anterior
+// (observación, dirección, forma de pago...) sobrevivan a un pedido completamente distinto.
+function limpiarCamposPedido(order: any) {
+  order.items = [];
+  order.direccion = undefined;
+  order.tipoEntrega = undefined;
+  order.valorDomicilio = undefined;
+  order.formaPago = undefined;
+  order.observacionesGenerales = undefined;
+  order.observacionDireccion = undefined;
+  order.upsellingFrutasMostrado = false;
+  order.upsellingTocinetaMostrado = false;
+  order.upsellingToppingsMostrado = false;
+}
+
 // Aplica adiciones ("adicional de X"/"con X") y observaciones ("sin X"/"poco X") escritas como
 // texto libre al ÚLTIMO ítem del carrito. Reutiliza los extractores del parser (basados en
 // disparadores, que NO toman "sin X" como extra). Devuelve el resumen aplicado o null.
@@ -2106,7 +2123,10 @@ const esConsultaEstadoPedido = !esBoton && !esMensajeLargo && (
   lower.includes("cuanto falta") || lower.includes("cuánto falta") || lower.includes("ya viene") ||
   lower.includes("ya salio") || lower.includes("ya salió") || lower.includes("donde esta mi pedido") ||
   lower.includes("dónde está mi pedido") || lower.includes("estado de mi pedido") || lower.includes("estado del pedido") ||
-  lower.includes("donde esta el pedido") || lower.includes("se demora") || lower.includes("se esta demorando") || lower.includes("se está demorando")
+  lower.includes("donde esta el pedido") || lower.includes("se demora") || lower.includes("se esta demorando") || lower.includes("se está demorando") ||
+  lower.includes("ya llego") || lower.includes("ya llegó") || lower.includes("si llego") || lower.includes("si llegó") ||
+  lower.includes("confirmas si llego") || lower.includes("confirmas si llegó") || lower.includes("llego el domicilio") || lower.includes("llegó el domicilio") ||
+  lower.includes("llego mi pedido") || lower.includes("llegó mi pedido")
 );
 if (esConsultaEstadoPedido) {
   const ped = await getUltimoPedidoByPhone(phone);
@@ -2365,7 +2385,7 @@ if (/^\d[\d\s.?,]*$/.test(lower.trim()) && currentOrder?.step === "armando_pedid
 const _stepDom = currentOrder?.step;
 const _enPasoDirEntrega = _stepDom === "esperando_tipo_entrega" || _stepDom === "esperando_direccion" ||
   _stepDom === "esperando_confirmacion_direccion" || _stepDom === "esperando_complemento_direccion" ||
-  _stepDom === "esperando_sucursal";
+  _stepDom === "esperando_sucursal" || _stepDom === "confirmado";
 const esPreguntaCoberturaDomicilio =
   !esMensajeLargo && !_enPasoDirEntrega &&
   parsedItems.length === 0 && !parseResult.ambiguousChoice &&        // no es un pedido
@@ -2961,7 +2981,8 @@ const pideHumano =
 
 if (
   (currentOrder?.step === "armando_pedido" || currentOrder?.step === "post_agregar_producto" ||
-   currentOrder?.step === "esperando_confirmacion") && pideHumano
+   currentOrder?.step === "esperando_confirmacion" || currentOrder?.step === "esperando_direccion" ||
+   currentOrder?.step === "esperando_nombre" || currentOrder?.step === "esperando_datos_factura") && pideHumano
 ) {
   updateOrderStep(phone, "esperando_asesor");
   currentOrder = getOrder(phone)!;
@@ -3860,16 +3881,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       updateOrderStep(phone, "esperando_tipo_entrega");
       currentOrder = getOrder(phone)!;
       // Limpiar carrito anterior para empezar pedido nuevo
-      currentOrder.items = [];
-      currentOrder.direccion = undefined;
-      currentOrder.tipoEntrega = undefined;
-      currentOrder.valorDomicilio = undefined;
-      currentOrder.formaPago = undefined;
-      currentOrder.observacionesGenerales = undefined;
-      currentOrder.observacionDireccion = undefined;
-      currentOrder.upsellingFrutasMostrado = false;
-      currentOrder.upsellingTocinetaMostrado = false;
-      currentOrder.upsellingToppingsMostrado = false;
+      limpiarCamposPedido(currentOrder);
 
       await sendWhatsAppButtons(phone,
         "¿Como deseas recibir tu pedido?",
@@ -5485,7 +5497,7 @@ return res.sendStatus(200);
     lower.includes("elimina todo") || lower.includes("quita todo") || lower.includes("vaciar") ||
     lower.includes("todos los productos") || lower.includes("todo el pedido");
   if (esEliminarTodos && order.items.length > 0) {
-    order.items = [];
+    limpiarCamposPedido(order);
     updateOrderStep(phone, "armando_pedido");
     currentOrder = getOrder(phone)!;
     if (customer?.name) updateOrderName(phone, customer.name);
@@ -5528,6 +5540,7 @@ return res.sendStatus(200);
     currentOrder = getOrder(phone)!;
 
     if (!order.items || order.items.length === 0) {
+      limpiarCamposPedido(order);
       updateOrderStep(phone, "armando_pedido");
       currentOrder = getOrder(phone)!;
         if (customer?.name) {
@@ -5592,6 +5605,7 @@ return res.sendStatus(200);
         currentOrder = getOrder(phone)!;
 
         if (!order.items || order.items.length === 0) {
+          limpiarCamposPedido(order);
           updateOrderStep(phone, "armando_pedido");
           currentOrder = getOrder(phone)!;
           if (customer?.name) updateOrderName(phone, customer.name);
