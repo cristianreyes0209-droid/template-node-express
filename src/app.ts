@@ -6139,6 +6139,7 @@ return res.sendStatus(200);
           direccion: orderEf.direccion || "Recoger en tienda",
           pago: orderEf.formaPago || "No definido",
           tiempoEstimado: orderEf.tipoEntrega === "domicilio" ? "50 min" : "15 min",
+          observacion: orderEf.observacionesGenerales || "",
           horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
           sucursal: "La Villa"
         })
