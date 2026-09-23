@@ -7094,6 +7094,7 @@ app.get('/panel', (req, res) => {
 
 app.get('/carta', (req, res) => {
   res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(__dirname, '../public/carta.html'));
 });
 
