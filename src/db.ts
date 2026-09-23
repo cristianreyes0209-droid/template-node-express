@@ -102,6 +102,27 @@ pool.connect()
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `).catch(err => console.error("❌ Error creando tabla bonos_canjes:", err));
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS producto_estaciones (
+        producto_id TEXT PRIMARY KEY,
+        modulo BOOLEAN DEFAULT true,
+        cocina BOOLEAN DEFAULT false,
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `).catch(err => console.error("❌ Error creando tabla producto_estaciones:", err));
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS comandas_cocina (
+        id SERIAL PRIMARY KEY,
+        pedido_id INTEGER,
+        numero_orden INTEGER,
+        referencia TEXT,
+        items JSONB,
+        observaciones TEXT,
+        estado TEXT DEFAULT 'pendiente',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        listo_at TIMESTAMPTZ
+      )
+    `).catch(err => console.error("❌ Error creando tabla comandas_cocina:", err));
     client.release();
   })
   .catch((err) => {
@@ -497,6 +518,81 @@ export async function toggleBono(id: number, activo: boolean): Promise<boolean> 
     return (r.rowCount ?? 0) > 0;
   } catch (error) {
     console.error("❌ Error toggleBono:", error);
+    return false;
+  }
+}
+
+// ── Estaciones de preparación (módulo/cocina) ───────────────────────────────
+export async function getEstacionesProductos() {
+  try {
+    const r = await pool.query(`SELECT * FROM producto_estaciones`);
+    return r.rows;
+  } catch (error) {
+    console.error("❌ Error getEstacionesProductos:", error);
+    return [];
+  }
+}
+
+export async function setEstacionProducto(productoId: string, data: { modulo: boolean; cocina: boolean }): Promise<boolean> {
+  try {
+    await pool.query(
+      `INSERT INTO producto_estaciones (producto_id, modulo, cocina, updated_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (producto_id) DO UPDATE SET modulo = $2, cocina = $3, updated_at = NOW()`,
+      [productoId, data.modulo, data.cocina]
+    );
+    return true;
+  } catch (error) {
+    console.error("❌ Error setEstacionProducto:", error);
+    return false;
+  }
+}
+
+// ── Comandas de cocina (KDS) ─────────────────────────────────────────────────
+export async function crearComandaCocina(data: {
+  pedido_id?: number | null; numero_orden?: number | null; referencia?: string;
+  items: any[]; observaciones?: string;
+}) {
+  try {
+    const r = await pool.query(
+      `INSERT INTO comandas_cocina (pedido_id, numero_orden, referencia, items, observaciones)
+       VALUES ($1, $2, $3, $4::jsonb, $5) RETURNING *`,
+      [
+        data.pedido_id ?? null,
+        data.numero_orden ?? null,
+        data.referencia || "",
+        JSON.stringify(data.items || []),
+        data.observaciones || ""
+      ]
+    );
+    return r.rows[0];
+  } catch (error) {
+    console.error("❌ Error crearComandaCocina:", error);
+    return null;
+  }
+}
+
+export async function getComandasCocinaPendientes() {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM comandas_cocina
+       WHERE estado = 'pendiente'
+         AND created_at >= (NOW() AT TIME ZONE 'America/Bogota')::date::timestamp AT TIME ZONE 'America/Bogota'
+       ORDER BY created_at ASC`
+    );
+    return result.rows;
+  } catch (error) {
+    console.error("❌ Error getComandasCocinaPendientes:", error);
+    return [];
+  }
+}
+
+export async function marcarComandaCocinaLista(id: number): Promise<boolean> {
+  try {
+    const r = await pool.query(`UPDATE comandas_cocina SET estado = 'listo', listo_at = NOW() WHERE id = $1`, [id]);
+    return (r.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error("❌ Error marcarComandaCocinaLista:", error);
     return false;
   }
 }

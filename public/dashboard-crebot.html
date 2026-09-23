@@ -248,6 +248,8 @@
       <a href="#" onclick="abrirVentaLocal();return false" style="background:#0f766e;color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11h18M6 11V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4M5 11v8m14-8v8"/></svg>🍽️ Venta Local</a>
       <a href="#" onclick="abrirBonos();return false" style="background:#a16207;color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41 13.41 20.59a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1"/></svg>🎟️ Bonos</a>
       <a href="#" onclick="abrirQRMesas();return false" style="background:#1e3a8a;color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM18 14h3v3M14 18h3v3M18 18h3v3"/></svg>🖨️ QR Mesas</a>
+      <a href="#" onclick="abrirEstaciones();return false" style="background:#7c2d12;color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 11h.01M11 15h.01M15 15h.01M3 21h18M5 21V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14M9 21V9h6v12"/></svg>🍳 Estaciones</a>
+      <a href="#" onclick="abrirCocina();return false" style="background:#374151;color:#fff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>📺 Tableta Cocina</a>
       <a href="#" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chats entrantes</a>
       <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg>Órdenes</a>
       <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/><path d="M12 17.5H8m7.5-9 3 9M6 8h6l2 6"/></svg>Órdenes en camino</a>
@@ -363,6 +365,13 @@
   <div class="modal" style="width:640px">
     <div class="modal-head"><h3>🎟️ Bonos de descuento</h3><button class="modal-close" onclick="cerrarBonos()">&times;</button></div>
     <div class="modal-body" id="bonosBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="estacionesOverlay" onclick="if(event.target===this)cerrarEstaciones()">
+  <div class="modal" style="width:720px">
+    <div class="modal-head"><h3>🍳 Estaciones de preparación</h3><button class="modal-close" onclick="cerrarEstaciones()">&times;</button></div>
+    <div class="modal-body" id="estacionesBody"></div>
   </div>
 </div>
 
@@ -979,6 +988,55 @@ function cerrarBonos(){ document.getElementById("bonosOverlay").classList.remove
 function abrirQRMesas(){
   if(!sessionKey){ showToast("Primero ingresa al panel"); return; }
   window.open(API+"/panel/mesas-qr?key="+encodeURIComponent(sessionKey), "_blank");
+}
+function abrirCocina(){
+  if(!sessionKey){ showToast("Primero ingresa al panel"); return; }
+  window.open(API+"/cocina?key="+encodeURIComponent(sessionKey), "_blank");
+}
+
+/* ===================== ESTACIONES (módulo / cocina) ===================== */
+let ESTACIONES = [];
+async function abrirEstaciones(){
+  if(!sessionKey){ showToast("Primero ingresa al panel"); return; }
+  await cargarEstaciones();
+  renderEstaciones();
+  document.getElementById("estacionesOverlay").classList.add("open");
+}
+function cerrarEstaciones(){ document.getElementById("estacionesOverlay").classList.remove("open"); }
+async function cargarEstaciones(){
+  try{ const r = await fetch(API+"/api/estaciones?key="+encodeURIComponent(sessionKey)); if(r.ok) ESTACIONES = await r.json(); }catch(e){ ESTACIONES=[]; }
+}
+function renderEstaciones(){
+  const porCategoria = {};
+  ESTACIONES.forEach(p=>{ (porCategoria[p.categoria] = porCategoria[p.categoria] || []).push(p); });
+  const bloques = Object.keys(porCategoria).map(cat=>{
+    const filas = porCategoria[cat].map(p=>`
+      <div class="det-row" style="align-items:center">
+        <div>${esc(p.nombre)}</div>
+        <div style="display:flex;gap:14px">
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="mod_${p.id}" ${p.modulo?"checked":""} onchange="guardarEstacion('${p.id}', this.checked, document.getElementById('coc_${p.id}').checked)"> 🥞 Módulo
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="coc_${p.id}" ${p.cocina?"checked":""} onchange="guardarEstacion('${p.id}', document.getElementById('mod_${p.id}').checked, this.checked)"> 🍳 Cocina
+          </label>
+        </div>
+      </div>`).join("");
+    return `<div class="mesa-sec"><div class="mesa-sec-t">${esc(cat)}</div>${filas}</div>`;
+  }).join("");
+  document.getElementById("estacionesBody").innerHTML = `
+    <div class="muted" style="margin-bottom:10px">Marca a qué estación va cada producto cuando se confirma un pedido. Un producto puede ir a las dos. Los cambios se guardan solos.</div>
+    ${bloques || '<div class="muted">Sin productos</div>'}`;
+}
+async function guardarEstacion(productoId, modulo, cocina){
+  try{
+    const r = await fetch(API+"/api/estaciones", {
+      method:"POST", headers:{ "Content-Type":"application/json", "x-panel-key": sessionKey },
+      body: JSON.stringify({ key: sessionKey, producto_id: productoId, modulo, cocina })
+    });
+    const j = await r.json();
+    if(!(r.ok && j.ok)) showToast("❌ "+(j.error||"No se pudo guardar"));
+  }catch(e){ showToast("❌ Error de conexión"); }
 }
 async function cargarBonos(){
   try{ const r = await fetch(API+"/api/bonos?key="+encodeURIComponent(sessionKey)); if(r.ok) BONOS = await r.json(); }catch(e){ BONOS=[]; }

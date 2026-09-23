@@ -1,7 +1,8 @@
 import "dotenv/config";
 import "./db";
 import cron from "node-cron";
-import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, updatePedido, getPedidoById, getPedidoCancelableByPhone, getUltimoPedidoByPhone, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getMesaAbierta, getMesasAbiertas, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig, getBonoPorCodigo, getBonoPersonalPorTelefono, clienteYaUsoBono, registrarCanjeBono, listBonos, createBono, toggleBono } from "./db";
+import { upsertCustomer, getCustomerByPhone, setTestMode, getNextOrderNumber, getNextOrderNumberForDay, saveMessage, getConversaciones, getConversacion, savePedido, updatePedidoEstado, updatePedido, getPedidoById, getPedidoCancelableByPhone, getUltimoPedidoByPhone, getPedidosActivos, getPedidosArchivados, getPedidosUltimas24h, getPedidosPorFecha, getMesaAbierta, getMesasAbiertas, getDescuento, incrementarDescuento, resetDescuento, getClientesParaRecordarDescuento, marcarRecordatorioDescuento, getConfig, setConfig, getBonoPorCodigo, getBonoPersonalPorTelefono, clienteYaUsoBono, registrarCanjeBono, listBonos, createBono, toggleBono,
+getEstacionesProductos, setEstacionProducto, crearComandaCocina, getComandasCocinaPendientes, marcarComandaCocinaLista } from "./db";
 import path from "path";
 import { randomUUID } from 'node:crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -5475,9 +5476,17 @@ return res.sendStatus(200);
       );
       return res.sendStatus(200);
     }
-    // Texto libre (no pregunta) → guardarlo como observación del pedido
-    if (esObservacionDireccion(text)) updateOrderDireccionNotes(phone, text);
-    else updateOrderGeneralNotes(phone, text);
+    // Texto libre (no pregunta) → guardarlo como observación del pedido. Si parece un complemento
+    // de dirección (casa/apto/torre/piso...), anexarlo directo a order.direccion (igual que el paso
+    // dedicado esperando_complemento_direccion) para que sí llegue a la confirmación final, al
+    // aviso de sucursal y al ticket de cocina — observacionDireccion casi no se lee en esos lugares.
+    if (esObservacionDireccion(text)) {
+      if (currentOrder.direccion && !currentOrder.direccion.includes(text.trim())) {
+        currentOrder.direccion = currentOrder.direccion + " — " + text.trim();
+      }
+    } else {
+      updateOrderGeneralNotes(phone, text);
+    }
     await sendWhatsAppButtons(phone,
       `Anotado ✅ "${text}"\n\n¿Qué deseas hacer?`,
       [
@@ -5705,7 +5714,12 @@ return res.sendStatus(200);
   }
 
   if (esObservacionDireccion(text)) {
-    updateOrderDireccionNotes(phone, text);
+    // Complemento de dirección (casa/apto/torre/piso...) → anexarlo directo a currentOrder.direccion,
+    // igual que el paso dedicado esperando_complemento_direccion, para que sí llegue a la
+    // confirmación final, al aviso de sucursal y al ticket de cocina.
+    if (currentOrder.direccion && !currentOrder.direccion.includes(text.trim())) {
+      currentOrder.direccion = currentOrder.direccion + " — " + text.trim();
+    }
   } else {
     updateOrderGeneralNotes(phone, text);
   }
@@ -6138,33 +6152,21 @@ return res.sendStatus(200);
       } catch (e) { console.error("❌ Error enviando ubicación a domiciliarios:", e); }
     }
 
-    console.log(`🖨️ PRINTER CHECK (efectivo): sucursal="${orderEf.sucursal}", url="${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}"`);
+    console.log(`🖨️ PRINTER CHECK (efectivo): sucursal="${orderEf.sucursal}"`);
     if (orderEf.sucursal === "la_villa") {
-      await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre: orderEf.nombre || customer?.name || "Cliente",
-          telefono: orderEf.telefono,
-          pedidoTexto: construirLineasTicket(orderEf.items),
-          subtotal: totalsEf.subtotal,
-          domicilio: totalsEf.domicilio,
-          total: totalsEf.total,
-          direccion: orderEf.direccion || "Recoger en tienda",
-          pago: orderEf.formaPago || "No definido",
-          tiempoEstimado: orderEf.tipoEntrega === "domicilio" ? "50 min" : "15 min",
-          observacion: orderEf.observacionesGenerales || "",
-          horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
-          sucursal: "La Villa"
-        })
-      }).then(async r => {
-        if (!r.ok) {
-          const body = await r.text().catch(() => "");
-          console.error(`❌ Impresora La Villa: HTTP ${r.status} → ${body}`);
-        } else {
-          console.log("🖨️ Impresora La Villa: OK");
-        }
-      }).catch(err => console.error("❌ Impresora La Villa (red):", err));
+      despacharComanda({
+        nombre: orderEf.nombre || customer?.name || "Cliente",
+        telefono: orderEf.telefono,
+        subtotal: totalsEf.subtotal,
+        domicilio: totalsEf.domicilio,
+        total: totalsEf.total,
+        direccion: orderEf.direccion || "Recoger en tienda",
+        pago: orderEf.formaPago || "No definido",
+        tiempoEstimado: orderEf.tipoEntrega === "domicilio" ? "50 min" : "15 min",
+        observacion: orderEf.observacionesGenerales || "",
+        sucursal: "La Villa",
+        numeroOrden: orderEf.numeroOrden
+      }, orderEf.items).catch(err => console.error("❌ despacharComanda (efectivo):", err));
     }
 
     const resumenEf = orderEf.items.map((item: any) => formatLineaItem(item)).join("\n");
@@ -6448,33 +6450,21 @@ return res.sendStatus(200);
       } catch (e) { console.error(`❌ ERROR reenviando comprobante a ${destino}:`, e); }
     }
 
-    console.log(`🖨️ PRINTER CHECK (comprobante): sucursal="${order.sucursal}", url="${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}"`);
+    console.log(`🖨️ PRINTER CHECK (comprobante): sucursal="${order.sucursal}"`);
     if (order.sucursal === "la_villa") {
-      await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombre: order.nombre || customer?.name || "Cliente",
-          telefono: order.telefono,
-          pedidoTexto: construirLineasTicket(order.items),
-          subtotal: totals.subtotal,
-          domicilio: totals.domicilio,
-          total: totals.total,
-          direccion: order.direccion || "Recoger en tienda",
-          pago: order.formaPago || "No definido",
-          tiempoEstimado: order.tipoEntrega === "domicilio" ? "50 min" : "15 min",
-          observacion: order.observacionesGenerales || "",
-          horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
-          sucursal: "La Villa"
-        })
-      }).then(async r => {
-        if (!r.ok) {
-          const body = await r.text().catch(() => "");
-          console.error(`❌ Impresora La Villa: HTTP ${r.status} → ${body}`);
-        } else {
-          console.log("🖨️ Impresora La Villa: OK");
-        }
-      }).catch(err => console.error("❌ Impresora La Villa (red):", err));
+      despacharComanda({
+        nombre: order.nombre || customer?.name || "Cliente",
+        telefono: order.telefono,
+        subtotal: totals.subtotal,
+        domicilio: totals.domicilio,
+        total: totals.total,
+        direccion: order.direccion || "Recoger en tienda",
+        pago: order.formaPago || "No definido",
+        tiempoEstimado: order.tipoEntrega === "domicilio" ? "50 min" : "15 min",
+        observacion: order.observacionesGenerales || "",
+        sucursal: "La Villa",
+        numeroOrden: order.numeroOrden
+      }, order.items).catch(err => console.error("❌ despacharComanda (comprobante):", err));
     }
 
     const resumenComprobante =
@@ -7309,6 +7299,149 @@ function construirLineasTicket(items: any[]): string[] {
   return lineas;
 }
 
+// ── Estaciones de preparación (módulo/cocina) ───────────────────────────────
+let _menuFlatCache: any[] | null = null;
+function menuProductosFlat(): any[] {
+  if (!_menuFlatCache) {
+    _menuFlatCache = (menu.categorias as any[]).flatMap((c: any) => ((c.productos as any[]) || []).map((p: any) => ({ ...p, categoria: c.id })));
+  }
+  return _menuFlatCache;
+}
+
+// Resuelve el producto_id de menu.ts a partir del nombre guardado en el ítem del pedido
+// (los ítems no guardan el id, solo `producto`, el nombre visible). Match exacto normalizado
+// primero, si no, substring — igual de tolerante que el resto del parser.
+function resolverProductoId(item: any): string | null {
+  const nombreItem = normalizeText(item?.producto || "");
+  if (!nombreItem) return null;
+  const prods = menuProductosFlat();
+  const exacto = prods.find((p: any) => normalizeText(p.nombre) === nombreItem);
+  if (exacto) return exacto.id;
+  const parcial = prods.find((p: any) => nombreItem.includes(normalizeText(p.nombre)) || normalizeText(p.nombre).includes(nombreItem));
+  return parcial ? parcial.id : null;
+}
+
+// Divide los ítems de un pedido entre módulo y cocina según producto_estaciones.
+// Un producto sin fila configurada va SOLO a módulo (comportamiento por defecto, no rompe nada
+// mientras no se configure nada desde el panel). Un producto puede ir a las dos a la vez.
+async function clasificarItemsPorEstacion(items: any[]): Promise<{ modulo: any[]; cocina: any[] }> {
+  const asignaciones = await getEstacionesProductos();
+  const mapa = new Map<string, { modulo: boolean; cocina: boolean }>();
+  for (const a of asignaciones) mapa.set(a.producto_id, { modulo: !!a.modulo, cocina: !!a.cocina });
+
+  const modulo: any[] = [];
+  const cocina: any[] = [];
+  for (const item of items || []) {
+    const id = resolverProductoId(item);
+    const asign = id ? mapa.get(id) : null;
+    const vaAModulo = asign ? asign.modulo : true;   // default: módulo
+    const vaACocina = asign ? asign.cocina : false;  // default: no cocina
+    if (vaAModulo) modulo.push(item);
+    if (vaACocina) cocina.push(item);
+  }
+  return { modulo, cocina };
+}
+
+// Manda la comanda completa a la impresora de caja (igual que siempre), y además reparte los
+// ítems entre el módulo (impresora nueva, opcional vía IMPRESORA_MODULO_URL) y la cocina (tableta
+// KDS, vía comandas_cocina). Si un ítem no está configurado, se comporta como "solo módulo" y la
+// caja sigue recibiendo el pedido completo sin cambios — así el negocio no pierde nada si aún no
+// ha configurado las estaciones.
+type DatosComanda = {
+  nombre: string; telefono: string; subtotal: number; domicilio: number; total: number;
+  direccion: string; pago: string; tiempoEstimado: string; observacion: string; sucursal: string;
+  pedidoId?: number | null; numeroOrden?: number | null;
+};
+
+// Manda el pedido COMPLETO a la impresora de caja — sin cambios respecto a como funcionaba antes
+// de dividir por estaciones. Devuelve la Response del fetch para que el caller (ej. el endpoint de
+// reimpresión manual) pueda reportarle éxito/error al panel.
+async function imprimirCaja(datosBase: DatosComanda, items: any[], horaPedido?: string) {
+  const urlImpresoraVilla = process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir";
+  return fetch(urlImpresoraVilla, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      nombre: datosBase.nombre,
+      telefono: datosBase.telefono,
+      pedidoTexto: construirLineasTicket(items),
+      subtotal: datosBase.subtotal,
+      domicilio: datosBase.domicilio,
+      total: datosBase.total,
+      direccion: datosBase.direccion,
+      pago: datosBase.pago,
+      tiempoEstimado: datosBase.tiempoEstimado,
+      observacion: datosBase.observacion,
+      horaPedido: horaPedido || new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
+      sucursal: datosBase.sucursal
+    })
+  });
+}
+
+// Reparte los ítems entre módulo (impresora nueva, opcional vía IMPRESORA_MODULO_URL) y cocina
+// (tableta KDS, vía comandas_cocina), según la configuración del panel. No toca la caja.
+async function despacharModuloCocina(datosBase: DatosComanda, items: any[]) {
+  const horaPedido = new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" });
+  let clasificado: { modulo: any[]; cocina: any[] };
+  try {
+    clasificado = await clasificarItemsPorEstacion(items);
+  } catch (e) {
+    console.error("❌ Error clasificando ítems por estación:", e);
+    return;
+  }
+
+  // Módulo: solo si hay ítems asignados y la impresora está configurada.
+  const urlModulo = process.env.IMPRESORA_MODULO_URL;
+  if (clasificado.modulo.length > 0 && urlModulo) {
+    try {
+      const r = await fetch(urlModulo, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nombre: `🥞 MÓDULO — ${datosBase.nombre}`,
+          telefono: datosBase.telefono,
+          pedidoTexto: construirLineasTicket(clasificado.modulo),
+          subtotal: datosBase.subtotal,
+          domicilio: 0,
+          total: datosBase.total,
+          direccion: datosBase.direccion,
+          pago: datosBase.pago,
+          tiempoEstimado: datosBase.tiempoEstimado,
+          observacion: datosBase.observacion,
+          horaPedido,
+          sucursal: datosBase.sucursal
+        })
+      });
+      if (!r.ok) console.error(`❌ Impresora módulo: HTTP ${r.status} → ${await r.text().catch(() => "")}`);
+      else console.log("🖨️ Impresora módulo: OK");
+    } catch (e) { console.error("❌ Impresora módulo (red):", e); }
+  }
+
+  // Cocina: se guarda como comanda para que la tableta (KDS) la muestre; no se imprime.
+  if (clasificado.cocina.length > 0) {
+    try {
+      await crearComandaCocina({
+        pedido_id: datosBase.pedidoId ?? null,
+        numero_orden: datosBase.numeroOrden ?? null,
+        referencia: datosBase.nombre,
+        items: clasificado.cocina,
+        observaciones: datosBase.observacion
+      });
+    } catch (e) { console.error("❌ Error creando comanda de cocina:", e); }
+  }
+}
+
+// Despacho completo: caja (pedido completo, como siempre) + módulo/cocina (repartido por estación).
+async function despacharComanda(datosBase: DatosComanda, items: any[]) {
+  try {
+    const r = await imprimirCaja(datosBase, items);
+    if (!r.ok) console.error(`❌ Impresora caja: HTTP ${r.status} → ${await r.text().catch(() => "")}`);
+    else console.log("🖨️ Impresora caja: OK");
+  } catch (e) { console.error("❌ Impresora caja (red):", e); }
+
+  await despacharModuloCocina(datosBase, items);
+}
+
 // ── Venta Local (pedidos por mesa, cuenta abierta) — solo La Villa ─────────────
 const SUC_LOCAL = "la_villa";
 
@@ -7320,30 +7453,21 @@ function subtotalDesdeItems(items: any[]): number {
   }, 0);
 }
 
-// Imprime una ronda de venta local en la impresora de La Villa (comanda de cocina).
+// Imprime una ronda de venta local en la impresora de La Villa (comanda de cocina), repartida
+// también entre módulo/cocina según la configuración del panel.
 async function imprimirComandaLocal(encabezado: string, itemsRonda: any[], mesa: string) {
-  try {
-    const r = await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nombre: encabezado,
-        telefono: "",
-        pedidoTexto: construirLineasTicket(itemsRonda),
-        subtotal: subtotalDesdeItems(itemsRonda),
-        domicilio: 0,
-        total: subtotalDesdeItems(itemsRonda),
-        direccion: mesa,
-        pago: "Pendiente (mesa)",
-        tiempoEstimado: "En mesa",
-        observacion: "",
-        horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
-        sucursal: "La Villa"
-      })
-    });
-    if (!r.ok) console.error(`❌ Impresora venta local: HTTP ${r.status} → ${await r.text().catch(() => "")}`);
-    else console.log(`🖨️ Comanda local impresa (${mesa})`);
-  } catch (e) { console.error("❌ Impresora venta local (red):", e); }
+  await despacharComanda({
+    nombre: encabezado,
+    telefono: "",
+    subtotal: subtotalDesdeItems(itemsRonda),
+    domicilio: 0,
+    total: subtotalDesdeItems(itemsRonda),
+    direccion: mesa,
+    pago: "Pendiente (mesa)",
+    tiempoEstimado: "En mesa",
+    observacion: "",
+    sucursal: "La Villa"
+  }, itemsRonda).catch(e => console.error("❌ despacharComanda (venta local):", e));
 }
 
 // Mesas con cuenta abierta hoy en La Villa (para armar el grid del panel).
@@ -7550,6 +7674,39 @@ app.get('/api/menu', (req, res) => {
   res.json(prods);
 });
 
+// ── Estaciones de preparación (módulo/cocina) ───────────────────────────────
+app.get('/api/estaciones', async (req, res) => {
+  const key = req.query.key as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ error: "Acceso no autorizado" });
+  const asignaciones = await getEstacionesProductos();
+  const mapa = new Map<string, { modulo: boolean; cocina: boolean }>();
+  for (const a of asignaciones) mapa.set(a.producto_id, { modulo: !!a.modulo, cocina: !!a.cocina });
+  const productos = (menu.categorias as any[])
+    .filter((c: any) => c.id !== "extras")
+    .flatMap((c: any) => ((c.productos as any[]) || []).map((pr: any) => {
+      const asign = mapa.get(pr.id);
+      return {
+        id: pr.id,
+        nombre: pr.nombre,
+        categoria: c.nombre,
+        modulo: asign ? asign.modulo : true,
+        cocina: asign ? asign.cocina : false
+      };
+    }));
+  res.json(productos);
+});
+
+app.post('/api/estaciones', async (req, res) => {
+  const body = req.body || {};
+  const key = (req.headers['x-panel-key'] as string) || body.key;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  const productoId = (body.producto_id || "").trim();
+  if (!productoId) return res.status(400).json({ ok: false, error: "Falta producto_id" });
+  const ok = await setEstacionProducto(productoId, { modulo: !!body.modulo, cocina: !!body.cocina });
+  if (!ok) return res.status(500).json({ ok: false, error: "No se pudo guardar" });
+  res.json({ ok: true });
+});
+
 // ── Bonos (cupones de descuento) ───────────────────────────────────────────
 app.get('/api/bonos', async (req, res) => {
   const key = req.query.key as string | undefined;
@@ -7617,6 +7774,33 @@ app.get('/panel/mesas-qr', (req, res) => {
   }
   res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
   res.sendFile(path.join(__dirname, '../public/mesas-qr.html'));
+});
+
+// ── Tableta de cocina (KDS) ──────────────────────────────────────────────────
+app.get('/cocina', (req, res) => {
+  const key = req.query.key;
+  if (key !== process.env.PANEL_KEY) {
+    return res.status(401).send('Acceso denegado');
+  }
+  res.setHeader('Content-Security-Policy', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;");
+  res.sendFile(path.join(__dirname, '../public/cocina.html'));
+});
+
+app.get('/api/cocina/comandas', async (req, res) => {
+  const key = req.query.key as string | undefined;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ error: "Acceso no autorizado" });
+  res.json(await getComandasCocinaPendientes());
+});
+
+app.post('/api/cocina/comandas/:id/listo', async (req, res) => {
+  const body = req.body || {};
+  const key = (req.headers['x-panel-key'] as string) || body.key;
+  if (!key || key !== process.env.PANEL_KEY) return res.status(401).json({ ok: false, error: "Acceso no autorizado" });
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ ok: false, error: "id inválido" });
+  const ok = await marcarComandaCocinaLista(id);
+  if (!ok) return res.status(500).json({ ok: false, error: "No se pudo actualizar" });
+  res.json({ ok: true });
 });
 
 app.get('/api/pedidos', async (req, res) => {
@@ -7726,31 +7910,30 @@ app.post('/api/pedidos/:id/imprimir', async (req, res) => {
   let items = pedido.items;
   if (typeof items === "string") { try { items = JSON.parse(items); } catch { items = []; } }
   items = items || [];
+  const datosReimpresion = {
+    nombre: pedido.nombre || "Cliente",
+    telefono: pedido.phone,
+    subtotal: pedido.subtotal,
+    domicilio: pedido.domicilio,
+    total: pedido.total,
+    direccion: pedido.direccion || "Recoger en tienda",
+    pago: pedido.forma_pago || "No definido",
+    tiempoEstimado: pedido.tipo_entrega === "domicilio" ? "50 min" : "15 min",
+    observacion: pedido.observaciones_generales || "",
+    sucursal: "La Villa",
+    pedidoId: id,
+    numeroOrden: pedido.numero_orden
+  };
   try {
-    const r = await fetch(`${process.env.IMPRESORA_LA_VILLA_URL || "https://print.tecmenu.com/imprimir"}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nombre: pedido.nombre || "Cliente",
-        telefono: pedido.phone,
-        pedidoTexto: construirLineasTicket(items),
-        subtotal: pedido.subtotal,
-        domicilio: pedido.domicilio,
-        total: pedido.total,
-        direccion: pedido.direccion || "Recoger en tienda",
-        pago: pedido.forma_pago || "No definido",
-        tiempoEstimado: pedido.tipo_entrega === "domicilio" ? "50 min" : "15 min",
-        observacion: pedido.observaciones_generales || "",
-        horaPedido: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" }),
-        sucursal: "La Villa"
-      })
-    });
+    const r = await imprimirCaja(datosReimpresion, items);
     if (!r.ok) {
       const b = await r.text().catch(() => "");
       console.error(`❌ Reimpresión pedido ${id}: HTTP ${r.status} → ${b}`);
       return res.status(502).json({ ok: false, error: `Impresora HTTP ${r.status}` });
     }
     console.log(`🖨️ Reimpresión OK pedido ${id}`);
+    // Módulo/cocina también se re-despachan (sin reintentar caja, ya confirmada arriba).
+    despacharModuloCocina(datosReimpresion, items).catch(e => console.error("❌ Reimpresión módulo/cocina:", e));
     return res.json({ ok: true });
   } catch (e: any) {
     console.error(`❌ Reimpresión pedido ${id} (red):`, e);

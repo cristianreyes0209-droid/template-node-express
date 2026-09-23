@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cocina — Las Crepes de París</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a1a;
+    margin: 0;
+    padding: 16px;
+    color: #fff;
+    min-height: 100vh;
+  }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .topbar h1 { font-size: 20px; margin: 0; }
+  .topbar .contador { font-size: 15px; color: #aaa; }
+  .topbar button {
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: #2a2a2a;
+    border: 2px solid #444;
+    border-radius: 14px;
+    padding: 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: transform .1s, background .15s;
+  }
+  .card:active { transform: scale(0.97); background: #1f6b3a; }
+  .card.nueva { border-color: #e8b93f; animation: pulse 1.2s ease-in-out 2; }
+  @keyframes pulse { 0%,100% { border-color: #444; } 50% { border-color: #e8b93f; } }
+  .card .top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .card .pedido { font-size: 18px; font-weight: 800; }
+  .card .hora { font-size: 13px; color: #999; }
+  .card .ref { font-size: 14px; color: #ccc; margin-bottom: 10px; }
+  .card .items { font-size: 15px; line-height: 1.6; }
+  .card .items .linea { padding: 2px 0; border-bottom: 1px dashed #444; }
+  .card .obs { margin-top: 10px; font-size: 13px; color: #e8b93f; }
+  .card .marcar { margin-top: 12px; text-align: center; font-size: 13px; color: #7ec98f; font-weight: 700; }
+  .vacio { text-align: center; color: #777; padding: 60px 0; font-size: 16px; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>🍳 Cocina — La Villa</h1>
+    <div class="contador" id="contador">0 pendientes</div>
+    <button onclick="cargar()">🔄 Actualizar</button>
+  </div>
+  <div class="grid" id="grid"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const KEY = params.get('key') || '';
+const API = window.location.origin;
+
+let seenIds = new Set();
+let audioCtx = null;
+
+function sonarAlerta() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+    o.start(); o.stop(audioCtx.currentTime + 0.5);
+  } catch (e) {}
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function fmtHora(iso) {
+  try { return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' }); }
+  catch (e) { return ''; }
+}
+
+async function marcarListo(id) {
+  try {
+    await fetch(API + '/api/cocina/comandas/' + id + '/listo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-panel-key': KEY },
+      body: JSON.stringify({ key: KEY })
+    });
+  } catch (e) {}
+  await cargar(false);
+}
+
+function renderComandas(comandas) {
+  const grid = document.getElementById('grid');
+  document.getElementById('contador').textContent = comandas.length + ' pendiente' + (comandas.length === 1 ? '' : 's');
+  if (comandas.length === 0) {
+    grid.innerHTML = '<div class="vacio">✅ No hay comandas pendientes en cocina</div>';
+    return;
+  }
+  grid.innerHTML = comandas.map(c => {
+    let items = c.items;
+    if (typeof items === 'string') { try { items = JSON.parse(items); } catch (e) { items = []; } }
+    const filas = (items || []).map(it => {
+      const extras = (it.extras || []).filter(e => e && e.nombre).map(e => '+' + e.nombre).join(', ');
+      const obsItem = it.observaciones ? ' (' + esc(it.observaciones) + ')' : '';
+      return `<div class="linea"><b>${it.cantidad || 1}x</b> ${esc(it.producto)}${it.variante ? ' - ' + esc(it.variante) : ''}${extras ? ' <i>' + esc(extras) + '</i>' : ''}${obsItem}</div>`;
+    }).join('');
+    const esNueva = !seenIds.has(c.id);
+    return `<div class="card${esNueva ? ' nueva' : ''}" onclick="marcarListo(${c.id})">
+      <div class="top"><span class="pedido">#${c.numero_orden || c.id}</span><span class="hora">${fmtHora(c.created_at)}</span></div>
+      <div class="ref">${esc(c.referencia || '')}</div>
+      <div class="items">${filas}</div>
+      ${c.observaciones ? `<div class="obs">📝 ${esc(c.observaciones)}</div>` : ''}
+      <div class="marcar">✅ Tocar cuando esté listo</div>
+    </div>`;
+  }).join('');
+}
+
+async function cargar(conAlerta = true) {
+  try {
+    const r = await fetch(API + '/api/cocina/comandas?key=' + encodeURIComponent(KEY));
+    if (!r.ok) return;
+    const comandas = await r.json();
+    const idsActuales = new Set(comandas.map(c => c.id));
+    const hayNuevas = conAlerta && comandas.some(c => !seenIds.has(c.id)) && seenIds.size > 0;
+    if (hayNuevas) sonarAlerta();
+    renderComandas(comandas);
+    seenIds = idsActuales;
+  } catch (e) {}
+}
+
+cargar();
+setInterval(() => cargar(true), 8000);
+</script>
+</body>
+</html>
