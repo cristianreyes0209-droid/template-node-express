@@ -110,6 +110,15 @@ pool.connect()
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `).catch(err => console.error("❌ Error creando tabla producto_estaciones:", err));
+    // Adiciones que necesitan preparación en cocina además de salir en el módulo (una sola vez;
+    // si el usuario ya las cambió desde el panel, no se pisan).
+    await client.query(`
+      INSERT INTO producto_estaciones (producto_id, modulo, cocina) VALUES
+        ('tocineta', true, true),
+        ('extra_pepperoni', true, true),
+        ('extra_salami', true, true)
+      ON CONFLICT (producto_id) DO NOTHING
+    `).catch(err => console.error("❌ Error sembrando producto_estaciones:", err));
     await client.query(`
       CREATE TABLE IF NOT EXISTS comandas_cocina (
         id SERIAL PRIMARY KEY,

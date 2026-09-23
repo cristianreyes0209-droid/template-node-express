@@ -7309,21 +7309,49 @@ function menuProductosFlat(): any[] {
 }
 
 // Resuelve el producto_id de menu.ts a partir del nombre guardado en el ítem del pedido
-// (los ítems no guardan el id, solo `producto`, el nombre visible). Match exacto normalizado
-// primero, si no, substring — igual de tolerante que el resto del parser.
+// (los ítems no guardan el id, solo `producto`, el nombre visible). Match exacto normalizado,
+// luego por alias (ej. "Jugo Mora En Agua" de la carta digital → alias "jugo mora" → jugo_mora),
+// luego substring del nombre — igual de tolerante que el resto del parser.
 function resolverProductoId(item: any): string | null {
   const nombreItem = normalizeText(item?.producto || "");
   if (!nombreItem) return null;
   const prods = menuProductosFlat();
   const exacto = prods.find((p: any) => normalizeText(p.nombre) === nombreItem);
   if (exacto) return exacto.id;
+  const porAlias = prods.find((p: any) =>
+    (p.aliases || []).some((al: string) => {
+      const a = normalizeText(al);
+      return a.length >= 4 && (nombreItem.includes(a) || a.includes(nombreItem));
+    })
+  );
+  if (porAlias) return porAlias.id;
   const parcial = prods.find((p: any) => nombreItem.includes(normalizeText(p.nombre)) || normalizeText(p.nombre).includes(nombreItem));
   return parcial ? parcial.id : null;
+}
+
+// Resuelve el id de una adición (extras category) a partir del ítem de extra guardado en el
+// pedido. Los extras armados por el parser del bot ya traen `id` (usarlo directo); los que vienen
+// de la carta digital (mesas/QR, registrarMesa) solo traen `nombre`, sin id — match por nombre/alias.
+function resolverExtraId(extra: any): string | null {
+  if (extra?.id) return extra.id;
+  const nombreExtra = normalizeText(extra?.nombre || "");
+  if (!nombreExtra) return null;
+  const extrasCat = menuProductosFlat().filter((p: any) => p.categoria === "extras");
+  const exacto = extrasCat.find((p: any) => normalizeText(p.nombre) === nombreExtra);
+  if (exacto) return exacto.id;
+  const porAlias = extrasCat.find((p: any) => (p.aliases || []).some((al: string) => normalizeText(al) === nombreExtra));
+  return porAlias ? porAlias.id : null;
 }
 
 // Divide los ítems de un pedido entre módulo y cocina según producto_estaciones.
 // Un producto sin fila configurada va SOLO a módulo (comportamiento por defecto, no rompe nada
 // mientras no se configure nada desde el panel). Un producto puede ir a las dos a la vez.
+//
+// Las adiciones (extras) pueden tener SU PROPIA estación, independiente del producto al que van
+// pegadas: si el producto principal no va a cocina pero una de sus adiciones sí está marcada para
+// cocina, se agrega una línea aparte solo con esa adición (sin duplicar el producto completo) —
+// así cocina prepara la adición y se la entrega a quien arma el pedido en el módulo. Si el
+// producto principal ya va completo a cocina, la adición ya se ve ahí (no se duplica).
 async function clasificarItemsPorEstacion(items: any[]): Promise<{ modulo: any[]; cocina: any[] }> {
   const asignaciones = await getEstacionesProductos();
   const mapa = new Map<string, { modulo: boolean; cocina: boolean }>();
@@ -7337,7 +7365,22 @@ async function clasificarItemsPorEstacion(items: any[]): Promise<{ modulo: any[]
     const vaAModulo = asign ? asign.modulo : true;   // default: módulo
     const vaACocina = asign ? asign.cocina : false;  // default: no cocina
     if (vaAModulo) modulo.push(item);
-    if (vaACocina) cocina.push(item);
+    if (vaACocina) {
+      cocina.push(item);
+    } else {
+      // El producto principal no va a cocina, pero puede que alguna de sus adiciones sí.
+      for (const extra of item.extras || []) {
+        const extraId = resolverExtraId(extra);
+        const asignExtra = extraId ? mapa.get(extraId) : null;
+        if (asignExtra?.cocina) {
+          cocina.push({
+            producto: `➕ ${extra.nombre} (${item.producto})`,
+            cantidad: extra.cantidad || 1,
+            extras: []
+          });
+        }
+      }
+    }
   }
   return { modulo, cocina };
 }
@@ -7682,13 +7725,13 @@ app.get('/api/estaciones', async (req, res) => {
   const mapa = new Map<string, { modulo: boolean; cocina: boolean }>();
   for (const a of asignaciones) mapa.set(a.producto_id, { modulo: !!a.modulo, cocina: !!a.cocina });
   const productos = (menu.categorias as any[])
-    .filter((c: any) => c.id !== "extras")
     .flatMap((c: any) => ((c.productos as any[]) || []).map((pr: any) => {
       const asign = mapa.get(pr.id);
       return {
         id: pr.id,
         nombre: pr.nombre,
-        categoria: c.nombre,
+        categoria: c.id === "extras" ? "➕ Adiciones" : c.nombre,
+        esAdicion: c.id === "extras",
         modulo: asign ? asign.modulo : true,
         cocina: asign ? asign.cocina : false
       };
