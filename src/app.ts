@@ -800,6 +800,17 @@ function esObservacionDireccion(text: string): boolean {
   return PALABRAS_DIRECCION.some(p => norm.includes(p));
 }
 
+// Tras confirmar, un producto del men\u00fa ("Breta\u00f1a") es un pedido nuevo, no una nota para el repartidor.
+async function ofrecerNuevoPedidoPostConfirmacion(phone: string) {
+  await sendWhatsAppButtons(phone,
+    "Tu pedido ya est\u00e1 confirmado \ud83d\udd25 y no puedo agregarle productos.\n\n\u00bfQuieres hacer un *nuevo pedido* con eso?",
+    [
+      { id: "nuevo_pedido_conf", title: "Nuevo pedido \ud83e\udd5e" },
+      { id: "hablar_asesor_conf", title: "Hablar con asesor \ud83d\udcac" }
+    ]
+  );
+}
+
 function buildResumenFooter(order: any, totals: { subtotal: number; domicilio: number; total: number }, descripcionDomicilio?: string) {
   const notaDomicilio = "\n⚠️ _El costo del domicilio es calculado por Google Maps y puede estar sujeto a ajustes._";
   const domicilioLinea = order.tipoEntrega === "domicilio"
@@ -1756,6 +1767,10 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     !STEPS_NO_INTERCEPTAR.has(currentOrder.step || "") &&
     esObservacionDireccion(text)
   ) {
+    if (currentOrder.step === "confirmado" && parseOrder(text).items.length > 0) {
+      await ofrecerNuevoPedidoPostConfirmacion(phone);
+      return res.sendStatus(200);
+    }
     updateOrderDireccionNotes(phone, text.trim());
     const msgAnotado = currentOrder.step === "confirmado"
       ? `Anotado ✅ "${text.trim()}" — se lo enviamos al repartidor 🛵`
@@ -1858,13 +1873,20 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
     const limStr = (lim?.variantes || []).map((v: any) => `${v.nombre} $${v.precio.toLocaleString("es-CO")}`).join(" · ");
     const malt = _bebidasCat.productos.find((p: any) => p.id === "malteada");
     const maltStr = (malt?.variantes || []).map((v: any) => v.nombre).join(", ");
+    const _idsYaListados = new Set(["batido_frutas", "limonada", "malteada"]);
+    const otras = _bebidasCat.productos
+      .filter((p: any) => p.tipo !== "jugo" && !_idsYaListados.has(p.id))
+      .map((p: any) => `${p.nombre} $${p.precio.toLocaleString("es-CO")}`).join(" · ");
+    const _yaConfirmado = currentOrder?.step === "confirmado";
     await sendWhatsAppMessage(phone,
       "🥤 Esto tenemos para beber:\n" +
       (jugos ? `\n🧃 Jugos naturales ($9.900 agua / $11.500 leche): ${jugos}` : "") +
       (limStr ? `\n🍋 Limonadas: ${limStr}` : "") +
       (maltStr ? `\n🥛 Malteadas $${(malt?.precio || 17900).toLocaleString("es-CO")}: ${maltStr}` : "") +
-      "\n🥤 Gaseosa / Coca-Cola · 💧 Agua" +
-      "\n\n¿Cuál deseas? 😊");
+      (otras ? `\n🥤 Otras: ${otras}` : "") +
+      (_yaConfirmado
+        ? "\n\nTu pedido ya está confirmado 🔥 Si quieres pedir algo más, escribe *nuevo pedido* 😊"
+        : "\n\n¿Cuál deseas? 😊"));
     return res.sendStatus(200);
   }
 
@@ -2447,6 +2469,8 @@ if (esConsultaDisponibilidad) {
     await sendWhatsAppMessage(phone,
       `Sí, tenemos *${matchedProd.nombre}* a $${matchedProd.precio.toLocaleString("es-CO")} 😊\n\n¿Lo agrego a tu pedido?`
     );
+  } else if (/\b(algo|alguna|alguno|importante|duda|problema|decirte|preguntar)\b/.test(normLower)) {
+    await sendWhatsAppMessage(phone, "Claro, dime 😊 ¿qué necesitas?");
   } else {
     await sendWhatsAppMessage(phone,
       `Aquí puedes ver todo nuestro menú:\n\nhttps://menu.tecmenu.com\n\n¿Te ayudo con algo más? 😊`
@@ -6718,6 +6742,10 @@ return res.sendStatus(200);
     // (ej: "¿Puedo hacer un cambio en el pedido?") → dejar pasar a la atención de abajo.
     const esPreguntaOComentarioConf = text.includes("?") || isQuestion(text) ||
       /\b(cambio|cambiar|modificar|comunicar|asesor|hablar|persona|humano|pregunta|puedo|podr[ií]a|quisiera)\b/i.test(lower);
+    if (!esPreguntaOComentarioConf && parseOrder(text).items.length > 0) {
+      await ofrecerNuevoPedidoPostConfirmacion(phone);
+      return res.sendStatus(200);
+    }
     // Probable detalle de dirección no detectado por PALABRAS_DIRECCION (ej. sector, urbanización)
     if (!esPreguntaOComentarioConf && currentOrder.direccion && text.trim().length > 2 && text.trim().length < 120 && !lower.includes("nuevo") && !lower.includes("asesor")) {
       updateOrderDireccionNotes(phone, text.trim());
