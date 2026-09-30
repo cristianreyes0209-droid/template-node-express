@@ -47,7 +47,22 @@ const numbers: Record<string, number> = {
   "dos": 2,
   "tres": 3,
   "cuatro": 4,
-  "cinco": 5
+  "cinco": 5,
+  "seis": 6,
+  "siete": 7,
+  "ocho": 8,
+  "nueve": 9,
+  "diez": 10,
+  "once": 11,
+  "doce": 12,
+  "trece": 13,
+  "catorce": 14,
+  "quince": 15,
+  "dieciseis": 16,
+  "diecisiete": 17,
+  "dieciocho": 18,
+  "diecinueve": 19,
+  "veinte": 20
 };
 const STOP_WORDS: Set<string> = new Set([
   "un",
@@ -119,6 +134,15 @@ function detectAmbiguousProduct(fragment: string, products: any[]) {
 }
 function extractCantidad(fragment: string): number {
   const text = normalizeText(fragment);
+
+  // Números en dígitos (ej. "12 crepes de pollo", "9 pollo"): el mapa de palabras
+  // solo cubre "un".."veinte" en letras, así que cualquier cantidad en dígitos
+  // (incluidas de 2+ cifras) se toma directo, sin depender de esa lista.
+  const digitMatch = text.match(/\b(\d{1,3})\b/);
+  if (digitMatch) {
+    const n = parseInt(digitMatch[1], 10);
+    if (n > 0) return n;
+  }
 
   for (const key of Object.keys(numbers)) {
     const cleanKey = escapeRegex(key);
