@@ -6443,6 +6443,11 @@ return res.sendStatus(200);
   const imageId = messageData.image?.id;
 
   if (imageId) {
+    // Si un bono personal se creó DESPUÉS de que el cliente ya había elegido método de pago
+    // (quedó fuera de aplicarBonoPersonalEnPago en esperando_pago), aplicarlo ahora, antes de
+    // calcular el total final — así no se pierde si llegó mientras esperaba el comprobante.
+    await aplicarBonoPersonalEnPago(phone);
+
     // Llegó imagen — confirmar y reenviar comprobante a la sucursal
     updateOrderStep(phone, "confirmado");
     clearTimeout(inactivityTimers.get(phone));
@@ -6556,9 +6561,16 @@ return res.sendStatus(200);
     // mensaje genérico de "envía el comprobante" sin responder a lo que preguntó.
     const mencionaDescuento = lower.includes("descuento") || lower.includes("bono") || lower.includes("cupon") || lower.includes("cupón");
     if (mencionaDescuento) {
+      // Si el bono se creó DESPUÉS de elegir el método de pago, aplicarBonoPersonalEnPago (que solo
+      // corre al mostrar "¿Cómo deseas pagar?") nunca lo agarró — intentarlo aquí también, así la
+      // respuesta ya refleja el total correcto en vez de insistir con el precio sin descuento.
+      const teniaBonoAntes = !!getOrder(phone)!.bonoId;
+      await aplicarBonoPersonalEnPago(phone);
       const totalsDesc = calculateTotal(getOrder(phone)!);
-      await sendWhatsAppMessage(phone,
-        `Ese descuento se aplica automáticamente a tu *próxima* compra 😊\n\nPara completar este pedido necesito la foto del comprobante del pago de *$${totalsDesc.total.toLocaleString("es-CO")}* 📸`
+      const bonoReciénAplicado = !teniaBonoAntes && !!getOrder(phone)!.bonoId;
+      await sendWhatsAppMessage(phone, bonoReciénAplicado
+        ? `Para completar el pedido con tu descuento ya aplicado, necesito la foto del comprobante del pago de *$${totalsDesc.total.toLocaleString("es-CO")}* 📸`
+        : `Ese descuento se aplica automáticamente a tu *próxima* compra 😊\n\nPara completar este pedido necesito la foto del comprobante del pago de *$${totalsDesc.total.toLocaleString("es-CO")}* 📸`
       );
       return res.sendStatus(200);
     }
