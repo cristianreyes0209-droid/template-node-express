@@ -6551,6 +6551,17 @@ return res.sendStatus(200);
     replyMessage = "Gracias, comprobante recibido ✅ Tu pedido está en proceso 🔥";
 
   } else {
+    // Mención de descuento/bono mientras se espera el comprobante (ej. un bono nuevo le llegó a
+    // mitad del pago y el cliente cree que aplica a ESTE pedido): aclarar en vez de repetir el
+    // mensaje genérico de "envía el comprobante" sin responder a lo que preguntó.
+    const mencionaDescuento = lower.includes("descuento") || lower.includes("bono") || lower.includes("cupon") || lower.includes("cupón");
+    if (mencionaDescuento) {
+      const totalsDesc = calculateTotal(getOrder(phone)!);
+      await sendWhatsAppMessage(phone,
+        `Ese descuento se aplica automáticamente a tu *próxima* compra 😊\n\nPara completar este pedido necesito la foto del comprobante del pago de *$${totalsDesc.total.toLocaleString("es-CO")}* 📸`
+      );
+      return res.sendStatus(200);
+    }
     // Distinguir "cambiar de método" (o pedir uno distinto) de "re-escribir el mismo método ya elegido".
     // Re-escribir el mismo método NO debe resetear el flujo (si no, el cliente sale de este step y su
     // comprobante deja de reconocerse).
