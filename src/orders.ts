@@ -116,6 +116,7 @@ export type CustomerOrder = {
       productoId: string;
     }[];
     cantidad?: number;
+    textoOriginal?: string;
   };
 };
 
@@ -171,10 +172,11 @@ export function calculateTotal(order: CustomerOrder, valorDomicilioOverride?: nu
 export function setPendingClarification(
   phone: string,
   opciones: { nombre: string; productoId: string }[],
-  cantidad?: number
+  cantidad?: number,
+  textoOriginal?: string
 ) {
   if (orders[phone]) {
-    orders[phone].aclaracionPendiente = { opciones, cantidad };
+    orders[phone].aclaracionPendiente = { opciones, cantidad, textoOriginal };
   }
 }
 

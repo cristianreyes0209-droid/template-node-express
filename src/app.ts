@@ -21,7 +21,7 @@ import { getClientIp } from 'request-ip';
 import * as ev from 'express-validator';
 import { Config } from './config';
 import { menu } from './menu';
-import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, extractExtrasFromFragment, extractObservaciones, consultarCrepesPorIngrediente, parsePagoMixto, findBestProductMatches, GEMINI_MODEL } from './parser';
+import { parseOrder, parseWithAI, classifyWithAI, normalizeText, isQuestion, extractExtrasFromFragment, extractObservaciones, extractCantidad, consultarCrepesPorIngrediente, parsePagoMixto, findBestProductMatches, GEMINI_MODEL } from './parser';
 import {
   setPendingClarification,
   getPendingClarification,
@@ -3472,8 +3472,8 @@ return res.sendStatus(200);
     if (parsedItems.length > 0) {
       createOrUpdateOrder(phone, parsedItems);
     }
-    const cantOriginalParser = parseInt(lower.match(/^(\d+)\s/)?.[1] || "") || 1;
-    setPendingClarification(phone, parseResult.ambiguousChoice.opciones, cantOriginalParser);
+    const cantOriginalParser = extractCantidad(text);
+    setPendingClarification(phone, parseResult.ambiguousChoice.opciones, cantOriginalParser, text);
     updateOrderStep(phone, "esperando_aclaracion_producto");
     currentOrder = getOrder(phone)!;
 
@@ -3613,6 +3613,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
     const product = allProducts.find((p: any) => p.id === seleccion!.productoId);
 
     if (product) {
+      const textoOriginalAclaracion = currentOrder.aclaracionPendiente?.textoOriginal;
       clearPendingClarification(phone);
 
       if (product.variantes && product.variantes.length > 0) {
@@ -3632,12 +3633,24 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
         return res.sendStatus(200);
       }
 
+      // Recuperar cantidad/extras/observaciones del mensaje original que disparó la ambigüedad
+      // (ej. "2 rancheras ambas con adición de queso americano"), que se habían perdido al
+      // resolver la aclaración con extras: [] fijo.
+      let extrasAclaracion: any[] = [];
+      let obsAclaracion: string | undefined;
+      if (textoOriginalAclaracion) {
+        const extraProductsAcl = ((menu.categorias as any[]).find((c: any) => c.id === "extras")?.productos) || [];
+        extrasAclaracion = extractExtrasFromFragment(textoOriginalAclaracion, extraProductsAcl, product);
+        obsAclaracion = extractObservaciones(textoOriginalAclaracion.toLowerCase()) || undefined;
+      }
+
       createOrUpdateOrder(phone, [
         {
           producto: product.nombre,
           cantidad: cantidadSeleccion,
           precio: product.precio,
-          extras: []
+          extras: extrasAclaracion,
+          observaciones: obsAclaracion
         }
       ]);
 

@@ -132,7 +132,7 @@ function detectAmbiguousProduct(fragment: string, products: any[]) {
     }))
   };
 }
-function extractCantidad(fragment: string): number {
+export function extractCantidad(fragment: string): number {
   const text = normalizeText(fragment);
 
   // Números en dígitos (ej. "12 crepes de pollo", "9 pollo"): el mapa de palabras
@@ -588,6 +588,9 @@ function findVariantInFragment(fragment: string, product: any) {
 }
 
 export function extractExtrasFromFragment(fragment: string, extrasProducts: any[], product?: any) {
+  // "+ X" (ej. "+ queso americano"): el "+" es un gatillo explícito de adición, igual que "con X"/
+  // "adicional X". Se detecta ANTES de normalizar porque normalizeText quita la puntuación.
+  const tienePrefijoMas = /^\s*\+/.test(fragment);
   const text = normalizeText(fragment);
   const extrasFound: ParsedExtra[] = [];
 
@@ -642,7 +645,7 @@ export function extractExtrasFromFragment(fragment: string, extrasProducts: any[
         ? new RegExp(`\\b${escapeRegex(normalizedAlias)}s?\\b`, "i").test(conListMatch[1])
         : false;
 
-      const hasTrigger = inConList || triggers.some(t => text.includes(t) || text.includes(`${t}s`));
+      const hasTrigger = tienePrefijoMas || inConList || triggers.some(t => text.includes(t) || text.includes(`${t}s`));
 
       // Triggers EXPLÍCITOS de adición (no el débil "con X")
       const triggersExplicitos = [
@@ -651,7 +654,7 @@ export function extractExtrasFromFragment(fragment: string, extrasProducts: any[
         `adicion ${normalizedAlias}`, `adicion de ${normalizedAlias}`,
         `agregar ${normalizedAlias}`, `doble ${normalizedAlias}`,
       ];
-      const hasExplicito = triggersExplicitos.some(t => text.includes(t) || text.includes(`${t}s`));
+      const hasExplicito = tienePrefijoMas || triggersExplicitos.some(t => text.includes(t) || text.includes(`${t}s`));
 
       // Match singular o plural del alias (ej: "fresa" / "fresas")
       const aliasRegex = new RegExp(`\\b${escapeRegex(normalizedAlias)}s?\\b`, "i");
