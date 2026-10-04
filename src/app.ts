@@ -731,11 +731,31 @@ function limpiarCamposPedido(order: any) {
   order.upsellingToppingsMostrado = false;
 }
 
+const DULCES_CON_QUESO_IDS = new Set(["nutella_crepe", "chocolate_crepe", "arequipe_crepe"]);
+
 // Aplica adiciones ("adicional de X"/"con X") y observaciones ("sin X"/"poco X") escritas como
 // texto libre al ÚLTIMO ítem del carrito. Reutiliza los extractores del parser (basados en
 // disparadores, que NO toman "sin X" como extra). Devuelve el resumen aplicado o null.
 function modificarItemPorTexto(order: any, textoRaw: string): { agregados: string[]; obs?: string } | null {
   if (!order?.items?.length) return null;
+
+  // "con queso"/"sin queso" sueltos, cuando ya hay una crepe dulce (Nutella/Chocolate/Arequipe)
+  // que ya pasó por la pregunta "¿con queso o sin queso?" (su observación ya dice una de las dos):
+  // corregir ESA línea en vez de cobrar "queso" como adición pagada en el último ítem del carrito
+  // (que puede ser un producto totalmente distinto, ej. una bebida).
+  const textoQuesoSuelto = /^\s*(con|sin)\s+queso\s*$/i.test(textoRaw.trim());
+  if (textoQuesoSuelto) {
+    const dulceConQueso = order.items.find((it: any) =>
+      DULCES_CON_QUESO_IDS.has(it.productoId) && /\b(con|sin)\s+queso\b/i.test(it.observaciones || "")
+    );
+    if (dulceConQueso) {
+      const quiereConQueso = /^\s*con\b/i.test(textoRaw.trim());
+      const nuevaObs = quiereConQueso ? "con queso" : "sin queso";
+      dulceConQueso.observaciones = (dulceConQueso.observaciones || "").replace(/\b(con|sin)\s+queso\b/i, nuevaObs);
+      return { agregados: [], obs: nuevaObs };
+    }
+  }
+
   const lastItem = order.items[order.items.length - 1];
   const extraProducts = ((menu.categorias as any[]).find((c: any) => c.id === "extras")?.productos) || [];
   const prod = (menu.categorias as any[]).flatMap((c: any) => c.productos).find((p: any) => p.id === lastItem.productoId);
@@ -4903,6 +4923,15 @@ return res.sendStatus(200);
   return res.sendStatus(200);
 
 } else if (currentOrder?.step === "esperando_queso_dulce") {
+  const mencionaQueso = lower === "con_queso_dulce" || lower === "sin_queso_dulce" || lower.includes("queso") || lower === "con" || lower === "sin";
+  if (!mencionaQueso) {
+    const lastItemQDRepeat = currentOrder.items[currentOrder.items.length - 1];
+    await sendWhatsAppButtons(phone,
+      `Perdón, no te entendí 😊 ¿Deseas tu ${lastItemQDRepeat?.producto || "crepe"} con queso o sin queso? 🧀`,
+      [{ id: "con_queso_dulce", title: "Con queso 🧀" }, { id: "sin_queso_dulce", title: "Sin queso" }]
+    );
+    return res.sendStatus(200);
+  }
   const withQueso = lower === "con_queso_dulce" || lower.includes("con queso") || lower === "con";
   const orderQD = getOrder(phone)!;
   const lastItemQD = orderQD.items[orderQD.items.length - 1];
