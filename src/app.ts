@@ -2169,7 +2169,10 @@ const esConsultaEstadoPedido = !esBoton && !esMensajeLargo && (
   lower.includes("donde esta el pedido") || lower.includes("se demora") || lower.includes("se esta demorando") || lower.includes("se está demorando") ||
   lower.includes("ya llego") || lower.includes("ya llegó") || lower.includes("si llego") || lower.includes("si llegó") ||
   lower.includes("confirmas si llego") || lower.includes("confirmas si llegó") || lower.includes("llego el domicilio") || lower.includes("llegó el domicilio") ||
-  lower.includes("llego mi pedido") || lower.includes("llegó mi pedido")
+  lower.includes("llego mi pedido") || lower.includes("llegó mi pedido") ||
+  lower.includes("que paso con mi pedido") || lower.includes("qué pasó con mi pedido") ||
+  lower.includes("que paso con el pedido") || lower.includes("qué pasó con el pedido") ||
+  lower.includes("que paso con mi domicilio") || lower.includes("qué pasó con mi domicilio")
 );
 if (esConsultaEstadoPedido) {
   const ped = await getUltimoPedidoByPhone(phone);
@@ -2891,6 +2894,24 @@ if (text.includes("Vengo de https://las-crepes.ola.click")) {
       ]
     );
   }
+  return res.sendStatus(200);
+}
+
+// El cliente reenvía/pega el propio mensaje de confirmación del bot (ej. para quejarse o preguntar
+// por su pedido) — NO tratarlo como un pedido nuevo (parseOrder encontraría los nombres de producto
+// del recibo y lo registraría/cobraría otra vez). Escalar a asesor con los datos ya conocidos.
+const esMensajeConfirmacionPropio = text.includes("🧾 Tu pedido:") &&
+  (text.includes("Pedido confirmado") || text.includes("Gracias por tu pedido en LAS CREPES"));
+if (esMensajeConfirmacionPropio) {
+  const nombreReenvio = currentOrder?.nombre || customer?.name || phone;
+  try {
+    await sendWhatsAppMessage("573151913928",
+      `💬 CLIENTE REENVIÓ SU PROPIA CONFIRMACIÓN (probable reclamo/consulta)\n👤 ${nombreReenvio}\n📞 ${phone}`
+    );
+  } catch (e) {}
+  await sendWhatsAppMessage(phone,
+    "Veo que me compartiste tu confirmación 😊 Ya le aviso a un asesor para que te cuente el estado de tu pedido.\n\nTambién puedes llamarnos:\n📞 La Villa: *606 341 3020*\n📞 Circunvalar: *606 345 0257*"
+  );
   return res.sendStatus(200);
 }
 

@@ -198,6 +198,7 @@ export function normalizeText(text: string) {
     .replace(/\bdesgranado\b/g, "desgranada")
     .replace(/\bmariscos\b/g, "mariscos")
     .replace(/\bnutela\b/g, "nutella")
+    .replace(/\bnutrlas?\b/g, "nutella")
     .replace(/\barequipe\b/g, "arequipe")
     .replace(/\barrequipe\b/g, "arequipe")
     .replace(/\btropinutela\b/g, "tropinutella")
