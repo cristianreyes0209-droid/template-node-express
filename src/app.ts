@@ -5220,7 +5220,11 @@ return res.sendStatus(200);
 
     // El cliente está tratando de agregar otro producto en vez de dar la dirección
     // (ej. "y 1 crepe mexicano") → agregarlo al pedido y volver a pedir la dirección.
-    const intentoProductoDir = parseOrder(text).items;
+    // Si el texto ya parece una dirección (trae palabras tipo torre/apto/barrio, o el patrón
+    // numérico típico "37-68"), NO tratarlo como producto — evita que una dirección que por
+    // casualidad menciona una palabra del menú (ej. "palo de agua") se registre como pedido de Agua.
+    const pareceDireccionDir = esObservacionDireccion(text) || /\d+\s*#?\s*\d+\s*-\s*\d+/.test(text);
+    const intentoProductoDir = pareceDireccionDir ? [] : parseOrder(text).items;
     if (intentoProductoDir.length > 0) {
       createOrUpdateOrder(phone, intentoProductoDir);
       const nombresAgregadosD = intentoProductoDir.map((i: any) => i.producto).join(", ");
