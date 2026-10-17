@@ -844,7 +844,7 @@ function buildResumenFooter(order: any, totals: { subtotal: number; domicilio: n
     ? "\n📍 Dirección: " + (order.direccion || "No aplica") + obsDir
     : "\n🏪 Recoger en tienda";
   const descuentoLinea = (totals as any).descuento > 0
-    ? "\n🎁 Descuento " + order.descuentoPct + "%: -$" + (totals as any).descuento.toLocaleString("es-CO")
+    ? "\n🎁 Descuento " + (order.descuentoPct || order.bonoPct) + "%: -$" + (totals as any).descuento.toLocaleString("es-CO")
     : "";
   return "\n\nSubtotal: $" + totals.subtotal.toLocaleString("es-CO") + domicilioLinea + descuentoLinea + "\nTotal: $" + totals.total.toLocaleString("es-CO") + (obsLinea ? "\n" + obsLinea : "") + entregaLinea;
 }
@@ -2190,6 +2190,27 @@ if (esConsultaEstadoPedido) {
     return res.sendStatus(200);
   }
   // Sin pedido reciente → dejar seguir el flujo normal
+}
+
+// Pregunta por el estado de un descuento/bono personal ("mi descuento", "tengo descuento") fuera
+// de esperando_pago/esperando_comprobante (que ya tienen su propio manejo específico y aplican el
+// bono). Sin este chequeo, la pregunta caía al respaldo de IA, que no sabe si existe un bono
+// creado para este teléfono y a veces contestaba (falsamente) que no hay descuentos activos.
+const esPreguntaDescuentoGeneral = !esBoton && !esMensajeLargo &&
+  currentOrder?.step !== "esperando_pago" && currentOrder?.step !== "esperando_comprobante" &&
+  /\b(mi descuento|tengo descuento|tengo algun descuento|tengo alg[uú]n descuento|que descuento tengo|qu[eé] descuento tengo|cual es mi descuento|cu[aá]l es mi descuento)\b/i.test(lower);
+if (esPreguntaDescuentoGeneral) {
+  const bonoPersonalConsulta = await getBonoPersonalPorTelefono(phone);
+  const vigenteConsulta = !!bonoPersonalConsulta &&
+    (!bonoPersonalConsulta.fecha_expira || new Date(bonoPersonalConsulta.fecha_expira) >= new Date()) &&
+    (bonoPersonalConsulta.max_usos == null || Number(bonoPersonalConsulta.usos_totales) < Number(bonoPersonalConsulta.max_usos)) &&
+    !(bonoPersonalConsulta.una_vez_por_cliente && await clienteYaUsoBono(bonoPersonalConsulta.id, phone));
+  if (vigenteConsulta) {
+    await sendWhatsAppMessage(phone, `🎁 ¡Sí! Tienes un descuento especial del *${bonoPersonalConsulta.descuento_pct}%* esperando — se aplica automáticamente cuando confirmes tu pago 😊`);
+  } else {
+    await sendWhatsAppMessage(phone, "Por el momento no tienes ningún cupón o descuento especial activo 😊");
+  }
+  return res.sendStatus(200);
 }
 
 const esConsultaUbicacion =
@@ -6327,7 +6348,9 @@ return res.sendStatus(200);
     lower.includes("cambiar pedido") || lower.includes("cambiar el pedido") ||
     lower.includes("hacer un cambio") || lower.includes("hacer cambio") || lower.includes("un cambio") ||
     lower.includes("agregar") || lower.includes("añadir") || lower.includes("anadir") ||
-    lower.includes("otra ") || lower.includes("otro ") || lower.includes("una mas") || lower.includes("una más")
+    lower.includes("otra ") || lower.includes("otro ") || lower.includes("una mas") || lower.includes("una más") ||
+    lower.includes("cancelar") || lower.includes("volver al menu") || lower.includes("volver al menú") ||
+    lower.includes("borrar") || lower.includes("desistir") || lower.includes("no quiero seguir")
   ) {
     const orderVolver = getOrder(phone)!;
     const totalsVolver = calculateTotal(orderVolver);
@@ -6337,6 +6360,29 @@ return res.sendStatus(200);
     await sendWhatsAppButtons(phone,
       "Perfecto 👌\n\nTu pedido es:\n" + resumenVolver +
       buildResumenFooter(orderVolver, totalsVolver, orderVolver.domicilioTexto) +
+      "\n\n¿Qué deseas hacer?",
+      [
+        { id: "confirmar",   title: "✅ Confirmar" },
+        { id: "agregar_mas", title: "➕ Agregar" },
+        { id: "eliminar",    title: "➖ Quitar" },
+        { id: "4",           title: "📝 Observación" }
+      ]
+    );
+    return res.sendStatus(200);
+  } else if (parseOrder(text).items.length > 0) {
+    // El cliente nombró un producto directamente (ej. "1 crepe hawaiana") en vez de usar una
+    // palabra clave reconocida — agregarlo y volver a mostrar el carrito, en vez de insistir con
+    // el mismo "¿Cómo deseas pagar?" sin reaccionar a lo que escribió.
+    const itemsPago = parseOrder(text).items;
+    createOrUpdateOrder(phone, itemsPago);
+    const orderConProd = getOrder(phone)!;
+    const totalsConProd = calculateTotal(orderConProd);
+    const resumenConProd = orderConProd.items.map((item: any) => formatLineaItem(item)).join("\n");
+    updateOrderStep(phone, "esperando_confirmacion");
+    currentOrder = getOrder(phone)!;
+    await sendWhatsAppButtons(phone,
+      "Perfecto 👌\n\nTu pedido es:\n" + resumenConProd +
+      buildResumenFooter(orderConProd, totalsConProd, orderConProd.domicilioTexto) +
       "\n\n¿Qué deseas hacer?",
       [
         { id: "confirmar",   title: "✅ Confirmar" },
