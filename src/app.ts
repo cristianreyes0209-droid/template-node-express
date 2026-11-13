@@ -1912,6 +1912,7 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
 
   const _esConsultaMenu =
     _lower === "menu" || _lower === "menú" || _lower === "carta" ||
+    _lower.includes("carta") ||
     _lower.includes("ver menu") || _lower.includes("ver menú") ||
     _lower.includes("ver carta") || _lower.includes("ver el menu") ||
     _lower.includes("la carta") || _lower.includes("el menu") || _lower.includes("el menú") ||
@@ -4041,7 +4042,7 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
   );
   return res.sendStatus(200);
 
-} else if (lower === "2" || lower.includes("menu") || lower.includes("menú")) {
+} else if (lower === "2" || lower.includes("menu") || lower.includes("menú") || lower.includes("carta")) {
   await sendWhatsAppButtons(phone,
     "Aquí puedes ver nuestro menú completo 📋\n\nhttps://menu.tecmenu.com\n\n¿Deseas hacer un pedido?",
     [
