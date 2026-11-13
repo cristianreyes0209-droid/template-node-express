@@ -97,7 +97,7 @@ function getMeaningfulTokens(text: string) {
     .split(/\s+/)
     .map((t) => t.trim())
     .filter(Boolean)
-    .filter((t) => !STOP_WORDS.has(t));
+    .filter((t) => !STOP_WORDS.has(t) && !/^\d+$/.test(t));
 }
 
 function productMatchesGenericToken(product: any, token: string) {

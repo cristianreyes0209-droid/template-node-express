@@ -4029,7 +4029,8 @@ if (currentOrder?.step === "esperando_aclaracion_producto") {
       }
       return res.sendStatus(200);
     }
-  } else if (lower === "1" || lower.includes("pedido") || lower.includes("pedir")) {
+  } else if (lower === "1" || lower.includes("pedido") || lower.includes("pedir") ||
+    lower.includes("domicilio") || lower.includes("recoger") || lower.includes("para llevar")) {
   updateOrderStep(phone, "esperando_tipo_entrega");
   currentOrder = getOrder(phone)!;
 
