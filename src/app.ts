@@ -1830,9 +1830,11 @@ app.post("/whatsapp", async (req: Request, res: Response) => {
       "🕐 Nuestro horario de atención:\n" +
       "• Lunes a viernes: 3:00 PM – 10:15 PM\n" +
       "• Sábados, domingos y festivos: 12:00 M – 10:15 PM\n\n" +
-      "📍 La Villa - Calle 83 #16a-22\n" +
-      "📍 Av. Circunvalar #8-94 local 1\n\n" +
-      "📞 *606 341 3020*" +
+      "📍 La Villa - Calle 83 #16a-22" +
+      (CIRCUNVALAR_CERRADA
+        ? "\n\n⚠️ *Av. Circunvalar* permanece cerrada temporalmente por el terremoto. Te atendemos con gusto desde *La Villa* 🥞"
+        : "\n📍 Av. Circunvalar #8-94 local 1") +
+      "\n\n📞 *606 341 3020*" +
       (tambienPideMenu ? "\n\n🥞 Y aquí está nuestro menú completo:\nhttps://menu.tecmenu.com" : "")
     );
     return res.sendStatus(200);
@@ -2118,8 +2120,10 @@ const parsedItems = parseResult.items;
 
 const HORARIO_MSG =
   "🕐 Nuestro horario de atención es de 3:00 PM a 10:15 PM todos los días\n\n" +
-  "📍 La Villa - Calle 83 #16a-22\n" +
-  "📍 Av. Circunvalar #8-94 local 1";
+  "📍 La Villa - Calle 83 #16a-22" +
+  (CIRCUNVALAR_CERRADA
+    ? "\n\n⚠️ *Av. Circunvalar* permanece cerrada temporalmente por el terremoto. Te atendemos con gusto desde *La Villa* 🥞"
+    : "\n📍 Av. Circunvalar #8-94 local 1");
 
 const esConsultaHorario =
   lower.includes("a qué hora") ||
@@ -2151,7 +2155,10 @@ const esConsultaOperando = !esBoton && (
 );
 if (esConsultaOperando && !esMensajeLargo) {
   await sendWhatsAppMessage(phone,
-    "Sí, seguimos *operando con normalidad* en nuestros horarios habituales 😊\n\n" + HORARIO_MSG);
+    (CIRCUNVALAR_CERRADA
+      ? "La sede *La Villa* sigue operando con normalidad 😊"
+      : "Sí, seguimos *operando con normalidad* en nuestros horarios habituales 😊") +
+    "\n\n" + HORARIO_MSG);
   return res.sendStatus(200);
 }
 
