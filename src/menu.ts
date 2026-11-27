@@ -763,7 +763,10 @@ export const menu = {
       aliases: [
         "hawaiana",
         "hawaina",
-        "crepe hawaiana"
+        "crepe hawaiana",
+        "hawaiano",
+        "hawaino",
+        "crepe hawaiano"
       ],
       modificadoresComunes: [
         "sin jamon",
@@ -775,7 +778,8 @@ export const menu = {
       extrasDisponibles: [
         "extra_jamon",
         "extra_pina",
-        "extra_queso"
+        "extra_queso",
+        "extra_carne"
       ]
     },
     {

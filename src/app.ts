@@ -1987,6 +1987,7 @@ const skipParsing =
   currentOrder?.step === "esperando_jalapenos" ||
   currentOrder?.step === "esperando_queso_dulce" ||
   currentOrder?.step === "esperando_sabor_cocacola" ||
+  currentOrder?.step === "esperando_sabor_helado" ||
   currentOrder?.step === "esperando_confirmacion_direccion" ||
   currentOrder?.step === "post_agregar_producto" ||
   currentOrder?.step === "esperando_confirmacion" ||
@@ -2470,6 +2471,13 @@ const esPreguntaCoberturaDomicilio =
    lower.includes("hasta") || lower.includes(" a ") || lower.includes("via") || lower.includes("vía") ||
    lower.includes("barrio") || lower.includes("sector") || lower.includes("?"));
 if (esPreguntaCoberturaDomicilio) {
+  // Esta respuesta invita a pedir ("¿Qué te gustaría pedir?"), pero si el step quedaba en uno
+  // que no procesa pedidos (ej. esperando_ayuda, fuera de horario) el siguiente mensaje con el
+  // pedido caía en esa rama y terminaba escalando a asesor en vez de registrarse. Si el carrito
+  // está vacío, pasar a esperando_menu_principal para que el próximo mensaje sí se parsee.
+  if (currentOrder && currentOrder.items.length === 0 && _stepDom !== "esperando_menu_principal") {
+    updateOrderStep(phone, "esperando_menu_principal");
+  }
   await sendWhatsAppMessage(phone,
     "¡Sí! 🛵 Hacemos domicilios en Pereira. El costo se calcula por la distancia (Google Maps) cuando me compartas tu dirección.\n\n" +
     "¿Qué te gustaría pedir? 😊 Escríbeme tu crepe y seguimos con la dirección.");
@@ -3288,9 +3296,10 @@ if (
     if (!lastItemH.extras.find((e: any) => e.nombre === heladoNombre)) {
       lastItemH.extras.push({ nombre: heladoNombre, precio: heladoPrecio, cantidad: 1 });
     }
+    updateOrderStep(phone, "esperando_sabor_helado");
     await sendWhatsAppButtons(phone,
-      `Agregado ✅ ${heladoNombre} (+$${heladoPrecio.toLocaleString("es-CO")})\n\n¿Algo más?`,
-      [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
+      `Agregado ✅ ${heladoNombre} (+$${heladoPrecio.toLocaleString("es-CO")})\n\n¿Qué sabor deseas?`,
+      [{ id: "helado_brownie", title: "Brownie" }, { id: "helado_vainilla", title: "Vainilla" }, { id: "helado_fresa", title: "Fresa" }]
     );
     return res.sendStatus(200);
   }
@@ -4926,6 +4935,12 @@ return res.sendStatus(200);
       if (!ultimoHelado.extras.find((e: any) => e.nombre === heladoNom)) {
         ultimoHelado.extras.push({ nombre: heladoNom, precio: heladoPre, cantidad: 1 });
       }
+      updateOrderStep(phone, "esperando_sabor_helado");
+      await sendWhatsAppButtons(phone,
+        `Agregado ✅ ${heladoNom} (+$${heladoPre.toLocaleString("es-CO")})\n\n¿Qué sabor deseas?`,
+        [{ id: "helado_brownie", title: "Brownie" }, { id: "helado_vainilla", title: "Vainilla" }, { id: "helado_fresa", title: "Fresa" }]
+      );
+      return res.sendStatus(200);
     }
   }
 
@@ -5030,6 +5045,33 @@ return res.sendStatus(200);
   const resumenCC = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
   await sendWhatsAppButtons(phone,
     "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenCC + "\n\n📝 Si deseas una observación escríbela, o elige:",
+    [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
+  );
+  return res.sendStatus(200);
+
+} else if (currentOrder?.step === "esperando_sabor_helado") {
+  const esBrownie = lower === "helado_brownie" || lower.includes("brownie") || lower.includes("browny");
+  const esVainilla = lower === "helado_vainilla" || lower.includes("vainilla");
+  const esFresa = lower === "helado_fresa" || lower.includes("fresa");
+  if (!esBrownie && !esVainilla && !esFresa) {
+    await sendWhatsAppButtons(phone,
+      "No reconocí ese sabor 😊 ¿Cuál de estos deseas?",
+      [{ id: "helado_brownie", title: "Brownie" }, { id: "helado_vainilla", title: "Vainilla" }, { id: "helado_fresa", title: "Fresa" }]
+    );
+    return res.sendStatus(200);
+  }
+  const saborHelado = esBrownie ? "Brownie" : esVainilla ? "Vainilla" : "Fresa";
+  const orderH = getOrder(phone)!;
+  const lastH = orderH.items[orderH.items.length - 1];
+  if (lastH) {
+    const heladoExtra = (lastH.extras || []).find((e: any) => e.nombre?.toLowerCase().includes("helado"));
+    if (heladoExtra) heladoExtra.nombre = `${heladoExtra.nombre} - ${saborHelado}`;
+  }
+  updateOrderStep(phone, "post_agregar_producto");
+  currentOrder = getOrder(phone)!;
+  const resumenH = currentOrder.items.map((item: any) => formatLineaItem(item, true)).join("\n");
+  await sendWhatsAppButtons(phone,
+    "Perfecto 👌\n\nEstoy registrando:\n\n" + resumenH + "\n\n📝 Si deseas una observación escríbela, o elige:",
     [{ id: "confirmar", title: "✅ Confirmar" }, { id: "eliminar", title: "🗑️ Quitar" }, { id: "4", title: "📝 Observación" }]
   );
   return res.sendStatus(200);
@@ -6641,6 +6683,22 @@ return res.sendStatus(200);
     // mensaje genérico de "envía el comprobante" sin responder a lo que preguntó.
     const mencionaDescuento = lower.includes("descuento") || lower.includes("bono") || lower.includes("cupon") || lower.includes("cupón");
     if (mencionaDescuento) {
+      // Descuento acumulado (%) pedido DESPUÉS de elegir método de pago: el handler de
+      // "usar_descuento" en esperando_pago (más arriba) ya no corre porque el step cambió.
+      // Aplicarlo aquí también con el mismo mecanismo (getDescuento/descuentoPct), si no,
+      // el cliente recibe "se aplica a tu próxima compra" sin que nada se haya descontado.
+      const orderDesc = getOrder(phone)!;
+      const yaAplicadoDesc = !!orderDesc.descuentoPct;
+      const realDesc = await getDescuento(phone);
+      const pideUsarDescuento = lower === "usar_descuento" || /(usar|aplicar|canjear)\s*(mi\s*)?(descuento|puntos)|mi descuento/i.test(lower);
+      if (!yaAplicadoDesc && realDesc > UMBRAL_CANJE && pideUsarDescuento) {
+        orderDesc.descuentoPct = realDesc;
+        const tDesc = calculateTotal(getOrder(phone)!);
+        await sendWhatsAppMessage(phone,
+          `🎁 ¡Listo! Apliqué tu *${realDesc}%* de descuento (−$${tDesc.descuento.toLocaleString("es-CO")}).\n\nNuevo total: *$${tDesc.total.toLocaleString("es-CO")}* 💰\n\nEnvíame la foto del comprobante del pago 📸`
+        );
+        return res.sendStatus(200);
+      }
       // Si el bono se creó DESPUÉS de elegir el método de pago, aplicarBonoPersonalEnPago (que solo
       // corre al mostrar "¿Cómo deseas pagar?") nunca lo agarró — intentarlo aquí también, así la
       // respuesta ya refleja el total correcto en vez de insistir con el precio sin descuento.

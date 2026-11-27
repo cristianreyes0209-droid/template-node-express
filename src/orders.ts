@@ -46,6 +46,7 @@ export type OrderStep =
   | "esperando_jalapenos"
   | "esperando_queso_dulce"
   | "esperando_sabor_cocacola"
+  | "esperando_sabor_helado"
   | "esperando_complemento_direccion"
   | "esperando_confirmacion_cancelacion"
   | "esperando_confirmacion_sucursal"
